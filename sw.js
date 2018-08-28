@@ -18,18 +18,23 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch',  fetchEvent => {
+  const request = fetchEvent.request;
   fetchEvent.respondWith(async function() {
     try {
       // Try to fetch over the network
-      let response = await fetch(fetchEvent.request);
+      let response = await fetch(request);
 
       // If that works, cache it and return it
       const responseCopy = response.clone();
       const myCache = await caches.open(cacheName);
       await myCache.put(request, responseCopy);
+
+      return response;
     } catch (e) {
       // If it fails, try to return from cache
       console.log(`Error doing network fetch: ${e}`);
 
+      return caches.match(request);
     }
+  });
 });
