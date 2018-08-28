@@ -1,0 +1,35 @@
+'use strict';
+
+// Adapted from:
+// https://gist.github.com/adactio/3717b7da007a9363ddf21f584aae34af
+// https://frontendian.co/service-workers
+
+const cacheName = 'files';
+
+self.addEventListener('install', e => {
+  e.waitUntil(() => { console.info('Installed!'); });
+})
+
+self.addEventListener('activate', e => {
+  // Note: This might not be safe in a larger app
+  clients.claim() 
+
+  e.waitUntil(() => { console.info('Activated!'); });
+})
+
+self.addEventListener('fetch',  fetchEvent => {
+  fetchEvent.respondWith(async function() {
+    try {
+      // Try to fetch over the network
+      let response = await fetch(fetchEvent.request);
+
+      // If that works, cache it and return it
+      const responseCopy = response.clone();
+      const myCache = await caches.open(cacheName);
+      await myCache.put(request, responseCopy);
+    } catch (e) {
+      // If it fails, try to return from cache
+      console.log(`Error doing network fetch: ${e}`);
+
+    }
+});
