@@ -6,17 +6,6 @@
 
 const cacheName = 'files';
 
-self.addEventListener('install', e => {
-  e.waitUntil(() => { console.info('Installed!'); });
-})
-
-self.addEventListener('activate', e => {
-  // Note: This might not be safe in a larger app
-  clients.claim() 
-
-  e.waitUntil(() => { console.info('Activated!'); });
-})
-
 self.addEventListener('fetch',  fetchEvent => {
   const request = fetchEvent.request;
 
