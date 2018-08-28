@@ -17,15 +17,9 @@ self.addEventListener('activate', e => {
   e.waitUntil(() => { console.info('Activated!'); });
 })
 
-self.addEventListener('fetch',  async fetchEvent => {
+self.addEventListener('fetch',  fetchEvent => {
   const request = fetchEvent.request;
 
-  console.info('Passing request to the network');
-  const response = await fetch(request);
-  fetchEvent.respondWith(response);
-
-
-  /*
   fetchEvent.respondWith(async function() {
     try {
       // Try to fetch over the network
@@ -43,6 +37,5 @@ self.addEventListener('fetch',  async fetchEvent => {
 
       return caches.match(request);
     }
-  });
-  */
+  }());
 });
