@@ -17,9 +17,10 @@ self.addEventListener('activate', e => {
   e.waitUntil(() => { console.info('Activated!'); });
 })
 
-self.addEventListener('fetch',  fetchEvent => {
+self.addEventListener('fetch',  async fetchEvent => {
   const request = fetchEvent.request;
 
+  console.info('Passing request to the network');
   const response = await fetch(request);
   fetchEvent.respondWith(response);
 
