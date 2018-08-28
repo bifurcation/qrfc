@@ -19,6 +19,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch',  fetchEvent => {
   const request = fetchEvent.request;
+
+  const response = await fetch(request);
+  fetchEvent.respondWith(response);
+
+
+  /*
   fetchEvent.respondWith(async function() {
     try {
       // Try to fetch over the network
@@ -37,4 +43,5 @@ self.addEventListener('fetch',  fetchEvent => {
       return caches.match(request);
     }
   });
+  */
 });
