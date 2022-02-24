@@ -6,9 +6,25 @@
 
 const cacheName = 'files';
 
+self.addEventListener('install', () => { console.log('install'); });
+self.addEventListener('activate', () => { console.log('activate'); });
+
 self.addEventListener('fetch',  fetchEvent => {
   const request = fetchEvent.request;
 
+  // Provide a status URL with a synthetic response
+  const statusURL = `${self.location.origin}/status`;
+  if (request.url === statusURL) {
+    let status = 'online';
+    if (!navigator.onLine) {
+      status = 'offline';
+    }
+
+    fetchEvent.respondWith(new Response(status));
+    return;
+  }
+
+  // Run other requests through a local cache
   fetchEvent.respondWith(async function() {
     try {
       // Try to fetch over the network
