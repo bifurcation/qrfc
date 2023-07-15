@@ -1,5 +1,5 @@
-Minimum PWA
-===========
+Quick RFCs
+==========
 
-The goal of this repo is to make the smallest possible PWA that gets
-a score of 100 on the [Google Lighthouse](https://developers.google.com/web/progressive-web-apps/checklist) audit.
+This repo is just a PWA that uses a service worker to perform the caching that
+the RFC Editor ought to be doing.
