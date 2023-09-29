@@ -1,6 +1,8 @@
 Quick RFCs
 ==========
 
+https://bifurcation.github.io/qrfc/
+
 This repo is just a clone of the HTML files in the RFC index, so that they are
 exposed via GitHub pages.  This has two major benefits relative to the hosting
 on [rfc-editor.org](https://rfc-editor.org):
