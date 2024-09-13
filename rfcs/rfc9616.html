@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Greek,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9616: Delay-Based Metric Extension for the Babel Routing Protocol</title>
+<meta content="Baptiste Jonglez" name="author">
+<meta content="Juliusz Chroboczek" name="author">
+<meta content="
+       This document defines an extension to the Babel routing protocol that
+measures the round-trip time (RTT) between routers and makes it possible
+to prefer lower-latency links over higher-latency ones. 
+    " name="description">
+<meta content="xml2rfc 3.23.0" name="generator">
+<meta content="9616" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.23.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 4.9.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9616.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    float: none;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-babel-rtt-extension-07" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9616" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9616</td>
+<td class="center">Babel RTT Extension</td>
+<td class="right">September 2024</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Jonglez &amp; Chroboczek</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9616" class="eref">9616</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2024-09" class="published">September 2024</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">B. Jonglez</div>
+<div class="org">ENS Lyon</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Chroboczek</div>
+<div class="org">IRIF, Université Paris Cité</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9616</h1>
+<h1 id="title">Delay-Based Metric Extension for the Babel Routing Protocol</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines an extension to the Babel routing protocol that
+measures the round-trip time (RTT) between routers and makes it possible
+to prefer lower-latency links over higher-latency ones.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9616">https://www.rfc-editor.org/info/rfc9616</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2024 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-applicability" class="internal xref">Applicability</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-specification-of-requiremen" class="internal xref">Specification of Requirements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-rtt-sampling" class="internal xref">RTT Sampling</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-data-structures" class="internal xref">Data Structures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-protocol-operation" class="internal xref">Protocol Operation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-wrap-around-and-node-restar" class="internal xref">Wrap-Around and Node Restart</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-implementation-notes" class="internal xref">Implementation Notes</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-rtt-based-route-selection" class="internal xref">RTT-Based Route Selection</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-smoothing" class="internal xref">Smoothing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-cost-computation" class="internal xref">Cost Computation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-hysteresis" class="internal xref">Hysteresis</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-backwards-and-forwards-comp" class="internal xref">Backwards and Forwards Compatibility</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-packet-format" class="internal xref">Packet Format</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-timestamp-sub-tlv-in-hello-" class="internal xref">Timestamp Sub-TLV in Hello TLVs</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-timestamp-sub-tlv-in-ihu-tl" class="internal xref">Timestamp Sub-TLV in IHU TLVs</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The Babel routing protocol <span>[<a href="#RFC8966" class="cite xref">RFC8966</a>]</span> does not mandate
+a specific algorithm for computing metrics; existing implementations use
+a packet-loss-based metric on wireless links and a simple hop-count metric
+on all other types of links.  While this strategy works reasonably well in
+many networks, it fails to select reasonable routes in some topologies
+involving tunnels or VPNs.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<span id="name-four-routers-in-a-diamond-t"></span><div id="fig-diamond">
+<figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-1-2.1">
+<pre>
+                   +------------+
+                   | A (Paris)  +---------------+
+                   +------------+                \
+                  /                               \
+                 /                                 \
+                /                                   \
+  +------------+                                     +------------+
+  | B  (Paris) |                                     | C  (Tokyo) |
+  +------------+                                     +------------+
+                \                                   /
+                 \                                 /
+                  \                               /
+                   +------------+                /
+                   | D (Paris)  +---------------+
+                   +------------+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-four-routers-in-a-diamond-t" class="selfRef">Four Routers in a Diamond Topology</a>
+        </figcaption></figure>
+</div>
+<p id="section-1-3">For example, consider the topology described in <a href="#fig-diamond" class="auto internal xref">Figure 1</a>,
+with three routers A, B, and D located in Paris and a fourth router
+C located in Tokyo, connected through tunnels in a diamond topology.  When
+routing traffic from A to D, it is obviously preferable to use the local
+route through B as this is likely to provide better service quality and
+lower monetary cost than the distant route through C.  However, the
+existing implementations of Babel consider both routes as having the same
+metric; therefore, they will route the traffic through C in roughly half the
+cases.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">In the first part of this document (<a href="#rtt-sampling" class="auto internal xref">Section 3</a>),
+we specify an extension to the Babel routing protocol that produces
+a sequence of accurate measurements of the round-trip time (RTT) between
+two Babel neighbours.  These measurements are not directly usable as an
+input to Babel's route selection procedure since they tend to be noisy
+and to cause a negative feedback loop, which might give rise to frequent
+oscillations.  In the second part (<a href="#route-selection" class="auto internal xref">Section 4</a>), we
+define an algorithm that maps the sequence of RTT samples to a link cost
+that can be used for route selection.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<section id="section-1.1">
+        <h3 id="name-applicability">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-applicability" class="section-name selfRef">Applicability</a>
+        </h3>
+<p id="section-1.1-1">The extension defined in <a href="#rtt-sampling" class="auto internal xref">Section 3</a> provides
+a sequence of accurate but potentially noisy RTT samples.  Since the
+RTT is a symmetric measure of delay, this protocol is only
+applicable in environments where the symmetric delay is a good predictor
+of whether a link should be taken by routing traffic, which might not
+necessarily be the case in networks built over exotic link technologies.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">The extension makes minimal requirements on the nodes.  In particular,
+it does not assume synchronised clocks, and only requires that clock drift
+be negligible during the time interval between two Hello TLVs.  Since that
+is on the order of a few seconds, this requirement is met even with cheap
+crystal oscillators, such as the ones used in consumer electronics.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">The algorithm defined in <a href="#route-selection" class="auto internal xref">Section 4</a> depends on
+a number of assumptions about the network.  The assumption with the most
+severe consequences is that all links below a certain RTT (rtt-min in
+<a href="#cost-computation" class="auto internal xref">Section 4.2</a>) can be grouped in a single category of
+"good" links.  While this is the case in wide-area overlay networks, it
+makes the algorithm inapplicable in networks where distinguishing between
+low-latency links is important.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+<p id="section-1.1-4">There are other assumptions, but they are less likely to limit the
+algorithm's applicability.  The algorithm assumes that all links above
+a certain RTT (rtt-max in <a href="#cost-computation" class="auto internal xref">Section 4.2</a>) are equally bad, and they will only be used as a last resort.  In
+addition, in order to avoid oscillations, the algorithm is designed to
+react slowly to RTT variations, thus causing suboptimal routing for
+seconds or even minutes after an RTT change; while this is a desirable
+property in fixed networks, as it avoid excessive route oscillations, it
+might be an issue with networks with high rates of node mobility.<a href="#section-1.1-4" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-2">
+      <h2 id="name-specification-of-requiremen">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-specification-of-requiremen" class="section-name selfRef">Specification of Requirements</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+<div id="rtt-sampling">
+<section id="section-3">
+      <h2 id="name-rtt-sampling">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-rtt-sampling" class="section-name selfRef">RTT Sampling</a>
+      </h2>
+<section id="section-3.1">
+        <h3 id="name-data-structures">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-data-structures" class="section-name selfRef">Data Structures</a>
+        </h3>
+<p id="section-3.1-1">We assume that every Babel speaker maintains a local clock that counts
+microseconds from an arbitrary origin.  We do not assume that clocks are
+synchronised: clocks local to distinct nodes need not share a common
+origin.  The protocol will eventually recover if the clock is stepped, so
+clocks need not persist across node reboots.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">Every Babel speaker maintains a Neighbour Table, described in
+<span><a href="https://rfc-editor.org/rfc/rfc8966#section-3.2.4" class="relref">Section 3.2.4</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>.  This extension extends every
+entry in the Neighbour Table with the following data:<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-3.1">the Origin Timestamp, a 32-bit timestamp (modulo 2<sup>32</sup>) according to
+the neighbour's clock;<a href="#section-3.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-3.2">the Receive Timestamp, a 32-bit timestamp (modulo 2<sup>32</sup>) according to
+the local clock.<a href="#section-3.1-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.1-4">Both values are initially undefined.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3.2">
+        <h3 id="name-protocol-operation">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-protocol-operation" class="section-name selfRef">Protocol Operation</a>
+        </h3>
+<p id="section-3.2-1">The RTT to a neighbour is estimated using an algorithm due to Mills
+<span>[<a href="#RFC891" class="cite xref">RFC891</a>]</span>, originally developed for the HELLO routing
+protocol and later used in NTP <span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span>.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">A Babel speaker periodically sends Hello messages to its neighbours
+(<span><a href="https://rfc-editor.org/rfc/rfc8966#section-3.4.1" class="relref">Section 3.4.1</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>).  Additionally, it
+occasionally sends a set of IHU ("I Heard You") messages, at most one per
+neighbour (<span><a href="https://rfc-editor.org/rfc/rfc8966#section-3.4.2" class="relref">Section 3.4.2</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>).<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<span id="name-mills-algorithm"></span><div id="fig-seq">
+<figure id="figure-2">
+          <div class="alignLeft art-text artwork" id="section-3.2-3.1">
+<pre>
+   A          B
+     |      |
+  t1 +      |
+     |\     |
+     | \    |
+     |  \   |  Hello(t1)
+     |   \  |
+     |    \ |
+     |     \|
+     |      + t1'
+     |      |
+     |      |               RTT = (t2 - t1) - (t2' - t1')
+     |      |
+     |      + t2'
+     |     /|
+     |    / |
+     |   /  |
+     |  /   |  Hello(t2')
+     | /    |  IHU(t1, t1')
+     |/     |
+  t2 +      |
+     |      |
+     v      v
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-mills-algorithm" class="selfRef">Mills' Algorithm</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.2-4">In order to enable the computation of RTTs, a node A <span class="bcp14">MUST</span> include, in
+every Hello that it sends, a timestamp t1 (according to A's local clock),
+as illustrated in <a href="#fig-seq" class="auto internal xref">Figure 2</a>.  When a node B receives A's
+timestamped Hello, it computes the time t1' at which the Hello was
+received (according to B's local clock).  It then <span class="bcp14">MUST</span> record the value t1
+in the Origin Timestamp field of the Neighbour Table entry corresponding
+to A and the value t1' in the Receive Timestamp field of the Neighbour
+Table entry.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5">When B sends an IHU to A, it checks whether both timestamps are defined
+in the Neighbour Table.  If that is the case, then it <span class="bcp14">MUST</span> ensure that its
+IHU TLV is sent in a packet that also contains a timestamped Hello TLV
+(either a normally scheduled Hello or an unscheduled Hello, see
+<span><a href="https://rfc-editor.org/rfc/rfc8966#section-3.4.1" class="relref">Section 3.4.1</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>).  It <span class="bcp14">MUST</span> include in the IHU
+both the Origin Timestamp and the Receive Timestamp stored in the Neighbour
+Table.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<p id="section-3.2-6">Upon receiving B's packet, A computes the time t2 (according to its
+local clock) at which it was received.  Node A <span class="bcp14">MUST</span> then verify that it
+contains both a Hello TLV with timestamp t2' and an IHU TLV with two
+timestamps t1 and t1'.  If that is the case, A computes the value:<a href="#section-3.2-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.2-7">
+<pre>RTT = (t2 - t1) - (t2' - t1')</pre><a href="#section-3.2-7" class="pilcrow">¶</a>
+</div>
+<p id="section-3.2-8">(where all computations are done modulo
+2<sup>32</sup>), which is a measurement of the RTT between A and B.  (A then stores
+the values t2' and t2 in its Neighbour Table, as B did before.)<a href="#section-3.2-8" class="pilcrow">¶</a></p>
+<p id="section-3.2-9">This algorithm has a number of desirable properties:<a href="#section-3.2-9" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.2-10">
+<li id="section-3.2-10.1">The
+algorithm is symmetric: A and B use the same procedures for timestamping
+packets and computing RTT samples, and both nodes produce one RTT sample
+for each received (Hello, IHU) pair.<a href="#section-3.2-10.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-10.2">Since there is no
+requirement that t1' and t2' be equal, the protocol is asynchronous: the
+only change to Babel's message scheduling is the requirement that a packet
+containing an IHU also contain a Hello.<a href="#section-3.2-10.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-10.3">Since the algorithm only ever
+computes differences of timestamps according to a single clock, it does
+not require synchronised clocks.<a href="#section-3.2-10.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-10.4">The algorithm requires very little
+additional state: a node only needs to store the two timestamps associated
+with the last hello received from each neighbour.<a href="#section-3.2-10.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-10.5">Since the algorithm only
+requires piggybacking one or two timestamps on each Hello and IHU TLV,
+it makes efficient use of network resources.<a href="#section-3.2-10.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-3.2-11">In principle, this algorithm is inaccurate in the presence of clock
+drift (i.e., when A's clock and B's clock are running at different frequencies).
+However, t2' - t1' is usually on the order of a few seconds, and
+significant clock drift is unlikely to happen at that time scale.<a href="#section-3.2-11" class="pilcrow">¶</a></p>
+<p id="section-3.2-12">In order for RTT values to be consistent between implementations,
+timestamps need to be computed at roughly the same point in the network
+stack.  Transmit timestamps <span class="bcp14">SHOULD</span> be computed just before the packet is
+passed to the network stack (i.e., before it is subjected to any queueing
+delays); receive timestamps <span class="bcp14">SHOULD</span> be computed just after the packet
+is received from the network stack.<a href="#section-3.2-12" class="pilcrow">¶</a></p>
+</section>
+<div id="wraparound">
+<section id="section-3.3">
+        <h3 id="name-wrap-around-and-node-restar">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-wrap-around-and-node-restar" class="section-name selfRef">Wrap-Around and Node Restart</a>
+        </h3>
+<p id="section-3.3-1">Timestamp values are a count of microseconds stored as a 32-bit
+unsigned integer; thus, they wrap around every 71 minutes or so.  What is
+more, a node may occasionally reboot and restart its clock at an arbitrary
+origin.  For these reasons, very old timestamps or nonsensical timestamps
+<span class="bcp14">MUST NOT</span> be used to yield RTT samples.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">The following algorithm can be used to discard obsolete samples.  When a node
+receives a packet containing a Hello and an IHU, it compares the current
+local time t2 with the Origin Timestamp contained in the IHU; if the
+Origin Timestamp appears to be in the future, or if it is in the past by
+more than a time T (the value T = 3 minutes is recommended), then the
+timestamps are still recorded in the Neighbour Table, but they are not used for
+computation of an RTT sample.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.3-3">Similarly, the node compares the Hello's timestamp with the Receive
+Timestamp recorded in the Neighbour Table; if the Hello's timestamp
+appears to be older than the recorded timestamp, or if it appears to be
+more recent by an interval larger than the value T, then the timestamps
+are not used for computation of an RTT sample.<a href="#section-3.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-3.4">
+        <h3 id="name-implementation-notes">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-implementation-notes" class="section-name selfRef">Implementation Notes</a>
+        </h3>
+<p id="section-3.4-1">The accuracy of the computed RTT samples depends on Transmit Timestamps
+being computed as late as possible before a packet containing a Hello TLV
+is passed to the network stack, and Receive Timestamps being computed as
+early as possible after reception of a packet containing a (Hello, IHU)
+pair.  We have found the following implementation strategy to be
+useful.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">When a Hello TLV is buffered for transmission, we insert a PadN sub-TLV
+(Section 4.7.2 of <span>[<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>) with a length of 4 octets
+within the TLV.  When the packet is ready to be sent, we check whether it
+contains a 4-octet PadN sub-TLV; if that's the case, we overwrite the PadN
+sub-TLV with a Timestamp sub-TLV with the current time, and send out the
+packet.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">Conversely, when a packet is received, we immediately compute the
+current time and record it with the received packet.  We then process the
+packet as usual and use the recorded timestamp in order to compute an RTT
+sample.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+<p id="section-3.4-4">The protocol is designed to survive the clock being reset when a node
+reboots; on POSIX systems, this makes it possible to use the
+CLOCK_MONOTONIC clock for computing timestamps.  If CLOCK_MONOTONIC is not
+available, CLOCK_REALTIME may be used, since the protocol is able to
+survive the clock being occasionally stepped.<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="route-selection">
+<section id="section-4">
+      <h2 id="name-rtt-based-route-selection">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-rtt-based-route-selection" class="section-name selfRef">RTT-Based Route Selection</a>
+      </h2>
+<p id="section-4-1">The protocol described above yields a series of RTT samples.  While
+these samples are fairly accurate, they are not directly usable as an
+input to the route selection procedure, for at least three reasons:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4-2">
+<li id="section-4-2.1">In the presence of bursty traffic, routers experience
+transient congestion, which causes occasional spikes in the measured RTT.
+Thus, the RTT signal may be noisy and require smoothing before it can
+be used for route selection.<a href="#section-4-2.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-4-2.2">Using the RTT signal for route selection gives rise to
+a negative feedback loop.  When a route has a low RTT, it is deemed to be
+more desirable; this causes it to be used for more data traffic, which
+may lead to congestion, which in turn increases the RTT.  Without some
+form of hysteresis, using RTT for route selection would lead to
+oscillations between parallel routes, which would lead to packet
+reordering and negatively affect upper-layer protocols (such as TCP).<a href="#section-4-2.2" class="pilcrow">¶</a>
+</li>
+        <li id="section-4-2.3">Even in the absence of congestion, the RTT tends to exhibit some
+variation.  If the RTTs of two parallel routes oscillate around
+a common value, using the RTT as input to route selection will cause
+frequent routing oscillations, which, again, indicates the need for some
+form of hysteresis.<a href="#section-4-2.3" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-4-3">In this section, we describe an algorithm that integrates smoothing and
+hysteresis. It has been shown to behave well both in simulation and
+experimentally over the Internet <span>[<a href="#DELAY-BASED" class="cite xref">DELAY-BASED</a>]</span> and is
+<span class="bcp14">RECOMMENDED</span> when RTT information is being used for route selection.  The
+algorithm is structured as follows:<a href="#section-4-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-4.1">the RTT values are first smoothed in order to avoid instabilities due to
+outliers (<a href="#smoothing" class="auto internal xref">Section 4.1</a>);<a href="#section-4-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-4.2">the resulting smoothed samples are mapped to a cost using a bounded,
+non-linear mapping, which avoids
+instabilities at the lower and upper end of the RTT range
+(<a href="#cost-computation" class="auto internal xref">Section 4.2</a>);<a href="#section-4-4.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-4.3">a hysteresis filter is applied in order to limit the amount of
+oscillation in the middle of the RTT range (<a href="#hysteresis" class="auto internal xref">Section 4.3</a>).<a href="#section-4-4.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<div id="smoothing">
+<section id="section-4.1">
+        <h3 id="name-smoothing">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-smoothing" class="section-name selfRef">Smoothing</a>
+        </h3>
+<p id="section-4.1-1">The RTT samples provided by Mills' algorithm are fairly accurate, but
+noisy: experiments indicate the occasional presence of individual samples
+that are much larger than the expected value.  Thus, some form of
+smoothing <span class="bcp14">SHOULD</span> be applied in order to avoid instabilities due to
+occasional outliers.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">An implementation <span class="bcp14">MAY</span> use the exponential average algorithm, which is
+simple to implement and appears to yield good results in practice <span>[<a href="#DELAY-BASED" class="cite xref">DELAY-BASED</a>]</span>.  The algorithm is parameterised by a constant α,
+where 0 &lt; α &lt; 1, which controls the amount of smoothing being
+applied.  For each neighbour, it maintains a smoothed value RTT, which is
+initially undefined.  When the first sample RTT0 is measured, the smoothed
+value is set to the value of RTT0.  At each new sample RTTn, the smoothed
+value is set to a weighted average of the previous smoothed value and the
+new sample:<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.1-3">
+<pre>    RTT := α RTT + (1 - α) RTTn</pre><a href="#section-4.1-3" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-4">The smoothing constant α <span class="bcp14">SHOULD</span> be between 0.8 and 0.9; the value 0.836
+is the <span class="bcp14">RECOMMENDED</span> default.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="cost-computation">
+<section id="section-4.2">
+        <h3 id="name-cost-computation">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-cost-computation" class="section-name selfRef">Cost Computation</a>
+        </h3>
+<p id="section-4.2-1">The smoothed RTT value obtained in the previous step needs to be mapped
+to a link cost, suitable for input to the metric computation procedure
+(<span><a href="https://rfc-editor.org/rfc/rfc8966#section-3.5.2" class="relref">Section 3.5.2</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>).  Obviously, the mapping
+should be monotonic (larger RTTs imply larger costs).  In addition, the
+mapping should be constant beyond a certain value (all very bad links are
+equally bad) so that congested links do not contribute to routing
+instability.  The mapping should also be constant around 0, so that small
+oscillations in the RTT of low-RTT links do not contribute to routing
+instability.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<span id="name-mapping-from-rtt-to-link-co"></span><div id="fig-mapping">
+<figure id="figure-3">
+          <div class="alignLeft art-text artwork" id="section-4.2-2.1">
+<pre>
+  cost
+    ^
+    |
+    |
+    |                           C + max-rtt-penalty
+    |                       +---------------------------
+    |                      /.
+    |                     / .
+    |                    /  .
+    |                   /   .
+    |                  /    .
+    |                 /     .
+    |                /      .
+    |               /       .
+    |              /        .
+    |             /         .
+  C +------------+          .
+    |            .          .
+    |            .          .
+    |            .          .
+    |            .          .
+  0 +----------------------------------------------------&gt;
+    0         rtt-min    rtt-max                          RTT
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-mapping-from-rtt-to-link-co" class="selfRef">Mapping from RTT to Link Cost</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.2-3">Implementations <span class="bcp14">SHOULD</span> use the mapping described in <a href="#fig-mapping" class="auto internal xref">Figure 3</a>, which is parameterised by three parameters:
+rtt-min, rtt-max, and max-rtt-penalty.  For RTT values below rtt-min, the
+link cost is just the nominal cost C of a single hop.  Between rtt-min and
+rtt-max, the cost increases linearly; above rtt-max, the constant value
+max-rtt-penalty is added to the nominal cost.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">The value rtt-min should be slightly larger than the RTT of a local,
+uncongested link.  The value rtt-max should be the RTT above which a link
+should be avoided if possible, either because it is a long-distance link
+or because it is congested; reducing the value of rtt-max improves
+stability, but prevents the protocol from discriminating between
+high-latency links.  As for max-rtt-penalty, it controls how much the
+protocol will penalise long-distance links.  The default values
+rtt-min = 10 ms, rtt-max = 120 ms, and max-rtt-penalty = 150 are
+<span class="bcp14">RECOMMENDED</span>.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="hysteresis">
+<section id="section-4.3">
+        <h3 id="name-hysteresis">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-hysteresis" class="section-name selfRef">Hysteresis</a>
+        </h3>
+<p id="section-4.3-1">Even after applying a bounded mapping from smoothed RTT to a cost
+value, the cost may fluctuate when a link's RTT is between rtt-min and
+rtt-max.  Implementations <span class="bcp14">SHOULD</span> use a robust hysteresis algorithm, such
+as the one described in <span><a href="https://rfc-editor.org/rfc/rfc8966#appendix-A.3" class="relref">Appendix A.3</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<section id="section-5">
+      <h2 id="name-backwards-and-forwards-comp">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-backwards-and-forwards-comp" class="section-name selfRef">Backwards and Forwards Compatibility</a>
+      </h2>
+<p id="section-5-1">This protocol extension stores the data that it requires within
+sub-TLVs of Babel's Hello and IHU TLVs.  As discussed in 
+<span><a href="https://rfc-editor.org/rfc/rfc8966#appendix-D" class="relref">Appendix D</a> of [<a href="#RFC8966" class="cite xref">RFC8966</a>]</span>, implementations that do not understand this
+extension will silently ignore the sub-TLVs while parsing the rest of the
+TLVs that they contain.  In effect, this extension supports building
+hybrid networks consisting of extended and unextended routers; while
+such networks might suffer from sub-optimal routing, they will not suffer
+from routing loops or other pathologies.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">If a sub-TLV defined in this extension is longer than expected, the
+additional data is silently ignored.  This provision is made in order to
+allow a future version of this protocol to extend the packet format with
+additional data, for example high-precision or absolute timestamps.<a href="#section-5-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6">
+      <h2 id="name-packet-format">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-packet-format" class="section-name selfRef">Packet Format</a>
+      </h2>
+<p id="section-6-1">This extension defines the Timestamp sub-TLV whose Type field has the value 
+3.  This sub-TLV can be contained within a Hello sub-TLV, in which case it
+carries a single timestamp, or within an IHU sub-TLV, in which case it
+carries two timestamps.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">Timestamps are encoded as 32-bit unsigned integers (modulo 2<sup>32</sup>),
+expressed in units of one microsecond, counting from an arbitrary origin.
+Timestamps wrap around every 4295 seconds, or roughly 71 minutes (see also
+<a href="#wraparound" class="auto internal xref">Section 3.3</a>).<a href="#section-6-2" class="pilcrow">¶</a></p>
+<section id="section-6.1">
+        <h3 id="name-timestamp-sub-tlv-in-hello-">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-timestamp-sub-tlv-in-hello-" class="section-name selfRef">Timestamp Sub-TLV in Hello TLVs</a>
+        </h3>
+<p id="section-6.1-1">When contained within a Hello TLV, the Timestamp sub-TLV
+has the following format:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.1-2">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Type = 3    |    Length     |      Transmit Timestamp       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          (continued)          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-6.1-2" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-6.1-3">
+          <dt id="section-6.1-3.1">Type:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.1-3.2">Set to 3 to indicate a Timestamp sub-TLV.<a href="#section-6.1-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-3.3">Length:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.1-3.4">The length of the body in octets, exclusive of the Type
+and Length fields.<a href="#section-6.1-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-3.5">Transmit Timestamp:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.1-3.6">The time at which the packet containing
+this sub-TLV was sent, according to the sender's clock.<a href="#section-6.1-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-6.1-4">If the Length field is larger than the expected 4 octets, the sub-TLV
+<span class="bcp14">MUST</span> be processed normally (the first 4 octets are interpreted as
+described above) and any extra data contained in this sub-TLV <span class="bcp14">MUST</span> be
+silently ignored.  If the Length field is smaller than the expected
+4 octets, then this sub-TLV <span class="bcp14">MUST</span> be ignored (and the remainder of the
+enclosing TLV processed as usual).<a href="#section-6.1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6.2">
+        <h3 id="name-timestamp-sub-tlv-in-ihu-tl">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-timestamp-sub-tlv-in-ihu-tl" class="section-name selfRef">Timestamp Sub-TLV in IHU TLVs</a>
+        </h3>
+<p id="section-6.2-1">When contained in an IHU TLV, the Timestamp sub-TLV has the following
+format:<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-2">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Type = 3    |    Length     |        Origin Timestamp       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          (continued)          |        Receive Timestamp      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          (continued)          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-6.2-2" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-6.2-3">
+          <dt id="section-6.2-3.1">Type:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.2-3.2">Set to 3 to indicate a Timestamp sub-TLV.<a href="#section-6.2-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.3">Length:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.2-3.4">The length of the body in octets, exclusive of the Type
+and Length fields.<a href="#section-6.2-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.5">Origin Timestamp:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.2-3.6">A copy of the Transmit Timestamp of the last
+Timestamp sub-TLV contained in a Hello TLV received from the node to which
+the enclosing IHU TLV applies.<a href="#section-6.2-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.7">Receive Timestamp:</dt>
+          <dd style="margin-left: 5.0em" id="section-6.2-3.8">The time, according to the sender's clock,
+at which the last timestamped Hello TLV was received from the node to which
+the enclosing IHU TLV applies.<a href="#section-6.2-3.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-6.2-4">If the Length field is larger than the expected 8 octets, the sub-TLV
+<span class="bcp14">MUST</span> be processed normally (the first 8 octets are interpreted as
+described above), and any extra data contained in this sub-TLV <span class="bcp14">MUST</span> be
+silently ignored.  If the Length field is smaller than the expected
+8 octets, then this sub-TLV <span class="bcp14">MUST</span> be ignored (and the remainder of the
+enclosing TLV processed as usual).<a href="#section-6.2-4" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">IANA has added the following entry to the "Babel Sub-TLV Types"
+registry:<a href="#section-7-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Type</th>
+            <th class="text-left" rowspan="1" colspan="1">Name</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">3</td>
+            <td class="text-left" rowspan="1" colspan="1">Timestamp</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9616</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">This extension adds timestamping data to two of the TLVs sent by
+  a Babel router.  By broadcasting the value of a reasonably accurate
+  local clock, these additional data might make a node more susceptible
+  to timing attacks.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Broadcasting an accurate time raises privacy issues.  The timestamps
+used by this protocol have an arbitrary origin; therefore, they do not leak
+a node's boot time or time zone.  However, having access to accurate
+timestamps could allow an attacker to determine the physical location of
+a node.  Nodes might avoid disclosure of location information by not
+including Timestamp sub-TLVs in the TLVs that they send, which will cause
+their neighbours to fall back to hop-count routing.<a href="#section-8-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8966">[RFC8966]</dt>
+      <dd>
+<span class="refAuthor">Chroboczek, J.</span> and <span class="refAuthor">D. Schinazi</span>, <span class="refTitle">"The Babel Routing Protocol"</span>, <span class="seriesInfo">RFC 8966</span>, <span class="seriesInfo">DOI 10.17487/RFC8966</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8966">https://www.rfc-editor.org/info/rfc8966</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="DELAY-BASED">[DELAY-BASED]</dt>
+        <dd>
+<span class="refAuthor">Jonglez, B.</span>, <span class="refAuthor">Boutier, M.</span>, and <span class="refAuthor">J. Chroboczek</span>, <span class="refTitle">"A delay-based routing metric"</span>, <span class="seriesInfo">DOI 10.48550/arXiv.1403.3488</span>, <time datetime="2014-03" class="refDate">March 2014</time>, <span>&lt;<a href="http://arxiv.org/abs/1403.3488">http://arxiv.org/abs/1403.3488</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC891">[RFC891]</dt>
+        <dd>
+<span class="refAuthor">Mills, D.</span>, <span class="refTitle">"DCN Local-Network Protocols"</span>, <span class="seriesInfo">STD 44</span>, <span class="seriesInfo">RFC 891</span>, <span class="seriesInfo">DOI 10.17487/RFC0891</span>, <time datetime="1983-12" class="refDate">December 1983</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc891">https://www.rfc-editor.org/info/rfc891</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5905">[RFC5905]</dt>
+      <dd>
+<span class="refAuthor">Mills, D.</span>, <span class="refAuthor">Martin, J., Ed.</span>, <span class="refAuthor">Burbank, J.</span>, and <span class="refAuthor">W. Kasch</span>, <span class="refTitle">"Network Time Protocol Version 4: Protocol and Algorithms Specification"</span>, <span class="seriesInfo">RFC 5905</span>, <span class="seriesInfo">DOI 10.17487/RFC5905</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5905">https://www.rfc-editor.org/info/rfc5905</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors are indebted to <span class="contact-name">Jean-Paul Smets</span>, who prompted the
+investigation that originally lead to this protocol.  We are also grateful
+to <span class="contact-name">Donald Eastlake, 3rd</span>, <span class="contact-name">Toke Høiland-Jørgensen</span>, <span class="contact-name">Maria Matejka</span>, <span class="contact-name">David Schinazi</span>,
+<span class="contact-name">Pascal Thubert</span>, <span class="contact-name">Steffen Vogel</span>, and <span class="contact-name">Ondřej Zajiček</span>.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Baptiste Jonglez</span></div>
+<div dir="auto" class="left"><span class="org">ENS Lyon</span></div>
+<div dir="auto" class="left"><span class="country-name">France</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:baptiste.jonglez@ens-lyon.org" class="email">baptiste.jonglez@ens-lyon.org</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Juliusz Chroboczek</span></div>
+<div dir="auto" class="left"><span class="org">IRIF, Université Paris Cité</span></div>
+<div dir="auto" class="left"><span class="street-address">Case 7014</span></div>
+<div dir="auto" class="left"><span class="locality">75205 Paris Cedex 13</span></div>
+<div dir="auto" class="left"><span class="country-name">France</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jch@irif.fr" class="email">jch@irif.fr</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
