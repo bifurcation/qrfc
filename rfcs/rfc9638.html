@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9638: Network Virtualization over Layer 3 (NVO3) Encapsulation Considerations</title>
+<meta content="Sami Boutros" name="author">
+<meta content="Donald E. Eastlake 3rd" name="author">
+<meta content="
+       The IETF Network Virtualization Overlays (NVO3) Working Group
+  developed considerations for a common encapsulation that addresses
+  various network virtualization overlay technical concerns.
+  This document provides a record, for the benefit of the IETF community, 
+  of the considerations arrived at by the NVO3 Working Group starting from
+  the output of the NVO3 encapsulation Design Team. These considerations
+  may be helpful with future deliberations by working groups over the choice of
+  encapsulation formats. 
+       There are implications of having different encapsulations in real
+  environments consisting of both software and hardware
+  implementations and within and spanning multiple data centers.  For
+  example, Operations, Administration, and Maintenance (OAM) functions such as path MTU discovery become challenging
+  with multiple encapsulations along the data path. 
+       Based on these considerations, the NVO3 Working Group determined that
+  Generic Network Virtualization Encapsulation (Geneve) with a few modifications is the common encapsulation. This document provides more details, particularly in Section 7. 
+    " name="description">
+<meta content="xml2rfc 3.23.1" name="generator">
+<meta content="9638" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.23.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 4.9.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9638.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    float: none;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-nvo3-encap-12" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9638" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9638</td>
+<td class="center">NVO3 Encapsulation Considerations</td>
+<td class="right">September 2024</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Boutros &amp; Eastlake 3rd</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9638" class="eref">9638</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2024-09" class="published">September 2024</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Boutros, <span class="editor">Ed.</span>
+</div>
+<div class="org">Ciena Corporation</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Eastlake 3rd, <span class="editor">Ed.</span>
+</div>
+<div class="org">Independent</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9638</h1>
+<h1 id="title">Network Virtualization over Layer 3 (NVO3) Encapsulation Considerations</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">The IETF Network Virtualization Overlays (NVO3) Working Group
+  developed considerations for a common encapsulation that addresses
+  various network virtualization overlay technical concerns.
+  This document provides a record, for the benefit of the IETF community, 
+  of the considerations arrived at by the NVO3 Working Group starting from
+  the output of the NVO3 encapsulation Design Team. These considerations
+  may be helpful with future deliberations by working groups over the choice of
+  encapsulation formats.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">There are implications of having different encapsulations in real
+  environments consisting of both software and hardware
+  implementations and within and spanning multiple data centers.  For
+  example, Operations, Administration, and Maintenance (OAM) functions such as path MTU discovery become challenging
+  with multiple encapsulations along the data path.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+<p id="section-abstract-3">Based on these considerations, the NVO3 Working Group determined that
+  Generic Network Virtualization Encapsulation (Geneve) with a few modifications is the common encapsulation. This document provides more details, particularly in Section 7.<a href="#section-abstract-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9638">https://www.rfc-editor.org/info/rfc9638</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2024 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-design-team-and-working-gro" class="internal xref">Design Team and Working Group Process</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-abbreviations-acronyms-and-" class="internal xref">Abbreviations, Acronyms, and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-encapsulation-issues-and-ba" class="internal xref">Encapsulation Issues and Background</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-geneve" class="internal xref">Geneve</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-generic-udp-encapsulation-g" class="internal xref">Generic UDP Encapsulation (GUE)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-generic-protocol-extension-" class="internal xref">Generic Protocol Extension (GPE) for VXLAN</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-common-encapsulation-consid" class="internal xref">Common Encapsulation Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-current-encapsulations" class="internal xref">Current Encapsulations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-useful-extensions-use-cases" class="internal xref">Useful Extensions Use Cases</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.1">
+                    <p id="section-toc.1-1.6.2.2.2.1.1"><a href="#section-6.2.1" class="auto internal xref">6.2.1</a>.  <a href="#name-telemetry-extensions" class="internal xref">Telemetry Extensions</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.2">
+                    <p id="section-toc.1-1.6.2.2.2.2.1"><a href="#section-6.2.2" class="auto internal xref">6.2.2</a>.  <a href="#name-security-integrity-extensio" class="internal xref">Security/Integrity Extensions</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.3">
+                    <p id="section-toc.1-1.6.2.2.2.3.1"><a href="#section-6.2.3" class="auto internal xref">6.2.3</a>.  <a href="#name-group-based-policy" class="internal xref">Group-Based Policy</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-hardware-considerations" class="internal xref">Hardware Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-extension-size" class="internal xref">Extension Size</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5">
+                <p id="section-toc.1-1.6.2.5.1"><a href="#section-6.5" class="auto internal xref">6.5</a>.  <a href="#name-ordering-of-extension-heade" class="internal xref">Ordering of Extension Headers</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.6">
+                <p id="section-toc.1-1.6.2.6.1"><a href="#section-6.6" class="auto internal xref">6.6</a>.  <a href="#name-tlv-versus-bit-fields" class="internal xref">TLV versus Bit Fields</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.7">
+                <p id="section-toc.1-1.6.2.7.1"><a href="#section-6.7" class="auto internal xref">6.7</a>.  <a href="#name-control-plane-consideration" class="internal xref">Control Plane Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.8">
+                <p id="section-toc.1-1.6.2.8.1"><a href="#section-6.8" class="auto internal xref">6.8</a>.  <a href="#name-split-nve" class="internal xref">Split NVE</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.9">
+                <p id="section-toc.1-1.6.2.9.1"><a href="#section-6.9" class="auto internal xref">6.9</a>.  <a href="#name-larger-vni-considerations" class="internal xref">Larger VNI Considerations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-recommendations" class="internal xref">Recommendations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-encapsulation-comparison" class="internal xref">Encapsulation Comparison</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-overview" class="internal xref">Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-extensibility" class="internal xref">Extensibility</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2.2.1">
+                    <p id="section-toc.1-1.11.2.2.2.1.1"><a href="#appendix-A.2.1" class="auto internal xref">A.2.1</a>.  <a href="#name-innate-extensibility-suppor" class="internal xref">Innate Extensibility Support</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2.2.2">
+                    <p id="section-toc.1-1.11.2.2.2.2.1"><a href="#appendix-A.2.2" class="auto internal xref">A.2.2</a>.  <a href="#name-extension-parsing" class="internal xref">Extension Parsing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2.2.3">
+                    <p id="section-toc.1-1.11.2.2.2.3.1"><a href="#appendix-A.2.3" class="auto internal xref">A.2.3</a>.  <a href="#name-critical-extensions" class="internal xref">Critical Extensions</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2.2.4">
+                    <p id="section-toc.1-1.11.2.2.2.4.1"><a href="#appendix-A.2.4" class="auto internal xref">A.2.4</a>.  <a href="#name-maximal-header-length" class="internal xref">Maximal Header Length</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-encapsulation-header" class="internal xref">Encapsulation Header</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3.2.1">
+                    <p id="section-toc.1-1.11.2.3.2.1.1"><a href="#appendix-A.3.1" class="auto internal xref">A.3.1</a>.  <a href="#name-virtual-network-identifier-" class="internal xref">Virtual Network Identifier (VNI)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3.2.2">
+                    <p id="section-toc.1-1.11.2.3.2.2.1"><a href="#appendix-A.3.2" class="auto internal xref">A.3.2</a>.  <a href="#name-next-protocol" class="internal xref">Next Protocol</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3.2.3">
+                    <p id="section-toc.1-1.11.2.3.2.3.1"><a href="#appendix-A.3.3" class="auto internal xref">A.3.3</a>.  <a href="#name-other-header-fields" class="internal xref">Other Header Fields</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4">
+                <p id="section-toc.1-1.11.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-comparison-summary" class="internal xref">Comparison Summary</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The NVO3 Working Group is chartered to gather requirements and
+develop solutions for network virtualization data planes based on
+encapsulation of virtual network traffic over an IP-based underlay
+data plane.  Requirements include due consideration for OAM and
+security.  Based on these requirements, the WG was to select, extend,
+and/or develop one or more data plane encapsulation formats.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This led to WG Internet-Drafts and an RFC describing three encapsulations as
+follows:<a href="#section-1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-3.1">"Geneve: Generic Network Virtualization Encapsulation" <span>[<a href="#RFC8926" class="cite xref">RFC8926</a>]</span><a href="#section-1-3.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-3.2">"Generic UDP Encapsulation" <span>[<a href="#I-D.ietf-intarea-gue" class="cite xref">GUE</a>]</span><a href="#section-1-3.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-3.3">"Generic Protocol Extension for VXLAN (VXLAN-GPE)" <span>[<a href="#I-D.ietf-nvo3-vxlan-gpe" class="cite xref">VXLAN-GPE</a>]</span><a href="#section-1-3.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-4">Discussion on the list and in face-to-face meetings identified a
+number of technical problems with each of these encapsulations.
+Furthermore, there was a clear consensus at the 96th IETF meeting in
+Berlin that the working group should progress only one data plane encapsulation, to maximize interoperability. In order to overcome a
+deadlock on the encapsulation decision, the WG consensus was to form a
+Design Team <span>[<a href="#RFC2418" class="cite xref">RFC2418</a>]</span> to resolve this issue and provide
+initial considerations.<a href="#section-1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-design-team-and-working-gro">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-design-team-and-working-gro" class="section-name selfRef">Design Team and Working Group Process</a>
+      </h2>
+<p id="section-2-1">The Design Team was to select one of the proposed encapsulations and
+enhance it to address the technical concerns.  The goals were simple evolution of
+deployed networks as well as applicability to all locations in the NVO3
+architecture. The Design Team was to specifically select a design that allows for future extensibility but is not burdensome on hardware implementations. The selected design also needed to operate well with the Internet Control Message Protocol (ICMP) and
+in Equal-Cost Multipath (ECMP) environments.  If further extensibility is
+required, then it should be done in such a manner that it does not require the
+consent of an entity outside of the IETF.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">The output of the Design Team was then processed through the
+  working group, resulting in a working group consensus for this
+  document.<a href="#section-2-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3">
+      <h2 id="name-terminology">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-3-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-3-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4">
+      <h2 id="name-abbreviations-acronyms-and-">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-abbreviations-acronyms-and-" class="section-name selfRef">Abbreviations, Acronyms, and Definitions</a>
+      </h2>
+<p id="section-4-1">The following abbreviations and acronyms are used in this
+ document:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4-2">
+        <dt id="section-4-2.1">ACL:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.2">Access Control List<a href="#section-4-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.3">ECMP:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.4">Equal-Cost Multipath<a href="#section-4-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.5">EVPN:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.6">Ethernet VPN <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span><a href="#section-4-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.7">Geneve:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.8">Generic Network Virtualization Encapsulation <span>[<a href="#RFC8926" class="cite xref">RFC8926</a>]</span><a href="#section-4-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.9">GPE:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.10">Generic Protocol Extension<a href="#section-4-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.11">GUE:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.12">Generic UDP Encapsulation <span>[<a href="#I-D.ietf-intarea-gue" class="cite xref">GUE</a>]</span><a href="#section-4-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.13">HMAC:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.14">Hash-Based Message Authentication Code <span>[<a href="#RFC2104" class="cite xref">RFC2104</a>]</span><a href="#section-4-2.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.15">IEEE:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.16">Institute for Electrical and Electronic Engineers (<span>&lt;<a href="https://www.ieee.org/">https://www.ieee.org/</a>&gt;</span>)<a href="#section-4-2.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.17">NIC:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.18">Network Interface Card (refers to network interface
+   hardware that is not necessarily a discrete "card")<a href="#section-4-2.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.19">NSH:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.20">Network Service Header <span>[<a href="#RFC8300" class="cite xref">RFC8300</a>]</span><a href="#section-4-2.20" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.21">NVA:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.22">Network Virtualization Authority<a href="#section-4-2.22" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.23">NVE:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.24">Network Virtual Edge (refers to an NVE device)<a href="#section-4-2.24" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.25">NVO3:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.26">Network Virtualization over Layer 3<a href="#section-4-2.26" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.27">OAM:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.28">Operations, Administration, and Maintenance <span>[<a href="#RFC6291" class="cite xref">RFC6291</a>]</span><a href="#section-4-2.28" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.29">PWE3:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.30">Pseudowire Emulation Edge-to-Edge<a href="#section-4-2.30" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.31">TCAM:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.32">Ternary Content-Addressable Memory<a href="#section-4-2.32" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.33">TLV:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.34">Type-Length-Value<a href="#section-4-2.34" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.35">Transit device:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.36">Refers to underlay network devices between NVEs.<a href="#section-4-2.36" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.37">UUID:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.38">Universally Unique Identifier<a href="#section-4-2.38" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.39">VNI:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.40">Virtual Network Identifier<a href="#section-4-2.40" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-2.41">VXLAN:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-2.42">Virtual eXtensible Local Area Network <span>[<a href="#RFC7348" class="cite xref">RFC7348</a>]</span><a href="#section-4-2.42" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-5">
+      <h2 id="name-encapsulation-issues-and-ba">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-encapsulation-issues-and-ba" class="section-name selfRef">Encapsulation Issues and Background</a>
+      </h2>
+<p id="section-5-1">The following subsections describe issues with current
+  encapsulations as discussed by the NVO3 WG. Numerous extensions and
+  options have been designed for GUE and Geneve that may help resolve
+  some of these issues, but these have not yet been validated by the WG.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Also included are diagrams and information on the candidate
+  encapsulations. These are mostly copied from other documents. Since
+  each protocol is assumed to be sent over UDP, an initial UDP header
+  is shown that would be preceded by an IPv4 or IPv6 header.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<section id="section-5.1">
+        <h3 id="name-geneve">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-geneve" class="section-name selfRef">Geneve</a>
+        </h3>
+<p id="section-5.1-1">The Geneve packet format, taken from <span>[<a href="#RFC8926" class="cite xref">RFC8926</a>]</span>, is shown in
+  <a href="#GeneveHeader" class="auto internal xref">Figure 1</a> below.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<span id="name-geneve-header"></span><div id="GeneveHeader">
+<figure id="figure-1">
+          <div class="alignCenter art-ascii-art art-text artwork" id="section-5.1-2.1">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+
+Outer UDP Header:
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |          Source Port          |    Dest Port = 6081 Geneve    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |          UDP Length           |        UDP Checksum           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Geneve Header:
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Ver|  Opt Len  |O|C|    Rsvd.  |          Protocol Type        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Virtual Network Identifier (VNI)       |    Reserved   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               |
+   ~                    Variable-Length Options                    ~
+   |                                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-geneve-header" class="selfRef">Geneve Header</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.1-3">The type of payload being carried is indicated by an Ethertype
+  <span>[<a href="#RFC9542" class="cite xref">RFC9542</a>]</span> in the Protocol Type field in the Geneve
+  header; Ethernet itself is represented by Ethertype 0x6558. See
+  <span>[<a href="#RFC8926" class="cite xref">RFC8926</a>]</span> for details concerning UDP header
+  fields. The O bit indicates an OAM packet. The Geneve C bit is the
+  "Critical" bit, which means that the options must be processed or the
+  packet discarded.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">Issues with Geneve <span>[<a href="#RFC8926" class="cite xref">RFC8926</a>]</span> are as follows:<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-5.1">Geneve can't be implemented cost-effectively in all use cases because
+    the variable-length header and order of the TLVs make it costly (in
+    terms of number of gates) to implement in hardware.<a href="#section-5.1-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.1-5.2">The header doesn't fit into the largest commonly available parse
+    buffer (256 bytes in a NIC). Thus, doubling the buffer size can't be
+    justified unless it is mandatory for hardware to process additional option
+    fields.<a href="#section-5.1-5.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-5.1-6">The selection of Geneve despite these issues may be the result of the
+  Geneve design effort, assuming that the Geneve header would typically
+  be delivered to a server and parsed in software.<a href="#section-5.1-6" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.2">
+        <h3 id="name-generic-udp-encapsulation-g">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-generic-udp-encapsulation-g" class="section-name selfRef">Generic UDP Encapsulation (GUE)</a>
+        </h3>
+<span id="name-gue-header"></span><div id="GUEHeader">
+<figure id="figure-2">
+          <div class="alignCenter art-ascii-art art-text artwork" id="section-5.2-1.1">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+
+UDP Header:
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Source Port            |     Dest Port = 6080 GUE      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        UDP Length             |          UDP Checksum         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+GUE Header:
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | 0 |C|   Hlen  |  Proto/ctype  |             Flags             |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               |
+   ~                  Extensions Fields (optional)                 ~
+   |                                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-gue-header" class="selfRef">GUE Header</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.2-2">The type of payload being carried is indicated by an IANA protocol number in the Proto/ctype field. The GUE C bit (Control bit) indicates a
+control packet.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">Issues with GUE <span>[<a href="#I-D.ietf-intarea-gue" class="cite xref">GUE</a>]</span> are as
+follows:<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-4.1">There were a significant number of objections to GUE related to
+  the complexity of its implementation in hardware, similar to those noted
+  for Geneve above, such as the variable length and
+  possible high maximum length of the header.<a href="#section-5.2-4.1" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+<section id="section-5.3">
+        <h3 id="name-generic-protocol-extension-">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-generic-protocol-extension-" class="section-name selfRef">Generic Protocol Extension (GPE) for VXLAN</a>
+        </h3>
+<span id="name-gpe-header"></span><div id="GPEHeader">
+<figure id="figure-3">
+          <div class="alignCenter art-ascii-art art-text artwork" id="section-5.3-1.1">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+
+Outer UDP Header:
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Source Port         |     Dest Port = 4790 GPE      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           UDP Length          |           UDP Checksum        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+VXLAN-GPE Header
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |R|R|Ver|I|P|B|O|       Reserved                | Next Protocol |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |              Virtual Network Identifier (VNI) |   Reserved    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-gpe-header" class="selfRef">GPE Header</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.3-2">The type of payload being carried is indicated by the Next Protocol
+field using a registry specific to VXLAN-GPE. The I bit indicates that
+the VNI is valid. The P bit indicates that the Next Protocol field is
+valid. The B bit indicates that the packet is an ingress replicated
+Broadcast, Unknown Unicast, or Multicast packet. The O bit indicates
+an OAM packet.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">Issues with VXLAN-GPE <span>[<a href="#I-D.ietf-nvo3-vxlan-gpe" class="cite xref">VXLAN-GPE</a>]</span> are as
+follows:<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.3-4.1">GPE is not day one backwards compatible with VXLAN <span>[<a href="#RFC7348" class="cite xref">RFC7348</a>]</span>.  Although the frame format is similar, it uses a
+  different UDP port, so it would require changes to existing
+  implementations even if the rest of the GPE frame were the
+  same.<a href="#section-5.3-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.3-4.2">GPE is insufficiently extensible. It adds a Next Protocol field
+  and some flag bits to the VXLAN header but is not otherwise
+  extensible.<a href="#section-5.3-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.3-4.3">As discussed in <a href="#SecExt" class="auto internal xref">Section 6.2.2</a>, security (e.g., of the VNI) has
+  not been addressed by GPE.  Although a shim header could be added for
+  security and to support other extensions, this has not been defined
+  yet. More study would be needed to understand the implication of such a shim
+  on offloading in NICs.<a href="#section-5.3-4.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</section>
+<div id="CommonEncapsulationConsiderations">
+<section id="section-6">
+      <h2 id="name-common-encapsulation-consid">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-common-encapsulation-consid" class="section-name selfRef">Common Encapsulation Considerations</a>
+      </h2>
+<section id="section-6.1">
+        <h3 id="name-current-encapsulations">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-current-encapsulations" class="section-name selfRef">Current Encapsulations</a>
+        </h3>
+<p id="section-6.1-1"><a href="#EncapsulationComparison" class="auto internal xref">Appendix A</a> includes a detailed comparison between the three
+proposed encapsulations.  The comparison indicates several common
+properties but also three major differences among the
+encapsulations:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.1">Extensibility: Geneve and GUE were defined with built-in
+  extensibility, while VXLAN-GPE is not inherently extensible.  Note
+  that any of the three encapsulations can be extended using the
+  Network Service Header (NSH) <span>[<a href="#RFC8300" class="cite xref">RFC8300</a>]</span>.<a href="#section-6.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-6.1-2.2">Extension method: Geneve is extensible using Type-Length-Value
+  (TLV) fields, while GUE uses a small set of possible extensions and
+  a set of flags that indicate which extensions are present.<a href="#section-6.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-6.1-2.3">Length field: Geneve and GUE include a Length field, indicating
+  the length of the encapsulation header, while VXLAN-GPE does not
+  include such a field. Thus, it may be harder to skip the encapsulation
+  header with VXLAN-GPE<a href="#section-6.1-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+<div id="ExtensionsUseCases">
+<section id="section-6.2">
+        <h3 id="name-useful-extensions-use-cases">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-useful-extensions-use-cases" class="section-name selfRef">Useful Extensions Use Cases</a>
+        </h3>
+<p id="section-6.2-1">Extensions that are not vendor-specific, such as TLVs, <span class="bcp14">MUST</span> follow the
+standardization process.  The following use cases for extensions show
+that there is a strong requirement to support variable-length
+extensions with possible different subtypes.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<section id="section-6.2.1">
+          <h4 id="name-telemetry-extensions">
+<a href="#section-6.2.1" class="section-number selfRef">6.2.1. </a><a href="#name-telemetry-extensions" class="section-name selfRef">Telemetry Extensions</a>
+          </h4>
+<p id="section-6.2.1-1">In several scenarios, it is beneficial to make information available to the
+operator about the path a packet took through the network or through a network
+device as well as information about associated telemetry.<a href="#section-6.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-2">This includes not only tasks like debugging, troubleshooting, and
+network planning and optimization but also policy or service level
+agreement compliance checks.<a href="#section-6.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-3">Packet scheduling algorithms, especially for balancing traffic
+across equal-cost paths or links, often leverage information contained
+within the packet, such as protocol number, IP address, or Message
+Authentication Code (MAC) address.  Thus, probe packets would need to be either sent between the
+exact same endpoints with the exact same parameters or artificially constructed as "fake" packets and
+inserted along the path.  Both approaches are often not feasible from
+an operational perspective because access to the end system is not
+feasible or the diversity of parameters and associated probe packets
+to be created is simply too large.  An extension providing an in-band
+telemetry mechanism <span>[<a href="#RFC9197" class="cite xref">RFC9197</a>]</span> is an alternative in
+those cases.<a href="#section-6.2.1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="SecExt">
+<section id="section-6.2.2">
+          <h4 id="name-security-integrity-extensio">
+<a href="#section-6.2.2" class="section-number selfRef">6.2.2. </a><a href="#name-security-integrity-extensio" class="section-name selfRef">Security/Integrity Extensions</a>
+          </h4>
+<p id="section-6.2.2-1">Since the currently proposed NVO3 encapsulations do not protect
+their headers, a single bit corruption in the VNI field could deliver
+a packet to the wrong tenant.  Extension headers are needed to use any
+sophisticated security.<a href="#section-6.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-2">The possibility of VNI spoofing with an NVO3 protocol is
+exacerbated by using UDP.  Systems typically have no restrictions on
+applications being able to send to any UDP port, so an unprivileged
+application can trivially spoof VXLAN <span>[<a href="#RFC7348" class="cite xref">RFC7348</a>]</span> packets,
+using arbitrary VNIs, for instance.<a href="#section-6.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-3">One can envision support of an HMAC-like Message Authentication
+Code (MAC) <span>[<a href="#RFC2104" class="cite xref">RFC2104</a>]</span> in an NVO3 extension to
+authenticate the header and the outer IP addresses, thereby preventing
+attackers from injecting packets with spoofed VNIs.<a href="#section-6.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-4">Another aspect of security is payload security.  Essentially, this
+makes packets that look like the following:<a href="#section-6.2.2-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2.2-5">
+<pre>
+  IP|UDP|NVO3 Encap|DTLS/IPsec-ESP Extension|payload.
+</pre><a href="#section-6.2.2-5" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2.2-6">This is desirable because:<a href="#section-6.2.2-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.2.2-7.1">we still have the UDP header for ECMP,<a href="#section-6.2.2-7.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-6.2.2-7.2">the NVO3 header is in plain text so it can be read by network elements, and<a href="#section-6.2.2-7.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-6.2.2-7.3">different security or other payload transforms can be supported on
+a single UDP port (we don't need a separate UDP port for DTLS/IPsec; see <span>[<a href="#RFC9147" class="cite xref">RFC9147</a>]</span> and <span>[<a href="#RFC6071" class="cite xref">RFC6071</a>]</span>, respectively).<a href="#section-6.2.2-7.3" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<section id="section-6.2.3">
+          <h4 id="name-group-based-policy">
+<a href="#section-6.2.3" class="section-number selfRef">6.2.3. </a><a href="#name-group-based-policy" class="section-name selfRef">Group-Based Policy</a>
+          </h4>
+<p id="section-6.2.3-1">Another use case would be to carry the Group-Based Policy (GBP)
+source group information within a NVO3 header extension in a similar
+manner as has been implemented for VXLAN <span>[<a href="#I-D.smith-vxlan-group-policy" class="cite xref">VXLAN-GROUP</a>]</span>.
+This allows various forms of policy such as access control and QoS to
+be applied between abstract groups rather than coupled to specific
+endpoint addresses.<a href="#section-6.2.3-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="HardwareConsiderations">
+<section id="section-6.3">
+        <h3 id="name-hardware-considerations">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-hardware-considerations" class="section-name selfRef">Hardware Considerations</a>
+        </h3>
+<p id="section-6.3-1">Hardware restrictions should be taken into consideration along with
+future hardware enhancements that may provide more flexible metadata (MD)
+processing.  However, the set of options that need to and will be
+implemented in hardware will be a subset of what is implemented in
+software. This is because software NVEs are likely to grow features, and hence
+option support, at a more rapid rate.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2">It is hard to predict which options will be implemented in which
+piece of hardware and when.  That depends on whether the hardware will
+be in the form of:<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.3-3.1">a NIC providing increasing offload capabilities to software
+  NVEs, or<a href="#section-6.3-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-6.3-3.2">a switch chip being used as an NVE gateway towards
+  non-NVO3 parts of the network, or even<a href="#section-6.3-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-6.3-3.3">a transit device that participates in the NVO3
+  data plane, e.g., for OAM purposes.<a href="#section-6.3-3.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-6.3-4">A result of this is that it doesn't look useful to prescribe some
+order to the options so that the ones that are likely to be implemented
+in hardware come first. We can't decide such an order when we define
+the options; however, a control plane can enforce such an order for
+some hardware implementations.<a href="#section-6.3-4" class="pilcrow">¶</a></p>
+<p id="section-6.3-5">We do know that hardware initially needs to be able to efficiently
+skip over the NVO3 header to find the inner payload.  That is needed
+both for NICs implementing various TCP offload mechanisms and for
+transit devices and NVEs applying policy or ACLs to the inner
+payload.<a href="#section-6.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-6.4">
+        <h3 id="name-extension-size">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-extension-size" class="section-name selfRef">Extension Size</a>
+        </h3>
+<p id="section-6.4-1">Extension header length has a significant impact on hardware and
+software implementations.  A maximum total header length that is too
+small will unnecessarily constrain software flexibility.  A maximum
+total header length that is too large will place a nontrivial cost on
+hardware implementations.  Thus, the DT recommends that there be a
+minimum and maximum total available extension header length specified.
+The maximum total header length is determined by the size of the bit
+field allocated for the total extension header length field.  The risk
+with this approach is that it may be difficult to extend the total
+header size in the future.  The minimum total header length is
+determined by a requirement in the specifications that all
+implementations must meet.  The risk with this approach is that all
+implementations will only implement support for the minimum total
+header length, which would then become the de facto maximum total
+header length.<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<p id="section-6.4-2">The recommended minimum total available header length is 64
+bytes.<a href="#section-6.4-2" class="pilcrow">¶</a></p>
+<p id="section-6.4-3">The size of an extension header should always be 4-byte
+aligned.<a href="#section-6.4-3" class="pilcrow">¶</a></p>
+<p id="section-6.4-4">The maximum length of a single option should be large enough to
+meet the different extension use case requirements, e.g., for in-band
+telemetry and future use.<a href="#section-6.4-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6.5">
+        <h3 id="name-ordering-of-extension-heade">
+<a href="#section-6.5" class="section-number selfRef">6.5. </a><a href="#name-ordering-of-extension-heade" class="section-name selfRef">Ordering of Extension Headers</a>
+        </h3>
+<p id="section-6.5-1">To support hardware nodes at the target NVE or at a transit device
+that can process one or a few extension headers in TCAM, a control
+plane in such a deployment could signal a capability to ensure that a
+specific extension header will always appear in a specific order, for
+example, that such a specific extension header appear first in the packet.<a href="#section-6.5-1" class="pilcrow">¶</a></p>
+<p id="section-6.5-2">The order of the extension headers should be hardware friendly for
+both the sender and the receiver and possibly some transit devices
+as well. This may require that the extension headers and their order be
+determined dynamically based on the hardware of those devices.<a href="#section-6.5-2" class="pilcrow">¶</a></p>
+<p id="section-6.5-3">Transit devices don't participate in control plane communication
+between the endpoints and are not required to process the extension
+headers; however, if they do, they may need to process only a small
+subset of the extension headers that will be consumed by target
+NVEs.<a href="#section-6.5-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6.6">
+        <h3 id="name-tlv-versus-bit-fields">
+<a href="#section-6.6" class="section-number selfRef">6.6. </a><a href="#name-tlv-versus-bit-fields" class="section-name selfRef">TLV versus Bit Fields</a>
+        </h3>
+<p id="section-6.6-1">If there is a well-known initial set of options that is likely to
+be implemented in software and in hardware, it can be efficient to use
+the bit fields approach to indicate the presence of extensions as in
+GUE.  However, as described in <a href="#HardwareConsiderations" class="auto internal xref">Section 6.3</a>, if options are added over
+time and different subsets of options are likely to be implemented in
+different pieces of hardware, then it would be hard for the IETF to
+specify which options should get the early bit fields.  TLVs are a lot
+more flexible, which avoids the need to determine the relative
+importance of different options.  However, general TLVs of arbitrary
+order, size, and repetition are difficult to implement in hardware.  A
+middle ground is to use TLVs with restrictions on their size and
+alignment, observing that individual TLVs can have a fixed length, and
+to support via the control plane a method such that an NVE will only
+receive options that it needs and implements.  The control plane
+approach can potentially be used to control the order of the TLVs sent
+to a particular NVE.  Note that transit devices are not likely to
+participate in the control plane; hence, to the extent that they need
+to participate in option processing, some other method must be
+used. Transit devices would have issues with future GUE bit fields
+being defined for future options as well.<a href="#section-6.6-1" class="pilcrow">¶</a></p>
+<p id="section-6.6-2">A benefit of TLVs from a hardware perspective is that they are self describing,
+i.e., all the information is in the TLV.  In a bit field
+approach, the hardware needs to look up the bit to determine the
+length of the data associated with the bit through some separate
+table, which would add hardware complexity.<a href="#section-6.6-2" class="pilcrow">¶</a></p>
+<p id="section-6.6-3">There are use cases where multiple modules of software are running
+on an NVE.  These can be modules such as a diagnostic module by one
+vendor that does packet sampling and another module from a different
+vendor that implements a firewall.  Using a TLV format, it is easier
+to have different software modules process different TLVs without conflicting with each other. Such TLVs could be standard extensions or vendor-specific extensions.  This can help
+with hardware modularity as well. There are some implementations with
+options that allow different software modules, like MAC learning and
+security, to process different options.<a href="#section-6.6-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6.7">
+        <h3 id="name-control-plane-consideration">
+<a href="#section-6.7" class="section-number selfRef">6.7. </a><a href="#name-control-plane-consideration" class="section-name selfRef">Control Plane Considerations</a>
+        </h3>
+<p id="section-6.7-1">Given that we want to allow considerable flexibility and
+extensibility (e.g., for software NVEs), yet want to be able to support
+important extensions in less flexible contexts such as hardware NVEs,
+it is useful to consider the control plane.  By control plane in this
+section we mean protocols, such as EVPN <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span>
+and others, and deployment-specific configurations.<a href="#section-6.7-1" class="pilcrow">¶</a></p>
+<p id="section-6.7-2">If each NVE can express in the control plane that it only supports
+certain extensions (which could be a single extension, or a few), and
+the source NVEs only include supported extensions in the NVO3 packets,
+then the target NVE can use a simpler parser (e.g., a TCAM might
+be usable to look for a single NVO3 extension) and the depth of the
+inner payload in the NVO3 packet will be minimized.  Furthermore, if
+the target NVE cares about a few extensions and can express in the
+control plane the desired order of those extensions in the NVO3
+packets, then the deployment can provide useful functionality with
+simplified hardware requirements for the target NVE.<a href="#section-6.7-2" class="pilcrow">¶</a></p>
+<p id="section-6.7-3">Transit devices that are not aware of the NVO3 extensions somewhat
+benefit from such an approach, since the inner payload is less deep in
+the packet if no extraneous extension headers are included in the
+packet.  In general, a transit device is not likely to participate in
+the NVO3 control plane.  However, configuration mechanisms can take
+into account limitations of the transit devices used in particular
+deployments.<a href="#section-6.7-3" class="pilcrow">¶</a></p>
+<p id="section-6.7-4">Note that with this approach, different NVEs could desire different
+extensions or sets of extensions, which means that the source NVE
+needs to be able to place different sets of extensions in different
+NVO3 packets, and perhaps in a different order.  It also assumes that
+underlay multicast or replication servers are not used together with
+NVO3 extension headers.<a href="#section-6.7-4" class="pilcrow">¶</a></p>
+<p id="section-6.7-5">There is a need to consider mandatory extensions versus optional
+extensions.  Mandatory extensions require the receiver to drop the
+packet if the extension is unknown.  A control plane mechanism can
+prevent the need for dropping unknown extensions, since they would not
+be included to target NVEs that do not support them.<a href="#section-6.7-5" class="pilcrow">¶</a></p>
+<p id="section-6.7-6">The control planes defined today need to add the ability to
+describe the different encapsulations.  Thus, perhaps EVPN <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span> and any other control plane protocol that the IETF
+defines should have a way to indicate the supported NVO3 extensions
+and their order for each of the encapsulations supported.<a href="#section-6.7-6" class="pilcrow">¶</a></p>
+<p id="section-6.7-7">Developing a separate document on guidance for option processing and
+control plane participation should be considered.  This should provide
+examples and guidance on the range of usage models and deployment scenarios
+for specific options. It should also provide examples of option ordering that are relevant for that specific
+deployment.  This includes endpoints and middleboxes that are using the
+options.  Having the control plane negotiate the constraints is the
+most appropriate and flexible way to address these requirements.<a href="#section-6.7-7" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6.8">
+        <h3 id="name-split-nve">
+<a href="#section-6.8" class="section-number selfRef">6.8. </a><a href="#name-split-nve" class="section-name selfRef">Split NVE</a>
+        </h3>
+<p id="section-6.8-1">If there is a need for hosts to send and receive options in a split
+NVE case <span>[<a href="#RFC8394" class="cite xref">RFC8394</a>]</span>, this is possible using any of the
+existing extensible encapsulations (GPE with NSH, GUE, or Geneve) by defining
+a way to carry those over other transports. An NSH can already be used
+over different transports.<a href="#section-6.8-1" class="pilcrow">¶</a></p>
+<p id="section-6.8-2">If this is needed with other encapsulations, it can be done by
+defining an Ethertype so that it can be carried over Ethernet and
+IEEE Std 802.1Q <span>[<a href="#IEEE802.1Q" class="cite xref">IEEE802.1Q</a>]</span>.<a href="#section-6.8-2" class="pilcrow">¶</a></p>
+<p id="section-6.8-3">If there is a need to carry other encapsulations over MPLS, it
+would require an EVPN control plane to signal that other encapsulation
+headers and options will be present in front of the Layer 2 (L2) packet.  The VNI
+can be ignored in the header, and the MPLS label will be the one used
+to identify the EVPN L2 instance.<a href="#section-6.8-3" class="pilcrow">¶</a></p>
+</section>
+<div id="LargerVNI">
+<section id="section-6.9">
+        <h3 id="name-larger-vni-considerations">
+<a href="#section-6.9" class="section-number selfRef">6.9. </a><a href="#name-larger-vni-considerations" class="section-name selfRef">Larger VNI Considerations</a>
+        </h3>
+<p id="section-6.9-1">Whether we should make the VNI 32 bits or larger was one of the
+topics considered.  The benefit of a 24-bit VNI would be to avoid
+unnecessary changes with existing proposals and implementations that
+are almost all, if not all, using a 24-bit VNI.  If we need a larger
+VNI, perhaps for a telemetry case, an extension can be used to support
+that.<a href="#section-6.9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="Recommendations">
+<section id="section-7">
+      <h2 id="name-recommendations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-recommendations" class="section-name selfRef">Recommendations</a>
+      </h2>
+<p id="section-7-1">The Design Team reported that Geneve was most suitable as a
+starting point for a proposed standard for network virtualization, for
+the following reasons given below. This conclusion was supported by
+the NVO3 Working Group.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-7-2">
+  <li id="section-7-2.1">On whether the VNI should be in the base header or in an extension
+  header and whether it should be a 24-bit or 32-bit field (see <a href="#LargerVNI" class="auto internal xref">Section 6.9</a>), it was agreed that the VNI is critical
+  information for network virtualization and <span class="bcp14">MUST</span> be present in all
+  packets.  It was also agreed that a 24-bit VNI, which is supported
+  by Geneve, matches the existing widely used encapsulation formats,
+  i.e., VXLAN <span>[<a href="#RFC7348" class="cite xref">RFC7348</a>]</span> and Network Virtualization Using Generic Routing Encapsulation (NVGRE) <span>[<a href="#RFC7637" class="cite xref">RFC7637</a>]</span>, and hence is more suitable to use going
+  forward.<a href="#section-7-2.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.2">The Geneve header has the total options length, which allows
+  skipping over the options for NIC offload operations and
+  transit devices to view flow information in the inner payload.<a href="#section-7-2.2" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.3">The option of using an NSH <span>[<a href="#RFC8300" class="cite xref">RFC8300</a>]</span> with VXLAN-GPE
+  was considered, but given that an NSH is targeted at service chaining
+  and contains service chaining information, it is less suitable for
+  the network virtualization use case.  The other downside of
+  VXLAN-GPE was the lack of a header length in VXLAN-GPE, which makes
+  skipping over the headers to process inner payloads more difficult. A
+  total options length is present in Geneve.  It is not possible to
+  skip any options in the middle with VXLAN-GPE.  In principle, a split
+  between a base header and a header with options is interesting
+  (whether that options header is an NSH or some new header without ties
+  to a service path).  Whether it would make sense to either use an NSH
+  for this or define a new NVO3 options header was explored.
+  However, this makes it slightly harder to find the inner payload
+  since the Length field is not in the NVO3 header itself.  Thus, one
+  more field would have to be extracted to compute the start of the
+  inner payload.  Also, if the experience with IPv6 extension headers
+  is a guide, there would be a risk that key pieces of hardware might
+  not implement the options header, resulting in future calls to
+  deprecate its use.  Making the options part of the base NVO3 header
+  has less of those issues.  Even though the implementation of any
+  particular option can't be predicted ahead of time, the option
+  mechanism and ability to skip the options is likely to be broadly
+  implemented.<a href="#section-7-2.3" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.4">The TLV style and bit field style of extension mechanisms were compared. It
+  was deemed that parsing either TLVs or bit fields is expensive, and
+  while bit fields may be simpler to parse, they are also more
+  restrictive and require guessing which extensions will be widely
+  implemented in order to get early bit assignments. Given that half
+  the bits are already assigned in GUE, a widely deployed extension
+  may appear in a flag extension, and this will require extra
+  processing to dig the flag from the flag extension and then look
+  for the extension itself.  Also, bit fields are not flexible enough
+  to address the requirements from OAM, telemetry, and security
+  extensions for variable-length options and different subtypes of the
+  same option.  While TLVs are more flexible, a control plane can
+  restrict the number of option TLVs as well as the order and size of
+  the TLVs to limit this flexibility and make the TLVs simpler for a
+  data plane implementation to handle.<a href="#section-7-2.4" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.5">The multi-vendor NVE case was briefly discussed, as was the need
+  to allow vendors to put their own extensions in the NVE header.
+  This is possible with TLVs.<a href="#section-7-2.5" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.6">It was agreed that the C bit (Critical bit) in Geneve is
+  helpful. This bit indicates that the header includes options that
+  must be parsed, or else the packet must be discarded. The bit allows a receiver NVE to
+  easily decide whether or not to process options (such as a UUID-based packet trace) and decide how an optional extension can be ignored. Thus, a Critical bit makes it easy for the NVE to skip over the options not marked with such a bit.  Thus, the C bit should remain as defined in
+  Geneve.<a href="#section-7-2.6" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.7">There are already some extensions of varying sizes that are being discussed  (see
+  <a href="#ExtensionsUseCases" class="auto internal xref">Section 6.2</a>). By using Geneve options, it is
+  possible to get in-band parameters like switch id, ingress port,
+  egress port, internal delay, and queue size using TLV extensions for
+  telemetry purposes from switches. It is also possible to add
+  security extension TLVs like HMAC <span>[<a href="#RFC2104" class="cite xref">RFC2104</a>]</span> and 
+  DTLS/IPsec (see <span>[<a href="#RFC9147" class="cite xref">RFC9147</a>]</span> and <span>[<a href="#RFC6071" class="cite xref">RFC6071</a>]</span>, respectively) to
+  authenticate the Geneve packet header and secure the Geneve packet
+  payload by software or hardware tunnel endpoints.  A Group-Based
+  Policy extension TLV can be carried as well.<a href="#section-7-2.7" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.8">There are already implementations of Geneve options deployed in
+  production networks.  There is new hardware supporting
+  Geneve TLV parsing as well.  In addition, an In-band Telemetry (INT) specification <span>[<a href="#INT" class="cite xref">INT</a>]</span> is being developed by P4.org that
+  illustrates the option of INT metadata carried over Geneve. Open Virtual Network (OVN) and Open vSwitch (OVS) <span>[<a href="#OVN" class="cite xref">OVN</a>]</span> have also defined one or more option TLVs
+  for Geneve.<a href="#section-7-2.8" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-2.9">Usage requirements (see <a href="#CommonEncapsulationConsiderations" class="auto internal xref">Section 6</a>) have been addressed while also
+considering requirements and implementations in general (including those for
+software and hardware).<a href="#section-7-2.9" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-7-3">There seems to be interest in standardizing some well-known secure
+option TLVs to secure the header and payload to guarantee
+encapsulation header integrity and tenant data privacy.  The working
+group should consider standardizing such option(s).<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">The following enhancements to Geneve are recommended to make it
+more suitable to hardware and yet provide flexibility for
+software:<a href="#section-7-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-5.1">The following sort of text is recommended in Geneve documents: while TLVs are more
+  flexible, a control plane can restrict the number of option TLVs as
+  well as the order and size of the TLVs to make it simpler for a data
+  plane implementation in software or hardware to handle.  For
+  example, there may be some critical information such as a secure
+  hash that must be processed in a certain order at lowest
+  latency.<a href="#section-7-5.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.2">A control plane can negotiate a subset of option TLVs and
+  certain TLV ordering, as well as limiting the total number of option
+  TLVs present in the packet, for example, to allow for hardware
+  capable of processing fewer options.  Hence, the control plane needs
+  to have the ability to describe the supported TLVs subset and their
+  order.<a href="#section-7-5.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.3">The Geneve documents should specify that the subset and order of
+  option TLVs <span class="bcp14">SHOULD</span> be configurable for each remote NVE in the
+  absence of a protocol control plane.<a href="#section-7-5.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.4">Geneve should follow fragmentation recommendations in overlay services
+  like PWE3 and the L2/L3 VPN recommendations to guarantee larger MTUs for the
+  tunnel overhead (<span>[<a href="#RFC3985" class="cite xref">RFC3985</a>], <a href="https://rfc-editor.org/rfc/rfc3985#section-5.3" class="relref">Section 5.3</a></span>).<a href="#section-7-5.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.5">The Geneve documents should provide a recommendation for C bit (Critical bit)
+  processing. This text could specify how critical bits can be used with
+  control planes and specify the critical options.<a href="#section-7-5.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.6">Given that there is a telemetry option use case for a length of
+  256 bytes, it is recommended that Geneve increase the single TLV
+  option length to 256.<a href="#section-7-5.6" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.7">Geneve address requirements for OAM considerations for alternate
+  marking and for performance measurements that need a 2-bit field in
+  the header should be considered and the need for the current OAM bit
+  in the Geneve header should be clarified.<a href="#section-7-5.7" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-5.8">The WG should work on security options for Geneve.<a href="#section-7-5.8" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">This document does not introduce any additional security constraints;
+however, <a href="#SecExt" class="auto internal xref">Section 6.2.2</a> discusses security/integrity extensions and
+this document suggests, in <a href="#Recommendations" class="auto internal xref">Section 7</a>, that the NVO3 WG
+work on security options for Geneve.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+<div id="IANA">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">This document has no IANA actions.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-intarea-gue">[GUE]</dt>
+        <dd>
+<span class="refAuthor">Herbert, T.</span>, <span class="refAuthor">Yong, L.</span>, and <span class="refAuthor">O. Zia</span>, <span class="refTitle">"Generic UDP Encapsulation"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-intarea-gue-09</span>, <time datetime="2019-10-26" class="refDate">26 October 2019</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-intarea-gue-09">https://datatracker.ietf.org/doc/html/draft-ietf-intarea-gue-09</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.hy-nvo3-gue-4-nvo">[GUE-ENCAPSULATION]</dt>
+        <dd>
+<span class="refAuthor">Yong, L.</span>, <span class="refAuthor">Herbert, T.</span>, and <span class="refAuthor">O. Zia</span>, <span class="refTitle">"Generic UDP Encapsulation (GUE) for Network Virtualization Overlay"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-hy-nvo3-gue-4-nvo-04</span>, <time datetime="2016-10-28" class="refDate">28 October 2016</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-hy-nvo3-gue-4-nvo-04">https://datatracker.ietf.org/doc/html/draft-hy-nvo3-gue-4-nvo-04</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-intarea-gue-extensions">[GUE-EXTENSIONS]</dt>
+        <dd>
+<span class="refAuthor">Herbert, T.</span>, <span class="refAuthor">Yong, L.</span>, and <span class="refAuthor">F. Templin</span>, <span class="refTitle">"Extensions for Generic UDP Encapsulation"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-intarea-gue-extensions-06</span>, <time datetime="2019-03-08" class="refDate">8 March 2019</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-intarea-gue-extensions-06">https://datatracker.ietf.org/doc/html/draft-ietf-intarea-gue-extensions-06</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IEEE802.1Q">[IEEE802.1Q]</dt>
+        <dd>
+<span class="refAuthor">IEEE</span>, <span class="refTitle">"IEEE Standard for Local and Metropolitan Area Networks--Bridges and Bridged Networks"</span>, <span class="seriesInfo">IEEE Std 802.1Q-2022</span>, <span class="seriesInfo">DOI 10.1109/IEEESTD.2022.10004498</span>, <time datetime="2022-12" class="refDate">December 2022</time>, <span>&lt;<a href="https://doi.org/10.1109/IEEESTD.2022.10004498">https://doi.org/10.1109/IEEESTD.2022.10004498</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="INT">[INT]</dt>
+        <dd>
+<span class="refAuthor">P4.org Applications Working Group</span>, <span class="refTitle">"In-band Network Telemetry (INT) Dataplane Specification"</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://p4.org/p4-spec/docs/INT_v2_1.pdf">https://p4.org/p4-spec/docs/INT_v2_1.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="OVN">[OVN]</dt>
+        <dd>
+<span class="refAuthor">Linux Foundation</span>, <span class="refTitle">"Open vSwitch"</span>, <span>&lt;<a href="https://www.openvswitch.org/">https://www.openvswitch.org/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2104">[RFC2104]</dt>
+        <dd>
+<span class="refAuthor">Krawczyk, H.</span>, <span class="refAuthor">Bellare, M.</span>, and <span class="refAuthor">R. Canetti</span>, <span class="refTitle">"HMAC: Keyed-Hashing for Message Authentication"</span>, <span class="seriesInfo">RFC 2104</span>, <span class="seriesInfo">DOI 10.17487/RFC2104</span>, <time datetime="1997-02" class="refDate">February 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2104">https://www.rfc-editor.org/info/rfc2104</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2418">[RFC2418]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"IETF Working Group Guidelines and Procedures"</span>, <span class="seriesInfo">BCP 25</span>, <span class="seriesInfo">RFC 2418</span>, <span class="seriesInfo">DOI 10.17487/RFC2418</span>, <time datetime="1998-09" class="refDate">September 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2418">https://www.rfc-editor.org/info/rfc2418</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3985">[RFC3985]</dt>
+        <dd>
+<span class="refAuthor">Bryant, S., Ed.</span> and <span class="refAuthor">P. Pate, Ed.</span>, <span class="refTitle">"Pseudo Wire Emulation Edge-to-Edge (PWE3) Architecture"</span>, <span class="seriesInfo">RFC 3985</span>, <span class="seriesInfo">DOI 10.17487/RFC3985</span>, <time datetime="2005-03" class="refDate">March 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3985">https://www.rfc-editor.org/info/rfc3985</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6071">[RFC6071]</dt>
+        <dd>
+<span class="refAuthor">Frankel, S.</span> and <span class="refAuthor">S. Krishnan</span>, <span class="refTitle">"IP Security (IPsec) and Internet Key Exchange (IKE) Document Roadmap"</span>, <span class="seriesInfo">RFC 6071</span>, <span class="seriesInfo">DOI 10.17487/RFC6071</span>, <time datetime="2011-02" class="refDate">February 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6071">https://www.rfc-editor.org/info/rfc6071</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6291">[RFC6291]</dt>
+        <dd>
+<span class="refAuthor">Andersson, L.</span>, <span class="refAuthor">van Helvoort, H.</span>, <span class="refAuthor">Bonica, R.</span>, <span class="refAuthor">Romascanu, D.</span>, and <span class="refAuthor">S. Mansfield</span>, <span class="refTitle">"Guidelines for the Use of the "OAM" Acronym in the IETF"</span>, <span class="seriesInfo">BCP 161</span>, <span class="seriesInfo">RFC 6291</span>, <span class="seriesInfo">DOI 10.17487/RFC6291</span>, <time datetime="2011-06" class="refDate">June 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6291">https://www.rfc-editor.org/info/rfc6291</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7348">[RFC7348]</dt>
+        <dd>
+<span class="refAuthor">Mahalingam, M.</span>, <span class="refAuthor">Dutt, D.</span>, <span class="refAuthor">Duda, K.</span>, <span class="refAuthor">Agarwal, P.</span>, <span class="refAuthor">Kreeger, L.</span>, <span class="refAuthor">Sridhar, T.</span>, <span class="refAuthor">Bursell, M.</span>, and <span class="refAuthor">C. Wright</span>, <span class="refTitle">"Virtual eXtensible Local Area Network (VXLAN): A Framework for Overlaying Virtualized Layer 2 Networks over Layer 3 Networks"</span>, <span class="seriesInfo">RFC 7348</span>, <span class="seriesInfo">DOI 10.17487/RFC7348</span>, <time datetime="2014-08" class="refDate">August 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7348">https://www.rfc-editor.org/info/rfc7348</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7637">[RFC7637]</dt>
+        <dd>
+<span class="refAuthor">Garg, P., Ed.</span> and <span class="refAuthor">Y. Wang, Ed.</span>, <span class="refTitle">"NVGRE: Network Virtualization Using Generic Routing Encapsulation"</span>, <span class="seriesInfo">RFC 7637</span>, <span class="seriesInfo">DOI 10.17487/RFC7637</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7637">https://www.rfc-editor.org/info/rfc7637</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8300">[RFC8300]</dt>
+        <dd>
+<span class="refAuthor">Quinn, P., Ed.</span>, <span class="refAuthor">Elzur, U., Ed.</span>, and <span class="refAuthor">C. Pignataro, Ed.</span>, <span class="refTitle">"Network Service Header (NSH)"</span>, <span class="seriesInfo">RFC 8300</span>, <span class="seriesInfo">DOI 10.17487/RFC8300</span>, <time datetime="2018-01" class="refDate">January 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8300">https://www.rfc-editor.org/info/rfc8300</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8365">[RFC8365]</dt>
+        <dd>
+<span class="refAuthor">Sajassi, A., Ed.</span>, <span class="refAuthor">Drake, J., Ed.</span>, <span class="refAuthor">Bitar, N.</span>, <span class="refAuthor">Shekhar, R.</span>, <span class="refAuthor">Uttaro, J.</span>, and <span class="refAuthor">W. Henderickx</span>, <span class="refTitle">"A Network Virtualization Overlay Solution Using Ethernet VPN (EVPN)"</span>, <span class="seriesInfo">RFC 8365</span>, <span class="seriesInfo">DOI 10.17487/RFC8365</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8365">https://www.rfc-editor.org/info/rfc8365</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8394">[RFC8394]</dt>
+        <dd>
+<span class="refAuthor">Li, Y.</span>, <span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Kreeger, L.</span>, <span class="refAuthor">Narten, T.</span>, and <span class="refAuthor">D. Black</span>, <span class="refTitle">"Split Network Virtualization Edge (Split-NVE) Control-Plane Requirements"</span>, <span class="seriesInfo">RFC 8394</span>, <span class="seriesInfo">DOI 10.17487/RFC8394</span>, <time datetime="2018-05" class="refDate">May 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8394">https://www.rfc-editor.org/info/rfc8394</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8926">[RFC8926]</dt>
+        <dd>
+<span class="refAuthor">Gross, J., Ed.</span>, <span class="refAuthor">Ganga, I., Ed.</span>, and <span class="refAuthor">T. Sridhar, Ed.</span>, <span class="refTitle">"Geneve: Generic Network Virtualization Encapsulation"</span>, <span class="seriesInfo">RFC 8926</span>, <span class="seriesInfo">DOI 10.17487/RFC8926</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8926">https://www.rfc-editor.org/info/rfc8926</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9147">[RFC9147]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refAuthor">Tschofenig, H.</span>, and <span class="refAuthor">N. Modadugu</span>, <span class="refTitle">"The Datagram Transport Layer Security (DTLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 9147</span>, <span class="seriesInfo">DOI 10.17487/RFC9147</span>, <time datetime="2022-04" class="refDate">April 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9147">https://www.rfc-editor.org/info/rfc9147</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9197">[RFC9197]</dt>
+        <dd>
+<span class="refAuthor">Brockners, F., Ed.</span>, <span class="refAuthor">Bhandari, S., Ed.</span>, and <span class="refAuthor">T. Mizrahi, Ed.</span>, <span class="refTitle">"Data Fields for In Situ Operations, Administration, and Maintenance (IOAM)"</span>, <span class="seriesInfo">RFC 9197</span>, <span class="seriesInfo">DOI 10.17487/RFC9197</span>, <time datetime="2022-05" class="refDate">May 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9197">https://www.rfc-editor.org/info/rfc9197</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9542">[RFC9542]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Abley, J.</span>, and <span class="refAuthor">Y. Li</span>, <span class="refTitle">"IANA Considerations and IETF Protocol and Documentation Usage for IEEE 802 Parameters"</span>, <span class="seriesInfo">BCP 141</span>, <span class="seriesInfo">RFC 9542</span>, <span class="seriesInfo">DOI 10.17487/RFC9542</span>, <time datetime="2024-04" class="refDate">April 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9542">https://www.rfc-editor.org/info/rfc9542</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-nvo3-vxlan-gpe">[VXLAN-GPE]</dt>
+        <dd>
+<span class="refAuthor">Maino, F., Ed.</span>, <span class="refAuthor">Kreeger, L., Ed.</span>, and <span class="refAuthor">U. Elzur, Ed.</span>, <span class="refTitle">"Generic Protocol Extension for VXLAN (VXLAN-GPE)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-nvo3-vxlan-gpe-13</span>, <time datetime="2023-11-04" class="refDate">4 November 2023</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-nvo3-vxlan-gpe-13">https://datatracker.ietf.org/doc/html/draft-ietf-nvo3-vxlan-gpe-13</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.smith-vxlan-group-policy">[VXLAN-GROUP]</dt>
+      <dd>
+<span class="refAuthor">Smith, M.</span> and <span class="refAuthor">L. Kreeger</span>, <span class="refTitle">"VXLAN Group Policy Option"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-smith-vxlan-group-policy-05</span>, <time datetime="2018-10-22" class="refDate">22 October 2018</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-smith-vxlan-group-policy-05">https://datatracker.ietf.org/doc/html/draft-smith-vxlan-group-policy-05</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="EncapsulationComparison">
+<section id="appendix-A">
+      <h2 id="name-encapsulation-comparison">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-encapsulation-comparison" class="section-name selfRef">Encapsulation Comparison</a>
+      </h2>
+<section id="appendix-A.1">
+        <h3 id="name-overview">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-overview" class="section-name selfRef">Overview</a>
+        </h3>
+<p id="appendix-A.1-1">This section presents a comparison of the three NVO3
+    encapsulation proposals: Geneve <span>[<a href="#RFC8926" class="cite xref">RFC8926</a>]</span>, GUE
+    <span>[<a href="#I-D.ietf-intarea-gue" class="cite xref">GUE</a>]</span>, and VXLAN-GPE <span>[<a href="#I-D.ietf-nvo3-vxlan-gpe" class="cite xref">VXLAN-GPE</a>]</span>.  The three encapsulations use an outer
+    UDP/IP transport.  Geneve and VXLAN-GPE use an 8-octet header,
+    while GUE uses a 4-octet header.  In addition to the base header,
+    optional extensions may be included in the encapsulation, as
+    discussed in <a href="#Extensibility" class="auto internal xref">Appendix A.2</a> below.<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+</section>
+<div id="Extensibility">
+<section id="appendix-A.2">
+        <h3 id="name-extensibility">
+<a href="#appendix-A.2" class="section-number selfRef">A.2. </a><a href="#name-extensibility" class="section-name selfRef">Extensibility</a>
+        </h3>
+<section id="appendix-A.2.1">
+          <h4 id="name-innate-extensibility-suppor">
+<a href="#appendix-A.2.1" class="section-number selfRef">A.2.1. </a><a href="#name-innate-extensibility-suppor" class="section-name selfRef">Innate Extensibility Support</a>
+          </h4>
+<p id="appendix-A.2.1-1">The Geneve and GUE encapsulations both enable optional headers to
+be incorporated at the end of the base encapsulation header.<a href="#appendix-A.2.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.1-2">VXLAN-GPE does not provide innate support for header extensions.
+However, as discussed in <span>[<a href="#I-D.ietf-nvo3-vxlan-gpe" class="cite xref">VXLAN-GPE</a>]</span>,
+extensibility can be attained to some extent if the Network Service
+Header (NSH) <span>[<a href="#RFC8300" class="cite xref">RFC8300</a>]</span> is used immediately following
+the VXLAN-GPE header.  The NSH supports either a fixed-size extension (MD
+Type 1) or a variable-size TLV-based extension (MD Type 2).  Note
+that NSH-over-VXLAN-GPE implies an additional overhead of the 8-octet
+NSH, in addition to the VXLAN-GPE header.<a href="#appendix-A.2.1-2" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-A.2.2">
+          <h4 id="name-extension-parsing">
+<a href="#appendix-A.2.2" class="section-number selfRef">A.2.2. </a><a href="#name-extension-parsing" class="section-name selfRef">Extension Parsing</a>
+          </h4>
+<p id="appendix-A.2.2-1">The Geneve variable-length options are defined as Type-Length-Value
+(TLV) extensions.  Similarly, VXLAN-GPE, when using an NSH, can include
+NSH TLV-based extensions.  In contrast, GUE defines a small set of
+possible extension fields (proposed in <span>[<a href="#I-D.ietf-intarea-gue-extensions" class="cite xref">GUE-EXTENSIONS</a>]</span> and <span>[<a href="#I-D.hy-nvo3-gue-4-nvo" class="cite xref">GUE-ENCAPSULATION</a>]</span>), and a set of flags in the GUE header
+that indicate for each extension type whether it is present or
+not.<a href="#appendix-A.2.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.2-2">TLV-based extensions, as defined in Geneve, provide the flexibility
+for a large number of possible extension types.  Similar behavior can
+be supported in NSH-over-VXLAN-GPE when using MD Type 2.  The
+flag-based approach taken in GUE strives to simplify implementations
+by defining a small number of possible extensions used in a fixed
+order.<a href="#appendix-A.2.2-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.2-3">The Geneve and GUE headers both include a Length field that defines
+the total length of the encapsulation, including the optional
+extensions.  This Length field simplifies the parsing by transit
+devices that skip the encapsulation header without parsing its
+extensions.<a href="#appendix-A.2.2-3" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-A.2.3">
+          <h4 id="name-critical-extensions">
+<a href="#appendix-A.2.3" class="section-number selfRef">A.2.3. </a><a href="#name-critical-extensions" class="section-name selfRef">Critical Extensions</a>
+          </h4>
+<p id="appendix-A.2.3-1">The Geneve encapsulation header includes the C field, which
+indicates whether the current Geneve header includes critical options,
+that is to say, options which must be parsed by the target NVE.  If
+the endpoint is not able to process a critical option, the packet is
+discarded.<a href="#appendix-A.2.3-1" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-A.2.4">
+          <h4 id="name-maximal-header-length">
+<a href="#appendix-A.2.4" class="section-number selfRef">A.2.4. </a><a href="#name-maximal-header-length" class="section-name selfRef">Maximal Header Length</a>
+          </h4>
+<p id="appendix-A.2.4-1">The maximal header length in Geneve, including options, is 260
+octets.  GUE defines the maximal header to be 128 octets.  VXLAN-GPE
+uses a fixed-length header of 8 octets, unless NSH-over-VXLAN-GPE is
+used, yielding an encapsulation header of up to 264 octets.<a href="#appendix-A.2.4-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<section id="appendix-A.3">
+        <h3 id="name-encapsulation-header">
+<a href="#appendix-A.3" class="section-number selfRef">A.3. </a><a href="#name-encapsulation-header" class="section-name selfRef">Encapsulation Header</a>
+        </h3>
+<section id="appendix-A.3.1">
+          <h4 id="name-virtual-network-identifier-">
+<a href="#appendix-A.3.1" class="section-number selfRef">A.3.1. </a><a href="#name-virtual-network-identifier-" class="section-name selfRef">Virtual Network Identifier (VNI)</a>
+          </h4>
+<p id="appendix-A.3.1-1">The Geneve and VXLAN-GPE headers both include a 24-bit VNI field.
+GUE, on the other hand, enables the use of a 32-bit field called VNID;
+this field is not included in the GUE header but was defined as an
+optional extension in <span>[<a href="#I-D.hy-nvo3-gue-4-nvo" class="cite xref">GUE-ENCAPSULATION</a>]</span>.<a href="#appendix-A.3.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.1-2">The VXLAN-GPE header includes the I bit, indicating that the VNI
+field is valid in the current header.  A similar indicator is defined
+as a flag in the GUE header <span>[<a href="#I-D.ietf-intarea-gue-extensions" class="cite xref">GUE-EXTENSIONS</a>]</span>.<a href="#appendix-A.3.1-2" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-A.3.2">
+          <h4 id="name-next-protocol">
+<a href="#appendix-A.3.2" class="section-number selfRef">A.3.2. </a><a href="#name-next-protocol" class="section-name selfRef">Next Protocol</a>
+          </h4>
+<p id="appendix-A.3.2-1">All three encapsulation headers include a field that specifies the
+type of the next protocol header, which resides after the NVO3
+encapsulation header.  The Geneve header includes a 16-bit field that
+uses the IEEE Ethertype convention.  GUE uses an 8-bit field, which
+uses the IANA protocol numbering.  The VXLAN-GPE header
+incorporates an 8-bit Next Protocol field, using a registry specific to VXLAN-GPE, defined in <span>[<a href="#I-D.ietf-nvo3-vxlan-gpe" class="cite xref">VXLAN-GPE</a>]</span>.<a href="#appendix-A.3.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.2-2">The VXLAN-GPE header also includes the P bit, which explicitly
+indicates whether the Next Protocol field is present in the current
+header.<a href="#appendix-A.3.2-2" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-A.3.3">
+          <h4 id="name-other-header-fields">
+<a href="#appendix-A.3.3" class="section-number selfRef">A.3.3. </a><a href="#name-other-header-fields" class="section-name selfRef">Other Header Fields</a>
+          </h4>
+<p id="appendix-A.3.3-1">The OAM bit, which is defined in Geneve and in VXLAN-GPE, indicates
+whether the current packet is an OAM packet.  The GUE header includes
+a similar field but uses different terminology; the GUE C bit (Control bit)
+specifies whether the current packet is a control packet.  Note that
+the GUE C bit can potentially be used in a large set of
+protocols that are not OAM protocols.  However, the control packet
+examples discussed in <span>[<a href="#I-D.ietf-intarea-gue" class="cite xref">GUE</a>]</span> are
+related to OAM.<a href="#appendix-A.3.3-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.3-2">Each of the three NVO3 encapsulation headers includes a 2-bit
+Version field, which is currently defined to be zero.<a href="#appendix-A.3.3-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.3-3">The Geneve and VXLAN-GPE headers include reserved fields; 14 bits
+in the Geneve header and 27 bits in the VXLAN-GPE header are
+reserved.<a href="#appendix-A.3.3-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="appendix-A.4">
+        <h3 id="name-comparison-summary">
+<a href="#appendix-A.4" class="section-number selfRef">A.4. </a><a href="#name-comparison-summary" class="section-name selfRef">Comparison Summary</a>
+        </h3>
+<p id="appendix-A.4-1">The following table summarizes the comparison between the three
+NVO3 encapsulations. In some cases, a plus sign ("+") or minus sign
+("-") is used to indicate that the header is stronger or weaker in an
+area, respectively.<a href="#appendix-A.4-1" class="pilcrow">¶</a></p>
+<span id="name-encapsulations-comparison"></span><div id="EncapsulationsComparisonTable">
+<table class="center" id="table-1">
+          <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-encapsulations-comparison" class="selfRef">Encapsulations Comparison</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1"></th>
+              <th class="text-left" rowspan="1" colspan="1">Geneve</th>
+              <th class="text-left" rowspan="1" colspan="1">GUE</th>
+              <th class="text-left" rowspan="1" colspan="1">VXLAN-GPE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Outer transport UDP Port Number</td>
+              <td class="text-left" rowspan="1" colspan="1">UDP/IP 6081</td>
+              <td class="text-left" rowspan="1" colspan="1">UDP/IP 6080</td>
+              <td class="text-left" rowspan="1" colspan="1">UDP/IP 4790</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Base header length</td>
+              <td class="text-left" rowspan="1" colspan="1">8 octets</td>
+              <td class="text-left" rowspan="1" colspan="1">4 octets</td>
+              <td class="text-left" rowspan="1" colspan="1">8 octets (16 octets using an NSH)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Extensibility</td>
+              <td class="text-left" rowspan="1" colspan="1">Variable-length options</td>
+              <td class="text-left" rowspan="1" colspan="1">Extension fields</td>
+              <td class="text-left" rowspan="1" colspan="1">No innate extensibility. Might use an NSH.</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Extension parsing method</td>
+              <td class="text-left" rowspan="1" colspan="1">TLV-based</td>
+              <td class="text-left" rowspan="1" colspan="1">Flag-based</td>
+              <td class="text-left" rowspan="1" colspan="1">TLV-based (using an NSH with MD Type 2)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Extension order</td>
+              <td class="text-left" rowspan="1" colspan="1">Variable</td>
+              <td class="text-left" rowspan="1" colspan="1">Fixed</td>
+              <td class="text-left" rowspan="1" colspan="1">Variable (using an NSH)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Length field</td>
+              <td class="text-left" rowspan="1" colspan="1">+</td>
+              <td class="text-left" rowspan="1" colspan="1">+</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Max header length</td>
+              <td class="text-left" rowspan="1" colspan="1">260 octets</td>
+              <td class="text-left" rowspan="1" colspan="1">128 octets</td>
+              <td class="text-left" rowspan="1" colspan="1">8 octets (264 using an NSH)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Critical extension bit</td>
+              <td class="text-left" rowspan="1" colspan="1">+</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">VNI field size</td>
+              <td class="text-left" rowspan="1" colspan="1">24 bits</td>
+              <td class="text-left" rowspan="1" colspan="1">32 bits (extension)</td>
+              <td class="text-left" rowspan="1" colspan="1">24 bits</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Next Protocol field</td>
+              <td class="text-left" rowspan="1" colspan="1">16 bits Ethertype registry</td>
+              <td class="text-left" rowspan="1" colspan="1">8 bits Internet protocol registry</td>
+              <td class="text-left" rowspan="1" colspan="1">8 bits New registry</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Next protocol indicator</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">OAM / Control field</td>
+              <td class="text-left" rowspan="1" colspan="1">OAM bit</td>
+              <td class="text-left" rowspan="1" colspan="1">Control bit</td>
+              <td class="text-left" rowspan="1" colspan="1">OAM bit</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Version field</td>
+              <td class="text-left" rowspan="1" colspan="1">2 bits</td>
+              <td class="text-left" rowspan="1" colspan="1">2 bits</td>
+              <td class="text-left" rowspan="1" colspan="1">2 bits</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Reserved bits</td>
+              <td class="text-left" rowspan="1" colspan="1">14 bits</td>
+              <td class="text-left" rowspan="1" colspan="1">none</td>
+              <td class="text-left" rowspan="1" colspan="1">27 bits</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</section>
+</div>
+<div id="Acknowledgements">
+<section id="appendix-B">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-B-1">The authors would like to thank <span class="contact-name">Tom Herbert</span> for
+providing the motivation for the security/integrity extension and for his
+valuable comments; <span class="contact-name">T. Sridhar</span> for his valuable comments
+and feedback; <span class="contact-name">Anoop Ghanwani</span> for his extensive comments;
+and <span class="contact-name">Ignas Bagdonas</span>.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Contributors">
+<section id="appendix-C">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<p id="appendix-C-1">The following coauthors have contributed to this document:<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ilango Ganga</span></div>
+<div dir="auto" class="left"><span class="org">Intel</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ilango.s.ganga@intel.com" class="email">ilango.s.ganga@intel.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Pankaj Garg</span></div>
+<div dir="auto" class="left"><span class="org">Microsoft</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:pankajg@microsoft.com" class="email">pankajg@microsoft.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Rajeev Manur</span></div>
+<div dir="auto" class="left"><span class="org">Broadcom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:rajeev.manur@broadcom.com" class="email">rajeev.manur@broadcom.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tal Mizrahi</span></div>
+<div dir="auto" class="left"><span class="org">Huawei</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:tal.mizrahi.phd@gmail.com" class="email">tal.mizrahi.phd@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">David Mozes</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mosesster@gmail.com" class="email">mosesster@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Erik Nordmark</span></div>
+<div dir="auto" class="left"><span class="org">ZEDEDA</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:nordmark@sonic.net" class="email">nordmark@sonic.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Michael Smith</span></div>
+<div dir="auto" class="left"><span class="org">Cisco</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:michsmit@cisco.com" class="email">michsmit@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Sam Aldrin</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:aldrin.ietf@gmail.com" class="email">aldrin.ietf@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Sami Boutros (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Ciena Corporation</span></div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:sboutros@ciena.com" class="email">sboutros@ciena.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Donald E. Eastlake 3rd (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Independent</span></div>
+<div dir="auto" class="left"><span class="street-address">2386 Panoramic Circle</span></div>
+<div dir="auto" class="left">
+<span class="locality">Apopka</span>, <span class="region">FL</span> <span class="postal-code">32703</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+1-508-333-2270" class="tel">+1-508-333-2270</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:d3e3e3@gmail.com" class="email">d3e3e3@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
