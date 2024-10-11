@@ -1,0 +1,3154 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9646: Conveying a Certificate Signing Request (CSR) in a Secure Zero-Touch Provisioning (SZTP) Bootstrapping Request</title>
+<meta content="Kent Watsen" name="author">
+<meta content="Russ Housley" name="author">
+<meta content="Sean Turner" name="author">
+<meta content='
+       This document extends the input to the "get-bootstrapping-data" RPC defined in
+            RFC 8572 to include an optional certificate signing request (CSR),
+            enabling a bootstrapping device to additionally obtain an identity
+            certificate (e.g., a Local Device Identifier (LDevID) from IEEE 802.1AR) as part of the 
+            "onboarding information" response provided in the RPC-reply. 
+    ' name="description">
+<meta content="xml2rfc 3.23.2" name="generator">
+<meta content="zerotouch" name="keyword">
+<meta content="bootstrap" name="keyword">
+<meta content="sztp" name="keyword">
+<meta content="ztp" name="keyword">
+<meta content="csr" name="keyword">
+<meta content="pkcs#10" name="keyword">
+<meta content="p10" name="keyword">
+<meta content="p10cr" name="keyword">
+<meta content="cmc" name="keyword">
+<meta content="cmp" name="keyword">
+<meta content="9646" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.23.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 4.9.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9646.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    float: none;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-netconf-sztp-csr-14" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9646" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9646</td>
+<td class="center">Conveying a CSR in an SZTP Request</td>
+<td class="right">October 2024</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Watsen, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9646" class="eref">9646</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc8572" class="eref">8572</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2024-10" class="published">October 2024</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">K. Watsen</div>
+<div class="org">Watsen Networks</div>
+</div>
+<div class="author">
+      <div class="author-name">R. Housley</div>
+<div class="org">Vigil Security</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Turner</div>
+<div class="org">sn3rd</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9646</h1>
+<h1 id="title">Conveying a Certificate Signing Request (CSR) in a Secure Zero-Touch Provisioning (SZTP) Bootstrapping Request</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document extends the input to the "get-bootstrapping-data" RPC defined in
+            RFC 8572 to include an optional certificate signing request (CSR),
+            enabling a bootstrapping device to additionally obtain an identity
+            certificate (e.g., a Local Device Identifier (LDevID) from IEEE 802.1AR) as part of the 
+            "onboarding information" response provided in the RPC-reply.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9646">https://www.rfc-editor.org/info/rfc9646</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2024 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-overview" class="internal xref">Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.4">
+                <p id="section-toc.1-1.1.2.4.1"><a href="#section-1.4" class="auto internal xref">1.4</a>.  <a href="#name-conventions" class="internal xref">Conventions</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-the-ietf-sztp-csr-module" class="internal xref">The "ietf-sztp-csr" Module</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-data-model-overview" class="internal xref">Data Model Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-example-usage" class="internal xref">Example Usage</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-yang-module" class="internal xref">YANG Module</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-the-ietf-ztp-types-module" class="internal xref">The "ietf-ztp-types" Module</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-data-model-overview-2" class="internal xref">Data Model Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-yang-module-2" class="internal xref">YANG Module</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-sztp-client-considerations" class="internal xref">SZTP-Client Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-ensuring-the-integrity-of-a" class="internal xref">Ensuring the Integrity of Asymmetric Private Keys</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-reuse-of-a-manufacturer-gen" class="internal xref">Reuse of a Manufacturer-Generated Private Key</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.3">
+                    <p id="section-toc.1-1.4.2.1.2.3.1"><a href="#section-4.1.3" class="auto internal xref">4.1.3</a>.  <a href="#name-replay-attack-protection" class="internal xref">Replay Attack Protection</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.4">
+                    <p id="section-toc.1-1.4.2.1.2.4.1"><a href="#section-4.1.4" class="auto internal xref">4.1.4</a>.  <a href="#name-connecting-to-an-untrusted-" class="internal xref">Connecting to an Untrusted Bootstrap Server</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.5">
+                    <p id="section-toc.1-1.4.2.1.2.5.1"><a href="#section-4.1.5" class="auto internal xref">4.1.5</a>.  <a href="#name-selecting-the-best-origin-a" class="internal xref">Selecting the Best Origin Authentication Mechanism</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.6">
+                    <p id="section-toc.1-1.4.2.1.2.6.1"><a href="#section-4.1.6" class="auto internal xref">4.1.6</a>.  <a href="#name-clearing-the-private-key-an" class="internal xref">Clearing the Private Key and Associated Certificate</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-sztp-server-considerations" class="internal xref">SZTP-Server Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-verifying-proof-of-possessi" class="internal xref">Verifying Proof-of-Possession</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-verifying-proof-of-origin" class="internal xref">Verifying Proof-of-Origin</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-supporting-sztp-clients-tha" class="internal xref">Supporting SZTP-Clients That Don't Trust the SZTP-Server</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-security-considerations-for" class="internal xref">Security Considerations for the "ietf-sztp-csr" YANG Module</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-security-considerations-for-" class="internal xref">Security Considerations for the "ietf-ztp-types" YANG Module</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-the-ietf-xml-registry" class="internal xref">The IETF XML Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-the-yang-module-names-regis" class="internal xref">The YANG Module Names Registry</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<section id="section-1.1">
+        <h3 id="name-overview">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-overview" class="section-name selfRef">Overview</a>
+        </h3>
+<p id="section-1.1-1">This document extends the input to the "get-bootstrapping-data" RPC defined in
+            <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span> to include an optional certificate
+            signing request (CSR) <span>[<a href="#RFC2986" class="cite xref">RFC2986</a>]</span>, enabling a
+            bootstrapping device to additionally obtain an identity
+            certificate (e.g., an LDevID from <span>[<a href="#Std-802.1AR-2018" class="cite xref">Std-802.1AR-2018</a>]</span>)
+            as part of the "onboarding information" response provided in
+            the RPC-reply.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">The ability to provision an identity certificate that is purpose-built 
+            for a production environment during the bootstrapping process
+            removes reliance on the manufacturer Certification Authority (CA), and it also enables the
+            bootstrapped device to join the production environment with an
+            appropriate identity and other attributes in its identity
+            certificate (e.g., an LDevID).<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">Two YANG <span>[<a href="#RFC7950" class="cite xref">RFC7950</a>]</span> modules are defined.  The
+             "ietf-ztp-types" module defines three YANG groupings for the
+             various messages defined in this document.  The "ietf-sztp-csr"
+             module augments two groupings into the "get-bootstrapping-data"
+             RPC and defines a YANG data structure <span>[<a href="#RFC8791" class="cite xref">RFC8791</a>]</span>
+               around the third grouping.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="terminology">
+<section id="section-1.2">
+        <h3 id="name-terminology">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.2-1">This document uses the following terms from <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>:<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-1.2-2.1">Bootstrap Server<a href="#section-1.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-2.2">Bootstrapping Data<a href="#section-1.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-2.3">Conveyed Information<a href="#section-1.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-2.4">Device<a href="#section-1.2-2.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-2.5">Manufacturer<a href="#section-1.2-2.5" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-2.6">Onboarding Information<a href="#section-1.2-2.6" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-2.7">Signed Data<a href="#section-1.2-2.7" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-1.2-3">This document defines the following new terms:<a href="#section-1.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-1.2-4">
+          <dt id="section-1.2-4.1">SZTP-client:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-4.2">The term "SZTP-client" refers to a "device" that is using a
+              "bootstrap server" as a source of "bootstrapping data".<a href="#section-1.2-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-4.3">SZTP-server:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-4.4">The term "SZTP-server" is an alternative term for "bootstrap
+              server" that is symmetric with the "SZTP-client" term.<a href="#section-1.2-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="requirements-language">
+<section id="section-1.3">
+        <h3 id="name-requirements-language">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.3-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-1.4">
+        <h3 id="name-conventions">
+<a href="#section-1.4" class="section-number selfRef">1.4. </a><a href="#name-conventions" class="section-name selfRef">Conventions</a>
+        </h3>
+<p id="section-1.4-1">Various examples in this document use "BASE64VALUE=" as a placeholder
+            value for binary data that has been base64 encoded (per <span><a href="https://rfc-editor.org/rfc/rfc7950#section-9.8" class="relref">Section 9.8</a> of [<a href="#RFC7950" class="cite xref">RFC7950</a>]</span>).   This placeholder value is used because real
+            base64-encoded structures are often many lines long and
+        hence distracting to the example being presented.<a href="#section-1.4-1" class="pilcrow">¶</a></p>
+<p id="section-1.4-2"> Various examples in this document contain long lines that may be folded,
+  as described in <span>[<a href="#RFC8792" class="cite xref">RFC8792</a>]</span>.<a href="#section-1.4-2" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-2">
+      <h2 id="name-the-ietf-sztp-csr-module">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-the-ietf-sztp-csr-module" class="section-name selfRef">The "ietf-sztp-csr" Module</a>
+      </h2>
+<p id="section-2-1">The "ietf-sztp-csr" module is a YANG 1.1 <span>[<a href="#RFC7950" class="cite xref">RFC7950</a>]</span>
+          module that augments the "ietf-sztp-bootstrap-server" module defined in
+          <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span> and defines a YANG "structure" that is to be
+          conveyed in the "error-info" node defined in <span><a href="https://rfc-editor.org/rfc/rfc8040#section-7.1" class="relref">Section 7.1</a> of [<a href="#RFC8040" class="cite xref">RFC8040</a>]</span>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<section id="section-2.1">
+        <h3 id="name-data-model-overview">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-data-model-overview" class="section-name selfRef">Data Model Overview</a>
+        </h3>
+<p id="section-2.1-1">The following tree diagram <span>[<a href="#RFC8340" class="cite xref">RFC8340</a>]</span> illustrates the 
+            "ietf-sztp-csr" module.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<div class="lang-yangtree sourcecode" id="section-2.1-2">
+<pre>
+module: ietf-sztp-csr
+
+  augment /sztp-svr:get-bootstrapping-data/sztp-svr:input:
+    +---w (msg-type)?
+       +--:(csr-support)
+       |  +---w csr-support
+       |     +---w key-generation!
+       |     |  +---w supported-algorithms
+       |     |     +---w algorithm-identifier*   binary
+       |     +---w csr-generation
+       |        +---w supported-formats
+       |           +---w format-identifier*   identityref
+       +--:(csr)
+          +---w (csr-type)
+             +--:(p10-csr)
+             |  +---w p10-csr?   ct:csr
+             +--:(cmc-csr)
+             |  +---w cmc-csr?   binary
+             +--:(cmp-csr)
+                +---w cmp-csr?   binary
+
+  structure csr-request:
+    +-- key-generation!
+    |  +-- selected-algorithm
+    |     +-- algorithm-identifier    binary
+    +-- csr-generation
+    |  +-- selected-format
+    |     +-- format-identifier    identityref
+    +-- cert-req-info?    ct:csr-info
+</pre><a href="#section-2.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-2.1-3">The augmentation defines two kinds of 
+            parameters that an SZTP-client can send to an SZTP-server.  The
+            YANG structure defines one collection of parameters that an
+        SZTP-server can send to an SZTP-client.<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<p id="section-2.1-4">In the order of their intended use:<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-2.1-5">
+          <li id="section-2.1-5.1">The SZTP-client sends a "csr-support" node, encoded in a first 
+              "get-bootstrapping-data" request to the SZTP-server, to indicate
+              that it supports the ability to generate CSRs.
+              This input parameter conveys if the SZTP-client is able to generate a
+              new asymmetric key and, if so, which key algorithms it supports, 
+              as well as what kinds of CSR structures the SZTP-client
+          is able to generate.<a href="#section-2.1-5.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-2.1-5.2">The SZTP-server responds with an error, containing the "csr-request"
+              structure, to request
+              the SZTP-client to generate a CSR.  This structure is used to
+              select the key algorithm the SZTP-client should use to generate
+              a new asymmetric key (if supported), the kind of CSR structure
+              the SZTP-client should generate, and optionally the content for
+              the CSR itself.<a href="#section-2.1-5.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-2.1-5.3">The SZTP-client sends one of the "*-csr" nodes, encoded in a second 
+              "get-bootstrapping-data" request to the SZTP-server.  This node 
+              encodes the server-requested CSR.<a href="#section-2.1-5.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-2.1-5.4">The SZTP-server responds with onboarding information to communicate
+              the signed certificate to the SZTP-client.  How to do this is
+              discussed in <a href="#example-usage" class="auto internal xref">Section 2.2</a>.<a href="#section-2.1-5.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-2.1-6">To further illustrate how the augmentation and structure defined
+            by the "ietf-sztp-csr" module are used, below are two additional
+            tree diagrams showing these nodes placed where they are used.<a href="#section-2.1-6" class="pilcrow">¶</a></p>
+<p id="section-2.1-7">The following tree diagram <span>[<a href="#RFC8340" class="cite xref">RFC8340</a>]</span> illustrates SZTP's 
+            "get-bootstrapping-data" RPC with the augmentation in place.<a href="#section-2.1-7" class="pilcrow">¶</a></p>
+<div class="lang-yangtree sourcecode" id="section-2.1-8">
+<pre>
+=============== NOTE: '\' line wrapping per RFC 8792 ================
+
+module: ietf-sztp-bootstrap-server
+
+  rpcs:
+    +---x get-bootstrapping-data
+       +---w input
+       |  +---w signed-data-preferred?          empty
+       |  +---w hw-model?                       string
+       |  +---w os-name?                        string
+       |  +---w os-version?                     string
+       |  +---w nonce?                          binary
+       |  +---w (sztp-csr:msg-type)?
+       |     +--:(sztp-csr:csr-support)
+       |     |  +---w sztp-csr:csr-support
+       |     |     +---w sztp-csr:key-generation!
+       |     |     |  +---w sztp-csr:supported-algorithms
+       |     |     |     +---w sztp-csr:algorithm-identifier*   bina\
+ry
+       |     |     +---w sztp-csr:csr-generation
+       |     |        +---w sztp-csr:supported-formats
+       |     |           +---w sztp-csr:format-identifier*   identit\
+yref
+       |     +--:(sztp-csr:csr)
+       |        +---w (sztp-csr:csr-type)
+       |           +--:(sztp-csr:p10-csr)
+       |           |  +---w sztp-csr:p10-csr?   ct:csr
+       |           +--:(sztp-csr:cmc-csr)
+       |           |  +---w sztp-csr:cmc-csr?   binary
+       |           +--:(sztp-csr:cmp-csr)
+       |              +---w sztp-csr:cmp-csr?   binary
+       +--ro output
+          +--ro reporting-level?    enumeration {onboarding-server}?
+          +--ro conveyed-information    cms
+          +--ro owner-certificate?      cms
+          +--ro ownership-voucher?      cms
+</pre><a href="#section-2.1-8" class="pilcrow">¶</a>
+</div>
+<p id="section-2.1-9">The following tree diagram <span>[<a href="#RFC8340" class="cite xref">RFC8340</a>]</span> illustrates RESTCONF's
+            "errors" RPC-reply message with the "csr-request" structure in place.<a href="#section-2.1-9" class="pilcrow">¶</a></p>
+<div class="lang-yangtree sourcecode" id="section-2.1-10">
+<pre>
+module: ietf-restconf
+  +--ro errors
+     +--ro error* []
+        +--ro error-type       enumeration
+        +--ro error-tag        string
+        +--ro error-app-tag?   string
+        +--ro error-path?      instance-identifier
+        +--ro error-message?   string
+        +--ro error-info
+           +--ro sztp-csr:csr-request
+              +--ro sztp-csr:key-generation!
+              |  +--ro sztp-csr:selected-algorithm
+              |     +--ro sztp-csr:algorithm-identifier    binary
+              +--ro sztp-csr:csr-generation
+              |  +--ro sztp-csr:selected-format
+              |     +--ro sztp-csr:format-identifier    identityref
+              +--ro sztp-csr:cert-req-info?    ct:csr-info
+</pre><a href="#section-2.1-10" class="pilcrow">¶</a>
+</div>
+</section>
+<div id="example-usage">
+<section id="section-2.2">
+        <h3 id="name-example-usage">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-example-usage" class="section-name selfRef">Example Usage</a>
+        </h3>
+<aside id="section-2.2-1">
+          <p id="section-2.2-1.1">NOTE: The examples below are encoded using JSON, but they could
+              equally well be encoded using XML, as is supported by SZTP.<a href="#section-2.2-1.1" class="pilcrow">¶</a></p>
+</aside>
+<p id="section-2.2-2">An SZTP-client implementing this specification would signal
+            to the bootstrap server its willingness to generate a CSR by
+            including the "csr-support" node in its "get-bootstrapping-data"
+            RPC. In the example below, the SZTP-client additionally
+            indicates that it is able to generate keys and provides
+            a list of key algorithms it supports, as well as provide
+            a list of certificate formats it supports.<a href="#section-2.2-2" class="pilcrow">¶</a></p>
+<p id="section-2.2-3" class="keepWithNext">REQUEST<a href="#section-2.2-3" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2-4">
+<pre>
+=============== NOTE: '\' line wrapping per RFC 8792 ================
+
+POST /restconf/operations/ietf-sztp-bootstrap-server:get-bootstrappi\
+ng-data HTTP/1.1
+HOST: example.com
+Content-Type: application/yang-data+json
+
+{
+  "ietf-sztp-bootstrap-server:input" : {
+    "hw-model": "model-x",
+    "os-name": "vendor-os",
+    "os-version": "17.3R2.1",
+    "nonce": "extralongbase64encodedvalue=",
+    "ietf-sztp-csr:csr-support": {
+      "key-generation": {
+        "supported-algorithms": {
+          "algorithm-identifier": [
+            "BASE64VALUE1",
+            "BASE64VALUE2",
+            "BASE64VALUE3"
+          ]
+        }
+      },
+      "csr-generation": {
+        "supported-formats": {
+          "format-identifier": [
+            "ietf-ztp-types:p10-csr",
+            "ietf-ztp-types:cmc-csr",
+            "ietf-ztp-types:cmp-csr"
+          ]
+        }
+      }
+    }
+  }
+}
+</pre><a href="#section-2.2-4" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2-5">Assuming the SZTP-server wishes to prompt the SZTP-client to
+            provide a CSR, then it would respond with an HTTP 400 Bad Request
+            error code.  In the example below, the SZTP-server specifies
+            that it wishes the SZTP-client to generate a key using a specific
+            algorithm and generate a PKCS#10-based CSR containing specific
+            content.<a href="#section-2.2-5" class="pilcrow">¶</a></p>
+<p id="section-2.2-6" class="keepWithNext">RESPONSE<a href="#section-2.2-6" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2-7">
+<pre>
+HTTP/1.1 400 Bad Request
+Date: Sat, 31 Oct 2021 17:02:40 GMT
+Server: example-server
+Content-Type: application/yang-data+json
+
+{
+  "ietf-restconf:errors" : {
+    "error" : [
+      {
+        "error-type": "application",
+        "error-tag": "missing-attribute",
+        "error-message": "Missing input parameter",
+        "error-info": {
+          "ietf-sztp-csr:csr-request": {
+            "key-generation": {
+              "selected-algorithm": {
+                "algorithm-identifier": "BASE64VALUE="
+              }
+            },
+            "csr-generation": {
+              "selected-format": {
+                "format-identifier": "ietf-ztp-types:p10-csr"
+              }
+            },
+            "cert-req-info": "BASE64VALUE="
+          }
+        }
+      }
+    ]
+  }
+}
+</pre><a href="#section-2.2-7" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2-8">Upon being prompted to provide a CSR, the SZTP-client would
+        POST another "get-bootstrapping-data" request but this time
+ including one of the "csr" nodes to convey its CSR to the
+            SZTP-server:<a href="#section-2.2-8" class="pilcrow">¶</a></p>
+<p id="section-2.2-9" class="keepWithNext">REQUEST<a href="#section-2.2-9" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2-10">
+<pre>
+=============== NOTE: '\' line wrapping per RFC 8792 ================
+
+POST /restconf/operations/ietf-sztp-bootstrap-server:get-bootstrappi\
+ng-data HTTP/1.1
+HOST: example.com
+Content-Type: application/yang-data+json
+
+{
+  "ietf-sztp-bootstrap-server:input" : {
+    "hw-model": "model-x",
+    "os-name": "vendor-os",
+    "os-version": "17.3R2.1",
+    "nonce": "extralongbase64encodedvalue=",
+    "ietf-sztp-csr:p10-csr": "BASE64VALUE="
+  }
+}
+</pre><a href="#section-2.2-10" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2-11">At this point, it is expected that the SZTP-server, perhaps
+            in conjunction with other systems, such as a backend CA or registration authority (RA),
+            will validate the CSR's origin and proof-of-possession and,
+            assuming the CSR is approved, issue a signed certificate for
+            the bootstrapping device.<a href="#section-2.2-11" class="pilcrow">¶</a></p>
+<p id="section-2.2-12">The SZTP-server responds with conveyed information
+        (the "conveyed-information" node shown below) that encodes
+ "onboarding-information" (inside the base64 value) containing
+            a signed identity certificate for the CSR provided by the
+            SZTP-client:<a href="#section-2.2-12" class="pilcrow">¶</a></p>
+<p id="section-2.2-13" class="keepWithNext">RESPONSE<a href="#section-2.2-13" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2-14">
+<pre>
+HTTP/1.1 200 OK
+Date: Sat, 31 Oct 2021 17:02:40 GMT
+Server: example-server
+Content-Type: application/yang-data+json
+
+{
+  "ietf-sztp-bootstrap-server:output" : {
+    "reporting-level": "verbose",
+    "conveyed-information": "BASE64VALUE="
+  }
+}
+</pre><a href="#section-2.2-14" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2-15">How the signed certificate is conveyed inside the onboarding information
+            is outside the scope of this document.  Some implementations may choose
+            to convey it inside a script (e.g., SZTP's "pre-configuration-script"),
+            while other implementations may choose to convey it inside the SZTP
+            "configuration" node.  SZTP onboarding information is described in 
+            <span><a href="https://rfc-editor.org/rfc/rfc8572#section-2.2" class="relref">Section 2.2</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-2.2-15" class="pilcrow">¶</a></p>
+<p id="section-2.2-16">Below are two examples of conveying the signed certificate inside
+            the "configuration" node.  Both examples assume that the SZTP-client
+            understands the "ietf-keystore" module defined in
+            <span>[<a href="#RFC9642" class="cite xref">RFC9642</a>]</span>.<a href="#section-2.2-16" class="pilcrow">¶</a></p>
+<p id="section-2.2-17">This first example illustrates the case where the signed certificate is
+            for the same asymmetric key used by the SZTP-client's manufacturer-generated
+            identity certificate (e.g., an Initial Device Identifier (IDevID) from <span>[<a href="#Std-802.1AR-2018" class="cite xref">Std-802.1AR-2018</a>]</span>).
+            As such, the configuration needs to associate the newly signed certificate
+            with the existing asymmetric key:<a href="#section-2.2-17" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2-18">
+<pre>
+=============== NOTE: '\' line wrapping per RFC 8792 ================
+
+{
+  "ietf-keystore:keystore": {
+    "asymmetric-keys": {
+      "asymmetric-key": [
+        {
+          "name": "Manufacturer-Generated Hidden Key",
+          "public-key-format": "ietf-crypto-types:subject-public-key\
+-info-format",
+          "public-key": "BASE64VALUE=",
+          "hidden-private-key": [null],
+          "certificates": {
+            "certificate": [
+              {
+                "name": "Manufacturer-Generated IDevID Cert",
+                "cert-data": "BASE64VALUE="
+              },
+              {
+                "name": "Newly-Generated LDevID Cert",
+                "cert-data": "BASE64VALUE="
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+</pre><a href="#section-2.2-18" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2-19">This second example illustrates the case where the signed certificate is
+            for a newly generated asymmetric key.  As such, the configuration needs
+            to associate the newly signed certificate with the newly generated
+            asymmetric key:<a href="#section-2.2-19" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2-20">
+<pre>
+=============== NOTE: '\' line wrapping per RFC 8792 ================
+
+{
+  "ietf-keystore:keystore": {
+    "asymmetric-keys": {
+      "asymmetric-key": [
+        {
+          "name": "Manufacturer-Generated Hidden Key",
+          "public-key-format": "ietf-crypto-types:subject-public-key\
+-info-format",
+          "public-key": "BASE64VALUE=",
+          "hidden-private-key": [null],
+          "certificates": {
+            "certificate": [
+              {
+                "name": "Manufacturer-Generated IDevID Cert",
+                "cert-data": "BASE64VALUE="
+              }
+            ]
+          }
+        },
+        {
+          "name": "Newly-Generated Hidden Key",
+          "public-key-format": "ietf-crypto-types:subject-public-key\
+-info-format",
+          "public-key": "BASE64VALUE=",
+          "hidden-private-key": [null],
+          "certificates": {
+            "certificate": [
+              {
+                "name": "Newly-Generated LDevID Cert",
+                "cert-data": "BASE64VALUE="
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+</pre><a href="#section-2.2-20" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2-21">In addition to configuring the signed certificate, it is often
+            necessary to also configure the issuer's signing certificate
+            so that the device (i.e., STZP-client) can authenticate
+            certificates presented by peer devices signed by the same
+            issuer as its own.  While outside the scope of this document,
+            one way to do this would be to use the "ietf-truststore" module
+            defined in <span>[<a href="#RFC9641" class="cite xref">RFC9641</a>]</span>.<a href="#section-2.2-21" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-2.3">
+        <h3 id="name-yang-module">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-yang-module" class="section-name selfRef">YANG Module</a>
+        </h3>
+<p id="section-2.3-1">This module augments an RPC defined in <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>. The
+            module uses data types and groupings defined in <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>,
+            <span>[<a href="#RFC8791" class="cite xref">RFC8791</a>]</span>, and <span>[<a href="#RFC9640" class="cite xref">RFC9640</a>]</span>.
+        The module also has an informative reference to <span>[<a href="#Std-802.1AR-2018" class="cite xref">Std-802.1AR-2018</a>]</span>.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<div class="breakable lang-yang sourcecode" id="section-2.3-2">
+<pre>&lt;CODE BEGINS&gt; file "ietf-sztp-csr@2024-10-10.yang"
+
+module ietf-sztp-csr {
+  yang-version 1.1;
+  namespace "urn:ietf:params:xml:ns:yang:ietf-sztp-csr";
+  prefix sztp-csr;
+
+  import ietf-sztp-bootstrap-server {
+    prefix sztp-svr;
+    reference
+      "RFC 8572: Secure Zero Touch Provisioning (SZTP)";
+  }
+
+  import ietf-yang-structure-ext {
+    prefix sx;
+    reference
+      "RFC 8791: YANG Data Structure Extensions";
+  }
+
+  import ietf-ztp-types {
+    prefix zt;
+    reference
+      "RFC 9646: Conveying a Certificate Signing Request (CSR)
+                 in a Secure Zero-Touch Provisioning (SZTP)
+                 Bootstrapping Request";
+  }
+
+  organization
+    "IETF NETCONF (Network Configuration) Working Group";
+
+  contact
+    "WG Web:   https://datatracker.ietf.org/wg/netconf
+     WG List:  NETCONF WG list &lt;mailto:netconf@ietf.org&gt;
+     Authors:  Kent Watsen &lt;mailto:kent+ietf@watsen.net&gt;
+               Russ Housley &lt;mailto:housley@vigilsec.com&gt;
+               Sean Turner &lt;mailto:sean@sn3rd.com&gt;";
+
+  description
+    "This module augments the 'get-bootstrapping-data' RPC,
+     defined in the 'ietf-sztp-bootstrap-server' module from
+     SZTP (RFC 8572), enabling the SZTP-client to obtain a
+     signed identity certificate (e.g., an LDevID from IEEE
+     802.1AR) as part of the SZTP onboarding information
+     response.
+
+     The key words 'MUST', 'MUST NOT', 'REQUIRED', 'SHALL',
+     'SHALL NOT', 'SHOULD', 'SHOULD NOT', 'RECOMMENDED',
+     'NOT RECOMMENDED', 'MAY', and 'OPTIONAL' in this
+     document are to be interpreted as described in BCP 14
+     (RFC 2119) (RFC 8174) when, and only when, they appear
+     in all capitals, as shown here.
+
+     Copyright (c) 2024 IETF Trust and the persons identified as
+     authors of the code.  All rights reserved.
+
+     Redistribution and use in source and binary forms, with or
+     without modification, is permitted pursuant to, and subject to
+     the license terms contained in, the Revised BSD License set
+     forth in Section 4.c of the IETF Trust's Legal Provisions
+     Relating to IETF Documents
+     (https://trustee.ietf.org/license-info).
+
+     This version of this YANG module is part of RFC 9646
+     (https://www.rfc-editor.org/info/rfc9646); see the
+     RFC itself for full legal notices.";
+
+  revision 2024-10-10 {
+    description
+      "Initial version.";
+    reference
+      "RFC 9646: Conveying a Certificate Signing Request (CSR)
+                 in a Secure Zero-Touch Provisioning (SZTP)
+                 Bootstrapping Request";
+  }
+
+  // Protocol-accessible nodes
+
+  augment "/sztp-svr:get-bootstrapping-data/sztp-svr:input" {
+    description
+      "This augmentation adds the 'csr-support' and 'csr' nodes to
+       the SZTP (RFC 8572) 'get-bootstrapping-data' request message,
+       enabling the SZTP-client to obtain an identity certificate
+       (e.g., an LDevID from IEEE 802.1AR) as part of the onboarding
+       information response provided by the SZTP-server.
+
+       The 'csr-support' node enables the SZTP-client to indicate
+       that it supports generating certificate signing requests
+       (CSRs) and to provide details around the CSRs it is able
+       to generate.
+
+       The 'csr' node enables the SZTP-client to relay a CSR to
+       the SZTP-server.";
+    reference
+      "IEEE 802.1AR: IEEE Standard for Local and Metropolitan
+                     Area Networks - Secure Device Identity
+       RFC 8572: Secure Zero Touch Provisioning (SZTP)";
+    choice msg-type {
+      description
+        "Messages are mutually exclusive.";
+      case csr-support {
+        description
+          "Indicates how the SZTP-client supports generating CSRs.
+
+           If present and a SZTP-server wishes to request the
+           SZTP-client generate a CSR, the SZTP-server MUST
+           respond with an HTTP 400 Bad Request error code with an
+           'ietf-restconf:errors' message having the 'error-tag'
+           value 'missing-attribute' and the 'error-info' node
+           containing the 'csr-request' structure described
+           in this module.";
+        uses zt:csr-support-grouping;
+      }
+      case csr {
+        description
+          "Provides the CSR generated by the SZTP-client.
+
+           When present, the SZTP-server SHOULD respond with
+           an SZTP onboarding information message containing
+           a signed certificate for the conveyed CSR.  The
+           SZTP-server MAY alternatively respond with another
+           HTTP error containing another 'csr-request'; in
+           which case, the SZTP-client MUST delete any key
+           generated for the previously generated CSR.";
+        uses zt:csr-grouping;
+      }
+    }
+  }
+
+  sx:structure csr-request {
+    description
+      "A YANG data structure, per RFC 8791, that specifies
+       details for the CSR that the ZTP-client is to generate.";
+    reference
+      "RFC 8791: YANG Data Structure Extensions";
+    uses zt:csr-request-grouping;
+  }
+
+}
+
+&lt;CODE ENDS&gt;</pre><a href="#section-2.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</section>
+<section id="section-3">
+      <h2 id="name-the-ietf-ztp-types-module">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-the-ietf-ztp-types-module" class="section-name selfRef">The "ietf-ztp-types" Module</a>
+      </h2>
+<p id="section-3-1">This section defines a YANG 1.1 <span>[<a href="#RFC7950" class="cite xref">RFC7950</a>]</span> module
+          that defines three YANG groupings, one for each message sent
+          between a ZTP-client and ZTP-server.  This module is defined
+          independently of the "ietf-sztp-csr" module so that its 
+          groupings may be used by bootstrapping protocols other than
+          SZTP <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<section id="section-3.1">
+        <h3 id="name-data-model-overview-2">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-data-model-overview-2" class="section-name selfRef">Data Model Overview</a>
+        </h3>
+<p id="section-3.1-1">The following tree diagram <span>[<a href="#RFC8340" class="cite xref">RFC8340</a>]</span> illustrates
+            the three groupings defined in the "ietf-ztp-types" module.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<div class="lang-yangtree sourcecode" id="section-3.1-2">
+<pre>
+module: ietf-ztp-types
+
+  grouping csr-support-grouping
+    +-- csr-support
+       +-- key-generation!
+       |  +-- supported-algorithms
+       |     +-- algorithm-identifier*   binary
+       +-- csr-generation
+          +-- supported-formats
+             +-- format-identifier*   identityref
+  grouping csr-request-grouping
+    +-- key-generation!
+    |  +-- selected-algorithm
+    |     +-- algorithm-identifier    binary
+    +-- csr-generation
+    |  +-- selected-format
+    |     +-- format-identifier    identityref
+    +-- cert-req-info?    ct:csr-info
+  grouping csr-grouping
+    +-- (csr-type)
+       +--:(p10-csr)
+       |  +-- p10-csr?   ct:csr
+       +--:(cmc-csr)
+       |  +-- cmc-csr?   binary
+       +--:(cmp-csr)
+          +-- cmp-csr?   binary
+</pre><a href="#section-3.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+<section id="section-3.2">
+        <h3 id="name-yang-module-2">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-yang-module-2" class="section-name selfRef">YANG Module</a>
+        </h3>
+<p id="section-3.2-1">This module uses data types and groupings defined in <span>[<a href="#RFC8791" class="cite xref">RFC8791</a>]</span>
+            and <span>[<a href="#RFC9640" class="cite xref">RFC9640</a>]</span>.  The module has
+            additional normative references to <span>[<a href="#RFC2986" class="cite xref">RFC2986</a>]</span>,
+            <span>[<a href="#RFC4210" class="cite xref">RFC4210</a>]</span>, <span>[<a href="#RFC5272" class="cite xref">RFC5272</a>]</span>, and
+            <span>[<a href="#ITU.X690.2021" class="cite xref">ITU.X690.2021</a>]</span> and an informative reference
+            to <span>[<a href="#Std-802.1AR-2018" class="cite xref">Std-802.1AR-2018</a>]</span>.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<div class="breakable lang-yang sourcecode" id="section-3.2-2">
+<pre>&lt;CODE BEGINS&gt; file "ietf-ztp-types@2024-10-10.yang"
+
+module ietf-ztp-types {
+  yang-version 1.1;
+  namespace "urn:ietf:params:xml:ns:yang:ietf-ztp-types";
+  prefix zt;
+
+  import ietf-crypto-types {
+    prefix ct;
+    reference
+      "RFC 9640: YANG Data Types and Groupings for Cryptography";
+  }
+
+  organization
+    "IETF NETCONF (Network Configuration) Working Group";
+
+  contact
+    "WG Web:   https://datatracker.ietf.org/wg/netconf
+     WG List:  NETCONF WG list &lt;mailto:netconf@ietf.org&gt;
+     Authors:  Kent Watsen &lt;mailto:kent+ietf@watsen.net&gt;
+               Russ Housley &lt;mailto:housley@vigilsec.com&gt;
+               Sean Turner &lt;mailto:sean@sn3rd.com&gt;";
+
+  description
+    "This module defines three groupings that enable
+     bootstrapping devices to 1) indicate if and how they
+     support generating CSRs, 2) obtain a request to
+     generate a CSR, and 3) communicate the requested CSR.
+
+     The key words 'MUST', 'MUST NOT', 'REQUIRED', 'SHALL',
+     'SHALL NOT', 'SHOULD', 'SHOULD NOT', 'RECOMMENDED',
+     'NOT RECOMMENDED', 'MAY', and 'OPTIONAL' in this
+     document are to be interpreted as described in BCP 14
+     (RFC 2119) (RFC 8174) when, and only when, they appear
+     in all capitals, as shown here.
+
+     Copyright (c) 2024 IETF Trust and the persons identified as
+     authors of the code.  All rights reserved.
+
+     Redistribution and use in source and binary forms, with or
+     without modification, is permitted pursuant to, and subject to
+     the license terms contained in, the Revised BSD License set
+     forth in Section 4.c of the IETF Trust's Legal Provisions
+     Relating to IETF Documents
+     (https://trustee.ietf.org/license-info).
+
+     This version of this YANG module is part of RFC 9646
+     (https://www.rfc-editor.org/info/rfc9646); see the
+     RFC itself for full legal notices.";
+
+  revision 2024-10-10 {
+    description
+      "Initial version.";
+    reference
+      "RFC 9646: Conveying a Certificate Signing Request (CSR)
+                 in a Secure Zero-Touch Provisioning (SZTP)
+                 Bootstrapping Request";
+  }
+
+  identity certificate-request-format {
+    description
+      "A base identity for the request formats supported
+       by the ZTP-client.
+
+       Additional derived identities MAY be defined by
+       future efforts.";
+  }
+
+  identity p10-csr {
+    base certificate-request-format;
+    description
+      "Indicates that the ZTP-client supports generating
+       requests using the 'CertificationRequest' structure
+       defined in RFC 2986.";
+    reference
+      "RFC 2986: PKCS #10: Certification Request Syntax
+                 Specification Version 1.7";
+  }
+
+  identity cmp-csr {
+    base certificate-request-format;
+    description
+      "Indicates that the ZTP-client supports generating
+       requests using a profiled version of the PKIMessage
+       that MUST contain a PKIHeader followed by a PKIBody
+       containing only the ir, cr, kur, or p10cr structures
+       defined in RFC 4210.";
+    reference
+      "RFC 4210: Internet X.509 Public Key Infrastructure
+                 Certificate Management Protocol (CMP)";
+  }
+
+  identity cmc-csr {
+    base certificate-request-format;
+    description
+      "Indicates that the ZTP-client supports generating
+       requests using a profiled version of the 'Full
+       PKI Request' structure defined in RFC 5272.";
+    reference
+      "RFC 5272: Certificate Management over CMS (CMC)";
+  }
+
+  // Protocol-accessible nodes
+
+  grouping csr-support-grouping {
+    description
+      "A grouping enabling use by other efforts.";
+    container csr-support {
+      description
+        "Enables a ZTP-client to indicate that it supports
+         generating certificate signing requests (CSRs) and
+         provides details about the CSRs it is able to
+         generate.";
+      container key-generation {
+        presence "Indicates that the ZTP-client is capable of
+                  generating a new asymmetric key pair.
+
+                  If this node is not present, the ZTP-server MAY
+                  request a CSR using the asymmetric key associated
+                  with the device's existing identity certificate
+                  (e.g., an IDevID from IEEE 802.1AR).";
+        description
+          "Specifies details for the ZTP-client's ability to
+           generate a new asymmetric key pair.";
+        container supported-algorithms {
+          description
+            "A list of public key algorithms supported by the
+             ZTP-client for generating a new asymmetric key.";
+          leaf-list algorithm-identifier {
+            type binary;
+            min-elements 1;
+            description
+              "An AlgorithmIdentifier, as defined in RFC 2986,
+               encoded using ASN.1 Distinguished Encoding Rules
+               (DER), as specified in ITU-T X.690.";
+            reference
+              "RFC 2986: PKCS #10: Certification Request Syntax
+                         Specification Version 1.7
+               ITU-T X.690:
+                 Information technology - ASN.1 encoding rules:
+                 Specification of Basic Encoding Rules (BER),
+                 Canonical Encoding Rules (CER) and Distinguished
+                 Encoding Rules (DER)";
+          }
+        }
+      }
+      container csr-generation {
+        description
+          "Specifies details for the ZTP-client's ability to
+           generate certificate signing requests.";
+        container supported-formats {
+          description
+            "A list of certificate request formats supported
+             by the ZTP-client for generating a new key.";
+          leaf-list format-identifier {
+            type identityref {
+              base zt:certificate-request-format;
+            }
+            min-elements 1;
+            description
+              "A certificate request format supported by the
+               ZTP-client.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping csr-request-grouping {
+    description
+      "A grouping enabling use by other efforts.";
+    container key-generation {
+      presence "Provided by a ZTP-server to indicate that it wishes
+                the ZTP-client to generate a new asymmetric key.
+
+                This statement is present so the mandatory
+                descendant nodes do not imply that this node must
+                be configured.";
+      description
+        "The key generation parameters selected by the ZTP-server.
+
+         This leaf MUST only appear if the ZTP-client's
+         'csr-support' included the 'key-generation' node.";
+      container selected-algorithm {
+        description
+          "The key algorithm selected by the ZTP-server.  The
+           algorithm MUST be one of the algorithms specified by
+           the 'supported-algorithms' node in the ZTP-client's
+           message containing the 'csr-support' structure.";
+        leaf algorithm-identifier {
+          type binary;
+          mandatory true;
+          description
+            "An AlgorithmIdentifier, as defined in RFC 2986,
+             encoded using ASN.1 Distinguished Encoding Rules
+             (DER), as specified in ITU-T X.690.";
+          reference
+            "RFC 2986: PKCS #10: Certification Request Syntax
+                       Specification Version 1.7
+             ITU-T X.690:
+               Information technology - ASN.1 encoding rules:
+               Specification of Basic Encoding Rules (BER),
+               Canonical Encoding Rules (CER) and Distinguished
+               Encoding Rules (DER)";
+        }
+      }
+    }
+    container csr-generation {
+      description
+        "Specifies details for the CSR that the ZTP-client
+         is to generate.";
+      container selected-format {
+        description
+          "The CSR format selected by the ZTP-server.  The
+           format MUST be one of the formats specified by
+           the 'supported-formats' node in the ZTP-client's
+           request message.";
+        leaf format-identifier {
+          type identityref {
+            base zt:certificate-request-format;
+          }
+          mandatory true;
+          description
+            "A certificate request format to be used by the
+             ZTP-client.";
+        }
+      }
+    }
+    leaf cert-req-info {
+      type ct:csr-info;
+      description
+        "A CertificationRequestInfo structure, as defined in
+         RFC 2986, and modeled via a 'typedef' statement by
+         RFC 9640.
+
+         Enables the ZTP-server to provide a fully populated
+         CertificationRequestInfo structure that the ZTP-client
+         only needs to sign in order to generate the complete
+         'CertificationRequest' structure to send to the ZTP-server
+         in its next 'get-bootstrapping-data' request message.
+
+         When provided, the ZTP-client MUST use this structure
+         to generate its CSR; failure to do so will result in a
+         400 Bad Request response containing another 'csr-request'
+         structure.
+
+         When not provided, the ZTP-client SHOULD generate a CSR
+         using the same structure defined in its existing identity
+         certificate (e.g., an IDevID from IEEE 802.1AR).
+
+         If the 'AlgorithmIdentifier' field contained inside the
+         certificate 'SubjectPublicKeyInfo' field does not match
+         the algorithm identified by the 'selected-algorithm' node,
+         then the client MUST reject the certificate and raise an
+         error.";
+
+      reference
+        "RFC 2986:
+           PKCS #10: Certification Request Syntax Specification
+           Version 1.7
+         RFC 9640:
+           YANG Data Types and Groupings for Cryptography";
+    }
+  }
+
+  grouping csr-grouping {
+    description
+      "Enables a ZTP-client to convey a certificate signing
+       request, using the encoding format selected by a
+       ZTP-server's 'csr-request' response to the ZTP-client's
+       previously sent request containing the 'csr-support'
+       node.";
+    choice csr-type {
+      mandatory true;
+      description
+        "A choice amongst certificate signing request formats.
+
+         Additional formats MAY be augmented into this 'choice'
+         statement by future efforts.";
+      case p10-csr {
+        leaf p10-csr {
+          type ct:p10-csr;
+          description
+            "A CertificationRequest structure, per RFC 2986.
+             Encoding details are defined in the 'ct:csr'
+             typedef defined in RFC 9640.
+
+             A raw P10 does not support origin authentication in
+             the CSR structure.  External origin authentication
+             may be provided via the ZTP-client's authentication
+             to the ZTP-server at the transport layer (e.g., TLS).";
+          reference
+            "RFC 2986: PKCS #10: Certification Request Syntax
+                       Specification Version 1.7
+             RFC 9640: YANG Data Types and Groupings for
+                       Cryptography";
+        }
+      }
+      case cmc-csr {
+        leaf cmc-csr {
+          type binary;
+          description
+            "A profiled version of the 'Full PKI Request'
+             message defined in RFC 5272, encoded using ASN.1
+             Distinguished Encoding Rules (DER), as specified
+             in ITU-T X.690.
+
+             For asymmetric-key-based origin authentication of a
+             CSR based on the initial device identity certificate's
+             private key for the associated identity certificate's
+             public key, the PKIData contains one reqSequence
+             element and no cmsSequence or otherMsgSequence
+             elements.  The reqSequence is the TaggedRequest,
+             and it is the tcr CHOICE branch.  The tcr is the
+             TaggedCertificationRequest, and it is the bodyPartID
+             and the certificateRequest elements.  The
+             certificateRequest is signed with the initial device
+             identity certificate's private key.  The initial device
+             identity certificate, and optionally its certificate
+             chain is included in the SignedData certificates that
+             encapsulate the PKIData.
+
+             For asymmetric-key-based origin authentication based on
+             the initial device identity certificate's private key
+             that signs the encapsulated CSR signed by the local
+             device identity certificate's private key, the
+             PKIData contains one cmsSequence element and no
+             reqSequence or otherMsgSequence
+             elements.  The cmsSequence is the TaggedContentInfo,
+             and it includes a bodyPartID element and a contentInfo.
+             The contentInfo is a SignedData encapsulating a PKIData
+             with one reqSequence element and no cmsSequence or
+             otherMsgSequence elements.  The reqSequence is the
+             TaggedRequest, and it is the tcr CHOICE.  The tcr is the
+             TaggedCertificationRequest, and it is the bodyPartID and
+             the certificateRequest elements.  PKIData contains one
+             cmsSequence element and no controlSequence, reqSequence,
+             or otherMsgSequence elements.  The certificateRequest
+             is signed with the local device identity certificate's
+             private key.  The initial device identity certificate
+             and optionally its certificate chain is included in
+             the SignedData certificates that encapsulate the
+             PKIData.
+
+             For shared-secret-based origin authentication of a
+             CSR signed by the local device identity certificate's
+             private key, the PKIData contains one cmsSequence
+             element and no reqSequence or otherMsgSequence
+             elements.  The cmsSequence is the TaggedContentInfo,
+             and it includes a bodyPartID element and a contentInfo.
+             The contentInfo is an AuthenticatedData encapsulating
+             a PKIData with one reqSequence element and no
+             cmsSequences or otherMsgSequence elements.  The
+             reqSequence is the TaggedRequest, and it is the tcr
+             CHOICE.  The tcr is the TaggedCertificationRequest,
+             and it is the bodyPartID and the certificateRequest
+             elements.  The certificateRequest is signed with the
+             local device identity certificate's private key.  The
+             initial device identity certificate and optionally its
+             certificate chain is included in the SignedData
+             certificates that encapsulate the PKIData.";
+          reference
+            "RFC 5272: Certificate Management over CMS (CMC)
+             ITU-T X.690:
+               Information technology - ASN.1 encoding rules:
+               Specification of Basic Encoding Rules (BER),
+               Canonical Encoding Rules (CER) and Distinguished
+               Encoding Rules (DER)";
+        }
+      }
+      case cmp-csr {
+        leaf cmp-csr {
+          type binary;
+          description
+            "A PKIMessage structure, as defined in RFC 4210,
+             encoded using ASN.1 Distinguished Encoding Rules
+             (DER), as specified in ITU-T X.690.
+
+             For asymmetric-key-based origin authentication of a
+             CSR based on the initial device identity certificate's
+             private key for the associated initial device identity
+             certificate's public key, PKIMessages contain one
+             PKIMessage with the header and body elements, do not
+             contain a protection element, and SHOULD contain the
+             extraCerts element.  The header element contains the
+             pvno, sender, and recipient elements.  The pvno contains
+             cmp2000, and the sender contains the subject of the
+             initial device identity certificate. The body element
+             contains an ir, cr, kur, or p10cr CHOICE of type
+             CertificationRequest.  It is signed with the initial
+             device identity certificate's private key.  The
+             extraCerts element contains the initial device identity
+             certificate, optionally followed by its certificate
+             chain excluding the trust anchor.
+
+             For asymmetric-key-based origin authentication based
+             on the initial device identity certificate's private
+             key that signs the encapsulated CSR signed by the local
+             device identity certificate's private key, PKIMessages
+             contain one PKIMessage with the header, body, and
+             protection elements and SHOULD contain the extraCerts
+             element.  The header element contains the pvno, sender,
+             recipient, protectionAlg, and optionally senderKID
+             elements.  The pvno contains cmp2000, the sender
+             contains the subject of the initial device identity
+             certificate, the protectionAlg contains the
+             AlgorithmIdentifier of the used signature algorithm,
+             and the senderKID contains the subject key identifier
+             of the initial device identity certificate. The body
+             element contains an ir, cr, kur, or p10cr CHOICE of
+             type CertificationRequest.  It is signed with the local
+             device identity certificate's private key.  The
+             protection element contains the digital signature
+             generated with the initial device identity
+             certificate's private key.  The extraCerts element
+             contains the initial device identity certificate,
+             optionally followed by its certificate chain excluding
+             the trust anchor.
+
+             For shared-secret-based origin authentication of a
+             CSR signed by the local device identity certificate's
+             private key, PKIMessages contain one PKIMessage with
+             the header, body, and protection element and no
+             extraCerts element.  The header element contains the
+             pvno, sender, recipient, protectionAlg, and senderKID
+             elements.  The pvno contains cmp2000, the protectionAlg
+             contains the AlgorithmIdentifier of the used Message
+             Authentication Code (MAC) algorithm, and the senderKID
+             contains a reference the recipient can use to identify
+             the shared secret.  The body element contains an ir, cr,
+             kur, or p10cr CHOICE of type CertificationRequest.  It
+             is signed with the local device identity certificate's
+             private key.  The protection element contains the MAC
+             value generated with the shared secret.";
+          reference
+            "RFC 4210:
+               Internet X.509 Public Key Infrastructure
+               Certificate Management Protocol (CMP)
+             ITU-T X.690:
+               Information technology - ASN.1 encoding rules:
+               Specification of Basic Encoding Rules (BER),
+               Canonical Encoding Rules (CER) and Distinguished
+               Encoding Rules (DER)";
+        }
+      }
+    }
+  }
+
+}
+
+&lt;CODE ENDS&gt;</pre><a href="#section-3.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</section>
+<div id="sec-con">
+<section id="section-4">
+      <h2 id="name-security-considerations">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-4-1">This document builds on top of the solution presented in
+          <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>, and therefore all the security
+      considerations discussed in <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span> apply here as well.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">For the various CSR formats, when using PKCS#10, the security considerations
+          in <span>[<a href="#RFC2986" class="cite xref">RFC2986</a>]</span> apply; when using CMP, the
+          security considerations in <span>[<a href="#RFC4210" class="cite xref">RFC4210</a>]</span> apply;
+          and when using CMC, the security considerations in
+      <span>[<a href="#RFC5272" class="cite xref">RFC5272</a>]</span> apply.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">For the various authentication mechanisms, when using
+          TLS-level authentication, the security considerations in
+          <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> apply, and when using HTTP-level
+          authentication, the security considerations in
+      <span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> apply.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<section id="section-4.1">
+        <h3 id="name-sztp-client-considerations">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-sztp-client-considerations" class="section-name selfRef">SZTP-Client Considerations</a>
+        </h3>
+<section id="section-4.1.1">
+          <h4 id="name-ensuring-the-integrity-of-a">
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-ensuring-the-integrity-of-a" class="section-name selfRef">Ensuring the Integrity of Asymmetric Private Keys</a>
+          </h4>
+<p id="section-4.1.1-1">The private key the SZTP-client uses for the dynamically generated
+              identity certificate <span class="bcp14">MUST</span> be protected from inadvertent disclosure
+              in order to prevent identity fraud.<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-2">The security of this private key is essential in order to
+              ensure the associated identity certificate can be used to
+              authenticate the device it is issued to.<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-3">It is <span class="bcp14">RECOMMENDED</span> that devices are manufactured with a
+              hardware security module (HSM), such as a trusted platform
+              module (TPM), to generate and contain the private key within
+              the security perimeter of the HSM.  In such cases, the private
+              key and its associated certificates <span class="bcp14">MAY</span> have long validity
+              periods.<a href="#section-4.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-4">In cases where the SZTP-client does not possess an HSM or
+              is unable to use an HSM to protect the private key, it is
+              <span class="bcp14">RECOMMENDED</span> to periodically reset the private key (and
+              associated identity certificates) in order to minimize the
+              lifetime of unprotected private keys.  For instance, a Network Management System (NMS)
+              controller/orchestrator application could periodically prompt
+              the SZTP-client to generate a new private key and provide a
+              certificate signing request (CSR) or, alternatively, push
+              both the key and an identity certificate to the SZTP-client
+              using, e.g., a PKCS#12 message <span>[<a href="#RFC7292" class="cite xref">RFC7292</a>]</span>.  In another
+              example, the SZTP-client could be configured to periodically
+              reset the configuration to its factory default, thus causing
+              removal of the private key and associated identity certificates
+              and re-execution of the SZTP protocol.<a href="#section-4.1.1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.1.2">
+          <h4 id="name-reuse-of-a-manufacturer-gen">
+<a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-reuse-of-a-manufacturer-gen" class="section-name selfRef">Reuse of a Manufacturer-Generated Private Key</a>
+          </h4>
+<p id="section-4.1.2-1">It is <span class="bcp14">RECOMMENDED</span> that a new private key is generated for each
+              CSR described in this document.<a href="#section-4.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-2">Implementations must randomly generate nonces and private keys.
+              The use of inadequate pseudorandom number generators (PRNGs) to
+              generate cryptographic keys can result in little or no security.
+              An attacker may find it much easier to reproduce the PRNG environment
+              that produced the keys, searching the resulting small set of
+              possibilities, rather than brute force searching the whole
+              key space. As an example of predictable random numbers, see
+              CVE-2008-0166 <span>[<a href="#CVE-2008-0166" class="cite xref">CVE-2008-0166</a>]</span>, and some consequences
+              of low-entropy random numbers are discussed in "Mining Your Ps and Qs"
+              <span>[<a href="#MiningPsQs" class="cite xref">MiningPsQs</a>]</span>.  The generation of quality random
+              numbers is difficult. <span>[<a href="#ISO.20543-2019" class="cite xref">ISO.20543-2019</a>]</span>,
+              <span>[<a href="#NIST.SP.800-90Ar1" class="cite xref">NIST.SP.800-90Ar1</a>]</span>, BSI AIS 31 <span>[<a href="#AIS31" class="cite xref">AIS31</a>]</span>,
+              BCP 106 <span>[<a href="#RFC4086" class="cite xref">RFC4086</a>]</span>, and others offer valuable
+              guidance in this area.<a href="#section-4.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-3">This private key <span class="bcp14">SHOULD</span> be protected as well as the built-in
+              private key associated with the SZTP-client's initial device identity
+              certificate (e.g., the IDevID from <span>[<a href="#Std-802.1AR-2018" class="cite xref">Std-802.1AR-2018</a>]</span>).<a href="#section-4.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-4">In cases where it is not possible to generate a new private key
+              that is protected as well as the built-in private key, it is
+              <span class="bcp14">RECOMMENDED</span> to reuse the built-in private key rather than
+              generate a new private key that is not as well protected.<a href="#section-4.1.2-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.1.3">
+          <h4 id="name-replay-attack-protection">
+<a href="#section-4.1.3" class="section-number selfRef">4.1.3. </a><a href="#name-replay-attack-protection" class="section-name selfRef">Replay Attack Protection</a>
+          </h4>
+<p id="section-4.1.3-1">This RFC enables an SZTP-client to announce an ability to
+              generate a new key to use for its CSR.<a href="#section-4.1.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-2">When the SZTP-server responds with a request for the SZTP-client
+              to generate a new key, it is essential that the SZTP-client actually
+              generates a new key.<a href="#section-4.1.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-3">Generating a new key each time enables the random bytes used
+              to create the key to also serve the dual-purpose of acting like
+              a "nonce" used in other mechanisms to detect replay attacks.<a href="#section-4.1.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-4">When a fresh public/private key pair is generated for the
+              request, confirmation to the SZTP-client that the response
+              has not been replayed is enabled by the SZTP-client's fresh 
+              public key appearing in the signed certificate provided by
+              the SZTP-server.<a href="#section-4.1.3-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-5">When a public/private key pair associated with the 
+              manufacturer-generated identity certificate (e.g., IDevID) is
+              used for the request, there may not be confirmation to the
+              SZTP-client that the response has not been replayed; however,
+              the worst case result is a lost certificate that is associated
+              to the private key known only to the SZTP-client.  Protection
+              of the private-key information is vital to public-key
+              cryptography.  Disclosure of the private-key material to
+              another entity can lead to masquerades.<a href="#section-4.1.3-5" class="pilcrow">¶</a></p>
+</section>
+<div id="untrusted">
+<section id="section-4.1.4">
+          <h4 id="name-connecting-to-an-untrusted-">
+<a href="#section-4.1.4" class="section-number selfRef">4.1.4. </a><a href="#name-connecting-to-an-untrusted-" class="section-name selfRef">Connecting to an Untrusted Bootstrap Server</a>
+          </h4>
+<p id="section-4.1.4-1"><span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span> allows SZTP-clients to connect
+              to untrusted SZTP-servers by blindly authenticating the
+              SZTP-server's TLS end-entity certificate.<a href="#section-4.1.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.4-2">As is discussed in <span><a href="https://rfc-editor.org/rfc/rfc8572#section-9.5" class="relref">Section 9.5</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>,
+              in such cases, the SZTP-client <span class="bcp14">MUST</span> assert that the
+              bootstrapping data returned is signed if the SZTP-client
+              is to trust it.<a href="#section-4.1.4-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.4-3">However, the HTTP error message used in this document
+              cannot be signed data, as described in <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-4.1.4-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.4-4">Therefore, the solution presented in this document
+              cannot be used when the SZTP-client connects to an
+              untrusted SZTP-server.<a href="#section-4.1.4-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.4-5">Consistent with the recommendation presented in 
+            <span><a href="https://rfc-editor.org/rfc/rfc8572#section-9.6" class="relref">Section 9.6</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>, SZTP-clients
+              <span class="bcp14">SHOULD NOT</span> pass the "csr-support" input parameter
+              to an untrusted SZTP-server.  SZTP-clients <span class="bcp14">SHOULD</span>
+              instead pass the "signed-data-preferred" input
+              parameter, as discussed in <span><a href="https://rfc-editor.org/rfc/rfc8572#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-4.1.4-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-4.1.5">
+          <h4 id="name-selecting-the-best-origin-a">
+<a href="#section-4.1.5" class="section-number selfRef">4.1.5. </a><a href="#name-selecting-the-best-origin-a" class="section-name selfRef">Selecting the Best Origin Authentication Mechanism</a>
+          </h4>
+<p id="section-4.1.5-1">The origin of the CSR must be verified before a
+              certificate is issued.<a href="#section-4.1.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.5-2">When generating a new key, it is important that the
+              SZTP-client be able to provide additional proof that it
+              was the entity that generated the key.<a href="#section-4.1.5-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.5-3">The CMP and CMC certificate request formats defined in this
+              document support origin authentication.  A raw 
+              PKCS#10 CSR does not support origin authentication.<a href="#section-4.1.5-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.5-4">The CMP and CMC request formats support origin
+              authentication using both PKI and a shared secret.<a href="#section-4.1.5-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.5-5">Typically, only one possible origin authentication
+              mechanism can possibly be used, but in the case that the
+              SZTP-client authenticates itself using both TLS-level
+              (e.g., IDevID) and HTTP-level credentials (e.g., Basic), 
+              as is allowed by <span><a href="https://rfc-editor.org/rfc/rfc8572#section-5.3" class="relref">Section 5.3</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>,
+              then the SZTP-client may need to choose between the two
+              options.<a href="#section-4.1.5-5" class="pilcrow">¶</a></p>
+<p id="section-4.1.5-6">In the case that the SZTP-client must choose between an
+              asymmetric key option versus a shared secret for origin
+              authentication, it is <span class="bcp14">RECOMMENDED</span> that the SZTP-client
+              choose using the asymmetric key.<a href="#section-4.1.5-6" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.1.6">
+          <h4 id="name-clearing-the-private-key-an">
+<a href="#section-4.1.6" class="section-number selfRef">4.1.6. </a><a href="#name-clearing-the-private-key-an" class="section-name selfRef">Clearing the Private Key and Associated Certificate</a>
+          </h4>
+<p id="section-4.1.6-1">Unlike a manufacturer-generated identity certificate (e.g., IDevID),
+              the deployment-generated identity certificate (e.g., LDevID) and
+              the associated private key (assuming a new private key was generated
+              for the purpose) are considered user data and <span class="bcp14">SHOULD</span> be cleared
+              whenever the SZTP-client is reset to its factory default state,
+              such as by the "factory-reset" RPC defined in
+              <span>[<a href="#RFC8808" class="cite xref">RFC8808</a>]</span>.<a href="#section-4.1.6-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4.2">
+        <h3 id="name-sztp-server-considerations">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-sztp-server-considerations" class="section-name selfRef">SZTP-Server Considerations</a>
+        </h3>
+<section id="section-4.2.1">
+          <h4 id="name-verifying-proof-of-possessi">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-verifying-proof-of-possessi" class="section-name selfRef">Verifying Proof-of-Possession</a>
+          </h4>
+<p id="section-4.2.1-1">Regardless, if using a new asymmetric key or the bootstrapping
+              device's manufacturer-generated key (e.g., the IDevID key), the
+              public key is placed in the CSR and the CSR is signed by that
+              private key.  Proof-of-possession of the private key is verified
+              by ensuring the signature over the CSR using the public key
+              placed in the CSR.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2.2">
+          <h4 id="name-verifying-proof-of-origin">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-verifying-proof-of-origin" class="section-name selfRef">Verifying Proof-of-Origin</a>
+          </h4>
+<p id="section-4.2.2-1">When the bootstrapping device's manufacturer-generated 
+              private key (e.g., the IDevID key) is reused for the CSR, 
+              proof-of-origin is verified by validating the IDevID-issuer cert
+              and ensuring that the CSR uses the same key pair.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">When the bootstrapping device's manufacturer-generated private key
+              (e.g., an IDevID key from IEEE 802.1AR) is reused for the CSR, proof-of-origin is
+              verified by validating the IDevID certification path and ensuring that
+              the CSR uses the same key pair.<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">When a fresh asymmetric key is used with the CMP or CMC formats, the
+              authentication is part of the protocols, which could employ either
+              the manufacturer-generated private key or a shared secret.  In addition,
+              CMP and CMC support processing by an RA before the request is passed
+              to the CA, which allows for more robust handling of errors.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2.3">
+          <h4 id="name-supporting-sztp-clients-tha">
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-supporting-sztp-clients-tha" class="section-name selfRef">Supporting SZTP-Clients That Don't Trust the SZTP-Server</a>
+          </h4>
+<p id="section-4.2.3-1"><span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span> allows SZTP-clients to connect
+              to untrusted SZTP-servers by blindly authenticating the
+              SZTP-server's TLS end-entity certificate.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-2">As is recommended in <a href="#untrusted" class="auto internal xref">Section 4.1.4</a> of this
+              document, in such cases, SZTP-clients <span class="bcp14">SHOULD</span> pass the
+              "signed-data-preferred" input parameter.<a href="#section-4.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-3">The reciprocal of this statement is that SZTP-servers,
+              wanting to support SZTP-clients that don't trust them,
+              <span class="bcp14">SHOULD</span> support the "signed-data-preferred" input parameter,
+              as discussed in <span><a href="https://rfc-editor.org/rfc/rfc8572#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-4.2.3-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4.3">
+        <h3 id="name-security-considerations-for">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-security-considerations-for" class="section-name selfRef">Security Considerations for the "ietf-sztp-csr" YANG Module</a>
+        </h3>
+<p id="section-4.3-1">The recommended format for documenting the security
+            considerations for YANG modules is described in <span><a href="https://rfc-editor.org/rfc/rfc8407#section-3.7" class="relref">Section 3.7</a> of [<a href="#RFC8407" class="cite xref">RFC8407</a>]</span>.  However, this module
+            only augments two input parameters
+            into the "get-bootstrapping-data" RPC in <span>[<a href="#RFC8572" class="cite xref">RFC8572</a>]</span> and therefore only needs to point
+            to the relevant Security Considerations sections in
+            that RFC.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-2.1">Security considerations for the "get-bootstrapping-data" RPC
+              are described in <span><a href="https://rfc-editor.org/rfc/rfc8572#section-9.16" class="relref">Section 9.16</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-4.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.3-2.2">Security considerations for the "input" parameters passed inside the
+              "get-bootstrapping-data" RPC are described in <span><a href="https://rfc-editor.org/rfc/rfc8572#section-9.6" class="relref">Section 9.6</a> of [<a href="#RFC8572" class="cite xref">RFC8572</a>]</span>.<a href="#section-4.3-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+<section id="section-4.4">
+        <h3 id="name-security-considerations-for-">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-security-considerations-for-" class="section-name selfRef">Security Considerations for the "ietf-ztp-types" YANG Module</a>
+        </h3>
+<p id="section-4.4-1">The recommended format for documenting the security
+        considerations for YANG modules is described in <span><a href="https://rfc-editor.org/rfc/rfc8407#section-3.7" class="relref">Section 3.7</a> of [<a href="#RFC8407" class="cite xref">RFC8407</a>]</span>.  However, this module
+            does not define any protocol-accessible nodes (it only
+            defines "identity" and "grouping" statements), and therefore
+            there are no security considerations to report.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-5">
+      <h2 id="name-iana-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<section id="section-5.1">
+        <h3 id="name-the-ietf-xml-registry">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-the-ietf-xml-registry" class="section-name selfRef">The IETF XML Registry</a>
+        </h3>
+<p id="section-5.1-1">IANA has registered two URIs in the "ns" registry of
+            the "IETF XML Registry" <span>[<a href="#RFC3688" class="cite xref">RFC3688</a>]</span> maintained at 
+            <span>&lt;<a href="https://www.iana.org/assignments/xml-registry/">https://www.iana.org/assignments/xml-registry/</a>&gt;</span>.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-5.1-2">
+          <dt id="section-5.1-2.1">URI:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.1-2.2">urn:ietf:params:xml:ns:yang:ietf-sztp-csr<a href="#section-5.1-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.1-2.3">Registrant Contact:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.1-2.4">The NETCONF WG of the IETF.<a href="#section-5.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.1-2.5">XML:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.1-2.6">N/A; the requested URI is an XML namespace.<a href="#section-5.1-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-5.1-3">
+          <dt id="section-5.1-3.1">URI:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.1-3.2">urn:ietf:params:xml:ns:yang:ietf-ztp-types<a href="#section-5.1-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.1-3.3">Registrant Contact:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.1-3.4">The NETCONF WG of the IETF.<a href="#section-5.1-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.1-3.5">XML:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.1-3.6">N/A; the requested URI is an XML namespace.<a href="#section-5.1-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-5.2">
+        <h3 id="name-the-yang-module-names-regis">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-the-yang-module-names-regis" class="section-name selfRef">The YANG Module Names Registry</a>
+        </h3>
+<p id="section-5.2-1">IANA has registered two YANG modules in the "YANG Module
+            Names" registry <span>[<a href="#RFC6020" class="cite xref">RFC6020</a>]</span> maintained at
+            <span>&lt;<a href="https://www.iana.org/assignments/yang-parameters/">https://www.iana.org/assignments/yang-parameters/</a>&gt;</span>.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-5.2-2">
+          <dt id="section-5.2-2.1">Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-2.2">ietf-sztp-csr<a href="#section-5.2-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-2.3">Namespace:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-2.4">urn:ietf:params:xml:ns:yang:ietf-sztp-csr<a href="#section-5.2-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-2.5">Prefix:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-2.6">sztp-csr<a href="#section-5.2-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-2.7">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-2.8">RFC 9646<a href="#section-5.2-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-5.2-3">
+          <dt id="section-5.2-3.1">Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-3.2">ietf-ztp-types<a href="#section-5.2-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-3.3">Namespace:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-3.4">urn:ietf:params:xml:ns:yang:ietf-ztp-types<a href="#section-5.2-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-3.5">Prefix:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-3.6">ztp-types<a href="#section-5.2-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-3.7">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-3.8">RFC 9646<a href="#section-5.2-3.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</section>
+</div>
+<section id="section-6">
+      <h2 id="name-references">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-6.1">
+        <h3 id="name-normative-references">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="ITU.X690.2021">[ITU.X690.2021]</dt>
+        <dd>
+<span class="refAuthor">ITU</span>, <span class="refTitle">"Information technology - ASN.1 encoding rules: Specification of Basic Encoding Rules (BER), Canonical Encoding Rules (CER) and Distinguished Encoding Rules (DER)"</span>, <span class="seriesInfo">ITU-T Recommendation X.690</span>, <span class="seriesInfo">ISO/IEC 8825-1</span>, <time datetime="2021-02" class="refDate">February 2021</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-X.690/">https://www.itu.int/rec/T-REC-X.690/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2986">[RFC2986]</dt>
+        <dd>
+<span class="refAuthor">Nystrom, M.</span> and <span class="refAuthor">B. Kaliski</span>, <span class="refTitle">"PKCS #10: Certification Request Syntax Specification Version 1.7"</span>, <span class="seriesInfo">RFC 2986</span>, <span class="seriesInfo">DOI 10.17487/RFC2986</span>, <time datetime="2000-11" class="refDate">November 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2986">https://www.rfc-editor.org/info/rfc2986</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3688">[RFC3688]</dt>
+        <dd>
+<span class="refAuthor">Mealling, M.</span>, <span class="refTitle">"The IETF XML Registry"</span>, <span class="seriesInfo">BCP 81</span>, <span class="seriesInfo">RFC 3688</span>, <span class="seriesInfo">DOI 10.17487/RFC3688</span>, <time datetime="2004-01" class="refDate">January 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3688">https://www.rfc-editor.org/info/rfc3688</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4210">[RFC4210]</dt>
+        <dd>
+<span class="refAuthor">Adams, C.</span>, <span class="refAuthor">Farrell, S.</span>, <span class="refAuthor">Kause, T.</span>, and <span class="refAuthor">T. Mononen</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate Management Protocol (CMP)"</span>, <span class="seriesInfo">RFC 4210</span>, <span class="seriesInfo">DOI 10.17487/RFC4210</span>, <time datetime="2005-09" class="refDate">September 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4210">https://www.rfc-editor.org/info/rfc4210</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5272">[RFC5272]</dt>
+        <dd>
+<span class="refAuthor">Schaad, J.</span> and <span class="refAuthor">M. Myers</span>, <span class="refTitle">"Certificate Management over CMS (CMC)"</span>, <span class="seriesInfo">RFC 5272</span>, <span class="seriesInfo">DOI 10.17487/RFC5272</span>, <time datetime="2008-06" class="refDate">June 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5272">https://www.rfc-editor.org/info/rfc5272</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6020">[RFC6020]</dt>
+        <dd>
+<span class="refAuthor">Bjorklund, M., Ed.</span>, <span class="refTitle">"YANG - A Data Modeling Language for the Network Configuration Protocol (NETCONF)"</span>, <span class="seriesInfo">RFC 6020</span>, <span class="seriesInfo">DOI 10.17487/RFC6020</span>, <time datetime="2010-10" class="refDate">October 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6020">https://www.rfc-editor.org/info/rfc6020</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7950">[RFC7950]</dt>
+        <dd>
+<span class="refAuthor">Bjorklund, M., Ed.</span>, <span class="refTitle">"The YANG 1.1 Data Modeling Language"</span>, <span class="seriesInfo">RFC 7950</span>, <span class="seriesInfo">DOI 10.17487/RFC7950</span>, <time datetime="2016-08" class="refDate">August 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7950">https://www.rfc-editor.org/info/rfc7950</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8040">[RFC8040]</dt>
+        <dd>
+<span class="refAuthor">Bierman, A.</span>, <span class="refAuthor">Bjorklund, M.</span>, and <span class="refAuthor">K. Watsen</span>, <span class="refTitle">"RESTCONF Protocol"</span>, <span class="seriesInfo">RFC 8040</span>, <span class="seriesInfo">DOI 10.17487/RFC8040</span>, <time datetime="2017-01" class="refDate">January 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8040">https://www.rfc-editor.org/info/rfc8040</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8572">[RFC8572]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refAuthor">Farrer, I.</span>, and <span class="refAuthor">M. Abrahamsson</span>, <span class="refTitle">"Secure Zero Touch Provisioning (SZTP)"</span>, <span class="seriesInfo">RFC 8572</span>, <span class="seriesInfo">DOI 10.17487/RFC8572</span>, <time datetime="2019-04" class="refDate">April 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8572">https://www.rfc-editor.org/info/rfc8572</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8791">[RFC8791]</dt>
+        <dd>
+<span class="refAuthor">Bierman, A.</span>, <span class="refAuthor">Björklund, M.</span>, and <span class="refAuthor">K. Watsen</span>, <span class="refTitle">"YANG Data Structure Extensions"</span>, <span class="seriesInfo">RFC 8791</span>, <span class="seriesInfo">DOI 10.17487/RFC8791</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8791">https://www.rfc-editor.org/info/rfc8791</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9110">[RFC9110]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="seriesInfo">STD 97</span>, <span class="seriesInfo">RFC 9110</span>, <span class="seriesInfo">DOI 10.17487/RFC9110</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9110">https://www.rfc-editor.org/info/rfc9110</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9640">[RFC9640]</dt>
+      <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refTitle">"YANG Data Types and Groupings for Cryptography"</span>, <span class="seriesInfo">RFC 9640</span>, <span class="seriesInfo">DOI 10.17487/RFC9640</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9640">https://www.rfc-editor.org/info/rfc9640</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-6.2">
+        <h3 id="name-informative-references">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="AIS31">[AIS31]</dt>
+        <dd>
+<span class="refAuthor">Killmann, W.</span> and <span class="refAuthor">W. Schindler</span>, <span class="refTitle">"A proposal for: Functionality classes for random number generators - Version 2.0"</span>, <time datetime="2011-09" class="refDate">September 2011</time>, <span>&lt;<a href="https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Zertifizierung/Interpretationen/AIS_31_Functionality_classes_for_random_number_generators_e.pdf">https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Zertifizierung/Interpretationen/AIS_31_Functionality_classes_for_random_number_generators_e.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CVE-2008-0166">[CVE-2008-0166]</dt>
+        <dd>
+<span class="refAuthor">National Institute of Science and Technology (NIST)</span>, <span class="refTitle">"National Vulnerability Database - CVE-2008-0166 Detail"</span>, <time datetime="2008-05" class="refDate">May 2008</time>, <span>&lt;<a href="https://nvd.nist.gov/vuln/detail/CVE-2008-0166">https://nvd.nist.gov/vuln/detail/CVE-2008-0166</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="ISO.20543-2019">[ISO.20543-2019]</dt>
+        <dd>
+<span class="refAuthor">International Organization for Standardization (ISO)</span>, <span class="refTitle">"Information technology -- Security techniques -- Test and analysis methods for random bit generators within ISO/IEC 19790 and ISO/IEC 15408"</span>, <span class="seriesInfo">ISO/IEC 20543:2019</span>, <time datetime="2019-10" class="refDate">October 2019</time>. </dd>
+<dd class="break"></dd>
+<dt id="MiningPsQs">[MiningPsQs]</dt>
+        <dd>
+<span class="refAuthor">Heninger, N.</span>, <span class="refAuthor">Durumeric, Z.</span>, <span class="refAuthor">Wustrow, E.</span>, and <span class="refAuthor">J. Halderman</span>, <span class="refTitle">"Mining Your Ps and Qs: Detection of Widespread Weak Keys in Network Devices"</span>, <span class="refContent">Security'12: Proceedings of the 21st USENIX Conference on Security Symposium</span>, <time datetime="2012-08" class="refDate">August 2012</time>, <span>&lt;<a href="https://www.usenix.org/conference/usenixsecurity12/technical-sessions/presentation/heninger">https://www.usenix.org/conference/usenixsecurity12/technical-sessions/presentation/heninger</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST.SP.800-90Ar1">[NIST.SP.800-90Ar1]</dt>
+        <dd>
+<span class="refAuthor">Barker, E.</span> and <span class="refAuthor">J. Kelsey</span>, <span class="refTitle">"Recommendation for Random Number Generation Using Deterministic Random Bit Generators"</span>, <span class="seriesInfo">DOI 10.6028/NIST.SP.800-90Ar1</span>, <span class="seriesInfo">NIST SP 800-90Ar1</span>, <time datetime="2015-06" class="refDate">June 2015</time>, <span>&lt;<a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf">https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4086">[RFC4086]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Schiller, J.</span>, and <span class="refAuthor">S. Crocker</span>, <span class="refTitle">"Randomness Requirements for Security"</span>, <span class="seriesInfo">BCP 106</span>, <span class="seriesInfo">RFC 4086</span>, <span class="seriesInfo">DOI 10.17487/RFC4086</span>, <time datetime="2005-06" class="refDate">June 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4086">https://www.rfc-editor.org/info/rfc4086</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7292">[RFC7292]</dt>
+        <dd>
+<span class="refAuthor">Moriarty, K., Ed.</span>, <span class="refAuthor">Nystrom, M.</span>, <span class="refAuthor">Parkinson, S.</span>, <span class="refAuthor">Rusch, A.</span>, and <span class="refAuthor">M. Scott</span>, <span class="refTitle">"PKCS #12: Personal Information Exchange Syntax v1.1"</span>, <span class="seriesInfo">RFC 7292</span>, <span class="seriesInfo">DOI 10.17487/RFC7292</span>, <time datetime="2014-07" class="refDate">July 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7292">https://www.rfc-editor.org/info/rfc7292</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8340">[RFC8340]</dt>
+        <dd>
+<span class="refAuthor">Bjorklund, M.</span> and <span class="refAuthor">L. Berger, Ed.</span>, <span class="refTitle">"YANG Tree Diagrams"</span>, <span class="seriesInfo">BCP 215</span>, <span class="seriesInfo">RFC 8340</span>, <span class="seriesInfo">DOI 10.17487/RFC8340</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8340">https://www.rfc-editor.org/info/rfc8340</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8407">[RFC8407]</dt>
+        <dd>
+<span class="refAuthor">Bierman, A.</span>, <span class="refTitle">"Guidelines for Authors and Reviewers of Documents Containing YANG Data Models"</span>, <span class="seriesInfo">BCP 216</span>, <span class="seriesInfo">RFC 8407</span>, <span class="seriesInfo">DOI 10.17487/RFC8407</span>, <time datetime="2018-10" class="refDate">October 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8407">https://www.rfc-editor.org/info/rfc8407</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8792">[RFC8792]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refAuthor">Auerswald, E.</span>, <span class="refAuthor">Farrel, A.</span>, and <span class="refAuthor">Q. Wu</span>, <span class="refTitle">"Handling Long Lines in Content of Internet-Drafts and RFCs"</span>, <span class="seriesInfo">RFC 8792</span>, <span class="seriesInfo">DOI 10.17487/RFC8792</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8792">https://www.rfc-editor.org/info/rfc8792</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8808">[RFC8808]</dt>
+        <dd>
+<span class="refAuthor">Wu, Q.</span>, <span class="refAuthor">Lengyel, B.</span>, and <span class="refAuthor">Y. Niu</span>, <span class="refTitle">"A YANG Data Model for Factory Default Settings"</span>, <span class="seriesInfo">RFC 8808</span>, <span class="seriesInfo">DOI 10.17487/RFC8808</span>, <time datetime="2020-08" class="refDate">August 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8808">https://www.rfc-editor.org/info/rfc8808</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9641">[RFC9641]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refTitle">"A YANG Data Model for a Truststore"</span>, <span class="seriesInfo">RFC 9641</span>, <span class="seriesInfo">DOI 10.17487/RFC9641</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9641">https://www.rfc-editor.org/info/rfc9641</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9642">[RFC9642]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refTitle">"A YANG Data Model for a Keystore"</span>, <span class="seriesInfo">RFC 9642</span>, <span class="seriesInfo">DOI 10.17487/RFC9642</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9642">https://www.rfc-editor.org/info/rfc9642</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Std-802.1AR-2018">[Std-802.1AR-2018]</dt>
+      <dd>
+<span class="refAuthor">IEEE</span>, <span class="refTitle">"IEEE Standard for Local and Metropolitan Area Networks - Secure Device Identity"</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://standards.ieee.org/ieee/802.1AR/6995/">https://standards.ieee.org/ieee/802.1AR/6995/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors would like to thank for following for lively
+          discussions on list and in the halls (ordered by first name):
+          <span class="contact-name">Benjamin Kaduk</span>,
+          <span class="contact-name">Dan Romascanu</span>,   
+          <span class="contact-name">David von Oheimb</span>,
+          <span class="contact-name">Éric Vyncke</span>,
+          <span class="contact-name">Guy Fedorkow</span>,
+          <span class="contact-name">Hendrik Brockhaus</span>,   
+          <span class="contact-name">Joe Clarke</span>,
+          <span class="contact-name">Meral Shirazipour</span>,
+          <span class="contact-name">Murray Kucherawy</span>,
+          <span class="contact-name">Rich Salz</span>,
+          <span class="contact-name">Rob Wilton</span>,
+          <span class="contact-name">Roman Danyliw</span>,
+          <span class="contact-name">Qin Wu</span>,
+          <span class="contact-name">Yaron Sheffer</span>,
+          and <span class="contact-name">Zaheduzzaman Sarkar</span>.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-B">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<p id="appendix-B-1">Special thanks go to <span class="contact-name">David von Oheimb</span> and <span class="contact-name">Hendrik Brockhaus</span>
+          for helping with the descriptions for the "cmc-csr" and "cmp-csr"
+          nodes.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Kent Watsen</span></div>
+<div dir="auto" class="left"><span class="org">Watsen Networks</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kent+ietf@watsen.net" class="email">kent+ietf@watsen.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Russ Housley</span></div>
+<div dir="auto" class="left"><span class="org">Vigil Security, LLC</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:housley@vigilsec.com" class="email">housley@vigilsec.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Sean Turner</span></div>
+<div dir="auto" class="left"><span class="org">sn3rd</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:sean@sn3rd.com" class="email">sean@sn3rd.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
