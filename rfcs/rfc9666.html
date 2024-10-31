@@ -1,0 +1,2577 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9666: Area Proxy for IS-IS</title>
+<meta content="Tony Li" name="author">
+<meta content="Sarah Chen" name="author">
+<meta content="Vivek Ilangovan" name="author">
+<meta content="Gyan S. Mishra" name="author">
+<meta content="
+       
+       Link-state routing protocols have hierarchical abstraction
+       already built into them. However, when lower levels are used
+       for transit, they must expose their internal topologies to each
+       other, thereby leading to scaling issues.
+       
+       
+          To avoid such issues, this document discusses extensions to the
+          IS-IS routing protocol that allow Level 1 (L1) areas to provide transit
+          but only inject an abstraction of the Level 1 topology into Level 2 (L2).
+          Each Level 1 area is represented as a single Level 2 node, thereby
+          enabling a greater scale.
+       
+    " name="description">
+<meta content="xml2rfc 3.24.0" name="generator">
+<meta content="datacenter" name="keyword">
+<meta content="IGP" name="keyword">
+<meta content="routing" name="keyword">
+<meta content="topology" name="keyword">
+<meta content="level" name="keyword">
+<meta content="abstraction" name="keyword">
+<meta content="IS-IS" name="keyword">
+<meta content="proxy" name="keyword">
+<meta content="9666" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.24.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9666.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    float: none;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-lsr-isis-area-proxy-12" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9666" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9666</td>
+<td class="center">Area Proxy for IS-IS</td>
+<td class="right">October 2024</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Li, et al.</td>
+<td class="center">Experimental</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9666" class="eref">9666</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Experimental</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2024-10" class="published">October 2024</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">T. Li</div>
+<div class="org">Juniper Networks</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Chen</div>
+<div class="org">Arista Networks</div>
+</div>
+<div class="author">
+      <div class="author-name">V. Ilangovan</div>
+<div class="org">Arista Networks</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Mishra</div>
+<div class="org">Verizon Inc.</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9666</h1>
+<h1 id="title">Area Proxy for IS-IS</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+       Link-state routing protocols have hierarchical abstraction
+       already built into them. However, when lower levels are used
+       for transit, they must expose their internal topologies to each
+       other, thereby leading to scaling issues.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">
+          To avoid such issues, this document discusses extensions to the
+          IS-IS routing protocol that allow Level 1 (L1) areas to provide transit
+          but only inject an abstraction of the Level 1 topology into Level 2 (L2).
+          Each Level 1 area is represented as a single Level 2 node, thereby
+          enabling a greater scale.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for examination, experimental implementation, and
+            evaluation.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document defines an Experimental Protocol for the Internet
+            community.  This document is a product of the Internet Engineering
+            Task Force (IETF).  It represents the consensus of the IETF community.
+            It has received public review and has been approved for publication
+            by the Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9666">https://www.rfc-editor.org/info/rfc9666</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2024 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-area-proxy" class="internal xref">Area Proxy</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-segment-routing" class="internal xref">Segment Routing</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-inside-router-functions" class="internal xref">Inside Router Functions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-the-area-proxy-tlv" class="internal xref">The Area Proxy TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-level-2-spf-computation" class="internal xref">Level 2 SPF Computation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-responsibilities-concerning" class="internal xref">Responsibilities Concerning the Proxy LSP</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-area-leader-functions" class="internal xref">Area Leader Functions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-area-leader-election" class="internal xref">Area Leader Election</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-redundancy" class="internal xref">Redundancy</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-distributing-area-proxy-inf" class="internal xref">Distributing Area Proxy Information</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.1">
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="auto internal xref">4.3.1</a>.  <a href="#name-the-area-proxy-system-ident" class="internal xref">The Area Proxy System Identifier Sub-TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.2">
+                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="auto internal xref">4.3.2</a>.  <a href="#name-the-area-sid-sub-tlv" class="internal xref">The Area SID Sub-TLV</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-proxy-lsp-generation" class="internal xref">Proxy LSP Generation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.1">
+                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-the-protocols-supported-tlv" class="internal xref">The Protocols Supported TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.2">
+                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="auto internal xref">4.4.2</a>.  <a href="#name-the-area-address-tlv" class="internal xref">The Area Address TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.3">
+                    <p id="section-toc.1-1.4.2.4.2.3.1"><a href="#section-4.4.3" class="auto internal xref">4.4.3</a>.  <a href="#name-the-dynamic-hostname-tlv" class="internal xref">The Dynamic Hostname TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.4">
+                    <p id="section-toc.1-1.4.2.4.2.4.1"><a href="#section-4.4.4" class="auto internal xref">4.4.4</a>.  <a href="#name-the-is-neighbors-tlv" class="internal xref">The IS Neighbors TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.5">
+                    <p id="section-toc.1-1.4.2.4.2.5.1"><a href="#section-4.4.5" class="auto internal xref">4.4.5</a>.  <a href="#name-the-extended-is-neighbors-t" class="internal xref">The Extended IS Neighbors TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.6">
+                    <p id="section-toc.1-1.4.2.4.2.6.1"><a href="#section-4.4.6" class="auto internal xref">4.4.6</a>.  <a href="#name-the-mt-intermediate-systems" class="internal xref">The MT Intermediate Systems TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.7">
+                    <p id="section-toc.1-1.4.2.4.2.7.1"><a href="#section-4.4.7" class="auto internal xref">4.4.7</a>.  <a href="#name-reachability-tlvs" class="internal xref">Reachability TLVs</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.8">
+                    <p id="section-toc.1-1.4.2.4.2.8.1"><a href="#section-4.4.8" class="auto internal xref">4.4.8</a>.  <a href="#name-the-router-capability-tlv" class="internal xref">The Router Capability TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.9">
+                    <p id="section-toc.1-1.4.2.4.2.9.1"><a href="#section-4.4.9" class="auto internal xref">4.4.9</a>.  <a href="#name-the-multi-topology-tlv" class="internal xref">The Multi-Topology TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.10">
+                    <p id="section-toc.1-1.4.2.4.2.10.1"><a href="#section-4.4.10" class="auto internal xref">4.4.10</a>. <a href="#name-the-sid-label-binding-and-t" class="internal xref">The SID/Label Binding and the Multi-Topology SID/Label Binding TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.11">
+                    <p id="section-toc.1-1.4.2.4.2.11.1"><a href="#section-4.4.11" class="auto internal xref">4.4.11</a>. <a href="#name-the-srv6-locator-tlv" class="internal xref">The SRv6 Locator TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.12">
+                    <p id="section-toc.1-1.4.2.4.2.12.1"><a href="#section-4.4.12" class="auto internal xref">4.4.12</a>. <a href="#name-traffic-engineering-informa" class="internal xref">Traffic Engineering Information</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.13">
+                    <p id="section-toc.1-1.4.2.4.2.13.1"><a href="#section-4.4.13" class="auto internal xref">4.4.13</a>. <a href="#name-the-area-sid" class="internal xref">The Area SID</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-inside-edge-router-function" class="internal xref">Inside Edge Router Functions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-generating-l2-iihs-to-outsi" class="internal xref">Generating L2 IIHs to Outside Routers</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-filtering-lsp-information" class="internal xref">Filtering LSP Information</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">
+       The IS-IS routing protocol <span>[<a href="#ISO10589" class="cite xref">ISO10589</a>]</span>
+       supports a two-level hierarchy of abstraction. The
+       fundamental unit of abstraction is the "area", which is a
+       (hopefully) connected set of systems running IS-IS at the same
+       level. Level 1, the lowest level, is abstracted by routers that
+       participate in both Level 1 and Level 2, and they inject area
+       information into Level 2.  Level 2 systems seeking to access
+       Level 1 use this abstraction to compute the shortest path to
+       the Level 1 area. 
+
+   The full topology database of Level 1 is not injected into Level 2, rather,
+   only a summary of the address space contained within the area is injected.
+   Therefore, the scalability of the Level 2 Link State Database (LSDB) is
+   protected.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+       This works well if the Level 1 area is tangential to the Level
+       2 area. This also works well if there are several routers in
+       both Levels 1 and 2 and they are adjacent to one another,
+       so Level 2 traffic will never need to transit Level 1 only
+       routers.  Level 1 will not contain any Level 2 topology and
+       Level 2 will only contain area abstractions for Level 1.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">
+       Unfortunately, this scheme does not work so well if the Level 1
+       only area needs to provide transit for Level 2 traffic. For
+       Level 2 Shortest Path First (SPF) computations to work
+       correctly, the transit topology must also appear in the Level 2
+       LSDB.  This implies that all routers that could provide
+       transit plus any links that might also provide Level 2 transit
+       must also become part of the Level 2 topology. If this is a
+       relatively tiny portion of the Level 1 area, this is not
+       overly painful.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">
+       However, with today's data center topologies, this is problematic. A
+       common application is to use a Layer 3 Leaf-Spine (L3LS) topology,
+       which is a folded 3-stage Clos fabric <span>[<a href="#Clos" class="cite xref">Clos</a>]</span>. It can also be thought of as a complete bipartite graph.  In
+       such a topology, the desire is to use Level 1 to contain the routing
+       dynamics of the entire L3LS topology and then use Level 2 for the
+       remainder of the network.  Leaves in the L3LS topology are appropriate
+       for connection outside of the data center itself, so they would provide
+       connectivity for Level 2. If there are multiple connections to Level 2
+       for redundancy or other areas, these would also be made to the leaves
+       in the topology. This creates a difficulty because there are now
+       multiple Level 2 leaves in the topology, with connectivity between the
+       leaves provided by the spines.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">
+       Following the current rules of IS-IS, all spine routers would
+       necessarily be part of the Level 2 topology plus all links
+       between a Level 2 leaf and the spines.  In the limit, where all
+       leaves need to support Level 2, it implies that the entire L3LS
+       topology becomes part of Level 2. This is seriously problematic,
+       as it more than doubles the LSDB held in the
+       L3LS topology and eliminates any benefits of the hierarchy.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">
+       This document discusses the handling of IP traffic. Supporting
+       MPLS-based traffic is a subject for future work.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<section id="section-1.1">
+        <h3 id="name-requirements-language">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-2">
+      <h2 id="name-area-proxy">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-area-proxy" class="section-name selfRef">Area Proxy</a>
+      </h2>
+<p id="section-2-1"> In this specification, we completely abstract away the details of
+      the Level 1 area topology within Level 2, making the entire area look
+      like a single proxy system directly connected to all of the area's Level
+      2 neighbors. By only providing an abstraction of the topology, Level
+      2's requirement for connectivity can be satisfied without the full
+      overhead of the area's internal topology. It then becomes the
+      responsibility of the Level 1 area to provide the forwarding
+      connectivity that's advertised.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">
+       For this discussion, we'll consider a single Level 1 IS-IS area to be
+       the Inside Area and the remainder of the Level 2 area to be the Outside
+       Area. All routers within the Inside Area speak Level 1 and Level 2
+       IS-IS on all of the links within the topology. We propose to implement
+       Area Proxy by having a Level 2 Proxy Link State PDU (LSP) that
+       represents the entire Inside Area. We will refer to this as the Proxy
+       LSP.  This is the only LSP from the area that will be flooded into the
+       overall Level 2 LSDB.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">
+       There are four classes of routers that we need to be concerned
+       with in this discussion:<a href="#section-2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-4">
+        <dt id="section-2-4.1">Inside Router:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.2">
+           A router within the Inside Area that runs Level 1 and Level 2
+           IS-IS. A router is recognized as an Inside Router by the
+           existence of its LSP in the Level 1 LSDB.<a href="#section-2-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.3">Area Leader:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.4">
+           The Area Leader is an Inside Router that is
+           elected to represent the Level 1 area by injecting the
+           Proxy LSP into the Level 2 LSDB. There may be
+           multiple candidates for Area Leader, but only one is
+           elected at a given time. Any Inside Router can be the Area
+    Leader.<a href="#section-2-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.5">Inside Edge Router:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.6">
+           An Inside Edge Router is an Inside Area Router that has at
+           least one Level 2 interface outside of the Inside Area.  An
+           interface on an Inside Edge Router that is connected to an
+           Outside Edge Router is an Area Proxy Boundary.<a href="#section-2-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.7">Outside Edge Router:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.8">
+           An Outside Edge Router is a Level 2 router that is outside
+           of the Inside Area that has an adjacency with an Inside
+           Edge Router.<a href="#section-2-4.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<span id="name-an-example-of-router-classe"></span><figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-2-5.1">
+<pre>
+                            Inside Area
+
+               +--------+                 +--------+
+               | Inside |-----------------| Inside |
+               | Router |                 |  Edge  |
+               +--------+    +------------| Router |
+                   |        /             +--------+
+                   |       /                   |
+               +--------+ /       =============|======
+               | Area   |/        ||           |
+               | Leader |         ||      +---------+
+               +--------+         ||      | Outside |
+                                  ||      |  Edge   |
+                                  ||      | Router  |
+                                  ||      +---------+
+
+                                          Outside Area
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-an-example-of-router-classe" class="selfRef">An Example of Router Classes</a>
+        </figcaption></figure>
+<p id="section-2-6">
+       All Inside Edge Routers learn the Area Proxy System Identifier
+       from the Area Proxy TLV advertised by the Area Leader and use
+       that as the system identifier in their Level 2 IS-IS Hello (IIH) PDUs
+       on all Outside interfaces. Outside Edge Routers will
+       then advertise an adjacency to the Area Proxy System
+       Identifier. This allows all Outside Routers to use the Proxy
+       LSP in their SPF computations without seeing the full topology
+       of the Inside Area.<a href="#section-2-6" class="pilcrow">¶</a></p>
+<p id="section-2-7">
+       Area Proxy functionality assumes that all circuits on Inside
+       Routers are either Level 1-2 circuits within the Inside Area,
+       or Level 2 circuits between Outside Edge Routers and Inside
+       Edge Routers.<a href="#section-2-7" class="pilcrow">¶</a></p>
+<p id="section-2-8">
+       Area Proxy Boundary multi-access circuits (i.e., Ethernets in LAN mode)
+       with multiple Inside Edge Routers on them are not supported. The Inside
+       Edge Router on any boundary LAN <span class="bcp14">MUST NOT</span> flood Inside
+       Router LSPs on this link. Boundary LANs <span class="bcp14">SHOULD NOT</span> be
+       enabled for Level 1. An Inside Edge Router may be elected as the
+       Designated Intermediate System (DIS) for a Boundary LAN. In this case,
+       using the Area Proxy System ID as the basis for the LAN pseudonode
+       identifier could create a collision, so the Insider Edge Router
+       <span class="bcp14">SHOULD</span> compose the pseudonode identifier using its
+       originally configured system identifier. This choice of pseudonode identifier may
+       confuse neighbors with an extremely strict implementation. In this
+       case, the Inside Edge Router may be configured with priority 0, causing
+       an Outside Router to be elected as the DIS.<a href="#section-2-8" class="pilcrow">¶</a></p>
+<section id="section-2.1">
+        <h3 id="name-segment-routing">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-segment-routing" class="section-name selfRef">Segment Routing</a>
+        </h3>
+<p id="section-2.1-1">
+         If the Inside Area supports Segment Routing (SR) <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span>, then all Inside Nodes <span class="bcp14">MUST</span>
+         advertise a Segment Routing Global Block (SRGB). The first value of
+         the SRGB advertised by all Inside Nodes <span class="bcp14">MUST</span> start at
+         the same value. If the Area Leader detects SRGBs that do not start
+         with the same value, it <span class="bcp14">MUST</span> log an error and not
+         advertise an SRGB in the Proxy LSP. The range advertised for the area
+         will be the minimum of that advertised by all Inside Nodes.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">
+To support SR, the Area Leader will take the SRGB information
+found in the L1 LSDB and convey that to L2 through the Proxy LSP.
+Prefixes with Segment Identifier (SID) assignments will be copied to the Proxy
+LSP.  Adjacency SIDs for Outside Edge Nodes will be copied to the Proxy LSP.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3">
+         To further extend SR, it is helpful to
+         have a segment that refers to the entire Inside Area. This
+         allows a path to refer to an area and have any node within
+         that area accept and forward the packet. In effect, this
+         becomes an anycast SID that is accepted by all Inside Edge
+         Nodes. The information about this SID is distributed in the
+         Area SID sub-TLV as part of the Area Leader's Area
+         Proxy TLV (<a href="#AreaSIDsubTLV" class="auto internal xref">Section 4.3.2</a>). The Inside Edge
+         Nodes <span class="bcp14">MUST</span> establish forwarding based on this SID. The Area
+         Leader <span class="bcp14">SHALL</span> also include the Area SID in the Proxy LSP so
+         that the remainder of L2 can use it for path construction.
+         (<a href="#AreaSIDBinding" class="auto internal xref">Section 4.4.13</a>).<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-3">
+      <h2 id="name-inside-router-functions">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-inside-router-functions" class="section-name selfRef">Inside Router Functions</a>
+      </h2>
+<p id="section-3-1">
+       All Inside Routers run Level 1-2 IS-IS and must be explicitly
+       instructed to enable the Area Proxy functionality. To signal
+       their readiness to participate in Area Proxy functionality,
+       they will advertise the Area Proxy TLV in their L2 LSP.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<section id="section-3.1">
+        <h3 id="name-the-area-proxy-tlv">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-the-area-proxy-tlv" class="section-name selfRef">The Area Proxy TLV</a>
+        </h3>
+<p id="section-3.1-1">
+         The Area Proxy TLV serves multiple functions:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1">
+            <p id="section-3.1-2.1.1">
+             The presence of the Area Proxy TLV in a node's LSP
+             indicates that the node is enabled for Area Proxy.<a href="#section-3.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-2.2">
+            <p id="section-3.1-2.2.1">
+             An LSP containing the Area Proxy TLV is also an Inside
+             Node. All Inside Nodes, including pseudonodes, <span class="bcp14">MUST</span>
+             advertise the Area Proxy TLV.<a href="#section-3.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-2.3">
+            <p id="section-3.1-2.3.1">
+             It is a container for sub-TLVs with Area Proxy information.<a href="#section-3.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.1-3">
+         A node advertises the Area Proxy TLV in fragment 0 of its L2
+         LSP.  Nodes <span class="bcp14">MUST NOT</span> advertise the Area Proxy TLV in an L1
+         LSP. Nodes <span class="bcp14">MUST</span> ignore the Area Proxy TLV if it is found in an
+         L1 LSP.  The Area Proxy TLV is not used in the Proxy LSP. The
+         format of the Area Proxy TLV is:<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1-4">
+<pre>
+ 0                   1                   2
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| TLV Type      | TLV Length    |  Sub-TLVs ...
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-3.1-4" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-3.1-5">
+          <dt id="section-3.1-5.1">TLV Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-5.2">20<a href="#section-3.1-5.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-5.3">TLV Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-5.4">Length of the sub-TLVs.<a href="#section-3.1-5.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-3.2">
+        <h3 id="name-level-2-spf-computation">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-level-2-spf-computation" class="section-name selfRef">Level 2 SPF Computation</a>
+        </h3>
+<p id="section-3.2-1">
+         When Outside Routers perform a Level 2 SPF computation, they
+         will use the Proxy LSP for computing a path transiting
+         the Inside Area. Because the topology has been abstracted
+         away, the cost for transiting the Inside Area will be zero.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">
+         When Inside Routers perform a Level 2 SPF computation, they
+         <span class="bcp14">MUST</span> ignore the Proxy LSP. Because these systems 
+         see the Inside Area topology, the link metrics internal to
+         the area are visible. This could lead to different and
+         possibly inconsistent SPF results, potentially leading to
+         forwarding loops.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">
+         To prevent this, the Inside Routers <span class="bcp14">MUST</span> consider the metrics
+         of links outside of the Inside Area (inter-area metrics)
+         separately from the metrics of the Inside Area links
+         (intra-area metrics). Intra-area metrics <span class="bcp14">MUST</span> be treated as
+         less than any inter-area metric.  Thus, if two paths have
+         different total inter-area metrics, the path with the lower
+         inter-area metric would be preferred regardless of any
+         intra-area metrics involved. However, if two paths have equal
+         inter-area metrics, then the intra-area metrics would be used
+         to compare the paths.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">
+         Point-to-point links between two Inside Routers are
+         considered to be Inside Area links. LAN links that have a
+         pseudonode LSP in the Level 1 LSDB are considered to be
+         Inside Area links.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3.3">
+        <h3 id="name-responsibilities-concerning">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-responsibilities-concerning" class="section-name selfRef">Responsibilities Concerning the Proxy LSP</a>
+        </h3>
+<p id="section-3.3-1">The Area Leader will generate a Proxy LSP that will be flooded across the Inside Area. Inside Routers <span class="bcp14">MUST</span> flood the Proxy LSP and <span class="bcp14">MUST</span> ignore its contents.
+The Proxy LSP uses the Area Proxy System Identifier as its Source ID.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4">
+      <h2 id="name-area-leader-functions">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-area-leader-functions" class="section-name selfRef">Area Leader Functions</a>
+      </h2>
+<p id="section-4-1">
+       The Area Leader has several responsibilities.  First, it <span class="bcp14">MUST</span>
+       inject the Area Proxy System Identifier into the Level 2
+       LSDB. Second, the Area Leader <span class="bcp14">MUST</span> generate the Proxy LSP for
+       the Inside Area.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<section id="section-4.1">
+        <h3 id="name-area-leader-election">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-area-leader-election" class="section-name selfRef">Area Leader Election</a>
+        </h3>
+<p id="section-4.1-1">
+         The Area Leader is selected using the election mechanisms and
+         TLVs described in "Dynamic Flooding on Dense Graphs" <span>[<a href="#RFC9667" class="cite xref">RFC9667</a>]</span>.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2">
+        <h3 id="name-redundancy">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-redundancy" class="section-name selfRef">Redundancy</a>
+        </h3>
+<p id="section-4.2-1">
+         If the Area Leader fails, another candidate may become Area
+         Leader and <span class="bcp14">MUST</span> regenerate the Proxy LSP.  The
+         failure of the Area Leader is not visible outside of the area
+         and appears to simply be an update of the Proxy
+         LSP.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">
+         For consistency, all Area Leader candidates <span class="bcp14">SHOULD</span> be
+         configured with the same Proxy System ID, Proxy Hostname, and
+         any other information that may be inserted into the Proxy LSP.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.3">
+        <h3 id="name-distributing-area-proxy-inf">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-distributing-area-proxy-inf" class="section-name selfRef">Distributing Area Proxy Information</a>
+        </h3>
+<p id="section-4.3-1">
+  The Area Leader is responsible for distributing information
+  about the area to all Inside Nodes. In particular, the Area
+  Leader distributes the Proxy System ID and the Area SID.
+  This is done using two sub-TLVs of the Area Proxy TLV.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<section id="section-4.3.1">
+          <h4 id="name-the-area-proxy-system-ident">
+<a href="#section-4.3.1" class="section-number selfRef">4.3.1. </a><a href="#name-the-area-proxy-system-ident" class="section-name selfRef">The Area Proxy System Identifier Sub-TLV</a>
+          </h4>
+<p id="section-4.3.1-1">
+           The Area Proxy System Identifier sub-TLV <span class="bcp14">MUST</span> be used by the Area
+           Leader to distribute the Area Proxy System ID. This is an
+           additional system identifier that is used by Inside Nodes
+           as an indication that Area Proxy is active.  The format of
+           this sub-TLV is:<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3.1-2">
+<pre>
+ 0                   1                   2
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      Type     |     Length    |                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+    Proxy System Identifier    |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-4.3.1-2" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-4.3.1-3">
+            <dt id="section-4.3.1-3.1">Type:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.1-3.2">1<a href="#section-4.3.1-3.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.1-3.3">Length:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.1-3.4">Length of a system ID (6).<a href="#section-4.3.1-3.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.1-3.5">Proxy System Identifier:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.1-3.6">The Area Proxy System Identifier.<a href="#section-4.3.1-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-4.3.1-4">
+           The Area Leader <span class="bcp14">MUST</span> advertise the Area Proxy System
+           Identifier sub-TLV when it observes that all Inside Routers
+           are advertising the Area Proxy TLV. Their advertisements
+           indicate that they are individually ready to perform Area
+           Proxy functionality.  The Area Leader then advertises the
+           Area Proxy System Identifier TLV to indicate that the
+           Inside Area <span class="bcp14">MUST</span> enable Area Proxy functionality.<a href="#section-4.3.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-5">
+           Other candidates for Area Leader <span class="bcp14">MAY</span> also advertise
+           the Area Proxy System Identifier when they observe that all Inside
+           Routers are advertising the Area Proxy TLV.  All candidates
+           advertising the Area Proxy System Identifier TLV
+           <span class="bcp14">SHOULD</span> be advertising the same system
+           identifier. Multiple proxy system identifiers in a single area is a
+           misconfiguration and each unique occurrence <span class="bcp14">SHOULD</span>
+           be logged. Systems should use the Proxy System ID advertised by the
+           Area Leader.<a href="#section-4.3.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-6">
+           The Area Leader and other candidates for Area Leader
+           <span class="bcp14">MAY</span> withdraw the Area Proxy System Identifier when
+           one or more Inside Routers are not advertising the Area Proxy
+           TLV. This will disable Area Proxy functionality.  However, before
+           withdrawing the Area Proxy System Identifier, an implementation
+           <span class="bcp14">SHOULD</span> protect against unnecessary churn from
+           transients by delaying the withdrawal. The amount of delay is
+           implementation dependent.<a href="#section-4.3.1-6" class="pilcrow">¶</a></p>
+</section>
+<div id="AreaSIDsubTLV">
+<section id="section-4.3.2">
+          <h4 id="name-the-area-sid-sub-tlv">
+<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-the-area-sid-sub-tlv" class="section-name selfRef">The Area SID Sub-TLV</a>
+          </h4>
+<p id="section-4.3.2-1">
+           The Area SID sub-TLV allows the Area Leader to advertise a
+           prefix and SID that represent the entirety of the Inside
+           Area to the Outside Area.  This sub-TLV is learned by all
+           of the Inside Edge Nodes who should consume this SID at
+           forwarding time.  The Area SID sub-TLV has the following format:<a href="#section-4.3.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3.2-2">
+<pre>
+ 0                   1                   2
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type      |     Length    |     Flags     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                  SID/Index/Label (variable)                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| Prefix Length |    Prefix (variable)                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-4.3.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.3.2-3">
+           where:<a href="#section-4.3.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.3.2-4">
+            <dt id="section-4.3.2-4.1">Type:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.2-4.2">2<a href="#section-4.3.2-4.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.2-4.3">Length:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.2-4.4">Variable (1 + SID length)<a href="#section-4.3.2-4.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.2-4.5">Flags:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.2-4.6">
+              <p id="section-4.3.2-4.6.1">1 octet, defined as follows.<a href="#section-4.3.2-4.6.1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3.2-4.6.2">
+<pre>
+      0 1 2 3 4 5 6 7
+      +-+-+-+-+-+-+-+-+
+      |F|V|L|         |
+      +-+-+-+-+-+-+-+-+
+</pre><a href="#section-4.3.2-4.6.2" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-4.3.2-4.6.3">
+                <dt id="section-4.3.2-4.6.3.1">F:</dt>
+                <dd style="margin-left: 2.0em" id="section-4.3.2-4.6.3.2">Address-Family Flag.  If this flag is not set,
+               then this proxy SID is used when forwarding IPv4-encapsulated
+               traffic. If set, then this proxy SID is used when forwarding
+               IPv6-encapsulated traffic.<a href="#section-4.3.2-4.6.3.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-4.3.2-4.6.3.3">V:</dt>
+                <dd style="margin-left: 2.0em" id="section-4.3.2-4.6.3.4">Value Flag.  If set, then the proxy SID carries
+               a value, as defined in <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>], <a href="https://rfc-editor.org/rfc/rfc8667#section-2.1.1.1" class="relref">Section 2.1.1.1</a></span>.<a href="#section-4.3.2-4.6.3.4" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-4.3.2-4.6.3.5">L:</dt>
+                <dd style="margin-left: 2.0em" id="section-4.3.2-4.6.3.6">Local Flag.  If set, then the value/index
+               carried by the proxy SID has local significance, as defined in
+               <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>], <a href="https://rfc-editor.org/rfc/rfc8667#section-2.1.1.1" class="relref">Section 2.1.1.1</a></span>.<a href="#section-4.3.2-4.6.3.6" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-4.3.2-4.6.3.7">Other bits:</dt>
+                <dd style="margin-left: 2.0em" id="section-4.3.2-4.6.3.8">
+                  <span class="bcp14">MUST</span> be zero when
+              originated and ignored when received.<a href="#section-4.3.2-4.6.3.8" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.2-4.7">SID/Index/Label:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.2-4.8">As defined in <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>], <a href="https://rfc-editor.org/rfc/rfc8667#section-2.1.1.1" class="relref">Section 2.1.1.1</a></span>.<a href="#section-4.3.2-4.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.2-4.9">Prefix Length:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.2-4.10">1 octet<a href="#section-4.3.2-4.10" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.3.2-4.11">Prefix:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.3.2-4.12">0-16 octets<a href="#section-4.3.2-4.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<section id="section-4.4">
+        <h3 id="name-proxy-lsp-generation">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-proxy-lsp-generation" class="section-name selfRef">Proxy LSP Generation</a>
+        </h3>
+<p id="section-4.4-1">
+         Each Inside Router generates a Level 2 LSP and the Level 2
+         LSPs for the Inside Edge Routers will include adjacencies to
+         Outside Edge Routers.  Unlike normal Level 2 operations,
+         these LSPs are not advertised outside of the Inside Area and
+         <span class="bcp14">MUST</span> be filtered by all Inside Edge Routers to not be flooded
+         to Outside Routers. Only the Proxy LSP is injected into
+         the overall Level 2 LSDB.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4-2">
+         The Area Leader uses the Level 2 LSPs generated by the Inside
+         Edge Routers to generate the Proxy LSP.  This LSP is
+         originated using the Area Proxy System Identifier.  The Area
+         Leader can also insert the following additional TLVs into the
+         Proxy LSP for additional information for the Outside
+         Area. LSPs generated by unreachable nodes <span class="bcp14">MUST NOT</span> be
+         considered.<a href="#section-4.4-2" class="pilcrow">¶</a></p>
+<section id="section-4.4.1">
+          <h4 id="name-the-protocols-supported-tlv">
+<a href="#section-4.4.1" class="section-number selfRef">4.4.1. </a><a href="#name-the-protocols-supported-tlv" class="section-name selfRef">The Protocols Supported TLV</a>
+          </h4>
+<p id="section-4.4.1-1">
+           The Area Leader <span class="bcp14">SHOULD</span> insert a Protocols Supported TLV (129)
+           <span>[<a href="#RFC1195" class="cite xref">RFC1195</a>]</span> into the Proxy LSP. The
+           values included in the TLV <span class="bcp14">SHOULD</span> be the protocols
+           supported by the Inside Area.<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.2">
+          <h4 id="name-the-area-address-tlv">
+<a href="#section-4.4.2" class="section-number selfRef">4.4.2. </a><a href="#name-the-area-address-tlv" class="section-name selfRef">The Area Address TLV</a>
+          </h4>
+<p id="section-4.4.2-1">
+           The Area Leader <span class="bcp14">SHOULD</span> insert an Area Addresses TLV (1)
+           <span>[<a href="#ISO10589" class="cite xref">ISO10589</a>]</span> into the Proxy LSP.<a href="#section-4.4.2-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.3">
+          <h4 id="name-the-dynamic-hostname-tlv">
+<a href="#section-4.4.3" class="section-number selfRef">4.4.3. </a><a href="#name-the-dynamic-hostname-tlv" class="section-name selfRef">The Dynamic Hostname TLV</a>
+          </h4>
+<p id="section-4.4.3-1">
+           It is <span class="bcp14">RECOMMENDED</span> that the Area Leader insert the Dynamic
+           Hostname TLV (137) <span>[<a href="#RFC5301" class="cite xref">RFC5301</a>]</span> into the Proxy
+           LSP. The contents of the hostname may be specified by
+           configuration. The presence of the hostname helps to
+           simplify network debugging.<a href="#section-4.4.3-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.4">
+          <h4 id="name-the-is-neighbors-tlv">
+<a href="#section-4.4.4" class="section-number selfRef">4.4.4. </a><a href="#name-the-is-neighbors-tlv" class="section-name selfRef">The IS Neighbors TLV</a>
+          </h4>
+<p id="section-4.4.4-1">
+           The Area Leader can insert the IS Neighbors TLV (2) <span>[<a href="#ISO10589" class="cite xref">ISO10589</a>]</span> into the Proxy LSP for Outside
+           Edge Routers. The Area Leader learns of the Outside Edge
+           Routers by examining the LSPs generated by the Inside Edge
+           Routers copying any IS Neighbors TLVs referring to Outside
+           Edge Routers into the Proxy LSP.  Since the Outside Edge
+           Routers advertise an adjacency to the Area Proxy System
+           Identifier, this will result in a bidirectional adjacency.<a href="#section-4.4.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.4-2">
+           An entry for a neighbor in both the IS Neighbors TLV and
+           the Extended IS Neighbors TLV would be functionally redundant,
+           so the Area Leader <span class="bcp14">SHOULD NOT</span> do this. The Area Leader <span class="bcp14">MAY</span>
+           omit either the IS Neighbors TLV or the Extended IS
+           Neighbors TLV, but it <span class="bcp14">MUST</span> include at least one of them.<a href="#section-4.4.4-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.5">
+          <h4 id="name-the-extended-is-neighbors-t">
+<a href="#section-4.4.5" class="section-number selfRef">4.4.5. </a><a href="#name-the-extended-is-neighbors-t" class="section-name selfRef">The Extended IS Neighbors TLV</a>
+          </h4>
+<p id="section-4.4.5-1">
+           The Area Leader can insert the Extended IS Reachability TLV
+           (22) <span>[<a href="#RFC5305" class="cite xref">RFC5305</a>]</span> into the Proxy LSP. The
+           Area Leader <span class="bcp14">SHOULD</span> copy each Extended IS Reachability TLV
+           advertised by an Inside Edge Router about an Outside Edge
+           Router into the Proxy LSP.<a href="#section-4.4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.5-2">
+           If the Inside Area supports Segment Routing, and Segment
+           Routing selects a SID where the L-Flag is not set, then the
+           Area Lead <span class="bcp14">SHOULD</span> include an Adjacency Segment Identifier
+           sub-TLV (31) <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>]</span> using the selected
+           SID.<a href="#section-4.4.5-2" class="pilcrow">¶</a></p>
+<p id="section-4.4.5-3">
+           If the inside area supports SRv6, the Area Leader <span class="bcp14">SHOULD</span>
+           copy the "SRv6 End.X SID" and "SRv6 LAN End.X SID" sub-TLVs
+           of the Extended IS Reachability TLVs advertised by Inside
+           Edge Routers about Outside Edge Routers.<a href="#section-4.4.5-3" class="pilcrow">¶</a></p>
+<p id="section-4.4.5-4">
+           If the inside area supports Traffic Engineering (TE), the
+           Area Leader <span class="bcp14">SHOULD</span> copy TE-related sub-TLVs
+           (<span>[<a href="#RFC5305" class="cite xref">RFC5305</a>], <a href="https://rfc-editor.org/rfc/rfc5305#section-3" class="relref">Section 3</a></span>) to each Extended IS
+           Reachability TLV in the Proxy LSP.<a href="#section-4.4.5-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.6">
+          <h4 id="name-the-mt-intermediate-systems">
+<a href="#section-4.4.6" class="section-number selfRef">4.4.6. </a><a href="#name-the-mt-intermediate-systems" class="section-name selfRef">The MT Intermediate Systems TLV</a>
+          </h4>
+<p id="section-4.4.6-1">
+           If the Inside Area supports Multi-Topology (MT), then the Area
+           Leader <span class="bcp14">SHOULD</span> copy each Outside Edge Router advertisement
+           that is advertised by an Inside Edge Router in an MT
+           Intermediate Systems TLV into the Proxy LSP.<a href="#section-4.4.6-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.7">
+          <h4 id="name-reachability-tlvs">
+<a href="#section-4.4.7" class="section-number selfRef">4.4.7. </a><a href="#name-reachability-tlvs" class="section-name selfRef">Reachability TLVs</a>
+          </h4>
+<p id="section-4.4.7-1">
+           The Area Leader <span class="bcp14">SHOULD</span> insert additional TLVs describing
+           any routing prefixes that should be advertised on behalf of
+           the area. These prefixes may be learned from the Level 1
+           LSDB, Level 2 LSDB, or redistributed from another routing
+           protocol.  This applies to all of the various types of TLVs
+           used for prefix advertisement:<a href="#section-4.4.7-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.4.7-2.1">
+              <p id="section-4.4.7-2.1.1">
+               IP Internal Reachability Information TLV (128) <span>[<a href="#RFC1195" class="cite xref">RFC1195</a>]</span><a href="#section-4.4.7-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.4.7-2.2">
+              <p id="section-4.4.7-2.2.1">
+               IP External Reachability Information TLV (130) <span>[<a href="#RFC1195" class="cite xref">RFC1195</a>]</span><a href="#section-4.4.7-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.4.7-2.3">
+              <p id="section-4.4.7-2.3.1">
+               Extended IP Reachability TLV (135) <span>[<a href="#RFC5305" class="cite xref">RFC5305</a>]</span><a href="#section-4.4.7-2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.4.7-2.4">
+              <p id="section-4.4.7-2.4.1">
+               IPv6 Reachability TLV (236) <span>[<a href="#RFC5308" class="cite xref">RFC5308</a>]</span><a href="#section-4.4.7-2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.4.7-2.5">
+              <p id="section-4.4.7-2.5.1">
+               Multi-Topology Reachable IPv4 Prefixes TLV (235) <span>[<a href="#RFC5120" class="cite xref">RFC5120</a>]</span><a href="#section-4.4.7-2.5.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.4.7-2.6">
+              <p id="section-4.4.7-2.6.1">
+               Multi-Topology Reachable IPv6 Prefixes TLV (237) <span>[<a href="#RFC5120" class="cite xref">RFC5120</a>]</span><a href="#section-4.4.7-2.6.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4.4.7-3">
+           For TLVs in the Level 1 LSDB, for a given TLV type and
+           prefix, the Area Leader <span class="bcp14">SHOULD</span> select the TLV with the
+           lowest metric and copy that TLV into the Proxy LSP.<a href="#section-4.4.7-3" class="pilcrow">¶</a></p>
+<p id="section-4.4.7-4">
+           When examining the Level 2 LSDB for this function, the Area Leader
+           <span class="bcp14">SHOULD</span> only consider TLVs advertised by Inside
+           Routers. Further, for prefixes that represent Boundary links, the
+           Area Leader <span class="bcp14">SHOULD</span> copy all TLVs that have unique
+           sub-TLV contents.<a href="#section-4.4.7-4" class="pilcrow">¶</a></p>
+<p id="section-4.4.7-5">
+           If the Inside Area supports SR and the
+           selected TLV includes a Prefix Segment Identifier sub-TLV
+           (3) <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>]</span>, then the sub-TLV <span class="bcp14">SHOULD</span> be
+           copied as well. The P-Flag <span class="bcp14">SHOULD</span> be set in the copy of the
+           sub-TLV to indicate that penultimate hop popping should not
+           be performed for this prefix. The E-Flag <span class="bcp14">SHOULD</span> be reset in
+           the copy of the sub-TLV to indicate that an explicit NULL
+           is not required. The R-Flag <span class="bcp14">SHOULD</span> simply be copied.<a href="#section-4.4.7-5" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.8">
+          <h4 id="name-the-router-capability-tlv">
+<a href="#section-4.4.8" class="section-number selfRef">4.4.8. </a><a href="#name-the-router-capability-tlv" class="section-name selfRef">The Router Capability TLV</a>
+          </h4>
+<p id="section-4.4.8-1">
+           The Area Leader <span class="bcp14">MAY</span> insert the Router Capability TLV (242)
+           <span>[<a href="#RFC7981" class="cite xref">RFC7981</a>]</span> into the Proxy LSP. If
+           SR is supported by the inside area, as
+           indicated by the presence of an SRGB being advertised by
+           all Inside Nodes, then the Area Leader <span class="bcp14">SHOULD</span> advertise an
+           SR-Capabilities sub-TLV (2) <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>]</span> with
+           an SRGB. The first value of the SRGB is the same as
+           the first value advertised by all Inside Nodes. The range
+           advertised for the area will be the minimum of all ranges
+           advertised by Inside Nodes. The Area Leader <span class="bcp14">SHOULD</span> use its
+           Router ID in the Router Capability TLV.<a href="#section-4.4.8-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.8-2">
+           If SRv6 Capability sub-TLV <span>[<a href="#RFC7981" class="cite xref">RFC7981</a>]</span> is
+           advertised by all Inside Routers, the Area Leader should
+           insert an SRv6 Capability sub-TLV in the Router Capability
+           TLV. Each flag in the SRv6 Capability sub-TLV should be set
+           if the flag is set by all Inside Routers.<a href="#section-4.4.8-2" class="pilcrow">¶</a></p>
+<p id="section-4.4.8-3">
+           If the Node Maximum SID Depth (MSD) sub-TLV <span>[<a href="#RFC8491" class="cite xref">RFC8491</a>]</span> is advertised by all Inside Routers, the
+           Area Leader should advertise the intersection of the
+           advertised MSD types and the smallest supported MSD values
+           for each type.<a href="#section-4.4.8-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.9">
+          <h4 id="name-the-multi-topology-tlv">
+<a href="#section-4.4.9" class="section-number selfRef">4.4.9. </a><a href="#name-the-multi-topology-tlv" class="section-name selfRef">The Multi-Topology TLV</a>
+          </h4>
+<p id="section-4.4.9-1">
+           If the Inside Area supports multi-topology, then the Area
+           Leader <span class="bcp14">SHOULD</span> insert the Multi-Topology TLV (229) <span>[<a href="#RFC5120" class="cite xref">RFC5120</a>]</span>, including the topologies supported by
+           the Inside Nodes.<a href="#section-4.4.9-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.9-2">
+           If any Inside Node is advertising the O (Overload) bit
+           for a given topology, then the Area Leader <span class="bcp14">MUST</span> advertise
+           the O bit for that topology. If any Inside Node is
+           advertising the A (Attach) bit for a given topology, then
+           the Area Leader <span class="bcp14">MUST</span> advertise the A bit for that
+           topology.<a href="#section-4.4.9-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.10">
+          <h4 id="name-the-sid-label-binding-and-t">
+<a href="#section-4.4.10" class="section-number selfRef">4.4.10. </a><a href="#name-the-sid-label-binding-and-t" class="section-name selfRef">The SID/Label Binding and the Multi-Topology SID/Label Binding TLV</a>
+          </h4>
+<p id="section-4.4.10-1">
+           If an Inside Node advertises the SID/Label Binding or
+           Multi-Topology SID/Label Binding TLV <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>]</span>, then the Area Leader <span class="bcp14">MAY</span> copy the TLV
+           to the Proxy LSP.<a href="#section-4.4.10-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.11">
+          <h4 id="name-the-srv6-locator-tlv">
+<a href="#section-4.4.11" class="section-number selfRef">4.4.11. </a><a href="#name-the-srv6-locator-tlv" class="section-name selfRef">The SRv6 Locator TLV</a>
+          </h4>
+<p id="section-4.4.11-1">
+           If the inside area supports SRv6, the Area Leader <span class="bcp14">SHOULD</span>
+           copy all SRv6 locator TLVs <span>[<a href="#RFC9352" class="cite xref">RFC9352</a>]</span>
+           advertised by Inside Routers to the Proxy LSP.<a href="#section-4.4.11-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.4.12">
+          <h4 id="name-traffic-engineering-informa">
+<a href="#section-4.4.12" class="section-number selfRef">4.4.12. </a><a href="#name-traffic-engineering-informa" class="section-name selfRef">Traffic Engineering Information</a>
+          </h4>
+<p id="section-4.4.12-1">
+           If the inside area supports TE, the Area Leader <span class="bcp14">SHOULD</span>
+           advertise a TE Router ID TLV (134) <span>[<a href="#RFC5305" class="cite xref">RFC5305</a>]</span>
+           in the Proxy LSP. It <span class="bcp14">SHOULD</span> copy the Shared Risk
+           Link Group (SRLS) TLVs (138) <span>[<a href="#RFC5307" class="cite xref">RFC5307</a>]</span>
+           advertised by Inside Edge Routers about links to Outside
+           Edge Routers.<a href="#section-4.4.12-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.12-2">
+           If the inside area supports IPv6 TE, the Area Leader <span class="bcp14">SHOULD</span>
+           advertise an IPv6 TE Router ID TLV (140)
+           <span>[<a href="#RFC6119" class="cite xref">RFC6119</a>]</span> in the Proxy LSP. It <span class="bcp14">SHOULD</span> also
+           copy the IPv6 SRLG TLVs (139)  <span>[<a href="#RFC6119" class="cite xref">RFC6119</a>]</span>
+           advertised by Inside Edge Routers about links to Outside
+           Edge Routers.<a href="#section-4.4.12-2" class="pilcrow">¶</a></p>
+</section>
+<div id="AreaSIDBinding">
+<section id="section-4.4.13">
+          <h4 id="name-the-area-sid">
+<a href="#section-4.4.13" class="section-number selfRef">4.4.13. </a><a href="#name-the-area-sid" class="section-name selfRef">The Area SID</a>
+          </h4>
+<p id="section-4.4.13-1">
+    When SR is enabled, it may be useful to advertise an Area
+    SID that will direct traffic to any of the Inside
+    Edge Routers. The information for the Area SID is
+    distributed to all Inside Edge Routers using the Area SID
+    sub-TLV (<a href="#AreaSIDsubTLV" class="auto internal xref">Section 4.3.2</a>) by the Area Leader.<a href="#section-4.4.13-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.13-2">
+           The Area Leader <span class="bcp14">SHOULD</span> advertise the Area SID information
+           in the Proxy LSP as a Node SID as defined in <span>[<a href="#RFC8667" class="cite xref">RFC8667</a>], <a href="https://rfc-editor.org/rfc/rfc8667#section-2.1" class="relref">Section 2.1</a></span>. The advertisement in the
+           Proxy LSP informs the Outside Area that packets directed to
+           the SID will be forwarded to one of the Inside Edge Nodes
+           and the Area SID will be consumed.<a href="#section-4.4.13-2" class="pilcrow">¶</a></p>
+<p id="section-4.4.13-3">
+    Other uses of the Area SID and Area SID prefix are outside
+    the scope of this document. Documents that define other
+    use cases for the Area SID <span class="bcp14">MUST</span> specify whether the SID
+    value should be the same or different from that used in
+    support of Area Proxy.<a href="#section-4.4.13-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</section>
+<section id="section-5">
+      <h2 id="name-inside-edge-router-function">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-inside-edge-router-function" class="section-name selfRef">Inside Edge Router Functions</a>
+      </h2>
+<p id="section-5-1">
+       The Inside Edge Router has two additional and important
+       functions. First, it <span class="bcp14">MUST</span> generate IIHs that appear to have
+       come from the Area Proxy System Identifier. Second, it <span class="bcp14">MUST</span>
+       filter the L2 LSPs, Partial Sequence Number PDUs (PSNPs), and
+       Complete Sequence Number PDUs (CSNPs) that are being advertised
+       to Outside Routers.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<section id="section-5.1">
+        <h3 id="name-generating-l2-iihs-to-outsi">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-generating-l2-iihs-to-outsi" class="section-name selfRef">Generating L2 IIHs to Outside Routers</a>
+        </h3>
+<p id="section-5.1-1">
+         The Inside Edge Router has one or more Level 2 interfaces to
+         the Outside Routers.  These may be identified by explicit
+         configuration or by the fact that they are not also Level 1
+         circuits. On these Level 2 interfaces, the Inside Edge Router
+         <span class="bcp14">MUST NOT</span> send an IIH until it has learned the Area Proxy
+         System ID from the Area Leader. Then, once it has learned the
+         Area Proxy System ID, it <span class="bcp14">MUST</span> generate its IIHs on the
+         circuit using the Proxy System ID as the source of the IIH.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">
+         Using the Proxy System ID causes the Outside Router to
+         advertise an adjacency to the Proxy System ID, not to the
+         Inside Edge Router, which supports the proxy function. The
+         normal system ID of the Inside Edge Router <span class="bcp14">MUST NOT</span> be used
+         as it will cause unnecessary adjacencies to form.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.2">
+        <h3 id="name-filtering-lsp-information">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-filtering-lsp-information" class="section-name selfRef">Filtering LSP Information</a>
+        </h3>
+<p id="section-5.2-1">
+         For the area proxy abstraction to be effective the L2 LSPs
+         generated by the Inside Routers <span class="bcp14">MUST</span> be restricted to the
+         Inside Area. The Inside Routers know which system IDs are
+         members of the Inside Area based on the advertisement of the
+         Area Proxy TLV. To prevent unwanted LSP information from
+         escaping the Inside Area, the Inside Edge Router <span class="bcp14">MUST</span> perform
+         filtering of LSP flooding, CSNPs, and PSNPs. Specifically:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-2.1">
+            <p id="section-5.2-2.1.1">
+             A Level 2 LSP with a source system identifier that is
+             found in the Level 1 LSDB <span class="bcp14">MUST NOT</span> be flooded to an
+             Outside Router.<a href="#section-5.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-2.2">
+            <p id="section-5.2-2.2.1">
+             A Level 2 LSP that contains the Area Proxy TLV <span class="bcp14">MUST NOT</span>
+             be flooded to an Outside Router.<a href="#section-5.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-2.3">
+            <p id="section-5.2-2.3.1">
+             A Level 2 CSNP sent to an Outside Router <span class="bcp14">MUST NOT</span> contain
+             any information about an LSP with a system identifier
+             found in the Level 1 LSDB. If an Inside Edge Router
+             filters a CSNP and there is no remaining content, then
+             the CSNP <span class="bcp14">MUST NOT</span> be sent. The source address of the CSNP
+             <span class="bcp14">MUST</span> be the Area Proxy System ID.<a href="#section-5.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-2.4">
+            <p id="section-5.2-2.4.1">
+             A Level 2 PSNP sent to an Outside Router <span class="bcp14">MUST NOT</span> contain
+             any information about an LSP with a system identifier
+             found in the Level 1 LSDB. If an Inside Edge Router
+             filters a PSNP and there is no remaining content, then
+             the PSNP <span class="bcp14">MUST NOT</span> be sent. The source address of the PSNP
+             <span class="bcp14">MUST</span> be the Area Proxy System ID.<a href="#section-5.2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</section>
+<div id="IANA">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">
+       IANA has assigned code point 20
+       from the "IS-IS TLV Codepoints" registry for the Area Proxy TLV.
+       The registry fields are IIH:n, LSP:y, SNP:n, and Purge:n.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">
+       In association with this, IANA has created a "IS-IS Sub-TLVs for the Area Proxy TLV" registry. Temporary registrations may
+           be made via early allocation <span>[<a href="#RFC7120" class="cite xref">RFC7120</a>]</span>.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">The registration procedure is Expert Review <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>. The values are from 0-255, and the fields are Value, Name, and Reference. The initial assignments are as follows.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-center" rowspan="1" colspan="1">Value</th>
+            <th class="text-center" rowspan="1" colspan="1">Name</th>
+            <th class="text-center" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center" rowspan="1" colspan="1">1</td>
+            <td class="text-center" rowspan="1" colspan="1">Area Proxy System Identifier</td>
+            <td class="text-center" rowspan="1" colspan="1">RFC 9666</td>
+          </tr>
+          <tr>
+            <td class="text-center" rowspan="1" colspan="1">2</td>
+            <td class="text-center" rowspan="1" colspan="1">Area SID</td>
+            <td class="text-center" rowspan="1" colspan="1">RFC 9666</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<div id="Security">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">
+       This document introduces no new security issues. Security of routing
+       within a domain is already addressed as part of the routing protocols
+       themselves. This document proposes no changes to those security
+       architectures. Security for IS-IS is provided by "IS-IS Cryptographic
+       Authentication" <span>[<a href="#RFC5304" class="cite xref">RFC5304</a>]</span> and "IS-IS Generic
+       Cryptographic Authentication" <span>[<a href="#RFC5310" class="cite xref">RFC5310</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="ISO10589">[ISO10589]</dt>
+        <dd>
+<span class="refAuthor">ISO</span>, <span class="refTitle">"Information technology - Telecommunications and information exchange between systems - Intermediate System to Intermediate System intra-domain routeing information exchange protocol for use in conjunction with the protocol for providing the connectionless-mode network service (ISO 8473)"</span>, <span class="refContent">Second Edition</span>, <span class="seriesInfo">ISO/IEC 10589:2002</span>, <time datetime="2002-11" class="refDate">November 2002</time>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1195">[RFC1195]</dt>
+        <dd>
+<span class="refAuthor">Callon, R.</span>, <span class="refTitle">"Use of OSI IS-IS for routing in TCP/IP and dual environments"</span>, <span class="seriesInfo">RFC 1195</span>, <span class="seriesInfo">DOI 10.17487/RFC1195</span>, <time datetime="1990-12" class="refDate">December 1990</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1195">https://www.rfc-editor.org/info/rfc1195</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5120">[RFC5120]</dt>
+        <dd>
+<span class="refAuthor">Przygienda, T.</span>, <span class="refAuthor">Shen, N.</span>, and <span class="refAuthor">N. Sheth</span>, <span class="refTitle">"M-ISIS: Multi Topology (MT) Routing in Intermediate System to Intermediate Systems (IS-ISs)"</span>, <span class="seriesInfo">RFC 5120</span>, <span class="seriesInfo">DOI 10.17487/RFC5120</span>, <time datetime="2008-02" class="refDate">February 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5120">https://www.rfc-editor.org/info/rfc5120</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5301">[RFC5301]</dt>
+        <dd>
+<span class="refAuthor">McPherson, D.</span> and <span class="refAuthor">N. Shen</span>, <span class="refTitle">"Dynamic Hostname Exchange Mechanism for IS-IS"</span>, <span class="seriesInfo">RFC 5301</span>, <span class="seriesInfo">DOI 10.17487/RFC5301</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5301">https://www.rfc-editor.org/info/rfc5301</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5304">[RFC5304]</dt>
+        <dd>
+<span class="refAuthor">Li, T.</span> and <span class="refAuthor">R. Atkinson</span>, <span class="refTitle">"IS-IS Cryptographic Authentication"</span>, <span class="seriesInfo">RFC 5304</span>, <span class="seriesInfo">DOI 10.17487/RFC5304</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5304">https://www.rfc-editor.org/info/rfc5304</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5305">[RFC5305]</dt>
+        <dd>
+<span class="refAuthor">Li, T.</span> and <span class="refAuthor">H. Smit</span>, <span class="refTitle">"IS-IS Extensions for Traffic Engineering"</span>, <span class="seriesInfo">RFC 5305</span>, <span class="seriesInfo">DOI 10.17487/RFC5305</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5305">https://www.rfc-editor.org/info/rfc5305</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5307">[RFC5307]</dt>
+        <dd>
+<span class="refAuthor">Kompella, K., Ed.</span> and <span class="refAuthor">Y. Rekhter, Ed.</span>, <span class="refTitle">"IS-IS Extensions in Support of Generalized Multi-Protocol Label Switching (GMPLS)"</span>, <span class="seriesInfo">RFC 5307</span>, <span class="seriesInfo">DOI 10.17487/RFC5307</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5307">https://www.rfc-editor.org/info/rfc5307</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5308">[RFC5308]</dt>
+        <dd>
+<span class="refAuthor">Hopps, C.</span>, <span class="refTitle">"Routing IPv6 with IS-IS"</span>, <span class="seriesInfo">RFC 5308</span>, <span class="seriesInfo">DOI 10.17487/RFC5308</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5308">https://www.rfc-editor.org/info/rfc5308</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5310">[RFC5310]</dt>
+        <dd>
+<span class="refAuthor">Bhatia, M.</span>, <span class="refAuthor">Manral, V.</span>, <span class="refAuthor">Li, T.</span>, <span class="refAuthor">Atkinson, R.</span>, <span class="refAuthor">White, R.</span>, and <span class="refAuthor">M. Fanto</span>, <span class="refTitle">"IS-IS Generic Cryptographic Authentication"</span>, <span class="seriesInfo">RFC 5310</span>, <span class="seriesInfo">DOI 10.17487/RFC5310</span>, <time datetime="2009-02" class="refDate">February 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5310">https://www.rfc-editor.org/info/rfc5310</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6119">[RFC6119]</dt>
+        <dd>
+<span class="refAuthor">Harrison, J.</span>, <span class="refAuthor">Berger, J.</span>, and <span class="refAuthor">M. Bartlett</span>, <span class="refTitle">"IPv6 Traffic Engineering in IS-IS"</span>, <span class="seriesInfo">RFC 6119</span>, <span class="seriesInfo">DOI 10.17487/RFC6119</span>, <time datetime="2011-02" class="refDate">February 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6119">https://www.rfc-editor.org/info/rfc6119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7981">[RFC7981]</dt>
+        <dd>
+<span class="refAuthor">Ginsberg, L.</span>, <span class="refAuthor">Previdi, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"IS-IS Extensions for Advertising Router Information"</span>, <span class="seriesInfo">RFC 7981</span>, <span class="seriesInfo">DOI 10.17487/RFC7981</span>, <time datetime="2016-10" class="refDate">October 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7981">https://www.rfc-editor.org/info/rfc7981</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8402">[RFC8402]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S., Ed.</span>, <span class="refAuthor">Ginsberg, L.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Litkowski, S.</span>, and <span class="refAuthor">R. Shakir</span>, <span class="refTitle">"Segment Routing Architecture"</span>, <span class="seriesInfo">RFC 8402</span>, <span class="seriesInfo">DOI 10.17487/RFC8402</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8402">https://www.rfc-editor.org/info/rfc8402</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8491">[RFC8491]</dt>
+        <dd>
+<span class="refAuthor">Tantsura, J.</span>, <span class="refAuthor">Chunduri, U.</span>, <span class="refAuthor">Aldrin, S.</span>, and <span class="refAuthor">L. Ginsberg</span>, <span class="refTitle">"Signaling Maximum SID Depth (MSD) Using IS-IS"</span>, <span class="seriesInfo">RFC 8491</span>, <span class="seriesInfo">DOI 10.17487/RFC8491</span>, <time datetime="2018-11" class="refDate">November 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8491">https://www.rfc-editor.org/info/rfc8491</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8667">[RFC8667]</dt>
+        <dd>
+<span class="refAuthor">Previdi, S., Ed.</span>, <span class="refAuthor">Ginsberg, L., Ed.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Bashandy, A.</span>, <span class="refAuthor">Gredler, H.</span>, and <span class="refAuthor">B. Decraene</span>, <span class="refTitle">"IS-IS Extensions for Segment Routing"</span>, <span class="seriesInfo">RFC 8667</span>, <span class="seriesInfo">DOI 10.17487/RFC8667</span>, <time datetime="2019-12" class="refDate">December 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8667">https://www.rfc-editor.org/info/rfc8667</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9352">[RFC9352]</dt>
+        <dd>
+<span class="refAuthor">Psenak, P., Ed.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Bashandy, A.</span>, <span class="refAuthor">Decraene, B.</span>, and <span class="refAuthor">Z. Hu</span>, <span class="refTitle">"IS-IS Extensions to Support Segment Routing over the IPv6 Data Plane"</span>, <span class="seriesInfo">RFC 9352</span>, <span class="seriesInfo">DOI 10.17487/RFC9352</span>, <time datetime="2023-02" class="refDate">February 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9352">https://www.rfc-editor.org/info/rfc9352</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9667">[RFC9667]</dt>
+      <dd>
+<span class="refAuthor">Li, T., Ed.</span>, <span class="refAuthor">Psenak, P., Ed.</span>, <span class="refAuthor">Chen, H.</span>, <span class="refAuthor">Jalil, L.</span>, and <span class="refAuthor">S. Dontula</span>, <span class="refTitle">"Dynamic Flooding on Dense Graphs"</span>, <span class="seriesInfo">RFC 9667</span>, <span class="seriesInfo">DOI 10.17487/RFC9667</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9667">https://www.rfc-editor.org/info/rfc9667</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="Clos">[Clos]</dt>
+        <dd>
+<span class="refAuthor">Clos, C.</span>, <span class="refTitle">"A study of non-blocking switching networks"</span>, <span class="refContent">The Bell System Technical Journal, Volume 32, Issue 2, pp.    
+406-424</span>, <span class="seriesInfo">DOI 10.1002/j.1538-7305.1953.tb01433.x</span>, <time datetime="1953-03" class="refDate">March 1953</time>, <span>&lt;<a href="https://doi.org/10.1002/j.1538-7305.1953.tb01433.x">https://doi.org/10.1002/j.1538-7305.1953.tb01433.x</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7120">[RFC7120]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refTitle">"Early IANA Allocation of Standards Track Code Points"</span>, <span class="seriesInfo">BCP 100</span>, <span class="seriesInfo">RFC 7120</span>, <span class="seriesInfo">DOI 10.17487/RFC7120</span>, <time datetime="2014-01" class="refDate">January 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7120">https://www.rfc-editor.org/info/rfc7120</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+      <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="Acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">                                                                                                
+       The authors would like to thank <span class="contact-name">Bruno Decraene</span>
+       and <span class="contact-name">Gunter Van De Velde</span> for their many helpful
+       comments. The authors would also like to thank a small group that
+       wishes to remain anonymous for their valuable contributions.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tony Li</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks</span></div>
+<div dir="auto" class="left"><span class="street-address">1133 Innovation Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">Sunnyvale</span>, <span class="region">CA</span> <span class="postal-code">94089</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:tony.li@tony.li" class="email">tony.li@tony.li</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Sarah Chen</span></div>
+<div dir="auto" class="left"><span class="org">Arista Networks</span></div>
+<div dir="auto" class="left"><span class="street-address">5453 Great America Parkway</span></div>
+<div dir="auto" class="left">
+<span class="locality">Santa Clara</span>, <span class="region">CA</span> <span class="postal-code">95054</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:sarahchen@arista.com" class="email">sarahchen@arista.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Vivek Ilangovan</span></div>
+<div dir="auto" class="left"><span class="org">Arista Networks</span></div>
+<div dir="auto" class="left"><span class="street-address">5453 Great America Parkway</span></div>
+<div dir="auto" class="left">
+<span class="locality">Santa Clara</span>, <span class="region">CA</span> <span class="postal-code">95054</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ilangovan@arista.com" class="email">ilangovan@arista.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gyan S. Mishra</span></div>
+<div dir="auto" class="left"><span class="org">Verizon Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">13101 Columbia Pike</span></div>
+<div dir="auto" class="left">
+<span class="locality">Silver Spring</span>, <span class="region">MD</span> <span class="postal-code">20904</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:301%20502-1347" class="tel">301 502-1347</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gyan.s.mishra@verizon.com" class="email">gyan.s.mishra@verizon.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
