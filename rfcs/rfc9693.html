@@ -1,0 +1,2924 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9693: Benchmarking Methodology for Stateful NATxy Gateways</title>
+<meta content="Gábor Lencse" name="author">
+<meta content="Keiichi Shima" name="author">
+<meta content="
+       RFC 2544 defines a benchmarking methodology for network
+      interconnect devices. RFC 5180 addresses IPv6 specificities, and it also
+      provides a technology update but excludes IPv6 transition technologies.
+      RFC 8219 addresses IPv6 transition technologies, including stateful
+      NAT64. However, none of them discuss how to apply pseudorandom port
+      numbers from RFC 4814 to any stateful NATxy (such as NAT44, NAT64, and NAT66)
+      technologies.  This document discusses why using pseudorandom port
+      numbers with stateful NATxy gateways is a difficult problem. It
+      recommends a solution that limits the port number ranges and uses two
+      test phases (phase 1 and phase 2). This document shows how the classic
+      performance measurement procedures (e.g., throughput, frame loss rate,
+      latency, etc.)  can be carried out.  New performance metrics and
+      measurement procedures are also defined for measuring the maximum
+      connection establishment rate, connection tear-down rate, and
+      connection tracking table capacity.
+       
+    " name="description">
+<meta content="xml2rfc 3.25.0" name="generator">
+<meta content="Benchmarking" name="keyword">
+<meta content="Stateful NATxy" name="keyword">
+<meta content="Measurement Procedure" name="keyword">
+<meta content="Throughput" name="keyword">
+<meta content="Frame Loss Rate" name="keyword">
+<meta content="Latency" name="keyword">
+<meta content="PDV" name="keyword">
+<meta content="9693" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.25.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9693.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    float: none;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-bmwg-benchmarking-stateful-09" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9693" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9693</td>
+<td class="center">Benchmarking Stateful NATxy Gateways</td>
+<td class="right">January 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Lencse &amp; Shima</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9693" class="eref">9693</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-01" class="published">January 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">G. Lencse</div>
+<div class="org">Széchenyi István University</div>
+</div>
+<div class="author">
+      <div class="author-name">K. Shima</div>
+<div class="org">SoftBank Corp.</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9693</h1>
+<h1 id="title">Benchmarking Methodology for Stateful NATxy Gateways</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">RFC 2544 defines a benchmarking methodology for network
+      interconnect devices. RFC 5180 addresses IPv6 specificities, and it also
+      provides a technology update but excludes IPv6 transition technologies.
+      RFC 8219 addresses IPv6 transition technologies, including stateful
+      NAT64. However, none of them discuss how to apply pseudorandom port
+      numbers from RFC 4814 to any stateful NATxy (such as NAT44, NAT64, and NAT66)
+      technologies.  This document discusses why using pseudorandom port
+      numbers with stateful NATxy gateways is a difficult problem. It
+      recommends a solution that limits the port number ranges and uses two
+      test phases (phase 1 and phase 2). This document shows how the classic
+      performance measurement procedures (e.g., throughput, frame loss rate,
+      latency, etc.)  can be carried out.  New performance metrics and
+      measurement procedures are also defined for measuring the maximum
+      connection establishment rate, connection tear-down rate, and
+      connection tracking table capacity.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9693">https://www.rfc-editor.org/info/rfc9693</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-pseudorandom-port-numbers-a" class="internal xref">Pseudorandom Port Numbers and Stateful Translation</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-test-setup-and-terminology" class="internal xref">Test Setup and Terminology</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-when-testing-with-a-single-" class="internal xref">When Testing with a Single IP Address Pair</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-when-testing-with-multiple-" class="internal xref">When Testing with Multiple IP Addresses</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-recommended-benchmarking-me" class="internal xref">Recommended Benchmarking Method</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-restricted-number-of-networ" class="internal xref">Restricted Number of Network Flows</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-test-phase-1" class="internal xref">Test Phase 1</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-consideration-of-the-cases-" class="internal xref">Consideration of the Cases of Stateful Operation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-control-of-the-connection-t" class="internal xref">Control of the Connection Tracking Table Entries</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-measurement-of-the-maximum-" class="internal xref">Measurement of the Maximum Connection Establishment Rate</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
+                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-validation-of-connection-es" class="internal xref">Validation of Connection Establishment</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.7">
+                <p id="section-toc.1-1.4.2.7.1"><a href="#section-4.7" class="auto internal xref">4.7</a>.  <a href="#name-test-phase-2" class="internal xref">Test Phase 2</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.8">
+                <p id="section-toc.1-1.4.2.8.1"><a href="#section-4.8" class="auto internal xref">4.8</a>.  <a href="#name-measurement-of-the-connecti" class="internal xref">Measurement of the Connection Tear-Down Rate</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.9">
+                <p id="section-toc.1-1.4.2.9.1"><a href="#section-4.9" class="auto internal xref">4.9</a>.  <a href="#name-measurement-of-the-connectio" class="internal xref">Measurement of the Connection Tracking Table Capacity</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.10">
+                <p id="section-toc.1-1.4.2.10.1"><a href="#section-4.10" class="auto internal xref">4.10</a>. <a href="#name-writing-and-reading-order-o" class="internal xref">Writing and Reading Order of the State Table</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-scalability-measurements" class="internal xref">Scalability Measurements</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-scalability-against-the-num" class="internal xref">Scalability Against the Number of Network Flows</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-scalability-against-the-numb" class="internal xref">Scalability Against the Number of CPU Cores</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-reporting-format" class="internal xref">Reporting Format</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-implementation-and-experien" class="internal xref">Implementation and Experience</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-limitations-of-using-udp-as" class="internal xref">Limitations of Using UDP as a Transport Layer Protocol</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><span>[<a href="#RFC2544" class="cite xref">RFC2544</a>]</span> defines a comprehensive
+      benchmarking methodology for network interconnect devices that is still
+      in use. It is mainly independent of IP version, but it uses IPv4 in its
+      examples.  <span>[<a href="#RFC5180" class="cite xref">RFC5180</a>]</span> addresses IPv6
+      specificities and also adds technology updates but declares IPv6
+      transition technologies are out of its scope. <span>[<a href="#RFC8219" class="cite xref">RFC8219</a>]</span> addresses the IPv6 transition technologies, including
+      stateful NAT64. It reuses several benchmarking procedures from <span>[<a href="#RFC2544" class="cite xref">RFC2544</a>]</span> (e.g., throughput, frame loss rate),
+      and it redefines the latency measurement and adds further ones (e.g., the
+      Packet Delay Variation (PDV) measurement).<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">However, none of them discuss how to apply pseudorandom port
+      numbers from <span>[<a href="#RFC4814" class="cite xref">RFC4814</a>]</span> when benchmarking
+      stateful NATxy gateways (such as NAT44 <span>[<a href="#RFC3022" class="cite xref">RFC3022</a>]</span>, NAT64 <span>[<a href="#RFC6146" class="cite xref">RFC6146</a>]</span>, and NAT66). (It should be noted that stateful NAT66
+      is not an IETF specification but refers to an IPv6 version of the
+      stateful NAT44 specification.) The authors are not aware of any other
+      RFCs that address this question.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">First, this document discusses why using pseudorandom port numbers with
+      stateful NATxy gateways is a difficult problem. Then, a solution is
+      recommended.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<section id="section-1.1">
+        <h3 id="name-requirements-language">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.1-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+        "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+        "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+        "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document
+        are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and
+        only when, they appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="problem">
+<section id="section-2">
+      <h2 id="name-pseudorandom-port-numbers-a">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-pseudorandom-port-numbers-a" class="section-name selfRef">Pseudorandom Port Numbers and Stateful Translation</a>
+      </h2>
+<p id="section-2-1">In its appendix, <span>[<a href="#RFC2544" class="cite xref">RFC2544</a>]</span>
+      defines a frame format for test frames, including specific source and
+      destination port numbers.  <span>[<a href="#RFC4814" class="cite xref">RFC4814</a>]</span>
+      recommends using pseudorandom and uniformly distributed values for both
+      source and destination port numbers. However, stateful NATxy (such as NAT44,
+      NAT64, and NAT66) solutions use the port numbers to identify
+      connections. The usage of pseudorandom port numbers causes different
+      problems depending on the direction:<a href="#section-2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1">
+          <p id="section-2-2.1.1">For the client-to-server direction, pseudorandom source and 
+   destination port numbers could be used; however, this approach would 
+   be a denial-of-service attack against the stateful NATxy gateway, 
+   because it would exhaust its connection tracking table capacity. To that end,
+   let us see some calculations using the recommendations of <span>[<a href="#RFC4814" class="cite xref">RFC4814</a>]</span>:<a href="#section-2-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1.2.1">
+              <p id="section-2-2.1.2.1.1">The recommended source port range is 1024-65535; thus, its size is 64512.<a href="#section-2-2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-2-2.1.2.2">
+              <p id="section-2-2.1.2.2.1">The recommended destination port range is 1-49151; thus, its size is 49151.<a href="#section-2-2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-2-2.1.2.3">
+              <p id="section-2-2.1.2.3.1">The number of source and destination port number combinations is 3,170,829,312.<a href="#section-2-2.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-2-2.1.3">
+      It should be noted that the usage of different source and destination IP addresses 
+   further increases the number of connection tracking table entries.<a href="#section-2-2.1.3" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.2">
+          <p id="section-2-2.2.1">For the server-to-client direction, the stateful Device Under Test (DUT) would drop any 
+   packets that do not belong to an existing connection; therefore, the 
+   direct usage of pseudorandom port numbers from the ranges mentioned above
+   is not feasible.<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="setup_term">
+<section id="section-3">
+      <h2 id="name-test-setup-and-terminology">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-test-setup-and-terminology" class="section-name selfRef">Test Setup and Terminology</a>
+      </h2>
+<p id="section-3-1"><span><a href="https://rfc-editor.org/rfc/rfc2544#section-12" class="relref">Section 12</a> of [<a href="#RFC2544" class="cite xref">RFC2544</a>]</span> requires
+      testing using a single protocol source and destination address pair
+      first and then also using multiple protocol addresses. The same
+      approach is followed: first, a single source and destination IP address
+      pair is used, and then it is explained how to use multiple IP
+      addresses.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="setup_term_single">
+<section id="section-3.1">
+        <h3 id="name-when-testing-with-a-single-">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-when-testing-with-a-single-" class="section-name selfRef">When Testing with a Single IP Address Pair</a>
+        </h3>
+<p id="section-3.1-1">The methodology works with any IP version to benchmark stateful
+        NATxy gateways, where x and y are in {4, 6}. To facilitate an easy
+        understanding, two typical examples are used: stateful NAT44 and
+        stateful NAT64.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">The test setup for the well-known stateful NAT44 (also called
+        Network Address and Port Translation (NAPT)) solution is shown in
+        <a href="#test_setup_sfnat44" class="auto internal xref">Figure 1</a>.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">Note that the private IP addresses from <span>[<a href="#RFC1918" class="cite xref">RFC1918</a>]</span> are used to facilitate an easy understanding of the
+        example, and the usage of the IP addresses reserved for benchmarking
+        is absolutely legitimate.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4" class="keepWithNext"></p>
+<span id="name-test-setup-for-benchmarking"></span><div id="test_setup_sfnat44">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-3.1-5.1">
+<pre>
+              +--------------------------------------+
+     10.0.0.2 |Initiator                    Responder| 198.19.0.2
++-------------|                Tester                |&lt;------------+
+| private IPv4|                         [state table]| public IPv4 |
+|             +--------------------------------------+             |
+|                                                                  |
+|             +--------------------------------------+             |
+|    10.0.0.1 |                 DUT:                 | 198.19.0.1  |
++------------&gt;|        Stateful NAT44 gateway        |-------------+
+  private IPv4|     [connection tracking table]      | public IPv4
+              +--------------------------------------+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-test-setup-for-benchmarking" class="selfRef">Test Setup for Benchmarking Stateful NAT44 Gateways</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.1-6" class="keepWithPrevious"></p>
+<p id="section-3.1-7">The test setup for the stateful NAT64 solution <span>[<a href="#RFC6146" class="cite xref">RFC6146</a>]</span>, which is also widely used, is shown in
+        <a href="#test_setup_sfnat64" class="auto internal xref">Figure 2</a>.<a href="#section-3.1-7" class="pilcrow">¶</a></p>
+<p id="section-3.1-8" class="keepWithNext"></p>
+<span id="name-test-setup-for-benchmarking-"></span><div id="test_setup_sfnat64">
+<figure id="figure-2">
+          <div class="alignLeft art-text artwork" id="section-3.1-9.1">
+<pre>
+              +--------------------------------------+
+    2001:2::2 |Initiator                    Responder| 198.19.0.2
++-------------|                Tester                |&lt;------------+
+| IPv6 address|                         [state table]| IPv4 address|
+|             +--------------------------------------+             |
+|                                                                  |
+|             +--------------------------------------+             |
+|   2001:2::1 |                 DUT:                 | 198.19.0.1  |
++------------&gt;|        Stateful NAT64 gateway        |-------------+
+  IPv6 address|     [connection tracking table]      | IPv4 address
+              +--------------------------------------+
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-test-setup-for-benchmarking-" class="selfRef">Test Setup for Benchmarking Stateful NAT64 Gateways</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.1-10" class="keepWithPrevious"></p>
+<p id="section-3.1-11">As for the transport layer protocol, <span>[<a href="#RFC2544" class="cite xref">RFC2544</a>]</span> recommended testing with UDP, and it was also kept
+        in <span>[<a href="#RFC8219" class="cite xref">RFC8219</a>]</span>. UDP is also kept for a
+        general recommendation; thus, the port numbers in the following text
+        are to be understood as UDP port numbers. The rationale and
+        limitations of this approach are discussed in <a href="#udp_or_tcp" class="auto internal xref">Section 8</a>.<a href="#section-3.1-11" class="pilcrow">¶</a></p>
+<p id="section-3.1-12">The most important elements of the proposed benchmarking system are
+        defined as follows:<a href="#section-3.1-12" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.1-13">
+          <dt id="section-3.1-13.1">Connection:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.2">Although UDP itself is a connectionless protocol, stateful
+   NATxy gateways keep track of their translation mappings in the form
+   of a "connection" as well as in the case of UDP using the same kind of
+   entries as in TCP.<a href="#section-3.1-13.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.3">Connection tracking table:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.4">The stateful NATxy gateway uses a connection tracking table to
+   be able to perform the stateful translation in the server-to-client
+   direction. Its size, policy, and content are unknown to the
+   Tester.<a href="#section-3.1-13.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.5">Four tuple:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.6">The four numbers that identify a connection are source IP
+   address, source port number, destination IP address, and destination
+   port number.<a href="#section-3.1-13.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.7">State table:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.8">The Responder of the Tester extracts the four tuple from each
+   received test frame and stores it in its state table. A recommendation
+   is given for the writing and reading order of the state table in <a href="#st_wr_order" class="auto internal xref">Section 4.10</a>.<a href="#section-3.1-13.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.9">Initiator:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.10">The port of the Tester that may initiate a connection through
+   the stateful DUT in the client-to-server direction. Theoretically,
+   it can use any source and destination port numbers from the ranges
+   recommended by <span>[<a href="#RFC4814" class="cite xref">RFC4814</a>]</span>: if the
+   used four tuple does not belong to an existing connection, the DUT
+   will register a new connection into its connection tracking
+   table.<a href="#section-3.1-13.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.11">Responder:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.12">The port of the Tester that may not initiate a connection
+   through the stateful DUT in the server-to-client direction. It may
+   only send frames that belong to an existing connection. To that end,
+   it uses four tuples that have been previously extracted from the
+   received test frames and stores in its state table.<a href="#section-3.1-13.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.13">Test phase 1:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.14">The test frames are sent only by the Initiator to the Responder
+   through the DUT to fill both the connection tracking table of the
+   DUT and the state table of the Responder. This is a newly introduced
+   operation phase for stateful NATxy benchmarking. The necessity of
+   this test phase is explained in <a href="#prelim" class="auto internal xref">Section 4.2</a>.<a href="#section-3.1-13.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-13.15">Test phase 2:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-13.16">The measurement procedures defined by <span>[<a href="#RFC8219" class="cite xref">RFC8219</a>]</span> (e.g., throughput, latency, etc.) are performed in
+   this test phase after the completion of test phase 1. Test frames
+   are sent as required (e.g., a bidirectional test or a unidirectional test
+   in any of the two directions).<a href="#section-3.1-13.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.1-14">One further definition is used in the text of this document:<a href="#section-3.1-14" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.1-15">
+          <dt id="section-3.1-15.1">Black box testing:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-15.2">A testing approach when the Tester is not aware of the
+   details of the internal structure and operation of the DUT. It can
+   send input to the DUT and observe the output of the DUT.<a href="#section-3.1-15.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="setup_term_multiple">
+<section id="section-3.2">
+        <h3 id="name-when-testing-with-multiple-">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-when-testing-with-multiple-" class="section-name selfRef">When Testing with Multiple IP Addresses</a>
+        </h3>
+<p id="section-3.2-1">This section considers the number of the necessary and available IP
+        addresses.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">In <a href="#test_setup_sfnat44" class="auto internal xref">Figure 1</a>, the single
+        198.19.0.1 IPv4 address is used on the WAN side port of the stateful
+        NAT44 gateway. However, in practice, it is not a single IP address,
+        but rather an IP address range that is assigned to the WAN side port
+        of the stateful NAT44 gateways. Its required size depends on the
+        number of client nodes and on the type of the stateful NAT44
+        algorithm. (The traditional algorithm always replaces the source port
+        number when a new connection is established. Thus, it requires a
+        larger range than the extended algorithm, which replaces the source
+        port number only when it is necessary. Please refer to Tables 1 and
+        2 of <span>[<a href="#LEN2015" class="cite xref">LEN2015</a>]</span>.)<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">When router testing is done, <span><a href="https://rfc-editor.org/rfc/rfc2544#section-12" class="relref">Section 12</a> of [<a href="#RFC2544" class="cite xref">RFC2544</a>]</span> requires testing using a
+        single source and destination IP address pair first and then using
+        destination IP addresses from 256 different networks. The 16-23 bits
+        of the 198.18.0.0/24 and 198.19.0.0/24 addresses can be used to
+        express the 256 networks.  As this document does not deal with router
+        testing, no multiple destination networks are needed; therefore, these
+        bits are available for expressing multiple IP addresses that belong to
+        the same "/16" network. Moreover, both the 198.18.0.0/16 and the
+        198.19.0.0/16 networks can be used on the right side of the test setup,
+        as private IP addresses from the 10.0.0.0/16 network are used on its
+        left side.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4" class="keepWithNext"></p>
+<span id="name-test-setup-for-benchmarking-s"></span><div id="test_setup_sfnat44_multi">
+<figure id="figure-3">
+          <div class="alignLeft art-text artwork" id="section-3.2-5.1">
+<pre>
+10.0.0.2/16 - 10.0.255.254/16      198.19.0.0/15 - 198.19.255.254/15
+           \  +--------------------------------------+  /
+            \ |Initiator                    Responder| /
++-------------|                Tester                |&lt;------------+
+| private IPv4|                         [state table]| public IPv4 |
+|             +--------------------------------------+             |
+|                                                                  |
+|             +--------------------------------------+             |
+| 10.0.0.1/16 |                 DUT:                 | public IPv4 |
++------------&gt;|        Stateful NAT44 gateway        |-------------+
+  private IPv4|     [connection tracking table]      | \
+              +--------------------------------------+  \
+                                   198.18.0.1/15 - 198.18.255.255/15
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-test-setup-for-benchmarking-s" class="selfRef">Test Setup for Benchmarking Stateful NAT44 Gateways Using Multiple IPv4 Addresses</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.2-6" class="keepWithPrevious"></p>
+<p id="section-3.2-7">A possible solution for assigning multiple IPv4 addresses is shown
+        in <a href="#test_setup_sfnat44_multi" class="auto internal xref">Figure 3</a>. On the
+        left side, the private IP address range is abundantly large. (The
+        16-31 bits were used for generating nearly 64k potential different
+        source addresses, but the 8-15 bits are also available if needed.) On
+        the right side, the 198.18.0.0./15 network is used, and it was cut
+        into two equal parts. (Asymmetric division is also possible, if
+        needed.)<a href="#section-3.2-7" class="pilcrow">¶</a></p>
+<p id="section-3.2-8">It should be noted that these are the potential address ranges. The
+        actual address ranges to be used are discussed in <a href="#restr_port_range" class="auto internal xref">Section 4.1</a>.<a href="#section-3.2-8" class="pilcrow">¶</a></p>
+<p id="section-3.2-9">In the case of stateful NAT64, a single "/64" IPv6 prefix contains
+        a high number of bits to express different IPv6 addresses. <a href="#test_setup_sfnat64_multi" class="auto internal xref">Figure 4</a> shows an example
+        where bits 96-111 are used for that purpose.<a href="#section-3.2-9" class="pilcrow">¶</a></p>
+<p id="section-3.2-10" class="keepWithNext"></p>
+<span id="name-test-setup-for-benchmarking-st"></span><div id="test_setup_sfnat64_multi">
+<figure id="figure-4">
+          <div class="alignLeft art-text artwork" id="section-3.2-11.1">
+<pre>
+2001:2::[0000-ffff]:0002/64       198.19.0.0/15 - 198.19.255.254/15
+           \  +--------------------------------------+  /
+  IPv6      \ |Initiator                    Responder| /
++-------------|                Tester                |&lt;------------+
+| addresses   |                         [state table]| public IPv4 |
+|             +--------------------------------------+             |
+|                                                                  |
+|             +--------------------------------------+             |
+| 2001:2::1/64|                 DUT:                 | public IPv4 |
++------------&gt;|        Stateful NAT64 gateway        |-------------+
+ IPv6 address |     [connection tracking table]      | \
+              +--------------------------------------+  \
+                                   198.18.0.1/15 - 198.18.255.255/15
+</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-test-setup-for-benchmarking-st" class="selfRef">Test Setup for Benchmarking Stateful NAT64 Gateways Using
+          Multiple IPv6 and IPv4 Addresses</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.2-12" class="keepWithPrevious"></p>
+</section>
+</div>
+</section>
+</div>
+<div id="method">
+<section id="section-4">
+      <h2 id="name-recommended-benchmarking-me">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-recommended-benchmarking-me" class="section-name selfRef">Recommended Benchmarking Method</a>
+      </h2>
+<div id="restr_port_range">
+<section id="section-4.1">
+        <h3 id="name-restricted-number-of-networ">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-restricted-number-of-networ" class="section-name selfRef">Restricted Number of Network Flows</a>
+        </h3>
+<p id="section-4.1-1">When a single IP address pair is used for testing, then the number
+        of network flows is determined by the number of source and 
+        destination port number combinations.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">The Initiator <span class="bcp14">SHOULD</span> use restricted ranges for
+        source and destination port numbers to avoid the exhaustion of the
+        connection tracking table capacity of the DUT as described in <a href="#problem" class="auto internal xref">Section 2</a>.  If it is possible, the size of
+        the source port number range <span class="bcp14">SHOULD</span> be larger (e.g., in
+        the order of a few tens of thousands), whereas the size of the
+        destination port number range <span class="bcp14">SHOULD</span> be smaller (e.g., it may
+        vary from a few to several hundreds or thousands as needed).  The
+        rationale is that source and destination port numbers that can be
+        observed in Internet traffic are not symmetrical. Whereas source
+        port numbers may be random, there are a few very popular destination
+        port numbers (e.g., 443 or 80; see <span>[<a href="#IIR2020" class="cite xref">IIR2020</a>]</span>), and others hardly occur. Additionally, it was found that
+        their role is also asymmetric in the Linux kernel routing hash
+        function <span>[<a href="#LEN2020" class="cite xref">LEN2020</a>]</span>.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">However, in some special cases, the size of the source port range
+        is limited. For example, when benchmarking the Customer Edge (CE) and
+        Border Relay (BR) of a Mapping of Address and Port using Translation
+        (MAP-T) system <span>[<a href="#RFC7599" class="cite xref">RFC7599</a>]</span> together (as
+        a compound system performing stateful NAT44), the source port
+        range is limited to the number of source port numbers assigned to each
+        subscriber. (It could be as low as 2048 ports.)<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">When multiple IP addresses are used, then the port number ranges
+        should be even more restricted, as the number of potential network
+        flows is the product of the size of:<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-5.1">the source IP address range,<a href="#section-4.1-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-5.2">the source port number range,<a href="#section-4.1-5.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-5.3">the destination IP address range, and<a href="#section-4.1-5.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-5.4">the destination port number range.<a href="#section-4.1-5.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.1-6">In addition, the recommended method requires the enumeration of all
+ their possible combinations in test phase 1 as described in <a href="#ctrl_conntrack" class="auto internal xref">Section 4.4</a>.<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.1-7">The number of network flows can be used as a parameter. The
+        performance of the stateful NATxy gateway <span class="bcp14">MAY</span> be
+        examined as a function of this parameter as described in <a href="#sc_net_flows" class="auto internal xref">Section 5.1</a>.<a href="#section-4.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="prelim">
+<section id="section-4.2">
+        <h3 id="name-test-phase-1">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-test-phase-1" class="section-name selfRef">Test Phase 1</a>
+        </h3>
+<p id="section-4.2-1">Test phase 1 serves two purposes:<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2-2">
+   <li id="section-4.2-2.1">
+            <p id="section-4.2-2.1.1">The connection tracking table of the DUT is filled. This is
+     important because its maximum connection establishment rate may
+     be lower than its maximum frame forwarding rate (that is,
+     its throughput).<a href="#section-4.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.2-2.2">
+            <p id="section-4.2-2.2.1">The state table of the Responder is filled with valid four
+            tuples. It is a precondition for the Responder to be able to
+            transmit frames that belong to connections that exist in the
+            connection tracking table of the DUT.<a href="#section-4.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.2-3">Whereas the above two things are always necessary before test phase
+        2, test phase 1 can be used without test phase 2. This is done when
+        the maximum connection establishment rate is measured (as described in
+        <a href="#meas_max_conn_est_rate" class="auto internal xref">Section 4.5</a>).<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">Test phase 1 <span class="bcp14">MUST</span> be performed before all tests are
+        performed in test phase 2. The following things happen in test phase
+        1:<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2-5">
+   <li id="section-4.2-5.1">
+            <p id="section-4.2-5.1.1">The Initiator sends test frames to the Responder through the
+            DUT at a specific frame rate.<a href="#section-4.2-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.2-5.2">
+            <p id="section-4.2-5.2.1">The DUT performs the stateful translation of the test frames,
+            and it also stores the new connections in its connection tracking
+            table.<a href="#section-4.2-5.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.2-5.3">
+            <p id="section-4.2-5.3.1">The Responder receives the translated test frames and updates
+            its state table with the received four tuples. The Responder
+            transmits no test frames during test phase 1.<a href="#section-4.2-5.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.2-6">When test phase 1 is performed in preparation for test phase 2, the
+        applied frame rate <span class="bcp14">SHOULD</span> be safely lower than the
+        maximum connection establishment rate. (It implies that maximum
+        connection establishment rate measurement <span class="bcp14">MUST</span> be
+        performed first.)  Please refer to <a href="#ctrl_conntrack" class="auto internal xref">Section 4.4</a> for further conditions regarding timeout and the
+        enumeration of all possible four tuples.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="consider_stateful">
+<section id="section-4.3">
+        <h3 id="name-consideration-of-the-cases-">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-consideration-of-the-cases-" class="section-name selfRef">Consideration of the Cases of Stateful Operation</a>
+        </h3>
+<p id="section-4.3-1">The authors consider the most important events that may happen
+        during the operation of a stateful NATxy gateway and the Actions of
+        the gateway as follows.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.3-2">
+   <li id="section-4.3-2.1">
+            <p id="section-4.3-2.1.1">EVENT: A packet not belonging to an existing connection arrives
+     in the client-to-server direction.<a href="#section-4.3-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2.1.2">ACTION: A new connection is registered into the connection
+     tracking table, and the packet is translated and forwarded.<a href="#section-4.3-2.1.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-2.2">
+            <p id="section-4.3-2.2.1">EVENT: A packet not belonging to an existing connection
+      arrives in the server-to-client direction.<a href="#section-4.3-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2.2.2">ACTION: The packet is discarded.<a href="#section-4.3-2.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-2.3">
+            <p id="section-4.3-2.3.1">EVENT: A packet belonging to an existing connection arrives
+              (in any direction).<a href="#section-4.3-2.3.1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2.3.2">ACTION: The packet is translated and forwarded, and the
+       timeout counter of the corresponding connection tracking table
+       entry is reset.<a href="#section-4.3-2.3.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-2.4">
+            <p id="section-4.3-2.4.1">EVENT: A connection tracking table entry times out.<a href="#section-4.3-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2.4.2">ACTION: The entry is deleted from the connection tracking
+       table.<a href="#section-4.3-2.4.2" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.3-3">Due to "black box" testing, the Tester is not able to directly
+       examine (or delete) the entries of the connection tracking
+       table. However, the entries can and <span class="bcp14">MUST</span> be
+       controlled by setting an appropriate timeout value and carefully
+       selecting the port numbers of the packets (as described in <a href="#ctrl_conntrack" class="auto internal xref">Section 4.4</a>) to be able to produce
+       meaningful and repeatable measurement results.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-4">This document aims to support the measurement of the following
+        performance characteristics of a stateful NATxy gateway:<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-5.1">
+            <p id="section-4.3-5.1.1">maximum connection establishment rate<a href="#section-4.3-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.3-5.2">
+            <p id="section-4.3-5.2.1">all "classic" performance metrics like throughput, frame loss rate, latency, etc.<a href="#section-4.3-5.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.3-5.3">
+            <p id="section-4.3-5.3.1">connection tear-down rate<a href="#section-4.3-5.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.3-5.4">
+            <p id="section-4.3-5.4.1">connection tracking table capacity<a href="#section-4.3-5.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="ctrl_conntrack">
+<section id="section-4.4">
+        <h3 id="name-control-of-the-connection-t">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-control-of-the-connection-t" class="section-name selfRef">Control of the Connection Tracking Table Entries</a>
+        </h3>
+<p id="section-4.4-1">It is necessary to control the connection tracking table entries of
+ the DUT to achieve clear conditions for the measurements. One can
+ simply achieve the following two extreme situations:<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.4-2">
+   <li id="section-4.4-2.1">
+            All frames create a new entry in the connection tracking table
+            of the DUT, and no old entries are deleted during the test. This is
+            required for measuring the maximum connection establishment
+            rate.<a href="#section-4.4-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.4-2.2">
+            No new entries are created in the connection tracking table of
+            the DUT, and no old ones are deleted during the test. This is ideal
+            for the measurements to be executed in phase 2, like throughput,
+            latency, etc.<a href="#section-4.4-2.2" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-4.4-3">From this point, the following two assumptions are used:<a href="#section-4.4-3" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.4-4">
+   <li id="section-4.4-4.1">
+<div id="assumption1">
+            The connection tracking table of the stateful NATxy is large
+            enough to store all connections defined by the different four
+            tuples.<a href="#assumption1" class="pilcrow">¶</a>
+</div>
+          </li>
+<li id="section-4.4-4.2">
+<div id="assumption2">
+            Each experiment is started with an empty connection tracking
+            table. (This can be ensured by deleting its content before the
+            experiment.)<a href="#assumption2" class="pilcrow">¶</a>
+</div>
+        </li>
+</ol>
+<p id="section-4.4-5">The first extreme situation can be achieved by:<a href="#section-4.4-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.4-6.1">
+            <p id="section-4.4-6.1.1">using different four tuples for every single test frame in test phase 1 and<a href="#section-4.4-6.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.4-6.2">
+            <p id="section-4.4-6.2.1">setting the UDP timeout of the NATxy gateway to a value higher
+            than the length of test phase 1.<a href="#section-4.4-6.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.4-7">The second extreme situation can be achieved by:<a href="#section-4.4-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.4-8.1">
+            <p id="section-4.4-8.1.1">enumerating all possible four tuples in test phase 1 and<a href="#section-4.4-8.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.4-8.2">
+            <p id="section-4.4-8.2.1">setting the UDP timeout of the NATxy gateway to a value higher
+            than the length of test phase 1 plus the gap between the two
+            phases plus the length of test phase 2.<a href="#section-4.4-8.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.4-9">As described in <span>[<a href="#RFC4814" class="cite xref">RFC4814</a>]</span>, pseudorandom
+        port numbers are <span class="bcp14">REQUIRED</span>, which the authors believe is a good approximation of the
+        distribution of the source port numbers a NATxy gateway on the
+        Internet may be faced with.<a href="#section-4.4-9" class="pilcrow">¶</a></p>
+<p id="section-4.4-10">Although the enumeration of all possible four tuples is not a
+        requirement for the first extreme situation and the usage of
+        different four tuples in test phase 1 is not a requirement for the
+        second extreme situation, pseudorandom
+        enumeration of all possible four tuples in test phase 1 is a good
+        solution in both cases. Pseudorandom enumeration of all possible four tuples may be generated in a computationally efficient way by using Durstenfeld's random shuffle algorithm <span>[<a href="#DUST1964" class="cite xref">DUST1964</a>]</span> to prepare a
+   random permutation of the previously enumerated all possible four
+   tuples.<a href="#section-4.4-10" class="pilcrow">¶</a></p>
+<p id="section-4.4-11">The enumeration of the four tuples in increasing or decreasing
+        order (or in any other specific order) <span class="bcp14">MAY</span> be used as
+        an additional measurement.<a href="#section-4.4-11" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="meas_max_conn_est_rate">
+<section id="section-4.5">
+        <h3 id="name-measurement-of-the-maximum-">
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-measurement-of-the-maximum-" class="section-name selfRef">Measurement of the Maximum Connection Establishment Rate</a>
+        </h3>
+<p id="section-4.5-1">The maximum connection establishment rate is an important
+        characteristic of the stateful NATxy gateway, and its determination is
+        necessary for the safe execution of test phase 1 (without frame loss)
+        before test phase 2.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-2">The measurement procedure of the maximum connection establishment
+        rate is very similar to the throughput measurement procedure defined
+        in <span>[<a href="#RFC2544" class="cite xref">RFC2544</a>]</span>.<a href="#section-4.5-2" class="pilcrow">¶</a></p>
+<p id="section-4.5-3">The procedure is as follows:<a href="#section-4.5-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.5-4.1">The Initiator sends a specific number of test frames using all
+          different four tuples at a specific rate through the DUT.<a href="#section-4.5-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.5-4.2">The Responder counts the frames that are successfully translated
+   by the DUT.<a href="#section-4.5-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.5-4.3">If the count of offered frames is equal to the count of received
+   frames, the rate of the offered stream is raised and the test is
+   rerun.<a href="#section-4.5-4.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.5-4.4">If fewer frames are received than were transmitted, the rate of
+   the offered stream is reduced and the test is rerun.<a href="#section-4.5-4.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.5-5">The maximum connection establishment rate is the fastest rate at
+        which the count of test frames successfully translated by the DUT is
+        equal to the number of test frames sent to it by the Initiator.<a href="#section-4.5-5" class="pilcrow">¶</a></p>
+<p id="section-4.5-6">Note: In practice, the usage of binary search is
+        <span class="bcp14">RECOMMENDED</span>.<a href="#section-4.5-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="validation_of_conn">
+<section id="section-4.6">
+        <h3 id="name-validation-of-connection-es">
+<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-validation-of-connection-es" class="section-name selfRef">Validation of Connection Establishment</a>
+        </h3>
+<p id="section-4.6-1">Due to "black box" testing, the entries of the connection tracking
+        table of the DUT may not be directly examined. However, the presence of the
+        connections can be checked easily by sending frames from the Responder
+        to the Initiator in test phase 2 using all four tuples stored in the
+        state table of the Tester (at a low enough frame rate). The arrival of
+        all test frames indicates that the connections are indeed present.<a href="#section-4.6-1" class="pilcrow">¶</a></p>
+<p id="section-4.6-2">The procedure is as follows:<a href="#section-4.6-2" class="pilcrow">¶</a></p>
+<p id="section-4.6-3">When all the desired N number of test frames are sent by the
+   Initiator to the Receiver at frame rate R in test phase 1 for the
+   maximum connection establishment rate measurement and the Receiver
+   has successfully received all the N frames, the establishment
+   of the connections is checked in test phase 2 as follows:<a href="#section-4.6-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.6-4.1">
+              The Responder sends test frames to the Initiator at frame rate
+              r=R*alpha for the duration of N/r, using a different four tuple
+              from its state table for each test frame.<a href="#section-4.6-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.6-4.2">
+              The Initiator counts the received frames, and if all N frames
+              have arrived, then the R frame rate of the maximum connection
+              establishment rate measurement (performed in test phase 1) is
+              raised for the next iteration; otherwise, it is lowered (as well as in
+              the case that test frames were missing in the preliminary test
+              phase, as well).<a href="#section-4.6-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.6-5">Notes:<a href="#section-4.6-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.6-6.1">
+              The alpha is a kind of "safety factor"; it aims to make sure
+              that the frame rate used for the validation is not too high, and the
+              test may fail only in the case of if at least one connection is not
+              present in the connection tracking table of the DUT. (Therefore, alpha
+              should be typically less than 1, e.g., 0.8 or 0.5.)<a href="#section-4.6-6.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.6-6.2">
+              The duration of N/r and the frame rate of r means that N frames
+              are sent for validation.<a href="#section-4.6-6.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.6-6.3">
+              The order of four tuple selection is arbitrary, provided that
+              all four tuples <span class="bcp14">MUST</span> be used.<a href="#section-4.6-6.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.6-6.4">
+              Please refer to <a href="#meas_contr_capacity" class="auto internal xref">Section 4.9</a> for a short analysis of the operation of the
+              measurement and what problems may occur.<a href="#section-4.6-6.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="real_test">
+<section id="section-4.7">
+        <h3 id="name-test-phase-2">
+<a href="#section-4.7" class="section-number selfRef">4.7. </a><a href="#name-test-phase-2" class="section-name selfRef">Test Phase 2</a>
+        </h3>
+<p id="section-4.7-1">As for the traffic direction, there are three possible cases
+        during test phase 2:<a href="#section-4.7-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.7-2">
+          <li id="section-4.7-2.1">
+            <p id="section-4.7-2.1.1">Bidirectional traffic: The Initiator sends test frames to the
+            Responder, and the Responder sends test frames to the
+            Initiator.<a href="#section-4.7-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.7-2.2">
+            <p id="section-4.7-2.2.1">Unidirectional traffic from the Initiator to the Responder: The
+            Initiator sends test frames to the Responder, but the Responder
+            does not send test frames to the Initiator.<a href="#section-4.7-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.7-2.3">
+            <p id="section-4.7-2.3.1">Unidirectional traffic from the Responder to the Initiator: The
+            Responder sends test frames to the Initiator, but the Initiator
+            does not send test frames to the Responder.<a href="#section-4.7-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.7-3">If the Initiator sends test frames, then it uses pseudorandom
+        source port numbers and destination port numbers from the restricted
+        port number ranges. (If it uses multiple source and/or destination IP
+        addresses, then their ranges are also limited.)  The Responder
+        receives the test frames, updates its state table, and processes the
+        test frames as required by the given measurement procedure (e.g., only
+        counts them for the throughput test, handles timestamps for latency or
+        PDV tests, etc.).<a href="#section-4.7-3" class="pilcrow">¶</a></p>
+<p id="section-4.7-4">If the Responder sends test frames, then it uses the four tuples
+        from its state table. The reading order of the state table may follow
+        different policies (discussed in <a href="#st_wr_order" class="auto internal xref">Section 4.10</a>). The Initiator receives the test frames and
+        processes them as required by the given measurement procedure.<a href="#section-4.7-4" class="pilcrow">¶</a></p>
+<p id="section-4.7-5">As for the actual measurement procedures, the usage of the updated
+        ones from <span><a href="https://rfc-editor.org/rfc/rfc8219#section-7" class="relref">Section 7</a> of [<a href="#RFC8219" class="cite xref">RFC8219</a>]</span> is
+        <span class="bcp14">RECOMMENDED</span>.<a href="#section-4.7-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="meas_conn_tear_down_rate">
+<section id="section-4.8">
+        <h3 id="name-measurement-of-the-connecti">
+<a href="#section-4.8" class="section-number selfRef">4.8. </a><a href="#name-measurement-of-the-connecti" class="section-name selfRef">Measurement of the Connection Tear-Down Rate</a>
+        </h3>
+<p id="section-4.8-1">Connection tear-down can cause significant load for the NATxy
+        gateway.  The connection tear-down performance can be measured as
+        follows:<a href="#section-4.8-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.8-2">
+   <li id="section-4.8-2.1">Load a certain number of connections (N) into the connection
+   tracking table of the DUT (in the same way as done to measure the
+   maximum connection establishment rate).<a href="#section-4.8-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.8-2.2">Record TimestampA.<a href="#section-4.8-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.8-2.3">Delete the content of the connection tracking table of the DUT.<a href="#section-4.8-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.8-2.4">Record TimestampB.<a href="#section-4.8-2.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-4.8-3">The connection tear-down rate can be computed as:<a href="#section-4.8-3" class="pilcrow">¶</a></p>
+<p style="margin-left: 2.5em" id="section-4.8-4">connection tear-down rate = N / ( TimestampB - TimestampA)<a href="#section-4.8-4" class="pilcrow">¶</a></p>
+<p id="section-4.8-5">The connection tear-down rate <span class="bcp14">SHOULD</span> be measured for
+        various values of N.<a href="#section-4.8-5" class="pilcrow">¶</a></p>
+<p id="section-4.8-6">It is assumed that the content of the connection tracking table may
+        be deleted by an out-of-band control mechanism specific to the given
+        NATxy gateway implementation (e.g., by removing the appropriate kernel
+        module under Linux).<a href="#section-4.8-6" class="pilcrow">¶</a></p>
+<p id="section-4.8-7">It is noted that the performance of removing the entire content of
+        the connection tracking table at one time may be different from
+        removing all the entries one by one.<a href="#section-4.8-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="meas_contr_capacity">
+<section id="section-4.9">
+        <h3 id="name-measurement-of-the-connectio">
+<a href="#section-4.9" class="section-number selfRef">4.9. </a><a href="#name-measurement-of-the-connectio" class="section-name selfRef">Measurement of the Connection Tracking Table Capacity</a>
+        </h3>
+<p id="section-4.9-1">The connection tracking table capacity is an important metric of
+        stateful NATxy gateways. Its measurement is not easy, because an
+        elementary step of a validated maximum connection establishment rate
+        measurement (defined in <a href="#validation_of_conn" class="auto internal xref">Section 4.6</a>) may have only a few distinct observable outcomes,
+        but some of them may have different root causes:<a href="#section-4.9-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.9-2.1">
+            <p id="section-4.9-2.1.1">During test phase 1, the number of test frames received by the
+            Responder is less than the number of test frames sent by the
+            Initiator.  It may have different root causes, including:<a href="#section-4.9-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.9-2.1.2.1">
+                <p id="section-4.9-2.1.2.1.1">The R frame sending rate was higher than the maximum
+                connection establishment rate. (Note that now the maximum
+                connection establishment rate is considered unknown because
+                one cannot measure the maximum connection establishment
+                without <a href="#assumption1" class="internal xref">assumption 1</a> in <a href="#ctrl_conntrack" class="auto internal xref">Section 4.4</a>.)  This root cause may be eliminated by
+                lowering the R rate and re-executing the test. (This step may
+                be performed multiple times while R&gt;0.)<a href="#section-4.9-2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.9-2.1.2.2">
+                <p id="section-4.9-2.1.2.2.1">The capacity of the connection tracking table of the DUT
+                has been exhausted (and either the DUT does not want to
+                delete connections or the deletion of the connections makes it
+                slower; this case is not investigated further in test phase
+                1).<a href="#section-4.9-2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-4.9-2.2">
+            <p id="section-4.9-2.2.1">During test phase 1, the number of test frames received by the
+            Responder equals the number of test frames sent by the Initiator.
+            In this case, the connections are validated in test phase 2.  The
+            validation may have two kinds of observable results:<a href="#section-4.9-2.2.1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.9-2.2.2">
+       <li id="section-4.9-2.2.2.1">
+                <p id="section-4.9-2.2.2.1.1">The number of validation frames received by the Initiator
+                equals the number of validation frames sent by the Responder.
+                (It proves that the capacity of the connection tracking table
+                of the DUT is enough and both R and r were chosen
+                properly.)<a href="#section-4.9-2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-4.9-2.2.2.2">
+                <p id="section-4.9-2.2.2.2.1">The number of validation frames received by the Initiator
+                is less than the number of validation frames sent by the
+                Responder.  This phenomenon may have various root causes:<a href="#section-4.9-2.2.2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.9-2.2.2.2.2.1">
+                    <p id="section-4.9-2.2.2.2.2.1.1">The capacity of the connection tracking table of the
+                    DUT has been exhausted. (It does not matter whether some
+                    existing connections are discarded and new ones are
+                    stored or if the new connections are discarded.  Some
+                    connections are lost anyway, and it makes validation
+                    fail.)<a href="#section-4.9-2.2.2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.9-2.2.2.2.2.2">
+                    <p id="section-4.9-2.2.2.2.2.2.1">The R frame sending rate used by the Initiator was too
+                    high in test phase 1; thus, some connections were not
+                    established even though all test frames arrived at the
+                    Responder. This root cause may be eliminated by lowering
+                    the R rate and re-executing the test.  (This step may be
+                    performed multiple times while R&gt;0.)<a href="#section-4.9-2.2.2.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.9-2.2.2.2.2.3">
+                    <p id="section-4.9-2.2.2.2.2.3.1">The r frame sending rate used by the Responder was too
+                    high in test phase 2; thus, some test frames did not
+                    arrive at the Initiator even though all connections were
+                    present in the connection tracking table of the DUT.  This
+                    root cause may be eliminated by lowering the r rate and
+                    re-executing the test.  (This step may be performed
+                    multiple times while r&gt;0.)<a href="#section-4.9-2.2.2.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+<p id="section-4.9-2.2.2.2.3">This is the problem: As the above three root causes are
+                indistinguishable, it is not easy to decide whether R or r
+                should be decreased.<a href="#section-4.9-2.2.2.2.3" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+</li>
+        </ul>
+<p id="section-4.9-3">Experience shows that the DUT may collapse if its memory is
+        exhausted.  Such a situation may make the connection tracking table
+        capacity measurements rather inconvenient. This possibility is
+        included in the recommended measurement procedure, but the detection
+        and elimination of such a situation is not addressed (e.g., how the
+        algorithm can reset the DUT).<a href="#section-4.9-3" class="pilcrow">¶</a></p>
+<p id="section-4.9-4">For the connection tracking table size measurement, first, one needs
+        a safe number: C0. It is a precondition that C0 number of connections
+        can surely be stored in the connection tracking table of the
+        DUT. Using C0, one can determine the maximum connection establishment
+        rate using C0 number of connections.  It is done with a binary search
+        using validation. The result is R0. The values C0 and R0 will serve as
+        "safe" starting values for the following two searches.<a href="#section-4.9-4" class="pilcrow">¶</a></p>
+<p id="section-4.9-5">First, an exponential search is performed to find the order of
+ magnitude of the connection tracking table capacity. The search stops
+ if the DUT collapses OR the maximum connection establishment rate
+ severely drops (e.g., to its one tenth) due to doubling the number of
+ connections.<a href="#section-4.9-5" class="pilcrow">¶</a></p>
+<p id="section-4.9-6">Then, the result of the exponential search gives the order of
+        magnitude of the size of the connection tracking table. Before
+        disclosing the possible algorithms to determine the exact size of the
+        connection tracking table, three possible replacement policies for the
+        NATxy gateway are considered:<a href="#section-4.9-6" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.9-7">
+   <li id="section-4.9-7.1">
+            <p id="section-4.9-7.1.1">The gateway does not delete any live connections until their timeout expires.<a href="#section-4.9-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.9-7.2">
+            <p id="section-4.9-7.2.1">The gateway replaces the live connections according to the Least Recently Used (LRU) policy.<a href="#section-4.9-7.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.9-7.3">
+            <p id="section-4.9-7.3.1">The gateway does a garbage collection when its connection
+            tracking table is full and a frame with a new four tuple
+            arrives. During the garbage collection, it deletes the K LRU connections, where K is greater than 1.<a href="#section-4.9-7.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.9-8">Now, it is examined what happens and how many validation frames
+        arrive in the three cases.  Let the size of the connection tracking
+        table be S and the number of preliminary frames be N, where S is less
+        than N.<a href="#section-4.9-8" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.9-9">
+   <li id="section-4.9-9.1">
+            <p id="section-4.9-9.1.1">The connections defined by the first S test frames are
+            registered into the connection tracking table of the DUT, and
+            the last N-S connections are lost.  (It is another question if the
+            last N-S test frames are translated and forwarded in test phase 1
+            or simply dropped.) During validation, the validation frames with
+            four tuples corresponding to the first S test frames will arrive
+            at the Initiator and the other N-S validation frames will be
+            lost.<a href="#section-4.9-9.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.9-9.2">
+            <p id="section-4.9-9.2.1">All connections are registered into the connection tracking
+            table of the DUT, but the first N-S connections are replaced (and
+            thus lost). During validation, the validation frames with four
+            tuples corresponding to the last S test frames will arrive to the
+            Initiator, and the other N-S validation frames will be lost.<a href="#section-4.9-9.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.9-9.3">
+            <p id="section-4.9-9.3.1">Depending on the values of K, S, and N, maybe less than S
+            connections will survive.  In the worst case, only S-K+1
+            validation frames arrive, even though the size of the connection
+            tracking table is S.<a href="#section-4.9-9.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.9-10">If one knows that the stateful NATxy gateway uses the first or
+        second replacement policy and one also knows that both R and r rates
+        are low enough, then the final step of determining the size of the
+        connection tracking table is simple. If the Responder sent N
+        validation frames and the Initiator received N' of them, then the size
+        of the connection tracking table is N'.<a href="#section-4.9-10" class="pilcrow">¶</a></p>
+<p id="section-4.9-11">In the general case, a binary search is performed to find the exact
+        value of the connection tracking table capacity within E error. The
+        search chooses the lower half of the interval if the DUT collapses OR
+        the maximum connection establishment rate severely drops (e.g., to its
+        half); otherwise, it chooses the higher half.  The search stops if the
+        size of the interval is less than the E error.<a href="#section-4.9-11" class="pilcrow">¶</a></p>
+<p id="section-4.9-12">The algorithms for the general case are defined using C-like
+        pseudocode in <a href="#meas_contr_capacity_algo" class="auto internal xref">Figure 5</a>. In practice, this algorithm may be made more
+        efficient in the way that the binary search for the maximum connection
+        establishment rate stops if an elementary test fails at a rate under
+        RS*beta or RS*gamma during the external search or during the final
+        binary search for the capacity of the connection tracking table,
+        respectively. (This saves a high amount of execution time by
+        eliminating the long-lasting tests at low rates.)<a href="#section-4.9-12" class="pilcrow">¶</a></p>
+<span id="name-measurement-of-the-connection"></span><div id="meas_contr_capacity_algo">
+<figure id="figure-5">
+          <div class="lang-pseudocode sourcecode" id="section-4.9-13.1">
+<pre>
+// The binarySearchForMaximumConnectionCstablishmentRate(c,r)
+// function performs a binary search for the maximum connection
+// establishment rate in the [0, r] interval using c number of
+// connections.
+
+// This is an exponential search for finding the order of magnitude
+// of the connection tracking table capacity
+// Variables:
+//   C0 and R0 are beginning safe values for the connection
+//     tracking table size and connection establishment rate,
+//     respectively
+//   CS and RS are their currently used safe values
+//   CT and RT are their values for the current examination
+//   beta is a factor expressing an unacceptable drop in R (e.g.,
+//     beta=0.1)
+//   maxrate is the maximum frame rate for the media
+R0=binarySearchForMaximumConnectionCstablishmentRate(C0,maxrate);
+for ( CS=C0, RS=R0; 1; CS=CT, RS=RT )
+{
+  CT=2*CS;
+  RT=binarySearchForMaximumConnectionCstablishmentRate(CT,RS);
+  if ( DUT_collapsed || RT &lt; RS*beta )
+    break;
+}
+// At this point, the size of the connection tracking table is
+// between CS and CT.
+
+// This is the final binary search for finding the connection
+// tracking table capacity within E error
+// Variables:
+//   CS and RS are the safe values for connection tracking table size
+//     and connection establishment rate, respectively
+//   C and R are the values for the current examination
+//   gamma is a factor expressing an unacceptable drop in R
+//     (e.g., gamma=0.5)
+for ( D=CT-CS;  D&gt;E; D=CT-CS )
+{
+  C=(CS+CT)/2;
+  R=binarySearchForMaximumConnectionCstablishmentRate(C,RS);
+  if ( DUT_collapsed || R &lt; RS*gamma )
+    CT=C; // take the lower half of the interval
+  else
+    CS=C,RS=R; // take the upper half of the interval
+}
+// At this point, the size of the connection tracking table is
+// CS within E error.
+</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-measurement-of-the-connection" class="selfRef">Measurement of the Connection Tracking Table Capacity</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.9-14" class="keepWithPrevious"></p>
+</section>
+</div>
+<div id="st_wr_order">
+<section id="section-4.10">
+        <h3 id="name-writing-and-reading-order-o">
+<a href="#section-4.10" class="section-number selfRef">4.10. </a><a href="#name-writing-and-reading-order-o" class="section-name selfRef">Writing and Reading Order of the State Table</a>
+        </h3>
+<p id="section-4.10-1">As for the writing policy of the state table of the Responder,
+        round robin is <span class="bcp14">RECOMMENDED</span>, because it ensures that its
+        entries are automatically kept fresh and consistent with that of the
+        connection tracking table of the DUT.<a href="#section-4.10-1" class="pilcrow">¶</a></p>
+<p id="section-4.10-2">The Responder can read its state table in various orders, for
+        example:<a href="#section-4.10-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.10-3.1">
+            <p id="section-4.10-3.1.1">pseudorandom<a href="#section-4.10-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.10-3.2">
+            <p id="section-4.10-3.2.1">round robin<a href="#section-4.10-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.10-4">Pseudorandom is <span class="bcp14">RECOMMENDED</span> to follow the approach
+        of <span>[<a href="#RFC4814" class="cite xref">RFC4814</a>]</span>.  Round robin may be used
+        as a computationally cheaper alternative.<a href="#section-4.10-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="meas_scalability">
+<section id="section-5">
+      <h2 id="name-scalability-measurements">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-scalability-measurements" class="section-name selfRef">Scalability Measurements</a>
+      </h2>
+<p id="section-5-1">As for scalability measurements, no new types of performance metrics
+      are defined, but it is <span class="bcp14">RECOMMENDED</span> to perform measurement
+      series through which the value of one or more parameter(s) are
+      changed to discover how the various values of the given parameter(s)
+      influence the performance of the DUT.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="sc_net_flows">
+<section id="section-5.1">
+        <h3 id="name-scalability-against-the-num">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-scalability-against-the-num" class="section-name selfRef">Scalability Against the Number of Network Flows</a>
+        </h3>
+<p id="section-5.1-1">The scalability measurements aim to quantify how the performance of
+        the stateful NATxy gateways degrades with the increase of the number
+        of network flows.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">As for the actual values for the number of network flows to be used
+        during the measurement series, it is <span class="bcp14">RECOMMENDED</span> to use
+        some representative values from the range of the potential number of
+        network flows the DUT may be faced with during its intended usage.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">It is important how the given number of network flows are
+        generated. The sizes of the ranges of the source and destination IP
+        addresses and port numbers are essential parameters to be reported
+        together with the results. Please also see <a href="#reporting_format" class="auto internal xref">Section 6</a> about the reporting
+        format.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">If a single IP address pair is used, then it is <span class="bcp14">RECOMMENDED</span> to use:<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-5.1">
+            <p id="section-5.1-5.1.1">a fixed, larger source port number range (e.g., a few times
+            10,000) and<a href="#section-5.1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-5.2">
+            <p id="section-5.1-5.2.1">a variable-size destination port number range (e.g., 10, 100,
+            1,000, etc.), where its expedient granularity depends on the
+            purpose.<a href="#section-5.1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="sc_cpu_cores">
+<section id="section-5.2">
+        <h3 id="name-scalability-against-the-numb">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-scalability-against-the-numb" class="section-name selfRef">Scalability Against the Number of CPU Cores</a>
+        </h3>
+<p id="section-5.2-1">Stateful NATxy gateways are often implemented in software that is
+        not bound to a specific hardware but can be executed by commodity
+        servers. To facilitate the comparison of their performance, it can be
+        useful to determine:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-2.1">
+            <p id="section-5.2-2.1.1">the performance of the various implementations using a single
+            core of a well-known CPU and<a href="#section-5.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-2.2">
+            <p id="section-5.2-2.2.1">the scale-up of the performance of the various implementations
+            with the number of CPU cores.<a href="#section-5.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.2-3">If the number of the available CPU cores is a power of two, then it
+        is <span class="bcp14">RECOMMENDED</span> to perform the tests with 1, 2, 4, 8,
+        16, etc. number of active CPU cores of the DUT.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="reporting_format">
+<section id="section-6">
+      <h2 id="name-reporting-format">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-reporting-format" class="section-name selfRef">Reporting Format</a>
+      </h2>
+<p id="section-6-1">Measurements <span class="bcp14">MUST</span> be executed multiple times. The
+      necessary number of repetitions to achieve statistically reliable
+      results may depend on the consistent or scattered nature of the results.
+      The report of the results <span class="bcp14">MUST</span> contain the number of
+      repetitions of the measurements.  The median is <span class="bcp14">RECOMMENDED</span>
+      as the summarizing function of the results complemented with the first
+      percentile and the 99th percentile as indices of the dispersion of the
+      results.  The average and standard deviation <span class="bcp14">MAY</span> also be
+      reported.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">All parameters and settings that may influence the performance of the
+      DUT <span class="bcp14">MUST</span> be reported. Some of them may be specific to the
+      given NATxy gateway implementation, like the "hashsize" (hash table
+      size) and "nf_conntrack_max" (number of connection tracking table
+      entries) values for iptables or the limit of the number of states for
+      OpenBSD PF (set by the "set limit states number" command in the pf.conf
+      file).<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3" class="keepWithNext"></p>
+<span id="name-example-table-of-the-maximu"></span><div id="iptables-conn-scale">
+<table class="left" id="table-1">
+        <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-example-table-of-the-maximu" class="selfRef">Example Table of the Maximum Connection Establishment Rate of
+ Iptables Against the Number of Sessions</a>
+        </caption>
+<tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">number of sessions (req.)</td>
+            <td class="text-right" rowspan="1" colspan="1">0.4M</td>
+            <td class="text-right" rowspan="1" colspan="1">4M</td>
+            <td class="text-right" rowspan="1" colspan="1">40M</td>
+            <td class="text-right" rowspan="1" colspan="1">400M</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">source port numbers (req.)</td>
+            <td class="text-right" rowspan="1" colspan="1">40,000</td>
+            <td class="text-right" rowspan="1" colspan="1">40,000</td>
+            <td class="text-right" rowspan="1" colspan="1">40,000</td>
+            <td class="text-right" rowspan="1" colspan="1">40,000</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">destination port numbers (req.)</td>
+            <td class="text-right" rowspan="1" colspan="1">10</td>
+            <td class="text-right" rowspan="1" colspan="1">100</td>
+            <td class="text-right" rowspan="1" colspan="1">1,000</td>
+            <td class="text-right" rowspan="1" colspan="1">10,000</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">"hashsize" (i.s.)</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>17</sup>
+</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>20</sup>
+</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>23</sup>
+</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>27</sup>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">"nf_conntrack_max" (i.s.)</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>20</sup>
+</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>23</sup>
+</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>26</sup>
+</td>
+            <td class="text-right" rowspan="1" colspan="1">2<sup>30</sup>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">num. sessions / "hashsize" (i.s.)</td>
+            <td class="text-right" rowspan="1" colspan="1">3.05</td>
+            <td class="text-right" rowspan="1" colspan="1">3.81</td>
+            <td class="text-right" rowspan="1" colspan="1">4.77</td>
+            <td class="text-right" rowspan="1" colspan="1">2.98</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">number of experiments (req.)</td>
+            <td class="text-right" rowspan="1" colspan="1">10</td>
+            <td class="text-right" rowspan="1" colspan="1">10</td>
+            <td class="text-right" rowspan="1" colspan="1">10</td>
+            <td class="text-right" rowspan="1" colspan="1">10</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">error of binary search (req.)</td>
+            <td class="text-right" rowspan="1" colspan="1">1,000</td>
+            <td class="text-right" rowspan="1" colspan="1">1,000</td>
+            <td class="text-right" rowspan="1" colspan="1">1,000</td>
+            <td class="text-right" rowspan="1" colspan="1">1,000</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">connections/s median (req.)</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">connections/s 1st perc. (req.)</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">connections/s 99th perc. (req.)</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<p id="section-6-5" class="keepWithPrevious"></p>
+<p id="section-6-6"><a href="#iptables-conn-scale" class="auto internal xref">Table 1</a> shows an
+      example of table headings for reporting the measurement results regarding the
+      scalability of the iptables stateful NAT44 implementation against the
+      number of sessions. The table indicates the required fields
+      (req.) and the implementation-specific ones (i.s.).  A computed value
+      was also added in row 6; it is the number of sessions per hashsize
+      ratio, which helps the reader to interpret the achieved maximum
+      connection establishment rate.  (A lower value results in shorter linked
+      lists hanging on the entries of the hash table, thus facilitating higher
+      performance. The ratio is varying, because the number of sessions is
+      always a power of 10, whereas the hash table size is a power of 2.)  To
+      reflect the accuracy of the results, the table contains the value of the
+      "error" of the binary search, which expresses the stopping criterion for
+      the binary search. The binary search stops when the difference between
+      the "higher limit" and "lower limit" of the binary search is less than
+      or equal to the "error".<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-6-7">The table <span class="bcp14">MUST</span> be complemented with reporting the
+      relevant parameters of the DUT. If the DUT is a general-purpose computer
+      and some software NATxy gateway implementation is tested, then the
+      hardware description <span class="bcp14">SHOULD</span> include the following:<a href="#section-6-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-8.1">computer type<a href="#section-6-8.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-8.2">CPU type<a href="#section-6-8.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-8.3">number of active CPU cores<a href="#section-6-8.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-8.4">memory type, size, and speed<a href="#section-6-8.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-8.5">network interface card type (also reflecting the speed)<a href="#section-6-8.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-8.6">the fact that direct cable connections were use or the type of switch used for
+      interconnecting the Tester and the DUT<a href="#section-6-8.6" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-6-9">The operating system type and
+      version, kernel version, and version of the NATxy gateway
+      implementation (including the last commit date and number if applicable)
+      <span class="bcp14">SHOULD</span> also be given.<a href="#section-6-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="impl_exp">
+<section id="section-7">
+      <h2 id="name-implementation-and-experien">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-implementation-and-experien" class="section-name selfRef">Implementation and Experience</a>
+      </h2>
+<p id="section-7-1">The stateful extension of siitperf <span>[<a href="#SIITPERF" class="cite xref">SIITPERF</a>]</span> is an implementation of this concept.  Its first
+      version that only supports multiple port numbers is documented in this
+      (open access) paper: <span>[<a href="#LEN2022" class="cite xref">LEN2022</a>]</span>.  Its
+      extended version that also supports multiple IP addresses is documented in
+      this (open access) paper: <span>[<a href="#LEN2024b" class="cite xref">LEN2024b</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">The proposed benchmarking methodology has been validated by
+      performing benchmarking measurements with three radically different
+      stateful NAT64 implementations (Jool, tayga+iptables, and OpenBSD PF) in this
+      (open access) paper: <span>[<a href="#LEN2023" class="cite xref">LEN2023</a>]</span>.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">Further experience with this methodology of using siitperf for measuring
+      the scalability of the iptables stateful NAT44 and Jool stateful NAT64
+      implementations are described in <span>[<a href="#I-D.lencse-v6ops-transition-scalability" class="cite xref">SCALABILITY</a>]</span>.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">This methodology was successfully applied for the benchmarking of
+      various IPv4-as-a-Service (IPv4aas) technologies without the usage of
+      technology-specific Testers by reducing the aggregate of their Customer
+      Edge (CE) and Provider Edge (PE) devices to a stateful NAT44 gateway
+      documented in this (open access) paper: <span>[<a href="#LEN2024a" class="cite xref">LEN2024a</a>]</span>.<a href="#section-7-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="udp_or_tcp">
+<section id="section-8">
+      <h2 id="name-limitations-of-using-udp-as">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-limitations-of-using-udp-as" class="section-name selfRef">Limitations of Using UDP as a Transport Layer Protocol</a>
+      </h2>
+<p id="section-8-1">The test frame format defined in <span>[<a href="#RFC2544" class="cite xref">RFC2544</a>]</span> exclusively uses UDP (and
+      not TCP) as a transport layer protocol. Testing with UDP was kept in
+      both <span>[<a href="#RFC5180" class="cite xref">RFC5180</a>]</span> and <span>[<a href="#RFC8219" class="cite xref">RFC8219</a>]</span> regarding the standard benchmarking
+      procedures (throughput, latency, frame loss rate, etc.).  The
+      benchmarking methodology proposed in this document follows this long-established benchmarking tradition using UDP as a transport layer
+      protocol, too. The rationale for this is that the standard benchmarking
+      procedures require sending frames at arbitrary constant frame rates,
+      which would violate the flow control and congestion control algorithms
+      of the TCP protocol. TCP connection setup (using the three-way
+      handshake) would further complicate testing.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Further potential transport layer protocols, e.g., the Datagram Congestion Control Protocol (DCCP) <span>[<a href="#RFC4340" class="cite xref">RFC4340</a>]</span> and the Stream Control Transmission Protocol (SCTP) <span>[<a href="#RFC9260" class="cite xref">RFC9260</a>]</span>, are outside of the scope of this document, as the
+      widely used stateful NAT44 and stateful NAT64 implementations do not
+      support them. Although QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> is
+      also considered a transport layer protocol, QUIC packets are carried
+      in UDP datagrams; thus, QUIC does not need a special handling.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">Some stateful NATxy solutions handle TCP and UDP differently,
+      e.g., iptables use a 30s timeout for UDP and a 60s timeout for TCP. Thus,
+      benchmarking results produced using UDP do not necessarily characterize
+      the performance of a NATxy gateway well enough when they are used for
+      forwarding Internet traffic. As for the given example, timeout values of
+      the DUT may be adjusted, but it requires extra consideration.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">Other differences in handling UDP or TCP are also possible. Thus, the
+      authors recommend that further investigations should be performed in
+      this field.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">As a mitigation of this problem, this document recommends that
+      testing with protocols using TCP (like HTTP and HTTPS up to version 2)
+      can be performed as described in <span>[<a href="#RFC9411" class="cite xref">RFC9411</a>]</span>.  This approach also solves the potential problem of
+      protocol helpers that may be present in the stateful DUT.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<p id="section-8-6">As for HTTP/3, it uses QUIC, which uses UDP as stated above. It
+      should be noted that QUIC is treated as any other UDP payload. The
+      proposed measurement method does not aim to measure the performance of
+      QUIC, rather, it aims to measure the performance of the stateful NATxy
+      gateway.<a href="#section-8-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="IANA">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">This document has no IANA actions.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Security">
+<section id="section-10">
+      <h2 id="name-security-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-10-1">This document has no further security considerations beyond that of
+      <span>[<a href="#RFC8219" class="cite xref">RFC8219</a>]</span>.  They should be cited here so
+      that they can be applied not only for the benchmarking of IPv6 transition
+      technologies but also for the benchmarking of any stateful NATxy
+      gateways (allowing for x=y, too).<a href="#section-10-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1918">[RFC1918]</dt>
+        <dd>
+<span class="refAuthor">Rekhter, Y.</span>, <span class="refAuthor">Moskowitz, B.</span>, <span class="refAuthor">Karrenberg, D.</span>, <span class="refAuthor">de Groot, G. J.</span>, and <span class="refAuthor">E. Lear</span>, <span class="refTitle">"Address Allocation for Private Internets"</span>, <span class="seriesInfo">BCP 5</span>, <span class="seriesInfo">RFC 1918</span>, <span class="seriesInfo">DOI 10.17487/RFC1918</span>, <time datetime="1996-02" class="refDate">February 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1918">https://www.rfc-editor.org/info/rfc1918</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2544">[RFC2544]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span> and <span class="refAuthor">J. McQuaid</span>, <span class="refTitle">"Benchmarking Methodology for Network Interconnect Devices"</span>, <span class="seriesInfo">RFC 2544</span>, <span class="seriesInfo">DOI 10.17487/RFC2544</span>, <time datetime="1999-03" class="refDate">March 1999</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2544">https://www.rfc-editor.org/info/rfc2544</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3022">[RFC3022]</dt>
+        <dd>
+<span class="refAuthor">Srisuresh, P.</span> and <span class="refAuthor">K. Egevang</span>, <span class="refTitle">"Traditional IP Network Address Translator (Traditional NAT)"</span>, <span class="seriesInfo">RFC 3022</span>, <span class="seriesInfo">DOI 10.17487/RFC3022</span>, <time datetime="2001-01" class="refDate">January 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3022">https://www.rfc-editor.org/info/rfc3022</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4340">[RFC4340]</dt>
+        <dd>
+<span class="refAuthor">Kohler, E.</span>, <span class="refAuthor">Handley, M.</span>, and <span class="refAuthor">S. Floyd</span>, <span class="refTitle">"Datagram Congestion Control Protocol (DCCP)"</span>, <span class="seriesInfo">RFC 4340</span>, <span class="seriesInfo">DOI 10.17487/RFC4340</span>, <time datetime="2006-03" class="refDate">March 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4340">https://www.rfc-editor.org/info/rfc4340</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4814">[RFC4814]</dt>
+        <dd>
+<span class="refAuthor">Newman, D.</span> and <span class="refAuthor">T. Player</span>, <span class="refTitle">"Hash and Stuffing: Overlooked Factors in Network Device Benchmarking"</span>, <span class="seriesInfo">RFC 4814</span>, <span class="seriesInfo">DOI 10.17487/RFC4814</span>, <time datetime="2007-03" class="refDate">March 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4814">https://www.rfc-editor.org/info/rfc4814</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5180">[RFC5180]</dt>
+        <dd>
+<span class="refAuthor">Popoviciu, C.</span>, <span class="refAuthor">Hamza, A.</span>, <span class="refAuthor">Van de Velde, G.</span>, and <span class="refAuthor">D. Dugatkin</span>, <span class="refTitle">"IPv6 Benchmarking Methodology for Network Interconnect Devices"</span>, <span class="seriesInfo">RFC 5180</span>, <span class="seriesInfo">DOI 10.17487/RFC5180</span>, <time datetime="2008-05" class="refDate">May 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5180">https://www.rfc-editor.org/info/rfc5180</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6146">[RFC6146]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Matthews, P.</span>, and <span class="refAuthor">I. van Beijnum</span>, <span class="refTitle">"Stateful NAT64: Network Address and Protocol Translation from IPv6 Clients to IPv4 Servers"</span>, <span class="seriesInfo">RFC 6146</span>, <span class="seriesInfo">DOI 10.17487/RFC6146</span>, <time datetime="2011-04" class="refDate">April 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6146">https://www.rfc-editor.org/info/rfc6146</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7599">[RFC7599]</dt>
+        <dd>
+<span class="refAuthor">Li, X.</span>, <span class="refAuthor">Bao, C.</span>, <span class="refAuthor">Dec, W., Ed.</span>, <span class="refAuthor">Troan, O.</span>, <span class="refAuthor">Matsushima, S.</span>, and <span class="refAuthor">T. Murakami</span>, <span class="refTitle">"Mapping of Address and Port using Translation (MAP-T)"</span>, <span class="seriesInfo">RFC 7599</span>, <span class="seriesInfo">DOI 10.17487/RFC7599</span>, <time datetime="2015-07" class="refDate">July 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7599">https://www.rfc-editor.org/info/rfc7599</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8219">[RFC8219]</dt>
+        <dd>
+<span class="refAuthor">Georgescu, M.</span>, <span class="refAuthor">Pislaru, L.</span>, and <span class="refAuthor">G. Lencse</span>, <span class="refTitle">"Benchmarking Methodology for IPv6 Transition Technologies"</span>, <span class="seriesInfo">RFC 8219</span>, <span class="seriesInfo">DOI 10.17487/RFC8219</span>, <time datetime="2017-08" class="refDate">August 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8219">https://www.rfc-editor.org/info/rfc8219</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9000">https://www.rfc-editor.org/info/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9260">[RFC9260]</dt>
+        <dd>
+<span class="refAuthor">Stewart, R.</span>, <span class="refAuthor">Tüxen, M.</span>, and <span class="refAuthor">K. Nielsen</span>, <span class="refTitle">"Stream Control Transmission Protocol"</span>, <span class="seriesInfo">RFC 9260</span>, <span class="seriesInfo">DOI 10.17487/RFC9260</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9260">https://www.rfc-editor.org/info/rfc9260</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9411">[RFC9411]</dt>
+      <dd>
+<span class="refAuthor">Balarajah, B.</span>, <span class="refAuthor">Rossenhoevel, C.</span>, and <span class="refAuthor">B. Monkman</span>, <span class="refTitle">"Benchmarking Methodology for Network Security Device Performance"</span>, <span class="seriesInfo">RFC 9411</span>, <span class="seriesInfo">DOI 10.17487/RFC9411</span>, <time datetime="2023-03" class="refDate">March 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9411">https://www.rfc-editor.org/info/rfc9411</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="DUST1964">[DUST1964]</dt>
+        <dd>
+<span class="refAuthor">Durstenfeld, R.</span>, <span class="refTitle">"Algorithm 235: Random permutation"</span>, <span class="refContent">Communications of the ACM, vol. 7, no. 7, p. 420</span>, <span class="seriesInfo">DOI 10.1145/364520.364540</span>, <time datetime="1964-07" class="refDate">July 1964</time>, <span>&lt;<a href="https://dl.acm.org/doi/pdf/10.1145/364520.364540">https://dl.acm.org/doi/pdf/10.1145/364520.364540</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IIR2020">[IIR2020]</dt>
+        <dd>
+<span class="refAuthor">Kurahashi, T.</span>, <span class="refAuthor">Matsuzaki, Y.</span>, <span class="refAuthor">Sasaki, T.</span>, <span class="refAuthor">Saito, T.</span>, and <span class="refAuthor">F. Tsutsuji</span>, <span class="refTitle">"Periodic Observation Report: Internet Trends as Seen from IIJ Infrastructure - 2020"</span>, <span class="refContent">Internet Initiative Japan Inc.</span>, <span class="refContent">Internet Infrastructure Review, vol. 49</span>, <time datetime="2020-12" class="refDate">December 2020</time>, <span>&lt;<a href="https://www.iij.ad.jp/en/dev/iir/pdf/iir_vol49_report_EN.pdf">https://www.iij.ad.jp/en/dev/iir/pdf/iir_vol49_report_EN.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LEN2015">[LEN2015]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refTitle">"Estimation of the Port Number Consumption of Web Browsing"</span>, <span class="refContent">IEICE Transactions on Communications, vol. E98-B, no. 8. pp. 1580-1588</span>, <span class="seriesInfo">DOI 10.1587/transcom.E98.B.1580</span>, <time datetime="2015-08" class="refDate">August 2015</time>, <span>&lt;<a href="https://www.hit.bme.hu/~lencse/publications/e98-b_8_1580.pdf">https://www.hit.bme.hu/~lencse/publications/e98-b_8_1580.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LEN2020">[LEN2020]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refTitle">"Adding RFC 4814 Random Port Feature to Siitperf: Design, Implementation and Performance Estimation"</span>, <span class="refContent">International Journal of Advances in Telecommunications, Electrotechnics, Signals and Systems, vol 9, no 3, pp. 18-26.</span>, <span class="seriesInfo">DOI 10.11601/ijates.v9i3.291</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="http://ijates.org/index.php/ijates/article/view/291">http://ijates.org/index.php/ijates/article/view/291</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LEN2022">[LEN2022]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refTitle">"Design and Implementation of a Software Tester for Benchmarking Stateful NAT64xy Gateways: Theory and Practice of Extending Siitperf for Stateful Tests"</span>, <span class="refContent">Computer Communications, vol. 192, pp. 75-88</span>, <span class="seriesInfo">DOI 10.1016/j.comcom.2022.05.028</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.sciencedirect.com/science/article/pii/S0140366422001803">https://www.sciencedirect.com/science/article/pii/S0140366422001803</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LEN2023">[LEN2023]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refAuthor">Shima, K.</span>, and <span class="refAuthor">K. Cho</span>, <span class="refTitle">"Benchmarking methodology for stateful NAT64 gateways"</span>, <span class="refContent">Computer Communications, vol. 210, pp. 256-272</span>, <span class="seriesInfo">DOI 10.1016/j.comcom.2023.08.009</span>, <time datetime="2023-10" class="refDate">October 2023</time>, <span>&lt;<a href="https://www.sciencedirect.com/science/article/pii/S0140366423002931">https://www.sciencedirect.com/science/article/pii/S0140366423002931</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LEN2024a">[LEN2024a]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span> and <span class="refAuthor">Á. Bazsó</span>, <span class="refTitle">"Benchmarking methodology for IPv4aaS technologies: Comparison of the scalability of the Jool implementation of 464XLAT and MAP-T"</span>, <span class="refContent">Computer Communications, vol. 219, pp. 243-258</span>, <span class="seriesInfo">DOI 10.1016/j.comcom.2024.03.007</span>, <time datetime="2024-04" class="refDate">April 2024</time>, <span>&lt;<a href="https://www.sciencedirect.com/science/article/pii/S0140366424000999">https://www.sciencedirect.com/science/article/pii/S0140366424000999</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LEN2024b">[LEN2024b]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refTitle">"Making stateless and stateful network performance measurements unbiased"</span>, <span class="refContent">Computer Communications, vol. 225, pp. 141-155</span>, <span class="seriesInfo">DOI 10.1016/j.comcom.2024.05.018</span>, <time datetime="2024-09" class="refDate">September 2024</time>, <span>&lt;<a href="https://www.sciencedirect.com/science/article/abs/pii/S0140366424001993">https://www.sciencedirect.com/science/article/abs/pii/S0140366424001993</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.lencse-v6ops-transition-scalability">[SCALABILITY]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refTitle">"Scalability of IPv6 Transition Technologies for IPv4aaS"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-lencse-v6ops-transition-scalability-05</span>, <time datetime="2023-10-14" class="refDate">14 October 2023</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-lencse-v6ops-transition-scalability-05">https://datatracker.ietf.org/doc/html/draft-lencse-v6ops-transition-scalability-05</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SIITPERF">[SIITPERF]</dt>
+      <dd>
+<span class="refTitle">"Siitperf: An RFC 8219 compliant SIIT and stateful NAT64/NAT44 tester"</span>, <span class="refContent">commit 165cb7f</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://github.com/lencsegabor/siitperf">https://github.com/lencsegabor/siitperf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="Acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors would like to thank <span class="contact-name">Al Morton</span>,
+      <span class="contact-name">Sarah Banks</span>, <span class="contact-name">Edwin Cordeiro</span>,
+      <span class="contact-name">Lukasz Bromirski</span>, <span class="contact-name">Sándor       Répás</span>, <span class="contact-name">Tamás Hetényi</span>, <span class="contact-name">Timothy Winters</span>, <span class="contact-name">Eduard Vasilenko</span>,
+      <span class="contact-name">Minh Ngoc Tran</span>, <span class="contact-name">Paolo       Volpato</span>, <span class="contact-name">Zeqi Lai</span>, and <span class="contact-name">Bertalan Kovács</span> for their comments.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">The authors thank <span class="contact-name">Warren Kumari</span>, <span class="contact-name">Michael Scharf</span>, <span class="contact-name">Alexey Melnikov</span>,
+      <span class="contact-name">Robert Sparks</span>, <span class="contact-name">David Dong</span>,
+      <span class="contact-name">Roman Danyliw</span>, <span class="contact-name">Erik Kline</span>,
+      <span class="contact-name">Murray Kucherawy</span>, <span class="contact-name">Zaheduzzaman       Sarker</span>, and <span class="contact-name">Éric Vyncke</span> for their reviews and
+      comments.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3">This work was supported by the Japan Trust International Research
+      Cooperation Program of the National Institute of Information and
+      Communications Technology (NICT), Japan.<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gábor Lencse</span></div>
+<div dir="auto" class="left"><span class="org">Széchenyi István University</span></div>
+<div dir="auto" class="left"><span class="locality">Győr</span></div>
+<div dir="auto" class="left"><span class="street-address">Egyetem tér 1.</span></div>
+<div dir="auto" class="left"><span class="postal-code">H-9026</span></div>
+<div dir="auto" class="left"><span class="country-name">Hungary</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:lencse@sze.hu" class="email">lencse@sze.hu</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Keiichi Shima</span></div>
+<div dir="auto" class="left"><span class="org">SoftBank Corp.</span></div>
+<div dir="auto" class="left">
+<span class="street-address">1-7-1 Kaigan</span>, <span class="region">Minato-ku, Tokyo</span>
+</div>
+<div dir="auto" class="left"><span class="postal-code">105-7529</span></div>
+<div dir="auto" class="left"><span class="country-name">Japan</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:shima@wide.ad.jp" class="email">shima@wide.ad.jp</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://softbank.co.jp/" class="url">https://softbank.co.jp/</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
