@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9717: A Routing Architecture for Satellite Networks</title>
+<meta content="Tony Li" name="author">
+<meta content="
+       Satellite networks present some interesting challenges for packet
+      networking. The entire topology is continually in motion, with links far
+      less reliable than what is common in terrestrial networks. Some changes
+      to link connectivity can be anticipated due to orbital dynamics. 
+       This document proposes a scalable routing architecture for satellite
+      networks based on existing routing protocols and mechanisms that
+      is enhanced
+      with scheduled link connectivity change information. This document
+      proposes no protocol changes. 
+       This document presents the author's view and is neither the product
+      of the IETF nor a consensus view of the community. 
+    " name="description">
+<meta content="xml2rfc 3.25.0" name="generator">
+<meta content="IS-IS" name="keyword">
+<meta content="MPLKS" name="keyword">
+<meta content="Segmenting routing" name="keyword">
+<meta content="9717" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.25.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9717.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    float: none;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-li-arch-sat-09" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9717" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9717</td>
+<td class="center">Routing for Satellites</td>
+<td class="right">January 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Li</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Independent Submission</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9717" class="eref">9717</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-01" class="published">January 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">T. Li</div>
+<div class="org">Juniper Networks</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9717</h1>
+<h1 id="title">A Routing Architecture for Satellite Networks</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Satellite networks present some interesting challenges for packet
+      networking. The entire topology is continually in motion, with links far
+      less reliable than what is common in terrestrial networks. Some changes
+      to link connectivity can be anticipated due to orbital dynamics.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document proposes a scalable routing architecture for satellite
+      networks based on existing routing protocols and mechanisms that
+      is enhanced
+      with scheduled link connectivity change information. This document
+      proposes no protocol changes.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+<p id="section-abstract-3">This document presents the author's view and is neither the product
+      of the IETF nor a consensus view of the community.<a href="#section-abstract-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This is a contribution to the RFC Series, independently of any
+            other RFC stream.  The RFC Editor has chosen to publish this
+            document at its discretion and makes no statement about its value
+            for implementation or deployment.  Documents approved for
+            publication by the RFC Editor are not candidates for any level of
+            Internet Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9717">https://www.rfc-editor.org/info/rfc9717</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-related-work" class="internal xref">Related Work</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-terms-and-abbreviations" class="internal xref">Terms and Abbreviations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-overview" class="internal xref">Overview</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-topological-considerations" class="internal xref">Topological Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-link-changes" class="internal xref">Link Changes</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-scalability" class="internal xref">Scalability</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4">
+                <p id="section-toc.1-1.2.2.4.1"><a href="#section-2.4" class="auto internal xref">2.4</a>.  <a href="#name-assumptions" class="internal xref">Assumptions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4.2.1">
+                    <p id="section-toc.1-1.2.2.4.2.1.1"><a href="#section-2.4.1" class="auto internal xref">2.4.1</a>.  <a href="#name-traffic-patterns" class="internal xref">Traffic Patterns</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4.2.2">
+                    <p id="section-toc.1-1.2.2.4.2.2.1"><a href="#section-2.4.2" class="auto internal xref">2.4.2</a>.  <a href="#name-user-station-constraints" class="internal xref">User Station Constraints</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4.2.3">
+                    <p id="section-toc.1-1.2.2.4.2.3.1"><a href="#section-2.4.3" class="auto internal xref">2.4.3</a>.  <a href="#name-stochastic-connectivity" class="internal xref">Stochastic Connectivity</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.5">
+                <p id="section-toc.1-1.2.2.5.1"><a href="#section-2.5" class="auto internal xref">2.5</a>.  <a href="#name-problem-statement" class="internal xref">Problem Statement</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-forwarding-plane" class="internal xref">Forwarding Plane</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-igp-suitability-and-scalabi" class="internal xref">IGP Suitability and Scalability</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-stripes-and-areas" class="internal xref">Stripes and Areas</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-traffic-forwarding-and-traf" class="internal xref">Traffic Forwarding and Traffic Engineering</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-scheduling" class="internal xref">Scheduling</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-future-work" class="internal xref">Future Work</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-deployment-considerations" class="internal xref">Deployment Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1">
+                <p id="section-toc.1-1.12.2.1.1"><a href="#section-12.1" class="auto internal xref">12.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2">
+                <p id="section-toc.1-1.12.2.2.1"><a href="#section-12.2" class="auto internal xref">12.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Satellite networks present some interesting challenges for packet
+networking. The entire topology is continually in motion, with links
+far less reliable than what is common in terrestrial
+networks. Some changes to link connectivity can be anticipated due to
+orbital dynamics.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This document proposes a scalable routing architecture for satellite networks
+based on existing routing protocols and mechanisms that is enhanced with
+scheduled link connectivity change information. This document proposes
+no protocol changes.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">Large-scale satellite networks are being deployed, presenting an
+unforeseen application for conventional routing protocols. The high
+rate of intentional topological change and the extreme scale
+are unprecedented in terrestrial networking. Links between satellites
+can utilize free-space optics technology that allows liberal
+connectivity. Still, there are limitations due to the range of the
+links and conjunction with the sun, resulting in links that are far
+less reliable than network designers are used to. In addition, links
+can change their endpoints dynamically, resulting in structural
+changes to the topology.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">Current satellite networks are proprietary, and little information is
+generally available for analysis and discussion. This document is
+based on what is currently accessible.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This document proposes one approach to provide a routing architecture
+for such networks utilizing current standards-based routing technology
+and to provide a solution for the scalability of the network while
+incorporating the rapid rate of topological change. This
+document intends to provide some initial guidance for satellite network
+operators, but without specific details, this document can only
+provide the basis for a more complete analysis and design.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">This document presents the author's view and is neither the product of the IETF
+nor a consensus view of the community.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<div id="related-work">
+<section id="section-1.1">
+        <h3 id="name-related-work">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-related-work" class="section-name selfRef">Related Work</a>
+        </h3>
+<p id="section-1.1-1">A survey of related work can be found in <span>[<a href="#Westphal" class="cite xref">Westphal</a>]</span>. Link-state routing for
+satellite networks has been considered in <span>[<a href="#Cao" class="cite xref">Cao</a>]</span> and <span>[<a href="#Zhang" class="cite xref">Zhang</a>]</span>.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terms-and-abbreviations">
+<section id="section-1.2">
+        <h3 id="name-terms-and-abbreviations">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-terms-and-abbreviations" class="section-name selfRef">Terms and Abbreviations</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-1.2-1">
+          <dt id="section-1.2-1.1">Constellation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.2">A set of satellites.<a href="#section-1.2-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.3">Downlink:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.4">The half of a ground link leading from a satellite to an
+Earth station.<a href="#section-1.2-1.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.5">Earth station:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.6">A node in the network that is on or close to the
+planetary surface and has a link to a satellite. This includes
+ships, aircraft, and other vehicles below LEO <span>[<a href="#ITU" class="cite xref">ITU</a>]</span>.<a href="#section-1.2-1.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.7">Gateway:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.8">An Earth station that participates in the network
+and acts as the interconnect between satellite constellations and
+the planetary network. Gateways have a much higher bandwidth than
+user stations, have ample computing capabilities, and perform
+traffic engineering duties, subsuming the functionality of a network
+controller or Path Computation Element (PCE) <span>[<a href="#RFC4655" class="cite xref">RFC4655</a>]</span>. Multiple
+gateways are assumed to exist, and each serves a portion of the
+network.<a href="#section-1.2-1.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.9">GEO:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.10">Geostationary Earth Orbit. A satellite in GEO has an orbit that
+is synchronized to planetary rotation, so it effectively sits over
+one spot on the planet.<a href="#section-1.2-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.11">Ground link:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.12">A link between a satellite and an Earth station,
+composed of a downlink and an uplink.<a href="#section-1.2-1.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.13">IGP:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.14">Interior Gateway Protocol. A routing protocol that is used
+within a single administrative domain. Note that 'gateway' in this
+context is semantically equivalent to 'router' and has no
+relationship to the 'gateway' used in the rest of this document.<a href="#section-1.2-1.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.15">IS-IS:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.16">Intermediate System to Intermediate System.
+            An IGP that is commonly used by service
+            providers <span>[<a href="#ISO10589" class="cite xref">ISO10589</a>]</span> <span>[<a href="#RFC1195" class="cite xref">RFC1195</a>]</span>.<a href="#section-1.2-1.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.17">ISL:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.18">Inter-Satellite Link. Frequently implemented with free-space
+optics that allow signaling using photons without any intervening
+medium <span>[<a href="#Bell" class="cite xref">Bell</a>]</span>.<a href="#section-1.2-1.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.19">L1:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.20">IS-IS Level 1<a href="#section-1.2-1.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.21">L1L2:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.22">IS-IS Level 1 and Level 2<a href="#section-1.2-1.22" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.23">L2:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.24">IS-IS Level 2<a href="#section-1.2-1.24" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.25">LEO:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.26">Low Earth Orbit. A satellite in LEO has an altitude of 2,000 km or less.<a href="#section-1.2-1.26" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.27">Local gateway:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.28">Each user station is associated with a single gateway
+     in its region.<a href="#section-1.2-1.28" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.29">LSP:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.30">Link State Protocol Data Unit. An IS-IS LSP is a set of packets
+     that describe a node's connectivity to other nodes.<a href="#section-1.2-1.30" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.31">MEO:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.32">Medium Earth Orbit. A satellite in MEO is between
+            LEO and GEO and has an altitude between 2,000 km and 35,786
+            km.<a href="#section-1.2-1.32" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.33">SID:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.34">Segment Identifier <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span><a href="#section-1.2-1.34" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.35">Stripe:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.36">A set of satellites in a few adjacent
+            orbits. These form an IS-IS L1 area.<a href="#section-1.2-1.36" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.37">SR:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.38">Segment Routing <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span><a href="#section-1.2-1.38" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.39">Uplink:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.40">The half of a link leading from an Earth
+            station to a satellite.<a href="#section-1.2-1.40" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.41">User station:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.42">An Earth station interconnected with a
+            small end-user network.<a href="#section-1.2-1.42" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="overview">
+<section id="section-2">
+      <h2 id="name-overview">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-overview" class="section-name selfRef">Overview</a>
+      </h2>
+<div id="topological-considerations">
+<section id="section-2.1">
+        <h3 id="name-topological-considerations">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-topological-considerations" class="section-name selfRef">Topological Considerations</a>
+        </h3>
+<p id="section-2.1-1">Satellites travel in specific orbits around their parent planets. Some of them
+have their orbital periods synchronized to planetary rotation, so they
+are effectively stationary over a single point.  Other satellites have orbits
+that cause them to travel across regions of the planet either gradually or quite
+rapidly. Respectively, these are typically known as the Geostationary Earth Orbit
+(GEO), Medium Earth Orbit (MEO), or Low Earth Orbit (LEO), depending on the
+altitude.  This discussion is not Earth-specific; as we get to other planets, we
+can test this approach's generality.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">Satellites may have data interconnections with one another through
+Inter-Satellite Links (ISLs). Due to differences in orbits, ISLs may be
+connected temporarily with periods of potential connectivity computed through
+orbital dynamics. Multiple satellites may be in the same orbit but separated in
+space with a roughly constant separation. Satellites in the same orbit may have
+ISLs that have a higher duty cycle than ISLs between different orbits, but they are
+still not guaranteed to be always connected.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<span id="name-overall-network-architectur"></span><div id="network-architecture">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-2.1-3.1">
+<pre>
+  User           +-----------------+    Local
+  Stations   --- |   Satellites    |--- Gateway --- Internet
+                 +-----------------+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-overall-network-architectur" class="selfRef">Overall Network Architecture</a>
+          </figcaption></figure>
+</div>
+<p id="section-2.1-4">Earth stations can communicate with one or more satellites in their
+region. User stations are Earth stations with a limited capacity that
+communicate with only a single satellite at a time.  Other Earth
+stations that may have richer connectivity and higher bandwidth are
+commonly called "gateways" and provide connectivity between the
+satellite network and conventional wired networks. Gateways serve user
+stations in their geographic proximity and are replicated globally as
+necessary to provide coverage and to meet service density goals. User
+stations are associated with a single local gateway.  Traffic from one
+Earth station to another may need to traverse a path across multiple
+satellites via ISLs.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="link-changes">
+<section id="section-2.2">
+        <h3 id="name-link-changes">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-link-changes" class="section-name selfRef">Link Changes</a>
+        </h3>
+<p id="section-2.2-1">Like conventional network links, ISLs and ground links can fail
+without warning. However, unlike terrestrial links, there are
+predictable times when ISLs and ground links can potentially connect
+and disconnect. These predictions can be computed and cataloged in a
+schedule that can be distributed to relevant network
+elements. Predictions of a link connecting are not guaranteed: A link
+may not connect for many reasons. Link disconnection predictions due
+to orbital dynamics are effectively guaranteed, as the underlying
+physics will not improve unexpectedly.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="scalability">
+<section id="section-2.3">
+        <h3 id="name-scalability">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-scalability" class="section-name selfRef">Scalability</a>
+        </h3>
+<p id="section-2.3-1">Some proposed satellite networks are fairly large, with tens of thousands of
+proposed satellites <span>[<a href="#CNN" class="cite xref">CNN</a>]</span>. A key concern is the ability to reach this scale
+and larger, as useful networks tend to grow.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<p id="section-2.3-2">As we know, the key to scalability is the ability to create
+hierarchical abstractions, so a key question of any routing
+architecture will be about the abstractions that can be created to
+contain topological information.<a href="#section-2.3-2" class="pilcrow">¶</a></p>
+<p id="section-2.3-3">Normal routing protocols are architected to operate with a static but somewhat
+unreliable topology. Satellite networks lack the static organization of
+terrestrial networks, so normal architectural practices for scalability may not
+apply, and alternative approaches may need consideration.<a href="#section-2.3-3" class="pilcrow">¶</a></p>
+<p id="section-2.3-4">In a typical deployment of a link-state routing protocol, current
+implementations can be deployed with a single area that spans a few thousand
+routers. A single area would also provide no isolation for topological changes,
+causing every link change to be propagated throughout the entire network. This
+would be insufficient for the needs of large satellite networks.<a href="#section-2.3-4" class="pilcrow">¶</a></p>
+<p id="section-2.3-5">Multiple areas or multiple instances of an Interior Gateway
+   Protocol (IGP) can be used to improve
+scalability, but there are limitations to typical approaches.<a href="#section-2.3-5" class="pilcrow">¶</a></p>
+<p id="section-2.3-6">Currently, the IETF actively supports two link-state IGPs: OSPF <span>[<a href="#RFC2328" class="cite xref">RFC2328</a>]</span> <span>[<a href="#RFC5340" class="cite xref">RFC5340</a>]</span> and IS-IS.<a href="#section-2.3-6" class="pilcrow">¶</a></p>
+<p id="section-2.3-7">OSPF requires that the network operate around a backbone area, with
+subsidiary areas hanging off of the backbone. While this works well
+for typical terrestrial networks, this does not seem appropriate
+for satellite networks, where there is no centralized portion of the
+topology.<a href="#section-2.3-7" class="pilcrow">¶</a></p>
+<p id="section-2.3-8">IS-IS has a different hierarchical structure, where Level 1 (L1) areas
+are connected sets of nodes, and then Level 2 (L2) is a connected
+subset of the topology that intersects all of the L1 areas. Individual
+nodes can be L1, L2, or both (L1L2). Typical IS-IS designs require that any
+node or link that is to be used as transit between L2 areas must appear as part
+of the L2 topology.  In a satellite network, any satellite could end up being
+used for L2 transit, and so every satellite and link would be part of L2,
+negating any scalability benefits from IS-IS's hierarchical structure.<a href="#section-2.3-8" class="pilcrow">¶</a></p>
+<p id="section-2.3-9">We elaborate on considerations specific to IS-IS in <a href="#suitability" class="auto internal xref">Section 4</a>.<a href="#section-2.3-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="assumptions">
+<section id="section-2.4">
+        <h3 id="name-assumptions">
+<a href="#section-2.4" class="section-number selfRef">2.4. </a><a href="#name-assumptions" class="section-name selfRef">Assumptions</a>
+        </h3>
+<p id="section-2.4-1">In this section, we discuss some of the assumptions that are the basis
+for this architectural proposal.<a href="#section-2.4-1" class="pilcrow">¶</a></p>
+<p id="section-2.4-2">The data payload is IP packets.<a href="#section-2.4-2" class="pilcrow">¶</a></p>
+<p id="section-2.4-3">Satellites are active participants in the control and data planes for the
+network, participating in protocols and forwarding packets.<a href="#section-2.4-3" class="pilcrow">¶</a></p>
+<p id="section-2.4-4">There may be a terrestrial network behind each gateway that may
+        interconnect to the broader Internet. The architecture of the
+        terrestrial network is assumed to be a typical IS-IS and BGP
+        deployment <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> and is not discussed further in
+        this document.<a href="#section-2.4-4" class="pilcrow">¶</a></p>
+<p id="section-2.4-5">The satellite network interconnects user stations and gateways. Interconnection
+between the satellite network and the satellite networks of other network
+operators is outside the scope of this document.<a href="#section-2.4-5" class="pilcrow">¶</a></p>
+<div id="traffic-patterns">
+<section id="section-2.4.1">
+          <h4 id="name-traffic-patterns">
+<a href="#section-2.4.1" class="section-number selfRef">2.4.1. </a><a href="#name-traffic-patterns" class="section-name selfRef">Traffic Patterns</a>
+          </h4>
+<p id="section-2.4.1-1">We assume that the primary use of the satellite network is to provide
+access from a wide range of geographic locations. We also assume that
+providing high-bandwidth bulk transit between peer networks is not a
+goal. It has been noted that satellite networks can provide lower
+latencies than terrestrial fiber networks in <span>[<a href="#Handley" class="cite xref">Handley</a>]</span>. This proposal
+does not preclude such applications but does not articulate the
+mechanisms necessary for user stations to perform the appropriate
+traffic engineering computations. Low-latency, multicast, and anycast
+applications are not discussed further in this document.<a href="#section-2.4.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.4.1-2">As with most access networks, we assume that there will be
+bidirectional traffic between the user station and the gateway but
+that the bulk of the traffic will be from the gateway to the user
+station. We expect the uplink from the gateway to the satellite
+network to be the bandwidth bottleneck and that gateways will need to
+be replicated to scale the uplink bandwidth, as the satellite capacity reachable
+from a gateway will be limited.<a href="#section-2.4.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.4.1-3">We assume that it is not essential to provide optimal routing for
+traffic from user station to user station. If this traffic is sent
+to a gateway first and then back into the satellite network, it
+might be acceptable to some operators as long as the traffic volume
+remains very low. This type of routing is not discussed further in this document.<a href="#section-2.4.1-3" class="pilcrow">¶</a></p>
+<p id="section-2.4.1-4">We assume that traffic for a user station should enter the satellite
+network through a gateway that is in some close geographic proximity
+to the user station. This is to reduce the number of ISLs used by the
+path to the user station. Similarly, we assume that user station
+traffic should exit the satellite network through the gateway that is
+in the closest geographic proximity to the user
+station. Jurisdictional requirements for landing traffic in certain
+regions may alter these assumptions, but such situations are outside
+the scope of this document.<a href="#section-2.4.1-4" class="pilcrow">¶</a></p>
+<p id="section-2.4.1-5">This architecture does not preclude gateway-to-gateway traffic across the
+satellite constellations, but it does not seek to optimize it.<a href="#section-2.4.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="user-station-constraints">
+<section id="section-2.4.2">
+          <h4 id="name-user-station-constraints">
+<a href="#section-2.4.2" class="section-number selfRef">2.4.2. </a><a href="#name-user-station-constraints" class="section-name selfRef">User Station Constraints</a>
+          </h4>
+<p id="section-2.4.2-1">The user station is an entity whose operation is conceptually shared between the
+satellite constellation operator and the operator of the cluster of end stations
+it serves.  For example, the user station is trusted to attach MPLS label stacks
+to end-user packets.  It gets the information to do so from some combination of
+its direct satellite and its local gateway via protocols outside the scope of
+this document.  Equally, it bootstraps communication via an exchange with the
+current local satellite so that it can find and communicate with its local gateway --
+again with the details of how that is done being outside the scope of this
+document.<a href="#section-2.4.2-1" class="pilcrow">¶</a></p>
+<p id="section-2.4.2-2">User stations that can concurrently access multiple satellites are not precluded
+by this proposal but are not discussed in detail.<a href="#section-2.4.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="stochastic-connectivity">
+<section id="section-2.4.3">
+          <h4 id="name-stochastic-connectivity">
+<a href="#section-2.4.3" class="section-number selfRef">2.4.3. </a><a href="#name-stochastic-connectivity" class="section-name selfRef">Stochastic Connectivity</a>
+          </h4>
+<p id="section-2.4.3-1">We assume that links in general will be available when scheduled. As
+with any network, there will be failures, and the schedule is not a
+guarantee, but we also expect that the schedule is mostly accurate. We
+assume that at any given instant, there are enough working links and
+aggregate bandwidth to run the network and support the traffic
+demand. If this assumption does not hold, no routing architecture
+can magically make the network more capable.<a href="#section-2.4.3-1" class="pilcrow">¶</a></p>
+<p id="section-2.4.3-2">Satellites that are in the same orbit may be connected by ISLs. These
+are called "intra-orbit" ISLs.  Satellites that are in different orbits
+may also be connected by ISLs. These are called "inter-orbit" ISLs. Generally,
+we assume that intra-orbit ISLs have higher reliability
+and persistence than inter-orbit ISLs.<a href="#section-2.4.3-2" class="pilcrow">¶</a></p>
+<p id="section-2.4.3-3">We assume that the satellite network is connected (in the graph theory sense)
+almost always, even if some links are down. This implies that there is
+almost always some path to the destination. In the extreme case with
+no such path, we assume that it is acceptable to drop the payload packets. We do
+not require buffering of traffic when a link is down. Instead, traffic should be
+rerouted.<a href="#section-2.4.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="problem-statement">
+<section id="section-2.5">
+        <h3 id="name-problem-statement">
+<a href="#section-2.5" class="section-number selfRef">2.5. </a><a href="#name-problem-statement" class="section-name selfRef">Problem Statement</a>
+        </h3>
+<p id="section-2.5-1">The goal of the routing architecture is to provide an
+ organizational structure to protocols running on the satellite
+ network. This architecture must convey topology information to
+ relevant portions of the network. This enables path computation that
+ is used for data forwarding. The architecture must also scale without
+ global changes to the organizational structure.<a href="#section-2.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="forwarding-plane">
+<section id="section-3">
+      <h2 id="name-forwarding-plane">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-forwarding-plane" class="section-name selfRef">Forwarding Plane</a>
+      </h2>
+<p id="section-3-1">The end goal of a network is to deliver traffic. In a satellite
+      network where the topology is in a continual state of flux and the user
+      stations frequently change their association with the satellites, having
+      a highly flexible and adaptive forwarding plane is essential. Toward
+      this end, we propose using MPLS as the fundamental forwarding plane
+      architecture <span>[<a href="#RFC3031" class="cite xref">RFC3031</a>]</span>. Specifically, we propose using an
+      approach based on Segment Routing (SR) <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span> with an
+      MPLS data plane <span>[<a href="#RFC8660" class="cite xref">RFC8660</a>]</span>, where each satellite is
+      assigned a node Segment Identifier (SID). This allows the architecture
+      to support both IPv4 and IPv6 concurrently.  A path through the network
+      can then be expressed as a label stack of node SIDs.  IP forwarding is
+      not used within the internals of the satellite network, although each
+      satellite may be assigned an IP address for management
+      purposes. Existing techniques may be used to limit the size of the SR
+      label stack so that it only contains the significant waypoints along the
+      path <span>[<a href="#Giorgetti" class="cite xref">Giorgetti</a>]</span>. The label stack operates as a loose
+      source route through the network. If there is an unexpected topology
+      change in the network, the IGP will compute a new path to the next
+      waypoint, allowing packet delivery despite ISL failures. While the IGP
+      is converging, there may be micro-loops in the topology. These can be
+      avoided by using Topology Independent Loop-Free Alternate (TI-LFA) paths
+      <span>[<a href="#I-D.ietf-rtgwg-segment-routing-ti-lfa" class="cite xref">SR-TI-LFA</a>]</span>; otherwise,
+      traffic will loop until discarded based on its TTL.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">We assume that there is a link-layer mechanism for a user station to
+      associate with a satellite. User stations will have an IP address
+      assigned from a prefix managed by its local gateway. The mechanisms for
+      this assignment and its communication to the end station are not
+      discussed herein but might be similar to DHCP <span>[<a href="#RFC2131" class="cite xref">RFC2131</a>]</span>. User station IP addresses change infrequently and do
+      not reflect their association with their first-hop satellite. Gateways
+      and their supporting terrestrial networks advertise prefixes covering
+      all its local user stations throughout the global Internet.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">User stations may be assigned a node SID, in which case MPLS
+forwarding can be used for all hops to the user
+station. Alternatively, if the user station does not have a node SID,
+then the last hop from the satellite to the end station can be
+performed based on the destination IP address of the packet. This does
+not require a full longest-prefix-match lookup, as the IP address is
+merely a unique identifier at this point.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">Similarly, gateways may be assigned a node SID. A possible
+optimization is that a single SID value could be assigned as a global
+constant to always direct traffic to the topologically closest
+gateway.  If traffic engineering is required for traffic that is
+flowing to a gateway, a specific path may be encoded in a label stack
+that is attached to the packet by the user station or by the first-hop
+satellite.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">Gateways can also perform traffic engineering using different paths
+and label stacks for separate traffic flows. Routing a single traffic
+flow across multiple paths has proven to cause performance issues with
+transport protocols, so that approach is not recommended. Traffic engineering is
+discussed further in <a href="#trafficEngineering" class="auto internal xref">Section 6</a>.<a href="#section-3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="suitability">
+<section id="section-4">
+      <h2 id="name-igp-suitability-and-scalabi">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-igp-suitability-and-scalabi" class="section-name selfRef">IGP Suitability and Scalability</a>
+      </h2>
+<p id="section-4-1">As discussed in <a href="#scalability" class="auto internal xref">Section 2.3</a>, IS-IS is architecturally the best fit for
+satellite networks but does require some novel approaches to achieve the
+scalability goals for a satellite network.  In particular, we propose that all
+nodes in the network be L1L2 so that local routing is done based on L1
+information and then global routing is done based on L2 information.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">An interesting property of IS-IS is that it does not require
+interface addresses. This feature is commonly known as "unnumbered
+interfaces". This is particularly helpful in satellite topologies
+because it implies that ISLs may be used flexibly. Sometimes an
+interface might be used as an L1 link to another satellite, and a few
+orbits later, it might be used as an L1L2 link to a completely
+different satellite without any reconfiguration or renumbering.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">Scalability for IS-IS can be achieved through a proposal
+known as "Area Proxy" <span>[<a href="#RFC9666" class="cite xref">RFC9666</a>]</span>. With this
+proposal, all nodes in an L1 area combine their information
+into a single L2 Link State Protocol Data Unit (LSP). This implies
+that the size of the L1 Link State Database (LSDB) scales as the
+number of nodes in the L1 area and the size of the L2 LSDB scales with
+the number of L1 areas.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">With Area Proxy, topological changes within an L1 area will not be visible to
+other areas, so the overhead of link-state changes will be greatly reduced.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">The Area Proxy proposal also includes the concept of an Area SID. This
+is useful because it allows traffic engineering to construct a path
+that traverses areas with a minimal number of label stack entries.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">For example, suppose that a network has 1,000 L1 areas, each with
+1,000 satellites. This would mean that the network supports
+1,000,000 satellites but only requires 1,000 entries in its L1 LSDB
+and 1,000 entries in its L2 LSDB, which are easily achievable
+numbers today. The resulting MPLS label table would contain 1,000 node SIDs
+from the L1 (and L2) LSDB and 1,000 area SIDs from the L2 LSDB.  If each
+satellite advertises an IP address for management purposes, then the
+IP routing table would have 1,000 entries for the L1 management
+addresses and 1,000 area proxy addresses from L2.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">In this proposal, IS-IS does not carry IP routes other than those
+in the satellite topology. In particular, there are no IP
+routes for user stations or the remainder of the Internet.<a href="#section-4-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="stripes-and-areas">
+<section id="section-5">
+      <h2 id="name-stripes-and-areas">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-stripes-and-areas" class="section-name selfRef">Stripes and Areas</a>
+      </h2>
+<p id="section-5-1">A significant problem with any link-state routing protocol is that of
+area partition. While there have been many proposals for automatic
+partition repair, none has seen notable production deployment. It
+seems best to avoid this issue and ensure areas
+have an extremely low probability of partitioning.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">As discussed above, intra-orbit ISLs are assumed to have higher
+reliability and persistence than inter-orbit ISLs. However, even
+intra-orbit ISLs are not sufficiently reliable to avoid partition
+issues. Therefore, we propose to group a small number of adjacent
+orbits as an IS-IS L1 area, called a "stripe". We assume that
+for any given reliability requirement, there is a small number of
+orbits that can be used to form a stripe that satisfies the
+reliability requirement.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">Stripes are connected to other adjacent stripes using the same ISL
+mechanism, forming the L2 topology of the network. Each stripe should
+have multiple L2 connections and never become partitioned from
+the remainder of the network.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">By using a stripe as an L1 area, in conjunction with Area Proxy, the
+overhead of the architecture is greatly reduced. Each stripe contributes a
+single LSP to the L2 LSDB, completely hiding all the details about the
+satellites within the stripe. The resulting architecture scales proportionately
+to the number of stripes required, not the number of satellites.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">Groups of MEO and GEO satellites with interconnecting ISLs can also
+form an IS-IS L1L2 area. Satellites that lack intra-constellation ISLs
+are better as independent L2 nodes.<a href="#section-5-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="trafficEngineering">
+<section id="section-6">
+      <h2 id="name-traffic-forwarding-and-traf">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-traffic-forwarding-and-traf" class="section-name selfRef">Traffic Forwarding and Traffic Engineering</a>
+      </h2>
+<p id="section-6-1">The forwarding architecture presented here is straightforward. A path from a
+gateway to a user station on the same stripe only requires a single
+node SID for the satellite that provides the downlink to the user
+station.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<span id="name-on-stripe-forwarding"></span><div id="on-stripe-forwarding">
+<figure id="figure-2">
+        <div class="alignLeft art-text artwork" id="section-6-2.1">
+<pre>
+             \
+ Gateway --&gt;  X
+               \
+                \
+                 X
+                  \
+                   \
+                    X ---&gt; x  User Station
+                     \
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-on-stripe-forwarding" class="selfRef">On-Stripe Forwarding</a>
+        </figcaption></figure>
+</div>
+<p id="section-6-3">Similarly, a user station returning a packet to a gateway need only
+provide a gateway node SID.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">For off-stripe forwarding, the situation is a bit more complex. A gateway would
+need to provide the area SID of the final stripe on the path plus the node SID
+of the downlink satellite. For return traffic, user stations or first-hop
+satellites would want to provide the area SID of the stripe that contains the
+satellite that provides access to the gateway as well as the gateway SID.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<span id="name-off-stripe-forwarding"></span><div id="off-stripe-forwarding">
+<figure id="figure-3">
+        <div class="alignLeft art-text artwork" id="section-6-5.1">
+<pre>
+ Source S
+    |
+    |
+    V
+ Internet
+    |
+    |
+    V          \
+ Gateway L --&gt;  X
+                 \
+                  \     \
+                   X --- X
+                    \     \
+                           \     \    Area A
+                            X --- X
+                             \     \
+                                    \
+                                     U ---&gt; D   User Station
+                                      \
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-off-stripe-forwarding" class="selfRef">Off-Stripe Forwarding</a>
+        </figcaption></figure>
+</div>
+<p id="section-6-6">As an example (<a href="#off-stripe-forwarding" class="auto internal xref">Figure 3</a>), consider a packet from an Internet source (Source S) to a
+user station (D). A local gateway (Gateway L) has injected a prefix covering D
+into BGP and has advertised it globally. The packet is forwarded to L
+using IP forwarding. When L receives the packet, it performs a
+lookup in a pre-computed forwarding table. This contains a SID list
+for the user station that has already been converted into a label
+stack. Suppose the user station is currently associated with a
+different stripe so that the label stack will contain an area label (A)
+and a label (U) for the satellite associated with the user station,
+resulting in a label stack (A, U).<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-6-7">The local gateway forwards this into the satellite network. The first-hop
+satellite now forwards based on the area label (A) at the top of the stack. All
+area labels are propagated as part of the L2 topology. This forwarding continues
+until the packet reaches a satellite adjacent to the destination
+area. That satellite pops label A, removing that label and forwarding the packet
+into the destination area.<a href="#section-6-7" class="pilcrow">¶</a></p>
+<p id="section-6-8">The packet is now forwarded based on the remaining label U, which was
+propagated as part of the L1 topology. The last satellite forwards the
+packet based on the destination address (D) and forwards the packet to
+the user station.<a href="#section-6-8" class="pilcrow">¶</a></p>
+<p id="section-6-9">The return case is similar. The label stack, in this case, consists of a label
+for the local gateway's stripe/area (A') and the label for the local gateway (L),
+resulting in the stack (A', L). The forwarding mechanisms are similar to the
+previous case.<a href="#section-6-9" class="pilcrow">¶</a></p>
+<p id="section-6-10">Very frequently, access networks congest due to over-subscription and
+the economics of access. Network operators can use traffic engineering
+to ensure that they get higher efficiency out of their
+networks by utilizing all available paths and capacity near any
+congestion points. In this particular case, the gateway will have
+information about all of the traffic it is generating and can use
+all of the possible paths through the network in its topological
+neighborhood.  Since we're already using SR, this is easily done
+by adding more explicit SIDs to the label stack. These can be
+additional area SIDs, node SIDs, or adjacency SIDs. Path computation
+can be performed by Path Computation Elements (PCEs) <span>[<a href="#RFC4655" class="cite xref">RFC4655</a>]</span>.<a href="#section-6-10" class="pilcrow">¶</a></p>
+<p id="section-6-11">Each gateway or its PCE will need topological information from the
+areas it will route through. It can do this by participating in the
+IGP directly, via a tunnel, or through another delivery mechanism such
+as BGP-LS <span>[<a href="#RFC9552" class="cite xref">RFC9552</a>]</span>.  User stations do not participate in the IGP.<a href="#section-6-11" class="pilcrow">¶</a></p>
+<p id="section-6-12">Traffic engineering for packets flowing into a gateway can also be
+provided by an explicit SR path. This can help ensure that ISLs near
+the gateway do not congest with traffic for the gateway.  These paths
+can be computed by the gateway or PCE and then distributed to the
+first-hop satellite or user station, which would apply them to
+traffic. The delivery mechanism is outside the scope of this
+document.<a href="#section-6-12" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="scheduling">
+<section id="section-7">
+      <h2 id="name-scheduling">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-scheduling" class="section-name selfRef">Scheduling</a>
+      </h2>
+<p id="section-7-1">The most significant difference between terrestrial and satellite
+networks from a routing perspective is that some of the topological
+changes that will happen to the network can be anticipated and
+computed. Both link and node changes will affect the topology, and the
+network should react smoothly and predictably.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">The management plane is responsible for providing information about
+scheduled topological changes. The exact details of how the
+information is disseminated are outside the scope of this document
+but could be shown through a YANG model
+<span>[<a href="#I-D.ietf-tvr-schedule-yang" class="cite xref">YANG-SCHEDULE</a>]</span>.
+
+Scheduling information needs to be
+accessible to all of the nodes that will make routing decisions based
+on the topological changes in the schedule (i.e., data about an L1
+topological change will need to be circulated to all nodes in the L1
+area and information about L2 changes will need to propagate to all
+L2 nodes) and to the gateways and PCEs that carry the related
+topological information.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">There is very little that the network should do in response to a
+topological addition. A link coming up or a node joining the topology
+should not have any functional change until the change is proven to be
+fully operational based on the usual IS-IS liveness mechanisms. Nodes
+may pre-compute their routing table changes but should not install
+them before all relevant adjacencies are received. The benefits of
+this pre-computation appear to be very small. Gateways and PCEs may
+also choose to pre-compute paths based on these changes but should
+not install paths using the new parts of the topology until they are
+confirmed to be operational. If some path pre-installation is
+performed, gateways and PCEs must be prepared for the situation where
+the topology fails to become operational and may need to take
+alternate steps instead, such as reverting any related pre-installed
+paths.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">The network may choose not to pre-install or
+pre-compute routes in reaction to topological additions, at a small
+cost of some operational efficiency.<a href="#section-7-4" class="pilcrow">¶</a></p>
+<p id="section-7-5">Topological deletions are an entirely different matter. If a link or
+node is to be removed from the topology, the network should act
+before the anticipated change to route traffic around the expected
+topological loss. Specifically, at some point before the topology
+change, the affected links should be set to a high metric to direct
+traffic to alternate paths. This is a common operational procedure in
+existing networks when links are taken out of service, such as when
+proactive maintenance needs to be performed. This type of change does
+require some time to propagate through the network, so the metric
+change should be initiated far enough in advance that the network
+converges before the actual topological change. Gateways and PCEs
+should also update paths around the topology change and install these
+changes before the topology change occurs. The time necessary for
+both IGP and path changes will vary depending on the exact network and
+configuration.<a href="#section-7-5" class="pilcrow">¶</a></p>
+<p id="section-7-6">Strictly speaking, changing to a high metric should not be necessary. It should
+be possible for each router to exclude the link and recompute
+paths. However, it seems safer to change the metric and use the IGP methods
+for indicating a topology change, as this can help avoid issues with incomplete
+information dissemination and synchronization.<a href="#section-7-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="future-work">
+<section id="section-8">
+      <h2 id="name-future-work">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-future-work" class="section-name selfRef">Future Work</a>
+      </h2>
+<p id="section-8-1">This architecture needs to be validated by satellite operators, both
+via simulation and operational deployment. Meaningful simulation
+hinges on the exact statistics of ISL connectivity; currently, that
+information is not publicly available.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Current available information about ISLs indicates that links are
+mechanically steered and will need to track the opposite end of the
+link continually. The angles and distances that can be practically
+supported are unknown, as are any limitations about the rate of
+change.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">It is expected that intra-orbit and inter-orbit ISL links will have
+very different properties. Intra-orbit links should be much more
+stable but still far less stable than terrestrial links.  Inter-orbit
+links will be less stable. Links between satellites that are roughly
+parallel should be possible but will likely have a limited
+duration. Two orbits may be roughly orthogonal, resulting in a limited
+potential for connectivity. Finally, in some topologies there may be
+parallel orbits where the satellites move in opposite directions,
+giving a relative speed between satellites around 34,000 mph
+(55,000 kph).  Links in this situation may not be possible or may be so
+short-lived that they are impractical.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">The key question to address is whether the parameters of a given
+network can yield a stripe assignment that produces stable, connected
+areas that work within the scaling bounds of the IGP. If links are
+very stable, a stripe could be just a few parallel orbits, with
+only a few hundred satellites. However, if links are unstable,
+a stripe might have to encompass dozens of orbits and thousands
+of satellites, which might be beyond the scaling limitations of a
+given IGP's implementation.<a href="#section-8-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="deployment-considerations">
+<section id="section-9">
+      <h2 id="name-deployment-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-deployment-considerations" class="section-name selfRef">Deployment Considerations</a>
+      </h2>
+<p id="section-9-1">The network behind a gateway is expected to be a normal terrestrial
+network. Conventional routing architectural principles apply. An obvious
+approach would be to extend IS-IS to the terrestrial network, applying L1 areas
+as necessary for scalability.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<p id="section-9-2">The terrestrial network may have one or more BGP connections to the
+broader Internet. Prefixes for user stations should be advertised to
+the Internet near the associated gateway. If gateways are not
+interconnected by the terrestrial network, then it may be advisable to
+use one autonomous system per gateway as it might simplify the
+external perception of the network and subsequent policy
+considerations. Otherwise, one autonomous system may be used for the
+entire terrestrial network.<a href="#section-9-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-10">
+      <h2 id="name-security-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-10-1">This document discusses one possible routing architecture for
+satellite networks. It proposes no new protocols or mechanisms and
+thus has no new security impact. Security for IS-IS is provided by
+<span>[<a href="#RFC5304" class="cite xref">RFC5304</a>]</span> and <span>[<a href="#RFC5310" class="cite xref">RFC5310</a>]</span>.<a href="#section-10-1" class="pilcrow">¶</a></p>
+<p id="section-10-2">User stations will interact directly with satellites, potentially
+using proprietary mechanisms, and under the control of the satellite
+operator, who is responsible for the security of the user station.<a href="#section-10-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-11">
+      <h2 id="name-iana-considerations">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-11-1">This document has no IANA actions.<a href="#section-11-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-12">
+      <h2 id="name-references">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-12.1">
+        <h3 id="name-normative-references">
+<a href="#section-12.1" class="section-number selfRef">12.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="ISO10589">[ISO10589]</dt>
+        <dd>
+<span class="refAuthor">ISO/IEC</span>, <span class="refTitle">"Information technology - Telecommunications and information exchange between systems - Intermediate System to Intermediate System intra-domain routeing information exchange protocol for use in conjunction with the protocol for providing the connectionless-mode network service (ISO 8473)"</span>, <span class="seriesInfo">ISO/IEC 10589:2002</span>, <time datetime="2002-11" class="refDate">November 2002</time>, <span>&lt;<a href="https://www.iso.org/standard/30932.html">https://www.iso.org/standard/30932.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3031">[RFC3031]</dt>
+        <dd>
+<span class="refAuthor">Rosen, E.</span>, <span class="refAuthor">Viswanathan, A.</span>, and <span class="refAuthor">R. Callon</span>, <span class="refTitle">"Multiprotocol Label Switching Architecture"</span>, <span class="seriesInfo">RFC 3031</span>, <span class="seriesInfo">DOI 10.17487/RFC3031</span>, <time datetime="2001-01" class="refDate">January 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3031">https://www.rfc-editor.org/info/rfc3031</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5304">[RFC5304]</dt>
+        <dd>
+<span class="refAuthor">Li, T.</span> and <span class="refAuthor">R. Atkinson</span>, <span class="refTitle">"IS-IS Cryptographic Authentication"</span>, <span class="seriesInfo">RFC 5304</span>, <span class="seriesInfo">DOI 10.17487/RFC5304</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5304">https://www.rfc-editor.org/info/rfc5304</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5310">[RFC5310]</dt>
+        <dd>
+<span class="refAuthor">Bhatia, M.</span>, <span class="refAuthor">Manral, V.</span>, <span class="refAuthor">Li, T.</span>, <span class="refAuthor">Atkinson, R.</span>, <span class="refAuthor">White, R.</span>, and <span class="refAuthor">M. Fanto</span>, <span class="refTitle">"IS-IS Generic Cryptographic Authentication"</span>, <span class="seriesInfo">RFC 5310</span>, <span class="seriesInfo">DOI 10.17487/RFC5310</span>, <time datetime="2009-02" class="refDate">February 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5310">https://www.rfc-editor.org/info/rfc5310</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8402">[RFC8402]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S., Ed.</span>, <span class="refAuthor">Ginsberg, L.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Litkowski, S.</span>, and <span class="refAuthor">R. Shakir</span>, <span class="refTitle">"Segment Routing Architecture"</span>, <span class="seriesInfo">RFC 8402</span>, <span class="seriesInfo">DOI 10.17487/RFC8402</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8402">https://www.rfc-editor.org/info/rfc8402</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8660">[RFC8660]</dt>
+        <dd>
+<span class="refAuthor">Bashandy, A., Ed.</span>, <span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Litkowski, S.</span>, and <span class="refAuthor">R. Shakir</span>, <span class="refTitle">"Segment Routing with the MPLS Data Plane"</span>, <span class="seriesInfo">RFC 8660</span>, <span class="seriesInfo">DOI 10.17487/RFC8660</span>, <time datetime="2019-12" class="refDate">December 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8660">https://www.rfc-editor.org/info/rfc8660</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9666">[RFC9666]</dt>
+      <dd>
+<span class="refAuthor">Li, T.</span>, <span class="refAuthor">Chen, S.</span>, <span class="refAuthor">Ilangovan, V.</span>, and <span class="refAuthor">G. Mishra</span>, <span class="refTitle">"Area Proxy for IS-IS"</span>, <span class="seriesInfo">RFC 9666</span>, <span class="seriesInfo">DOI 10.17487/RFC9666</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9666">https://www.rfc-editor.org/info/rfc9666</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-12.2">
+        <h3 id="name-informative-references">
+<a href="#section-12.2" class="section-number selfRef">12.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="Bell">[Bell]</dt>
+        <dd>
+<span class="refAuthor">Bell, A. G.</span>, <span class="refTitle">"On the Production and Reproduction of Sound by Light"</span>, <span class="refContent">American Journal of Science, vol. S3-20, no. 118, pp. 305-324</span>, <span class="seriesInfo">DOI 10.2475/ajs.s3-20.118.305</span>, <time datetime="1880-10" class="refDate">October 1880</time>, <span>&lt;<a href="https://ajsonline.org/article/64037">https://ajsonline.org/article/64037</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Cao">[Cao]</dt>
+        <dd>
+<span class="refAuthor">Cao, X.</span>, <span class="refAuthor">Li, Y.</span>, <span class="refAuthor">Xiong, X.</span>, and <span class="refAuthor">J. Wang</span>, <span class="refTitle">"Dynamic Routings in Satellite Networks: An Overview"</span>, <span class="refContent">Sensors, vol. 22, no. 12, pp. 4552</span>, <span class="seriesInfo">DOI 10.3390/s22124552</span>, <time datetime="2022" class="refDate">2022</time>, <span>&lt;<a href="https://www.mdpi.com/1424-8220/22/12/4552/pdf?version=1655449925">https://www.mdpi.com/1424-8220/22/12/4552/pdf?version=1655449925</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CNN">[CNN]</dt>
+        <dd>
+<span class="refAuthor">Wattles, J.</span>, <span class="refTitle">"Elon Musk's SpaceX now owns about a third of all active satellites in the sky"</span>, <span class="refContent">CNN Business</span>, <time datetime="2021-02-11" class="refDate">11 February 2021</time>, <span>&lt;<a href="https://www.cnn.com/2021/02/11/tech/spacex-starlink-satellites-1000-scn/index.html">https://www.cnn.com/2021/02/11/tech/spacex-starlink-satellites-1000-scn/index.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Giorgetti">[Giorgetti]</dt>
+        <dd>
+<span class="refAuthor">Giorgetti, A.</span>, <span class="refAuthor">Castoldi, P.</span>, <span class="refAuthor">Cugini, F.</span>, <span class="refAuthor">Nijhof, J.</span>, <span class="refAuthor">Lazzeri, F.</span>, and <span class="refAuthor">G. Bruno</span>, <span class="refTitle">"Path Encoding in Segment Routing"</span>, <span class="refContent">2015 IEEE Global Communications Conference (GLOBECOM)</span>, <span class="seriesInfo">DOI 10.1109/GLOCOM.2015.7417097</span>, <time datetime="2015-12" class="refDate">December 2015</time>, <span>&lt;<a href="https://ieeexplore.ieee.org/document/7417097">https://ieeexplore.ieee.org/document/7417097</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Handley">[Handley]</dt>
+        <dd>
+<span class="refAuthor">Handley, M.</span>, <span class="refTitle">"Delay is Not an Option: Low Latency Routing in Space"</span>, <span class="refContent">HotNets '18: Proceedings of the 17th ACM Workshop on Hot Topics in Networks, pp. 85-91</span>, <span class="seriesInfo">DOI 10.1145/3286062.3286075</span>, <time datetime="2018-11" class="refDate">November 2018</time>, <span>&lt;<a href="https://dl.acm.org/doi/10.1145/3286062.3286075#">https://dl.acm.org/doi/10.1145/3286062.3286075#</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="ITU">[ITU]</dt>
+        <dd>
+<span class="refAuthor">ITU</span>, <span class="refTitle">"Radio Regulations - Articles"</span>, <time datetime="2024" class="refDate">2024</time>, <span>&lt;<a href="https://search.itu.int/history/HistoryDigitalCollectionDocLibrary/1.49.48.en.101.pdf#search=radio%20regulation">https://search.itu.int/history/HistoryDigitalCollectionDocLibrary/1.49.48.en.101.pdf#search=radio%20regulation</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1195">[RFC1195]</dt>
+        <dd>
+<span class="refAuthor">Callon, R.</span>, <span class="refTitle">"Use of OSI IS-IS for routing in TCP/IP and dual environments"</span>, <span class="seriesInfo">RFC 1195</span>, <span class="seriesInfo">DOI 10.17487/RFC1195</span>, <time datetime="1990-12" class="refDate">December 1990</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1195">https://www.rfc-editor.org/info/rfc1195</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2131">[RFC2131]</dt>
+        <dd>
+<span class="refAuthor">Droms, R.</span>, <span class="refTitle">"Dynamic Host Configuration Protocol"</span>, <span class="seriesInfo">RFC 2131</span>, <span class="seriesInfo">DOI 10.17487/RFC2131</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2131">https://www.rfc-editor.org/info/rfc2131</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2328">[RFC2328]</dt>
+        <dd>
+<span class="refAuthor">Moy, J.</span>, <span class="refTitle">"OSPF Version 2"</span>, <span class="seriesInfo">STD 54</span>, <span class="seriesInfo">RFC 2328</span>, <span class="seriesInfo">DOI 10.17487/RFC2328</span>, <time datetime="1998-04" class="refDate">April 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2328">https://www.rfc-editor.org/info/rfc2328</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4271">[RFC4271]</dt>
+        <dd>
+<span class="refAuthor">Rekhter, Y., Ed.</span>, <span class="refAuthor">Li, T., Ed.</span>, and <span class="refAuthor">S. Hares, Ed.</span>, <span class="refTitle">"A Border Gateway Protocol 4 (BGP-4)"</span>, <span class="seriesInfo">RFC 4271</span>, <span class="seriesInfo">DOI 10.17487/RFC4271</span>, <time datetime="2006-01" class="refDate">January 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4271">https://www.rfc-editor.org/info/rfc4271</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4655">[RFC4655]</dt>
+        <dd>
+<span class="refAuthor">Farrel, A.</span>, <span class="refAuthor">Vasseur, J.-P.</span>, and <span class="refAuthor">J. Ash</span>, <span class="refTitle">"A Path Computation Element (PCE)-Based Architecture"</span>, <span class="seriesInfo">RFC 4655</span>, <span class="seriesInfo">DOI 10.17487/RFC4655</span>, <time datetime="2006-08" class="refDate">August 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4655">https://www.rfc-editor.org/info/rfc4655</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5340">[RFC5340]</dt>
+        <dd>
+<span class="refAuthor">Coltun, R.</span>, <span class="refAuthor">Ferguson, D.</span>, <span class="refAuthor">Moy, J.</span>, and <span class="refAuthor">A. Lindem</span>, <span class="refTitle">"OSPF for IPv6"</span>, <span class="seriesInfo">RFC 5340</span>, <span class="seriesInfo">DOI 10.17487/RFC5340</span>, <time datetime="2008-07" class="refDate">July 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5340">https://www.rfc-editor.org/info/rfc5340</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9552">[RFC9552]</dt>
+        <dd>
+<span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refTitle">"Distribution of Link-State and Traffic Engineering Information Using BGP"</span>, <span class="seriesInfo">RFC 9552</span>, <span class="seriesInfo">DOI 10.17487/RFC9552</span>, <time datetime="2023-12" class="refDate">December 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9552">https://www.rfc-editor.org/info/rfc9552</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-rtgwg-segment-routing-ti-lfa">[SR-TI-LFA]</dt>
+        <dd>
+<span class="refAuthor">Bashandy, A.</span>, <span class="refAuthor">Litkowski, S.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Francois, P.</span>, <span class="refAuthor">Decraene, B.</span>, and <span class="refAuthor">D. Voyer</span>, <span class="refTitle">"Topology Independent Fast Reroute using Segment Routing"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-rtgwg-segment-routing-ti-lfa-19</span>, <time datetime="2024-11-22" class="refDate">22 November 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-rtgwg-segment-routing-ti-lfa-19">https://datatracker.ietf.org/doc/html/draft-ietf-rtgwg-segment-routing-ti-lfa-19</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Westphal">[Westphal]</dt>
+        <dd>
+<span class="refAuthor">Westphal, C.</span>, <span class="refAuthor">Han, L.</span>, and <span class="refAuthor">R. Li</span>, <span class="refTitle">"LEO Satellite Networking Relaunched: Survey and Current Research Challenges"</span>, <span class="refContent">arXiv:2310.07546v1</span>, <span class="seriesInfo">DOI 10.48550/arXiv.2310.07646</span>, <time datetime="2023-10" class="refDate">October 2023</time>, <span>&lt;<a href="https://arxiv.org/pdf/2310.07646.pdf">https://arxiv.org/pdf/2310.07646.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-tvr-schedule-yang">[YANG-SCHEDULE]</dt>
+        <dd>
+<span class="refAuthor">Qu, Y.</span>, <span class="refAuthor">Lindem, A.</span>, <span class="refAuthor">Kinzie, E.</span>, <span class="refAuthor">Fedyk, D.</span>, and <span class="refAuthor">M. Blanchet</span>, <span class="refTitle">"YANG Data Model for Scheduled Attributes"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-tvr-schedule-yang-03</span>, <time datetime="2024-10-20" class="refDate">20 October 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-tvr-schedule-yang-03">https://datatracker.ietf.org/doc/html/draft-ietf-tvr-schedule-yang-03</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Zhang">[Zhang]</dt>
+      <dd>
+<span class="refAuthor">Zhang, X.</span>, <span class="refAuthor">Yang, Y.</span>, <span class="refAuthor">Xu, M.</span>, and <span class="refAuthor">J. Luo</span>, <span class="refTitle">"ASER: Scalable Distributed Routing Protocol for LEO Satellite Networks"</span>, <span class="refContent">2021 IEEE 46th Conference on Local Computer Networks (LCN)</span>, <span class="seriesInfo">DOI 10.1109/LCN52139.2021.9524989</span>, <time datetime="2021" class="refDate">2021</time>, <span>&lt;<a href="https://doi.org/10.1109/LCN52139.2021.9524989">https://doi.org/10.1109/LCN52139.2021.9524989</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The author would like to thank <span class="contact-name">Dino Farinacci</span>,
+      <span class="contact-name">Olivier De jonckere</span>, <span class="contact-name">Eliot       Lear</span>, <span class="contact-name">Adrian Farrel</span>, <span class="contact-name">Acee       Lindem</span>, <span class="contact-name">Erik Kline</span>, <span class="contact-name">Sue       Hares</span>, <span class="contact-name">Joel Halpern</span>, <span class="contact-name">Marc       Blanchet</span>, and <span class="contact-name">Dean Bogdanovic</span> for their comments.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tony Li</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:tony.li@tony.li" class="email">tony.li@tony.li</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
