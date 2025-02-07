@@ -1,0 +1,2839 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9716: Mechanisms for MPLS Ping and Traceroute Procedures in Inter-Domain Segment Routing Networks</title>
+<meta content="Shraddha Hegde" name="author">
+<meta content="Kapil Arora" name="author">
+<meta content="Mukul Srivastava" name="author">
+<meta content="Samson Ninan" name="author">
+<meta content="Nagendra Kumar" name="author">
+<meta content="
+       The Segment Routing (SR) architecture leverages source routing and
+      can be directly applied to the use of an MPLS data plane. A Segment
+      Routing over MPLS (SR-MPLS) network may consist of multiple IGP domains
+      or multiple Autonomous Systems (ASes) under the control of the same
+      organization.  It is useful to have the Label Switched Path (LSP) ping
+      and traceroute procedures when an SR end-to-end path traverses multiple
+      ASes or IGP domains.  This document outlines mechanisms to enable
+      efficient LSP ping and traceroute procedures in inter-AS and
+      inter-domain SR-MPLS networks. This is achieved through a
+      straightforward extension to the Operations, Administration, and
+      Maintenance (OAM) protocol, relying solely on data plane forwarding for
+      handling echo replies on transit nodes. 
+    " name="description">
+<meta content="xml2rfc 3.26.0" name="generator">
+<meta content="OAM" name="keyword">
+<meta content="EPE" name="keyword">
+<meta content="BGP-LS" name="keyword">
+<meta content="BGP" name="keyword">
+<meta content="SPRING" name="keyword">
+<meta content="SDN" name="keyword">
+<meta content="9716" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.26.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    pydyf 0.10.0
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 62.3
+-->
+<link href="rfc9716.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-mpls-spring-inter-domain-oam-20" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9716" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9716</td>
+<td class="center">MPLS Ping and Traceroute in Inter-Domain</td>
+<td class="right">February 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Hegde, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9716" class="eref">9716</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-02" class="published">February 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Hegde</div>
+<div class="org">Juniper Networks, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">K. Arora</div>
+<div class="org">Individual Contributor</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Srivastava</div>
+<div class="org">Juniper Networks, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Ninan</div>
+<div class="org">Ciena</div>
+</div>
+<div class="author">
+      <div class="author-name">N. Kumar</div>
+<div class="org">Oracle</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9716</h1>
+<h1 id="title">Mechanisms for MPLS Ping and Traceroute Procedures in Inter-Domain Segment Routing Networks</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">The Segment Routing (SR) architecture leverages source routing and
+      can be directly applied to the use of an MPLS data plane. A Segment
+      Routing over MPLS (SR-MPLS) network may consist of multiple IGP domains
+      or multiple Autonomous Systems (ASes) under the control of the same
+      organization.  It is useful to have the Label Switched Path (LSP) ping
+      and traceroute procedures when an SR end-to-end path traverses multiple
+      ASes or IGP domains.  This document outlines mechanisms to enable
+      efficient LSP ping and traceroute procedures in inter-AS and
+      inter-domain SR-MPLS networks. This is achieved through a
+      straightforward extension to the Operations, Administration, and
+      Maintenance (OAM) protocol, relying solely on data plane forwarding for
+      handling echo replies on transit nodes.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9716">https://www.rfc-editor.org/info/rfc9716</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-definition-of-domain" class="internal xref">Definition of Domain</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-inter-domain-networks-with-" class="internal xref">Inter-Domain Networks with Multiple IGPs</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-reply-path-tlv" class="internal xref">Reply Path TLV</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-segment-sub-tlv" class="internal xref">Segment Sub-TLV</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-type-a-sid-only-in-the-form" class="internal xref">Type-A: SID Only, in the Form of an MPLS Label</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-type-c-ipv4-node-address-wi" class="internal xref">Type-C: IPv4 Node Address with an Optional SID for SR-MPLS</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-type-d-ipv6-node-address-wi" class="internal xref">Type-D: IPv6 Node Address with an Optional SID for SR-MPLS</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-segment-flags" class="internal xref">Segment Flags</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-detailed-procedures" class="internal xref">Detailed Procedures</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-sending-an-echo-request" class="internal xref">Sending an Echo Request</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-receiving-an-echo-request" class="internal xref">Receiving an Echo Request</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-sending-an-echo-reply" class="internal xref">Sending an Echo Reply</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-receiving-an-echo-reply" class="internal xref">Receiving an Echo Reply</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-building-a-reply-path-tlv-d" class="internal xref">Building a Reply Path TLV Dynamically</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5.2.1">
+                    <p id="section-toc.1-1.5.2.5.2.1.1"><a href="#section-5.5.1" class="auto internal xref">5.5.1</a>.  <a href="#name-procedures-to-build-the-ret" class="internal xref">Procedures to Build the Return Path</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-segment-sub-tlv-2" class="internal xref">Segment Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-new-registry-for-segment-id" class="internal xref">New Registry for Segment ID Sub-TLV Flags</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-reply-path-return-codes-reg" class="internal xref">Reply Path Return Codes Registry</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-examples" class="internal xref">Examples</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-detailed-example" class="internal xref">Detailed Example</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1.2.1">
+                    <p id="section-toc.1-1.9.2.1.2.1.1"><a href="#appendix-A.1.1" class="auto internal xref">A.1.1</a>.  <a href="#name-procedures-for-segment-rout" class="internal xref">Procedures for Segment Routing LSP Ping</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1.2.2">
+                    <p id="section-toc.1-1.9.2.1.2.2.1"><a href="#appendix-A.1.2" class="auto internal xref">A.1.2</a>.  <a href="#name-procedures-for-sr-lsp-trace" class="internal xref">Procedures for SR LSP Traceroute</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1.2.3">
+                    <p id="section-toc.1-1.9.2.1.2.3.1"><a href="#appendix-A.1.3" class="auto internal xref">A.1.3</a>.  <a href="#name-procedures-for-building-rep" class="internal xref">Procedures for Building Reply Path TLV Dynamically</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Many network deployments have built their networks consisting of
+      multiple ASes either for the ease of operations or as a result of
+      network mergers and acquisitions. SR can be deployed in such scenarios
+      to provide end-to-end paths, traversing multiple Autonomous Systems
+      (ASes).<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2"><span>[<a href="#RFC8660" class="cite xref">RFC8660</a>]</span> specifies SR with an MPLS
+      data plane. <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span> describes BGP
+      peering segments, and <span>[<a href="#RFC9087" class="cite xref">RFC9087</a>]</span>
+      describes centralized BGP Egress Peer Engineering, which will help in
+      steering packets from one AS to another.  By utilizing these SR
+      capabilities, it is possible to create paths that span multiple
+      ASes.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<span id="name-inter-as-segment-routing-to"></span><div id="Topology_1">
+<figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-1-3.1">
+<pre>
+                   +----------------+
+                   | Controller/PMS |
+                   +----------------+
+
+
+
+|---AS1-----|                |----AS2----|             |----AS3---|
+
+               ASBR2----ASBR3             ASBR5------ASBR7
+              /             \             /            \
+             /               \           /              \
+PE1----P1---P2               P3---P4---PE4             P5---P6--PE5
+             \               /           \               /
+              \             /             \             /
+               ASBR1----ASBR4             ASBR6------ASBR8
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-inter-as-segment-routing-to" class="selfRef">Inter-AS Segment Routing Topology</a>
+        </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-1-4">
+        <dt id="section-1-4.1">Autonomous System:</dt>
+        <dd style="margin-left: 1.5em" id="section-1-4.2">AS1, AS2, AS3<a href="#section-1-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-1-4.3">Provider Edge:</dt>
+        <dd style="margin-left: 1.5em" id="section-1-4.4">PE1, PE4, PE5<a href="#section-1-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-1-4.5">Provider:</dt>
+        <dd style="margin-left: 1.5em" id="section-1-4.6">P1, P2, P3, P4, P5, P6<a href="#section-1-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-1-4.7">Autonomous System Boundary Router:</dt>
+        <dd style="margin-left: 1.5em" id="section-1-4.8">ASBR1, ASBR2, ASBR3, ASBR4, ASBR5, ASBR6, ASBR7, ASBR8<a href="#section-1-4.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-1-5">For example, <a href="#Topology_1" class="auto internal xref">Figure 1</a> describes
+      an inter-AS network scenario consisting of ASes AS1, AS2, and AS3.  AS1,
+      AS2, and AS3 are SR enabled, and the egress links have the following
+      Segment Identifiers (SIDs) configured and advertised via <span>[<a href="#RFC9086" class="cite xref">RFC9086</a>]</span>: PeerNode
+      SID, PeerAdj SID, and PeerSet SID. The PeerNode SID, PeerAdj SID, and PeerSet
+      SID are referred to as Egress Peer Engineering SIDs (EPE-SIDs) in this
+      document.  The controller or the head-end can build an end-to-end
+      traffic-engineered path consisting of Node-SIDs, Adjacency-SIDs, and
+      EPE-SIDs.  It is useful for operators to be able to perform LSP ping and
+      traceroute procedures on these inter-AS SR-MPLS paths, to detect and
+      diagnose failed deliveries, and to determine the actual path that
+      traffic takes through the network. LSP ping and traceroute procedures
+      use IP connectivity for echo replies to reach the head-end. In inter-AS
+      networks, IP connectivity may not be there from each router in the
+      path. For example, in <a href="#Topology_1" class="auto internal xref">Figure 1</a>, P3
+      and P4 may not have IP connectivity for PE1.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">It is not always possible to carry out LSP ping and traceroute
+      functionality on these paths to verify basic connectivity and fault
+      isolation using existing LSP ping and traceroute mechanisms (see <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span> and <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>).  That is because there might not always be IP
+      connectivity from a responding node back to the source address of the
+      ping packet when the responding node is in a different AS from the
+      source of the ping.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7"><span>[<a href="#RFC8403" class="cite xref">RFC8403</a>]</span> describes mechanisms to
+      carry out MPLS ping and traceroute from a Path Monitoring System (PMS).  It
+      is possible to build GRE tunnels or static routes to each router in the
+      network to get IP connectivity for the reverse path.  This mechanism is
+      operationally very heavy and requires the PMS to be capable of building
+      a huge number of GRE tunnels or installing the necessary static routes,
+      which may not be feasible.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8"><span>[<a href="#RFC7743" class="cite xref">RFC7743</a>]</span> describes an Echo-relay-based solution that is predicated on advertising a new Relay Node Address Stack TLV
+      containing a stack of Echo-relay IP addresses. These mechanisms can be
+      applied to SR networks as well. The mechanism from <span>[<a href="#RFC7743" class="cite xref">RFC7743</a>]</span> requires the return ping packet to be
+      processed on the slow path or as a bump-in-the-wire on every relay
+      node. The motivation of the current document is to provide an alternate
+      mechanism for ping and traceroute in inter-domain SR networks. The
+      definition of the term "domain" as applicable to this document is
+      defined in <a href="#domain_definition" class="auto internal xref">Section 1.1</a>.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">This document describes a new mechanism that is efficient and simple
+      and can be easily deployed in SR-MPLS networks. This mechanism uses MPLS
+      paths, and no changes are required in the forwarding path.  Any
+      MPLS-capable node will be able to forward the echo-reply packet in the
+      fast path. The current document describes a mechanism that uses the
+      Reply Path TLV <span>[<a href="#RFC7110" class="cite xref">RFC7110</a>]</span> to convey the
+      reverse path. Three new sub-TLVs are defined for the Reply Path TLV that
+      facilitate encoding SR label stacks.  The return path can either be
+      derived by a smart application or a controller that has a full topology
+      view or end-to-end view of a section of the topology.  This document
+      also proposes mechanisms to derive the return path dynamically during
+      traceroute procedures.<a href="#section-1-9" class="pilcrow">¶</a></p>
+<p id="section-1-10">This document focuses on the inter-domain use case. The protocol
+      extensions described may also indicate the return path for other use
+      cases, which are outside the scope of this document and are not further
+      detailed here. The SRv6 data plane is also not covered in this
+      document.<a href="#section-1-10" class="pilcrow">¶</a></p>
+<div id="domain_definition">
+<section id="section-1.1">
+        <h3 id="name-definition-of-domain">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-definition-of-domain" class="section-name selfRef">Definition of Domain</a>
+        </h3>
+<p id="section-1.1-1">In this document, the term "domain" refers to an IGP domain where
+        every node is visible to every other node for the purpose of shortest
+        path computation, implying an IGP area or level. An Autonomous System
+        (AS) comprises one or more IGP domains. The procedures described
+        herein are applicable to paths constructed across multiple domains,
+        including both inter-area and inter-AS paths. These procedures and
+        deployment scenarios are relevant for inter-AS paths where the
+        participating ASes are under closely coordinating administrations or
+        single ownership. This document pertains to SR-MPLS networks where all
+        nodes within each domain are SR capable. It also applies to SR-MPLS
+        networks where SR functions as an overlay with SR-incapable underlay
+        nodes. In such networks, the traceroute procedure is executed only on
+        the overlay SR nodes.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="reqs">
+<section id="section-1.2">
+        <h3 id="name-requirements-language">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="inter_domain">
+<section id="section-2">
+      <h2 id="name-inter-domain-networks-with-">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-inter-domain-networks-with-" class="section-name selfRef">Inter-Domain Networks with Multiple IGPs</a>
+      </h2>
+<p id="section-2-1">When the network consists of a large number of nodes, the nodes are
+      segregated into multiple IGP domains as shown in <a href="#Topology_2" class="auto internal xref">Figure 2</a>.  The connectivity to the remote
+      PEs can be achieved by BGP advertisements with an MPLS label bound to
+      the prefix as described in <span>[<a href="#RFC8277" class="cite xref">RFC8277</a>]</span> or
+      by building paths using a list of segments as described in <span>[<a href="#RFC8604" class="cite xref">RFC8604</a>]</span>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span id="name-inter-domain-networks-with-m"></span><div id="Topology_2">
+<figure id="figure-2">
+        <div class="alignLeft art-text artwork" id="section-2-2.1">
+<pre>
+|-Domain 1|-------Domain 2-----|--Domain 3-|
+
+
+PE1------ABR1--------P--------ABR2------PE4
+ \        / \                  /\        /
+  --------   -----------------   -------
+   BGP-LU         BGP-LU          BGP-LU
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-inter-domain-networks-with-m" class="selfRef">Inter-Domain Networks with Multiple IGPs</a>
+        </figcaption></figure>
+</div>
+<p id="section-2-3">It is useful to support MPLS ping and traceroute mechanisms for these
+      networks. The procedures described in this document for constructing the
+      Reply Path TLV and its use in echo replies are equally applicable to
+      networks consisting of multiple IGP domains that use BGP-Labeled Unicast (BGP-LU) or label
+      stacking.<a href="#section-2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Reply_path_TLV">
+<section id="section-3">
+      <h2 id="name-reply-path-tlv">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-reply-path-tlv" class="section-name selfRef">Reply Path TLV</a>
+      </h2>
+<p id="section-3-1">The Reply Path (RP) TLV is defined in <span>[<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>.  SR networks statically assign the labels to nodes,
+      and a PMS/head-end may know the entire Link State Database (LSDB) along
+      with assigned SIDs. The reverse path can be built from the PMS/head-end
+      by stacking segments for the reverse path. The Reply Path TLV as defined in
+      <span>[<a href="#RFC7110" class="cite xref">RFC7110</a>]</span> is used to carry the return
+      path. Reply Mode 5 (Reply via Specified Path) is defined in <span><a href="https://rfc-editor.org/rfc/rfc7110#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>.  While using the
+      procedures described in this document, the Reply Mode is set to 5 (Reply
+      via Specified Path), and the Reply Path TLV is included in the echo request
+      message as described in <span>[<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>. The
+      Reply Path TLV is constructed as per <span><a href="https://rfc-editor.org/rfc/rfc7110#section-4.2" class="relref">Section 4.2</a> of [<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>. This document defines three new
+      sub-TLVs to encode the SR Path.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">The type of segment that the head-end chooses to send in the Reply
+      Path TLV is governed by local policy. Implementations may provide
+      Command Line Interface (CLI) input parameters in the form of labels, IPv4
+      addresses, IPv6 addresses, or a combination of these, which get encoded in
+      the Reply Path TLV. Implementations may also provide mechanisms to
+      acquire the LSDB of remote domains and compute the return path based on
+      the acquired LSDB. For traceroute purposes, the return path will have to
+      consider the reply being sent from every node along the path.  The
+      return path changes when the traceroute progresses and crosses each
+      domain. One of the ways this can be implemented on the head-end is to
+      acquire the entire LSDB (of all domains) and build a return path for
+      every node along the SR-MPLS path based on the knowledge of the LSDB.
+      Another mechanism is to use a dynamically computed return path as
+      described in <a href="#Dynamic_TLV_building" class="auto internal xref">Section 5.5</a>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">Some networks may consist of IPv4-only domains and IPv6-only domains.
+      Handling end-to-end MPLS OAM for such networks is out of the scope of
+      this document. It is recommended to use dual-stack in such cases and use
+      end-to-end IPv6 addresses for MPLS ping and traceroute procedures.<a href="#section-3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="segment_sub_tlv">
+<section id="section-4">
+      <h2 id="name-segment-sub-tlv">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-segment-sub-tlv" class="section-name selfRef">Segment Sub-TLV</a>
+      </h2>
+<p id="section-4-1"><span><a href="https://rfc-editor.org/rfc/rfc9256#section-4" class="relref">Section 4</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span> defines
+      various Segment Types.  The types of segments applicable to this
+      document have been defined in this section for the use of MPLS OAM.  The
+      intention was to keep the definitions as close to those in <span>[<a href="#RFC9256" class="cite xref">RFC9256</a>]</span> as possible, with modifications only
+      when needed.  One or more Segment sub-TLVs can be included in the Reply
+      Path TLV.  The Segment sub-TLVs included in a Reply Path TLV
+      <span class="bcp14">MAY</span> be of different types.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">The below types of Segment sub-TLVs apply to the Reply Path TLV. The
+      code points for the sub-TLVs are taken from the IANA registry common to
+      TLVs 1, 16, and 21. This document defines the usage and processing of the Type-A, Type-C, and Type-D
+      Segment sub-TLVs when they appear in TLV 21 (Reply
+      Path TLV).  If these sub-TLVs appear in TLVs 1 or 16, appropriate error
+      codes <span class="bcp14">MUST</span> be returned as defined in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4-3">
+        <dt id="section-4-3.1">Type-A:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-3.2">SID only, in the form of an MPLS label<a href="#section-4-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-3.3">Type-C:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-3.4">IPv4 Node Address with an optional SID<a href="#section-4-3.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-3.5">Type-D:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-3.6">IPv6 Node Address with an optional SID for SR-MPLS<a href="#section-4-3.6" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<div id="type1">
+<section id="section-4.1">
+        <h3 id="name-type-a-sid-only-in-the-form">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-type-a-sid-only-in-the-form" class="section-name selfRef">Type-A: SID Only, in the Form of an MPLS Label</a>
+        </h3>
+<p id="section-4.1-1">The Type-A Segment sub-TLV encodes a single SID in the form of an
+        MPLS label.  The format is as follows:<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<span id="name-type-a-segment-sub-tlv"></span><div id="type1_tlv">
+<figure id="figure-3">
+          <div class="alignLeft art-text artwork" id="section-4.1-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type                      |   Length                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Flags       |   RESERVED                                    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Label                        | TC  |S|       TTL     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-type-a-segment-sub-tlv" class="selfRef">Type-A Segment Sub-TLV</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.1-3">Where:<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.1-4">
+          <dt id="section-4.1-4.1">Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.2">2 octets. Carries value 46 (assigned by
+          IANA from the "Sub-TLVs for TLV Types 1, 16, and 21" registry).<a href="#section-4.1-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.3">Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.4">2 octets. Carries value 8. The length value
+          excludes the length of the Type and Length fields.<a href="#section-4.1-4.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.5">Flags:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.6">1 octet of flags as defined in <a href="#flags" class="auto internal xref">Section 4.4</a>.<a href="#section-4.1-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.7">RESERVED:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.8">3 octets of reserved bits. <span class="bcp14">MUST</span> be set to
+          zero when sending; <span class="bcp14">MUST</span> be ignored on receipt.<a href="#section-4.1-4.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.9">Label:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.10">20 bits of label value.<a href="#section-4.1-4.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.11">TC:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.12">3 bits of Traffic Class (TC).  If the originator wants the receiver
+          to choose the TC value, it <span class="bcp14">MUST</span> set the TC field to zero.<a href="#section-4.1-4.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.13">S:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.14">1 bit Reserved.  The S bit <span class="bcp14">MUST</span> be zero upon
+          transmission and <span class="bcp14">MUST</span> be ignored upon reception.<a href="#section-4.1-4.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.15">TTL:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.16">1 octet of TTL.  If the originator wants the
+          receiver to choose the TTL value, it <span class="bcp14">MUST</span> set the TTL
+          field to 255.<a href="#section-4.1-4.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-4.1-5">The labels, TC, S, and TTL are collectively referred to as a SID.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1-6">The following applies to the Type-A Segment sub-TLV:<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.1-7">The receiver <span class="bcp14">MAY</span> override the originator's values
+        for these fields.  This would be determined by local policy at the
+        receiver.  One possible policy would be to override the fields only if
+        the fields have the default values specified above.<a href="#section-4.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="type3">
+<section id="section-4.2">
+        <h3 id="name-type-c-ipv4-node-address-wi">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-type-c-ipv4-node-address-wi" class="section-name selfRef">Type-C: IPv4 Node Address with an Optional SID for SR-MPLS</a>
+        </h3>
+<p id="section-4.2-1">The Type-C Segment sub-TLV encodes an IPv4 Node Address, SR
+        Algorithm, and an optional SID in the form of an MPLS label.  The
+        format is as follows:<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<span id="name-type-c-segment-sub-tlv"></span><div id="type3_tlv">
+<figure id="figure-4">
+          <div class="alignLeft art-text artwork" id="section-4.2-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type                      |   Length                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Flags       |  RESERVED (MBZ)             | SR Algorithm    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                 IPv4 Node Address (4 octets)                  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                SID (optional, 4 octets)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-type-c-segment-sub-tlv" class="selfRef">Type-C Segment Sub-TLV</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.2-3">Where:<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.2-4">
+          <dt id="section-4.2-4.1">Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.2">47 (assigned by IANA from the 
+   "Sub-TLVs for TLV Types 1, 16, and 21" registry).<a href="#section-4.2-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.3">Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.4">2 octets. Carries value 8 when no optional SID is included
+          or value 12 when the optional SID is included.<a href="#section-4.2-4.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.5">Flags:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.6">1 octet of flags as defined in <a href="#flags" class="auto internal xref">Section 4.4</a>.<a href="#section-4.2-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.7">RESERVED:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.8">2 octets of reserved bits. <span class="bcp14">MUST</span> be set to
+          zero when sending; <span class="bcp14">MUST</span> be ignored on receipt.<a href="#section-4.2-4.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.9">SR Algorithm:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.10">1 octet. When the A-Flag (as defined in
+          <a href="#flags" class="auto internal xref">Section 4.4</a>) is present, this specifies
+          the SR Algorithm as described in <span><a href="https://rfc-editor.org/rfc/rfc8402#section-3.1.1" class="relref">Section 3.1.1</a> of [<a href="#RFC8402" class="cite xref">RFC8402</a>]</span> or the Flexible Algorithm as
+          defined in <span>[<a href="#RFC9350" class="cite xref">RFC9350</a>]</span>. The SR
+          Algorithm is used by the receiver to derive the label. When the
+          A-Flag is unset, this field has no meaning and thus
+          <span class="bcp14">MUST</span> be set to zero (MBZ) on transmission and ignored on
+          receipt.<a href="#section-4.2-4.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.11">IPv4 Node Address:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.12">4-octet IPv4 address representing a node.  The
+          IPv4 Node Address <span class="bcp14">MUST</span> be present.  It should be a
+          stable address belonging to the node (e.g., loopback address).<a href="#section-4.2-4.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.13">SID:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.14">Optional 4-octet field containing the labels TC,
+          S, and TTL as defined in <a href="#type1" class="auto internal xref">Section 4.1</a>.
+          When the SID field is present, it <span class="bcp14">MUST</span> be used for
+          constructing the Reply Path.<a href="#section-4.2-4.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="type4">
+<section id="section-4.3">
+        <h3 id="name-type-d-ipv6-node-address-wi">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-type-d-ipv6-node-address-wi" class="section-name selfRef">Type-D: IPv6 Node Address with an Optional SID for SR-MPLS</a>
+        </h3>
+<p id="section-4.3-1">The Type-D Segment sub-TLV encodes an IPv6 Node Address, SR
+        Algorithm, and an optional SID in the form of an MPLS label.  The
+        format is as follows:<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<span id="name-type-d-segment-sub-tlv"></span><div id="type4_tlv">
+<figure id="figure-5">
+          <div class="alignLeft art-text artwork" id="section-4.3-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type                      |   Length                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Flags       |       RESERVED (MBZ)          | SR Algorithm  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//                IPv6 Node Address (16 octets)                //
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                SID (optional, 4 octets)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-type-d-segment-sub-tlv" class="selfRef">Type-D Segment Sub-TLV</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.3-3">Where:<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.3-4">
+          <dt id="section-4.3-4.1">Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.2">48 (assigned by IANA from the "Sub-TLVs for
+          TLV Types 1, 16, and 21" registry).<a href="#section-4.3-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.3-4.3">Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.4">2 octets. Carries value 20 when no optional SID is included
+          or value 24 when the optional SID is included.<a href="#section-4.3-4.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.3-4.5">Flags:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.6">1 octet of flags as defined in <a href="#flags" class="auto internal xref">Section 4.4</a>.<a href="#section-4.3-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.3-4.7">RESERVED:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.8">2 octets of reserved bits. <span class="bcp14">MUST</span> be set to
+          zero when sending; <span class="bcp14">MUST</span> be ignored on receipt.<a href="#section-4.3-4.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.3-4.9">SR Algorithm:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.10">1 octet. When the A-Flag (as defined in
+          <a href="#flags" class="auto internal xref">Section 4.4</a>) is present, this specifies
+          the SR Algorithm as described in <span><a href="https://rfc-editor.org/rfc/rfc8402#section-3.1.1" class="relref">Section 3.1.1</a> of [<a href="#RFC8402" class="cite xref">RFC8402</a>]</span> or the Flexible Algorithm as
+          defined in <span>[<a href="#RFC9350" class="cite xref">RFC9350</a>]</span>. The SR Algorithm
+          is used by the receiver to derive the label. When the A-Flag is unset,
+          this field has no meaning and thus <span class="bcp14">MUST</span> be set to
+          zero (MBZ) on transmission and ignored on receipt.<a href="#section-4.3-4.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.3-4.11">IPv6 Node Address:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.12">16-octet IPv6 address of one interface of a
+          node.  The IPv6 Node Address <span class="bcp14">MUST</span> be present.  It
+          should be a stable address belonging to the node (e.g., loopback
+          address).<a href="#section-4.3-4.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.3-4.13">SID:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-4.14">Optional 4-octet field containing the labels TC,
+          S, and TTL as defined in <a href="#type1" class="auto internal xref">Section 4.1</a>.
+          When the SID field is present, it
+          <span class="bcp14">MUST</span> be used for constructing the Reply Path.<a href="#section-4.3-4.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="flags">
+<section id="section-4.4">
+        <h3 id="name-segment-flags">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-segment-flags" class="section-name selfRef">Segment Flags</a>
+        </h3>
+<p id="section-4.4-1">The Segment Types described above contain the following flags in
+        the Flags field (codes assigned by IANA from the
+        "Segment ID Sub-TLV Flags" registry):<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<span id="name-flags"></span><div id="flags_field">
+<figure id="figure-6">
+          <div class="alignLeft art-text artwork" id="section-4.4-2.1">
+<pre>
+ 0 1 2 3 4 5 6 7
++-+-+-+-+-+-+-+-+
+| |A| | | | | | |
++-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-flags" class="selfRef">Flags</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.4-3">Where:<a href="#section-4.4-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.4-4">
+          <dt id="section-4.4-4.1">A-Flag:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.4-4.2">This flag indicates the presence of an SR Algorithm
+          ID in the SR Algorithm field applicable to various Segment
+          Types.<a href="#section-4.4-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-4.4-5">Unused bits in the Flag octet <span class="bcp14">MUST</span> be set to zero upon
+      transmission and <span class="bcp14">MUST</span> be ignored upon receipt.<a href="#section-4.4-5" class="pilcrow">¶</a></p>
+<p id="section-4.4-6">The following applies to the Segment Flags:<a href="#section-4.4-6" class="pilcrow">¶</a></p>
+<p id="section-4.4-7">The A-Flag applies to Segment Type-C and Type-D. If the A-Flag appears
+        with the Type-A Segment Type, it <span class="bcp14">MUST</span> be ignored.<a href="#section-4.4-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="procedure">
+<section id="section-5">
+      <h2 id="name-detailed-procedures">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-detailed-procedures" class="section-name selfRef">Detailed Procedures</a>
+      </h2>
+<p id="section-5-1">This section uses the term "initiator" for the node that initiates
+      the MPLS ping or the MPLS traceroute procedure. The term "responder" is used
+      for the node that receives the echo request and sends the echo reply.
+      The term "egress node" is used to identify the last node where the MPLS
+      ping or traceroute is destined to. In an MPLS network, any node can be
+      an initiator, responder, or egress.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="initiator_procedure">
+<section id="section-5.1">
+        <h3 id="name-sending-an-echo-request">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-sending-an-echo-request" class="section-name selfRef">Sending an Echo Request</a>
+        </h3>
+<p id="section-5.1-1">In the inter-AS scenario, the procedures outlined in this document
+        are employed to specify the return path when IP connectivity to the
+        initiator is unavailable. These procedures may also be utilized
+        regardless of the availability of IP connectivity.  The LSP ping
+        initiator <span class="bcp14">MUST</span> set the Reply Mode of the echo request
+        to 5 (Reply via Specified Path), and a Reply Path TLV
+        <span class="bcp14">MUST</span> be carried in the echo request message
+        correspondingly.  The Reply Path TLV <span class="bcp14">MUST</span> contain the
+        SR Path in the reverse direction encoded as an ordered list of
+        segments. The first segment <span class="bcp14">MUST</span> correspond to the top
+        segment in the MPLS header that the responder <span class="bcp14">MUST</span> use
+        while sending the echo reply.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="responder_procedure">
+<section id="section-5.2">
+        <h3 id="name-receiving-an-echo-request">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-receiving-an-echo-request" class="section-name selfRef">Receiving an Echo Request</a>
+        </h3>
+<p id="section-5.2-1">As described in <span>[<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>, when the
+        Reply Mode is set to 5 (Reply via Specified Path), the echo request
+        must contain the Reply Path TLV. The absence of the Reply Path TLV is
+        treated as a malformed echo request.  When an echo request is
+        received, if the responder does not support the Reply Mode 5 defined
+        in <span>[<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>, an echo reply with the
+        Return Code set to "Malformed echo request received" and the Subcode
+        set to zero must be sent back to the initiator according to the rules
+        of <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>. If the echo request
+        message contains a malformed Segment sub-TLV, such as an incorrect
+        length field, an echo reply must be sent back to the initiator with
+        the Return Code set to "Malformed echo request received" and the
+        Subcode set to zero.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">When a Reply Path TLV is received, the responder that supports
+        processing it <span class="bcp14">MUST</span> use the segments in Reply Path TLV
+        to build the echo reply. The responder <span class="bcp14">MUST</span> follow the
+        normal Forwarding Equivalence Class (FEC) validation procedures as described in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> and <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span> and this document does not suggest any change to
+        those procedures. When the echo reply has to be sent out, the Reply
+        Path TLV <span class="bcp14">MUST</span> be used to construct the MPLS packet to
+        send out.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sending_echo_reply">
+<section id="section-5.3">
+        <h3 id="name-sending-an-echo-reply">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-sending-an-echo-reply" class="section-name selfRef">Sending an Echo Reply</a>
+        </h3>
+<p id="section-5.3-1">The echo reply message is sent as an MPLS packet with an MPLS label
+        stack.  The echo reply message <span class="bcp14">MUST</span> be constructed as
+        described in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>. An MPLS packet
+        is constructed with an echo reply in the payload.  The top label
+        <span class="bcp14">MUST</span> be constructed from the first segment of the Reply
+        Path TLV.  The remaining labels <span class="bcp14">MUST</span> be constructed by
+        following the order of the segments from the Reply Path TLV.  The MPLS
+        header of the echo reply <span class="bcp14">MUST</span> be constructed from the
+        segments in the Reply Path TLV and <span class="bcp14">MUST NOT</span> add any
+        other label.  The S bit is set for the bottom label as per the MPLS
+        specifications <span>[<a href="#RFC3032" class="cite xref">RFC3032</a>]</span>.  The
+        responder <span class="bcp14">MAY</span> check the reachability of the top label
+        in its own Label Forwarding Information Base (LFIB) before sending the
+        echo reply.  If the top label is unreachable, the responder
+        <span class="bcp14">SHOULD</span> send the appropriate Return Code and follow the
+        procedures as per <span><a href="https://rfc-editor.org/rfc/rfc7110#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>. The exception case is when the responder does not
+        have IP reachability to the originator, in which case, it may not be
+        possible to send an echo reply at all. Even if sent (by following a
+        default route present on the responder, for example), the echo reply
+        might not reach the originator. The node <span class="bcp14">MAY</span> provide
+        necessary log information in case of unreachability.  In certain
+        scenarios, the head-end <span class="bcp14">MAY</span> choose to send
+        Type-C/Type-D segments consisting of IPv4 addresses or IPv6 addresses
+        when it is unable to derive the SID from available topology
+        information. Optionally, the SID may also be associated with the
+        Type-C/Type-D segment, if such information is available from the
+        controller or via operator input. In such cases, the node sending the
+        echo reply <span class="bcp14">MUST</span> derive the MPLS labels based on the
+        Node-SIDs associated with the IPv4/IPv6 addresses. If an optional MPLS
+        SID is present in the Type-C/Type-D segments, the SID <span class="bcp14">MUST</span>
+        be used to encode the echo reply with MPLS labels. If the MPLS SID
+        does not match with the IPv4 or IPv6 address field in the Type-C or
+        Type-D SID, log information should be generated.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">The Reply Path Return Code is set as described in <span><a href="https://rfc-editor.org/rfc/rfc7110#section-7.4" class="relref">Section 7.4</a> of [<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>. According to
+        <span><a href="https://rfc-editor.org/rfc/rfc7110#section-5.3" class="relref">Section 5.3</a> of [<a href="#RFC7110" class="cite xref">RFC7110</a>]</span>, the Reply
+        Path TLV is included in an echo reply indicating the specified return
+        path that the echo reply message is required to follow.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">When the node is configured to dynamically create a return path for
+        the next echo request, the procedures described in <a href="#Dynamic_TLV_building" class="auto internal xref">Section 5.5</a> <span class="bcp14">MUST</span>
+        be used.  The Reply Path Return Code <span class="bcp14">MUST</span> be set to
+        0x0006, and the same Reply Path TLV or a new Reply Path TLV
+        <span class="bcp14">MUST</span> be included in the echo reply.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Receiving_echo_reply">
+<section id="section-5.4">
+        <h3 id="name-receiving-an-echo-reply">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-receiving-an-echo-reply" class="section-name selfRef">Receiving an Echo Reply</a>
+        </h3>
+<p id="section-5.4-1">The rules and processes defined in <span><a href="https://rfc-editor.org/rfc/rfc8029#section-4.6" class="relref">Section 4.6</a> of [<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc7110#section-5.4" class="relref">Section 5.4</a> of [<a href="#RFC7110" class="cite xref">RFC7110</a>]</span> apply here. In addition, if the
+        Reply Path Return Code is "Use Reply Path TLV from this echo reply for
+        building the next echo request" (as defined in this document), the Reply
+        Path TLV from the echo reply <span class="bcp14">MUST</span> be sent in the next
+        echo request with the TTL incremented by 1. If the initiator node does not
+        support the Return Code "Use Reply Path TLV from this echo reply for
+        building the next echo request", log information should be generated
+        indicating the Return Code, and the operator may choose to specify the
+        return path explicitly or use other mechanisms to verify the SR
+        Policy. If the Return Code is 0x0007 "Local policy does not allow
+        dynamic return path building", it indicates that the intermediate node
+        does not support building the dynamic return path. Log information
+        should be generated on the initiator receiving this Return Code, and
+        the operator may choose to specify the return path explicitly or use
+        other mechanisms to verify the SR Policy.  If the TTL is already 255,
+        the traceroute procedure <span class="bcp14">MUST</span> be ended with an
+        appropriate log message.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Dynamic_TLV_building">
+<section id="section-5.5">
+        <h3 id="name-building-a-reply-path-tlv-d">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-building-a-reply-path-tlv-d" class="section-name selfRef">Building a Reply Path TLV Dynamically</a>
+        </h3>
+<p id="section-5.5-1">In some cases, the head-end may not have complete visibility of
+        inter-AS/inter-domain topology.  In such cases, it can rely on routers
+        in the path to build the reverse path for MPLS traceroute procedures.
+        For this purpose, the Reply Path TLV in the echo reply corresponds to
+        the return path to be used in building the next echo request. A new
+        Return Code "Use Reply Path TLV from this echo reply for building the
+        next echo request" is defined in this document.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<div id="tba1-value">
+<table class="center" id="table-1">
+          <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">0x0006</td>
+              <td class="text-left" rowspan="1" colspan="1">Use Reply Path TLV from this echo reply for building the next echo request</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<div id="TLV_build_procedures">
+<section id="section-5.5.1">
+          <h4 id="name-procedures-to-build-the-ret">
+<a href="#section-5.5.1" class="section-number selfRef">5.5.1. </a><a href="#name-procedures-to-build-the-ret" class="section-name selfRef">Procedures to Build the Return Path</a>
+          </h4>
+<p id="section-5.5.1-1">To dynamically build the return path for the traceroute
+          procedures, the domain border nodes along the path being traced
+          should support the procedures described in this section. Local
+          policy on the domain border nodes should determine whether the
+          domain border node participates in building the return path
+          dynamically during traceroute.<a href="#section-5.5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-2">The head-end/PMS node may include its node label while initiating
+          the traceroute procedure.  When an Area Border Router (ABR) receives
+          the echo request, if the local policy implies building a dynamic
+          return path, the ABR should include its node label in the Reply Path TLV
+          and send it in the echo reply.  If there is a Reply Path TLV
+          included in the received echo request message, the ABR's node label
+          is added before the existing segments. The type of segment added is
+          based on local policy. In cases when the Segment Routing Global
+          Block (SRGB) is not uniform across the network, which can be
+          inferred from the LSDB, it is <span class="bcp14">RECOMMENDED</span> to add a
+          Type-C or a Type-D segment. However, implementations <span class="bcp14">MAY</span>
+          safely use other approaches if they see benefits in doing so. If the
+          existing segment in the Reply Path TLV is a Type-C/Type-D segment,
+          that segment should be converted to a Type-A segment based on the
+          ABR's own SRGB. This is because downstream nodes in the path will
+          not know what SRGB to use to translate the IP address to a label. As
+          the ABR added its own node label, it is guaranteed that this ABR
+          will be in the return path and will be forwarding the traffic based
+          on the next label after its label.<a href="#section-5.5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-3">When an ASBR receives an echo request from another AS, and the
+          ASBR is configured to build the return path dynamically, the ASBR
+          should build a Reply Path TLV and include it in the echo reply.  The
+          Reply Path TLV should consist of its node label and an EPE-SID to
+          the AS from where the traceroute message was received.  A Reply Path
+          Return Code of 0x0006 <span class="bcp14">MUST</span> be set in the echo reply to
+          indicate that the next echo request <span class="bcp14">MUST</span> use the
+          return path from the Reply Path TLV in the echo reply.  ASBR should
+          locally decide the outgoing interface for the echo reply
+          packet. Generally, remote ASBR will choose the interface on which
+          the incoming OAM packet was received to send the echo reply out.  In
+          case the ASBR identifies multiple paths to reach the initiator, it
+          <span class="bcp14">MUST</span> choose to send one such path in the Reply Path
+          TLV.  The Reply Path TLV is built by adding two Segment sub-TLVs. The
+          top Segment sub-TLV consists of the ASBR's Node-SID, and the second
+          segment consists of the EPE-SID in the reverse direction to reach
+          the AS from which the OAM packet was received. The type of segment
+          chosen to build the Reply Path TLV is a local policy. It is recommended
+          to use the Type-C/Type-D segment for the top segment when the SRGB
+          is not guaranteed to be uniform in the domain.<a href="#section-5.5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-4">Irrespective of which type of segment is included in the Reply
+          Path TLV, the responder to the echo requests <span class="bcp14">MUST</span>
+          always translate the Reply Path TLV to a label stack and build an
+          MPLS header for the echo reply packet. This procedure can be applied
+          to an end-to-end path consisting of multiple ASes.  Each ASBR that
+          receives an echo request from another AS adds its Node-SID and
+          EPE-SID on top of the existing segments in the Reply Path TLV.<a href="#section-5.5.1-4" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-5">An ASBR that receives the echo request from a neighbor belonging
+          to the same AS <span class="bcp14">MUST</span> look at the Reply Path TLV
+          received in the echo request.  If the Reply Path TLV consists of a
+          Type-C/Type-D segment, it <span class="bcp14">MUST</span> convert the
+          Type-C/Type-D segment to a Type-A segment by deriving a label from
+          its own SRGB. The ASBR <span class="bcp14">MUST</span> set the Reply Path Return
+          Code to 0x0006 and send the newly constructed Reply Path TLV in the
+          echo reply.<a href="#section-5.5.1-5" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-6">Internal nodes or non-domain border nodes might not set the Reply
+          Path TLV Return Code to 0x0006 in the echo reply message as there is
+          no change in the return path. In these cases, the head-end node/PMS
+          that initiates the traceroute procedure <span class="bcp14">MUST</span> continue
+          to send the previously sent Reply Path TLV in the echo request
+          message in every subsequent echo request.<a href="#section-5.5.1-6" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-7">Note that an ASBR's local policy may prohibit it from
+          participating in the dynamic traceroute procedures. If such an ASBR
+          is encountered in the forward path, dynamic return path building
+          procedures will fail. In such cases, an ASBR that supports this
+          document <span class="bcp14">MUST</span> set the Return Code to 0x0007 to indicate that
+          local policies do not allow the dynamic return path building.<a href="#section-5.5.1-7" class="pilcrow">¶</a></p>
+<div id="tba2-value">
+<table class="center" id="table-2">
+            <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Value</th>
+                <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">0x0007</td>
+                <td class="text-left" rowspan="1" colspan="1">Local policy does not allow dynamic return path building</td>
+              </tr>
+            </tbody>
+          </table>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-con">
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">The procedures described in this document enable LSP ping and
+      traceroute procedures to be executed across multiple IGP domains or
+      multiple ASes that belong to the same administration or closely
+      cooperating administrations. It is assumed that sharing domain internal
+      information across such domains does not pose a security risk.  However,
+      the procedures described in this document may be used by an attacker to
+      extract the domain's internal information. An operator
+      <span class="bcp14">MUST</span> deploy appropriate filter policies as described in
+      <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> to restrict the LSP ping and
+      traceroute packets based on origin.  It is also
+      <span class="bcp14">RECOMMENDED</span> that an operator deploy security mechanisms
+      such as Media Access Control Security (MACsec) <span>[<a href="#IEEE-802.1AE" class="cite xref">IEEE-802.1AE</a>]</span> on
+      inter-domain links or security-vulnerable links to prevent spoofing
+      attacks.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">All the security considerations defined in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> will be applicable for this document.  Appropriate
+      filter policies <span class="bcp14">SHOULD</span> be applied at the edges to prevent
+      attackers from getting into the network. In the event of such a security
+      breach, the network devices <span class="bcp14">MUST</span> have mechanisms to
+      prevent denial-of-service attacks as described in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>.<a href="#section-6-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="IANA">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="iana_segment_sub_tlv">
+<section id="section-7.1">
+        <h3 id="name-segment-sub-tlv-2">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-segment-sub-tlv-2" class="section-name selfRef">Segment Sub-TLV</a>
+        </h3>
+<p id="section-7.1-1">IANA has assigned three new sub-TLVs from the "Sub-TLVs for TLV
+        Types 1, 16, and 21" registry of the "Multiprotocol Label
+        Switching (MPLS) Label Switched Paths (LSPs) Ping Parameters"
+        registry group.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<div id="segment-subTLVs">
+<table class="center" id="table-3">
+          <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Sub-Type</th>
+              <th class="text-left" rowspan="1" colspan="1">Sub-TLV Name</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">46</td>
+              <td class="text-left" rowspan="1" colspan="1">SID only, in the form of MPLS label</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#type1" class="auto internal xref">Section 4.1</a> of RFC 9716</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">47</td>
+              <td class="text-left" rowspan="1" colspan="1">IPv4 Node Address with an optional SID for SR-MPLS</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#type3" class="auto internal xref">Section 4.2</a> of RFC 9716</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">48</td>
+              <td class="text-left" rowspan="1" colspan="1">IPv6 Node Address with an optional SID for SR-MPLS</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#type4" class="auto internal xref">Section 4.3</a> of RFC 9716</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-7.1-3">The code points for the Segment sub-TLVs have been 
+        registered in the Standards Action range (0-16383).<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="segment_sub_tlv_flags">
+<section id="section-7.2">
+        <h3 id="name-new-registry-for-segment-id">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-new-registry-for-segment-id" class="section-name selfRef">New Registry for Segment ID Sub-TLV Flags</a>
+        </h3>
+<p id="section-7.2-1">IANA has created a new "Segment ID Sub-TLV Flags" registry (see <a href="#flags" class="auto internal xref">Section 4.4</a>) under the "Multiprotocol
+        Label Switching (MPLS) Label Switched Paths (LSPs) Ping Parameters"
+        registry group.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">This registry tracks the assignment of 8 flags in the Segment ID
+        sub-TLV flags field.  The flags are numbered from 0 (the most significant
+        bit and transmitted first) to 7.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<p id="section-7.2-3">New entries are assigned by Standards Action. Initial entries in
+        the registry are as follows:<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<div id="segmentIDsubTLVflags">
+<table class="center" id="table-4">
+          <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Bit Number</th>
+              <th class="text-left" rowspan="1" colspan="1">Name</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1</td>
+              <td class="text-left" rowspan="1" colspan="1">A-Flag</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#flags" class="auto internal xref">Section 4.4</a> of RFC 9716</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+<div id="iana_return_code">
+<section id="section-7.3">
+        <h3 id="name-reply-path-return-codes-reg">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-reply-path-return-codes-reg" class="section-name selfRef">Reply Path Return Codes Registry</a>
+        </h3>
+<p id="section-7.3-1">IANA has assigned new Return Codes in the "Reply Path Return
+        Codes" registry under the "Multiprotocol Label Switching (MPLS) Label
+        Switched Paths (LSPs) Ping Parameters" registry group.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<div id="path-return-codes-registry">
+<table class="center" id="table-5">
+          <caption><a href="#table-5" class="selfRef">Table 5</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">0x0006</td>
+              <td class="text-left" rowspan="1" colspan="1">Use Reply Path TLV from this echo reply for building the next echo request</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9716</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">0x0007</td>
+              <td class="text-left" rowspan="1" colspan="1">Local policy does not allow dynamic return path building</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9716</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-7.3-3">The Return Codes have been registered in the Standards Action range (0x0000-0xFFFB).<a href="#section-7.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7110">[RFC7110]</dt>
+        <dd>
+<span class="refAuthor">Chen, M.</span>, <span class="refAuthor">Cao, W.</span>, <span class="refAuthor">Ning, S.</span>, <span class="refAuthor">Jounay, F.</span>, and <span class="refAuthor">S. Delord</span>, <span class="refTitle">"Return Path Specified Label Switched Path (LSP) Ping"</span>, <span class="seriesInfo">RFC 7110</span>, <span class="seriesInfo">DOI 10.17487/RFC7110</span>, <time datetime="2014-01" class="refDate">January 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7110">https://www.rfc-editor.org/info/rfc7110</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8029">[RFC8029]</dt>
+        <dd>
+<span class="refAuthor">Kompella, K.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, <span class="refAuthor">Kumar, N.</span>, <span class="refAuthor">Aldrin, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"Detecting Multiprotocol Label Switched (MPLS) Data-Plane Failures"</span>, <span class="seriesInfo">RFC 8029</span>, <span class="seriesInfo">DOI 10.17487/RFC8029</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8029">https://www.rfc-editor.org/info/rfc8029</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8287">[RFC8287]</dt>
+      <dd>
+<span class="refAuthor">Kumar, N., Ed.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Akiya, N.</span>, <span class="refAuthor">Kini, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"Label Switched Path (LSP) Ping/Traceroute for Segment Routing (SR) IGP-Prefix and IGP-Adjacency Segment Identifiers (SIDs) with MPLS Data Planes"</span>, <span class="seriesInfo">RFC 8287</span>, <span class="seriesInfo">DOI 10.17487/RFC8287</span>, <time datetime="2017-12" class="refDate">December 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8287">https://www.rfc-editor.org/info/rfc8287</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="IEEE-802.1AE">[IEEE-802.1AE]</dt>
+        <dd>
+<span class="refAuthor">IEEE</span>, <span class="refTitle">"IEEE Standard for Local and metropolitan area networks-Media Access Control (MAC) Security"</span>, <span class="seriesInfo">IEEE Std 8021.AE-2018</span>, <span class="seriesInfo">DOI 10.1109/IEEESTD.2018.8585421</span>, <time datetime="2018-12" class="refDate">December 2018</time>, <span>&lt;<a href="https://ieeexplore.ieee.org/document/8585421">https://ieeexplore.ieee.org/document/8585421</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3032">[RFC3032]</dt>
+        <dd>
+<span class="refAuthor">Rosen, E.</span>, <span class="refAuthor">Tappan, D.</span>, <span class="refAuthor">Fedorkow, G.</span>, <span class="refAuthor">Rekhter, Y.</span>, <span class="refAuthor">Farinacci, D.</span>, <span class="refAuthor">Li, T.</span>, and <span class="refAuthor">A. Conta</span>, <span class="refTitle">"MPLS Label Stack Encoding"</span>, <span class="seriesInfo">RFC 3032</span>, <span class="seriesInfo">DOI 10.17487/RFC3032</span>, <time datetime="2001-01" class="refDate">January 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3032">https://www.rfc-editor.org/info/rfc3032</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7743">[RFC7743]</dt>
+        <dd>
+<span class="refAuthor">Luo, J., Ed.</span>, <span class="refAuthor">Jin, L., Ed.</span>, <span class="refAuthor">Nadeau, T., Ed.</span>, and <span class="refAuthor">G. Swallow, Ed.</span>, <span class="refTitle">"Relayed Echo Reply Mechanism for Label Switched Path (LSP) Ping"</span>, <span class="seriesInfo">RFC 7743</span>, <span class="seriesInfo">DOI 10.17487/RFC7743</span>, <time datetime="2016-01" class="refDate">January 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7743">https://www.rfc-editor.org/info/rfc7743</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8277">[RFC8277]</dt>
+        <dd>
+<span class="refAuthor">Rosen, E.</span>, <span class="refTitle">"Using BGP to Bind MPLS Labels to Address Prefixes"</span>, <span class="seriesInfo">RFC 8277</span>, <span class="seriesInfo">DOI 10.17487/RFC8277</span>, <time datetime="2017-10" class="refDate">October 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8277">https://www.rfc-editor.org/info/rfc8277</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8402">[RFC8402]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S., Ed.</span>, <span class="refAuthor">Ginsberg, L.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Litkowski, S.</span>, and <span class="refAuthor">R. Shakir</span>, <span class="refTitle">"Segment Routing Architecture"</span>, <span class="seriesInfo">RFC 8402</span>, <span class="seriesInfo">DOI 10.17487/RFC8402</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8402">https://www.rfc-editor.org/info/rfc8402</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8403">[RFC8403]</dt>
+        <dd>
+<span class="refAuthor">Geib, R., Ed.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, and <span class="refAuthor">N. Kumar</span>, <span class="refTitle">"A Scalable and Topology-Aware MPLS Data-Plane Monitoring System"</span>, <span class="seriesInfo">RFC 8403</span>, <span class="seriesInfo">DOI 10.17487/RFC8403</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8403">https://www.rfc-editor.org/info/rfc8403</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8604">[RFC8604]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S.</span>, <span class="refAuthor">Dawra, G., Ed.</span>, <span class="refAuthor">Henderickx, W.</span>, and <span class="refAuthor">D. Cooper</span>, <span class="refTitle">"Interconnecting Millions of Endpoints with Segment Routing"</span>, <span class="seriesInfo">RFC 8604</span>, <span class="seriesInfo">DOI 10.17487/RFC8604</span>, <time datetime="2019-06" class="refDate">June 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8604">https://www.rfc-editor.org/info/rfc8604</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8660">[RFC8660]</dt>
+        <dd>
+<span class="refAuthor">Bashandy, A., Ed.</span>, <span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Litkowski, S.</span>, and <span class="refAuthor">R. Shakir</span>, <span class="refTitle">"Segment Routing with the MPLS Data Plane"</span>, <span class="seriesInfo">RFC 8660</span>, <span class="seriesInfo">DOI 10.17487/RFC8660</span>, <time datetime="2019-12" class="refDate">December 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8660">https://www.rfc-editor.org/info/rfc8660</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9086">[RFC9086]</dt>
+        <dd>
+<span class="refAuthor">Previdi, S.</span>, <span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Patel, K.</span>, <span class="refAuthor">Ray, S.</span>, and <span class="refAuthor">J. Dong</span>, <span class="refTitle">"Border Gateway Protocol - Link State (BGP-LS) Extensions for Segment Routing BGP Egress Peer Engineering"</span>, <span class="seriesInfo">RFC 9086</span>, <span class="seriesInfo">DOI 10.17487/RFC9086</span>, <time datetime="2021-08" class="refDate">August 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9086">https://www.rfc-editor.org/info/rfc9086</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9087">[RFC9087]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S.</span>, <span class="refAuthor">Dawra, G., Ed.</span>, <span class="refAuthor">Aries, E.</span>, and <span class="refAuthor">D. Afanasiev</span>, <span class="refTitle">"Segment Routing Centralized BGP Egress Peer Engineering"</span>, <span class="seriesInfo">RFC 9087</span>, <span class="seriesInfo">DOI 10.17487/RFC9087</span>, <time datetime="2021-08" class="refDate">August 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9087">https://www.rfc-editor.org/info/rfc9087</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9256">[RFC9256]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refAuthor">Voyer, D.</span>, <span class="refAuthor">Bogdanov, A.</span>, and <span class="refAuthor">P. Mattes</span>, <span class="refTitle">"Segment Routing Policy Architecture"</span>, <span class="seriesInfo">RFC 9256</span>, <span class="seriesInfo">DOI 10.17487/RFC9256</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9256">https://www.rfc-editor.org/info/rfc9256</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9350">[RFC9350]</dt>
+        <dd>
+<span class="refAuthor">Psenak, P., Ed.</span>, <span class="refAuthor">Hegde, S.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Talaulikar, K.</span>, and <span class="refAuthor">A. Gulko</span>, <span class="refTitle">"IGP Flexible Algorithm"</span>, <span class="seriesInfo">RFC 9350</span>, <span class="seriesInfo">DOI 10.17487/RFC9350</span>, <time datetime="2023-02" class="refDate">February 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9350">https://www.rfc-editor.org/info/rfc9350</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9552">[RFC9552]</dt>
+      <dd>
+<span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refTitle">"Distribution of Link-State and Traffic Engineering Information Using BGP"</span>, <span class="seriesInfo">RFC 9552</span>, <span class="seriesInfo">DOI 10.17487/RFC9552</span>, <time datetime="2023-12" class="refDate">December 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9552">https://www.rfc-editor.org/info/rfc9552</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-examples">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-examples" class="section-name selfRef">Examples</a>
+      </h2>
+<p id="appendix-A-1">This section elaborates examples of the inter-domain ping and
+       traceroute procedures described in this document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div id="Topology_description">
+<section id="appendix-A.1">
+        <h3 id="name-detailed-example">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-detailed-example" class="section-name selfRef">Detailed Example</a>
+        </h3>
+<p id="appendix-A.1-1">The example topology given in <a href="#Topology_1" class="auto internal xref">Figure 1</a> will be used in the below sections to explain LSP
+        ping and traceroute procedures. The PMS/head-end has a complete view
+        of the topology. PE1, P1, P2, ASBR1, and ASBR2 are in AS1. Similarly,
+        ASBR3, ASBR4, P3, P4, and PE4 are in AS2.<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-2">AS1 and AS2 have SR enabled.  IGPs like OSPF/IS-IS are used to flood
+        SIDs in each AS. ASBR1, ASBR2, ASBR3, and ASBR4 advertise BGP
+        EPE-SIDs for the inter-AS links.  The topologies of AS1 and AS2 are
+        advertised via BGP - Link State (BGP-LS) to the controller, PMS, or
+        head-end node.  The EPE-SIDs are also advertised via BGP-LS as
+        described in <span>[<a href="#RFC9086" class="cite xref">RFC9086</a>]</span>. The example
+        uses EPE-SIDs for the inter-AS links, but the same could be achieved
+        using Adjacency-SIDs advertised for a passive IGP link.<a href="#appendix-A.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-3">The description in this document uses the notations below for SIDs.<a href="#appendix-A.1-3" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-4">Node-SIDs: N-PE1, N-P1, N-ASBR1, etc.<a href="#appendix-A.1-4" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-5">Adjacency-SIDs: Adj-PE1-P1, Adj-P1-P2, etc.<a href="#appendix-A.1-5" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-6">EPE-SIDs: EPE-ASBR2-ASBR3, EPE-ASBR1-ASBR4, EPE-ASBR3-ASBR2, etc.<a href="#appendix-A.1-6" class="pilcrow">¶</a></p>
+<div id="Mpls_ping_procedures">
+<section id="appendix-A.1.1">
+          <h4 id="name-procedures-for-segment-rout">
+<a href="#appendix-A.1.1" class="section-number selfRef">A.1.1. </a><a href="#name-procedures-for-segment-rout" class="section-name selfRef">Procedures for Segment Routing LSP Ping</a>
+          </h4>
+<p id="appendix-A.1.1-1">Consider an SR-MPLS path from PE1 to PE4 consisting of a label
+          stack [N-P1, N-ASBR1, EPE-ASBR1-ASBR4, N-PE4] from <a href="#Topology_1" class="auto internal xref">Figure 1</a>.  In order to perform MPLS
+          ping procedures on this path, the remote end (PE4) needs IP
+          connectivity to head-end PE1 for the echo reply to travel back to
+          PE1.  In a deployment that uses a controller-computed inter-domain
+          path, there may be no IP connectivity from PE4 to PE1 as they lie in
+          different ASes.<a href="#appendix-A.1.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.1-2">PE1 sends an echo request message to the endpoint PE4 along the
+          path that consists of label stacks [N-P1, N-ASBR1, EPE-ASBR1-ASBR4,
+          N-PE4].  PE1 adds the return path from PE4 to PE1 in the echo
+          request message in the Reply Path TLV. As an example, the Reply Path
+          TLV for PE1 to PE4 for LSP ping is [N-ASBR4, EPE-ASBR4-ASBR1,
+          N-PE1]. This example path provides the entire return path up to the
+          head-end node PE1. The mechanism used to construct the return path
+          is implementation dependent.<a href="#appendix-A.1.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.1-3">An implementation may also build a return path consisting of
+          labels to reach its own AS. Once the label stack is popped off, the
+          echo reply message will be exposed.  The further packet forwarding
+          will be based on IP lookup.  An example return path for this case
+          could be [N-ASBR4, EPE-ASBR4-ASBR1].<a href="#appendix-A.1.1-3" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.1-4">On receiving an MPLS echo request, PE4 first validates the FEC in
+          the echo request.  PE4 then builds a label stack to send the
+          response from PE4 to PE1 by copying the labels from the Reply Path
+          TLV. PE4 builds the echo reply packet with the MPLS label stack
+          constructed, imposes MPLS headers on top of the echo reply packet,
+          and sends out the packet to PE1.  This segment list stack can
+          successfully steer the reply back to the head-end node (PE1).<a href="#appendix-A.1.1-4" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.1-5">Let us consider a case when the P3 node does not have a route to
+          reach N-PE4.  On P3, a ping packet would be dropped, and the head-end
+          node (PE1) will not receive an echo reply indicating failure.<a href="#appendix-A.1.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Mpls_traceroute_procedures">
+<section id="appendix-A.1.2">
+          <h4 id="name-procedures-for-sr-lsp-trace">
+<a href="#appendix-A.1.2" class="section-number selfRef">A.1.2. </a><a href="#name-procedures-for-sr-lsp-trace" class="section-name selfRef">Procedures for SR LSP Traceroute</a>
+          </h4>
+<div id="traceroute_same_srgb">
+<section id="appendix-A.1.2.1">
+            <h5 id="name-procedures-for-sr-lsp-tracer">
+<a href="#appendix-A.1.2.1" class="section-number selfRef">A.1.2.1. </a><a href="#name-procedures-for-sr-lsp-tracer" class="section-name selfRef">Procedures for SR LSP Traceroute with the Same SRGB on All Nodes</a>
+            </h5>
+<p id="appendix-A.1.2.1-1">The traceroute procedure involves visiting every node on the
+            path and obtaining echo replies from every node. In this section,
+            we describe the traceroute mechanisms when the head-end/PMS has
+            complete visibility of the LSDB. The head-end/PMS computes the
+            return path from each node in the entire SR-MPLS path that is
+            being tracerouted. The return path computation is implementation
+            dependent.  As the head-end/PMS completely controls the return
+            path, it can use proprietary computations to build the return
+            path.<a href="#appendix-A.1.2.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-2">One of the ways the return path can be built is to use the
+            principle of building label stacks by adding each domain border
+            node's Node-SID on the return path label stack as the traceroute
+            progresses.  For inter-AS networks, in addition to the border
+            node's Node-SID, the EPE-SID in the reverse direction also needs to be
+            added to the label stack.<a href="#appendix-A.1.2.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-3">The inter-domain/inter-AS traceroute procedure uses the TTL
+            expiry mechanism as specified in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> and <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span>.
+            Every echo request packet head-end/PMS will include the
+            appropriate return path in the Reply Path TLV.  The node that
+            receives the echo request will follow procedures described in
+            Sections <a href="#initiator_procedure" class="auto internal xref">5.1</a> and <a href="#responder_procedure" class="auto internal xref">5.2</a> to send out an
+            echo reply.<a href="#appendix-A.1.2.1-3" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-4">For example:<a href="#appendix-A.1.2.1-4" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-5">Let us consider the topology from <a href="#Topology_1" class="auto internal xref">Figure 1</a>.  Let us consider an SR-MPLS path [N-P1,
+            N-ASBR1, EPE-ASBR1-ASBR4, N-PE4].  The traceroute is being
+            executed for this inter-AS path for destination PE4.  PE1 sends
+            the first echo request with the TTL set to 1 and includes a Reply Path
+            TLV consisting of a Type-A segment containing a label derived from
+            its own SRGB.  Note that the type of segment
+            used in constructing the return path is determined by local
+            policy. If the entire network has the same SRGB configured, Type-A
+            segments can be used. The TTL expires on P1, and P1 sends an echo
+            reply using the return path. Note that implementations may choose
+            to exclude the Reply Path TLV until the traceroute reaches the
+            first domain border as the return IP path to PE1 is expected to be
+            available inside the first domain.<a href="#appendix-A.1.2.1-5" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-6">The TTL is set to 2, and the next echo request is sent
+            out. Until the traceroute procedure reaches the domain border node
+            ASBR1, the same return path TLV consisting of a single label
+            (PE1's node label) is used.  When an echo request reaches the
+            border node ASBR1, and an echo reply is received from ASBR1, the
+            next echo request needs to include an additional label as ASBR1 is
+            a border node. The head-end node has complete visibility of the
+            network LSDB learned via BGP-LS (see <span>[<a href="#RFC9552" class="cite xref">RFC9552</a>]</span> and <span>[<a href="#RFC9086" class="cite xref">RFC9086</a>]</span>)
+            and can derive the details of ASBR nodes.  The Reply Path TLV is
+            built based on the forward path.  As the forward path consists of
+            EPE-ASBR1-ASBR4, an EPE-SID in the reverse direction is included
+            in the Reply Path TLV. The return path now consists of two labels:
+            [EPE-ASBR4-ASBR1, N-PE1]. The echo reply from ASBR4 will use this
+            return path to send the reply.<a href="#appendix-A.1.2.1-6" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-7">After visiting the border node ASBR4, the next echo request
+            will update the return path with the Node-SID label of ASBR4. The
+            return path beyond ASBR4 will be [N-ASBR4, EPE-ASBR4-ASBR1,
+            N-PE1]. This same return path is used until the traceroute
+            procedure reaches the next set of border nodes. When there are
+            multiple ASes, the traceroute procedure will continue by adding a
+            set of Node-SIDs and EPE-SIDs as the border nodes are visited.<a href="#appendix-A.1.2.1-7" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-8">Note that the above return path building procedure requires the
+            LSDB of all the domains to be available at the head-end/PMS.<a href="#appendix-A.1.2.1-8" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.1-9">Let us consider a case when the P3 node does not have a route
+            to reach N-PE4.  When the TTL of the packet is 5, the packet
+            reaches P3, its TTL becomes zero, and it is sent to the control
+            plane. The FEC validation procedures are executed, and the echo
+            reply is sent using the labels in the Reply Path TLV, which is [N-PE1,
+            EPE-ASBR4-ASBR1, N-ASBR4].  The head-end PE1 increases the TTL to 6
+            and sends the next echo request. The packet is dropped at P3 as there
+            is no route on P3 to forward to N-PE4. The traceroute identifies that
+            the path [N-P1, N-ASBR1, EPE-ASBR1-ASBR4, N-PE4] is broken at
+            P3.<a href="#appendix-A.1.2.1-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="traceroute_different_srgb">
+<section id="appendix-A.1.2.2">
+            <h5 id="name-procedures-for-sr-lsp-tracero">
+<a href="#appendix-A.1.2.2" class="section-number selfRef">A.1.2.2. </a><a href="#name-procedures-for-sr-lsp-tracero" class="section-name selfRef">Procedures for SR LSP Traceroute with Different SRGBs</a>
+            </h5>
+<p id="appendix-A.1.2.2-1"><a href="#traceroute_same_srgb" class="auto internal xref">Appendix A.1.2.1</a> assumes
+            the same SRGB is configured on all nodes along the path.  The SRGB
+            may differ from one node to another node, and the SR architecture
+            <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span> allows the nodes to use
+            different SRGBs. In such scenarios, PE1 finds out the difference
+            in the SRGB by looking into the LSDB. Then, it sends the Type-C
+            segment (or the Type-D segment, in the case of IPv6 networks) with
+            the node address of PE1 and with an optional MPLS SID associated
+            with the node address. The receiving node derives the label for
+            the return path based on its own SRGB. When the traceroute
+            procedure crosses the border ASBR1, head-end PE1 should send a
+            Type-A segment for N-PE1 based on the label derived from ASBR1's
+            SRGB. This is required because ASBR4, P3, P4, etc. may not have
+            the topology information to derive SRGB for PE1. After the
+            traceroute procedure reaches ASBR4, the return path will be [N-PE1
+            (Type-A with the label based on ASBR1's SRGB), EPE-ASBR4-ASBR1,
+            N-ASBR4 (Type-C)].<a href="#appendix-A.1.2.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.2-2">If the packet needs to follow a return path specific to an
+            algorithm (as defined in <span>[<a href="#RFC9350" class="cite xref">RFC9350</a>]</span>), a Type-C Segment sub-TLV with a corresponding
+            algorithm field set should be used. The A-Flag should be set to
+            indicate that the SID corresponding to the algorithm should be
+            used.<a href="#appendix-A.1.2.2-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.2-3">To extend the example to three or more ASes, let us consider a
+            traceroute from PE1 to PE5 in <a href="#Topology_1" class="auto internal xref">Figure 1</a>. In this example, the PE1 to PE5 path has to
+            cross three domains: AS1, AS2, and AS3. Let us consider a path from PE1
+            to PE5 that goes through [PE1, ASBR1, ASBR4, ASBR6, ASBR8, PE5].
+            When the traceroute procedure is visiting the nodes in AS1, the
+            Reply Path TLV sent from the head-end consists of [N-PE1]. When
+            the traceroute procedure reaches the ASBR4, the return path
+            consists of [N-PE1, EPE-ASBR4-ASBR1]. While visiting nodes in AS2,
+            the traceroute procedure consists of the Reply Path TLV [N-PE1,
+            EPE-ASBR4-ASBR1, N-ASBR4].  Similarly, while visiting ASBR8, the
+            EPE-SID from ASBR8 to ASBR6 is added to the Reply Path TLV.  While
+            visiting nodes in AS3, the Node-SID of ASBR8 would also be added,
+            which makes the return path [N-PE1, EPE-ASBR4-ASBR1, N-ASBR4,
+            EPE-ASBR8-ASBR6, N-ASBR8].<a href="#appendix-A.1.2.2-3" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.2.2-4">Let us consider another example from the topology in <a href="#Topology_2" class="auto internal xref">Figure 2</a>.  This topology consists of
+            multi-domain IGP with a common border node between the domains.
+            This could be achieved with multi-area or multi-level IGP or with
+            multiple instances of IGP deployed on the same node.  The return
+            path computation for this topology is similar to multi-AS
+            computation, except that the return path consists of a single
+            border node label.<a href="#appendix-A.1.2.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="TLV_build_procedure_example">
+<section id="appendix-A.1.3">
+          <h4 id="name-procedures-for-building-rep">
+<a href="#appendix-A.1.3" class="section-number selfRef">A.1.3. </a><a href="#name-procedures-for-building-rep" class="section-name selfRef">Procedures for Building Reply Path TLV Dynamically</a>
+          </h4>
+<p id="appendix-A.1.3-1">Let us consider the topology from <a href="#Topology_1" class="auto internal xref">Figure 1</a>.  Let us consider an SR Policy path built from
+          PE1 to PE4 with the following label stack: N-P1, N-ASBR1, EPE-ASBR1-ASBR4,
+          N-PE4. PE1 begins traceroute procedures with the TTL set to 1 and includes
+          [N-PE1] in the Reply Path TLV. The traceroute packet TTL expires on
+          P1, and P1 processes the traceroute as per the procedures described
+          in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> and <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span>.  P1 sends an echo reply with
+          the same Reply Path TLV with the Reply Path Return Code set to 6.
+          The Return Code of the echo reply itself is set to the Return Code
+          as per <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> and <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span>.  This traceroute doesn't need
+          any changes to the Reply Path TLV until it leaves AS1. The same Reply
+          Path TLV that is received may be included in the echo reply by P1
+          and P2, or no Reply Path TLV is included so that the head-end continues to
+          use the same return path in the echo request that it used to send
+          the previous echo request.<a href="#appendix-A.1.3-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.3-2">When ASBR1 receives the echo request, in the case it receives the
+          Type-C/Type-D segment in the Reply Path TLV in the echo request, it
+          converts that Type-C/Type-D segment to Type-A based on its own SRGB.
+          When ASBR4 receives the echo request, it should form this Reply Path
+          TLV using its Node-SID (N-ASBR4) and EPE-SID (EPE-ASRB4-ASBR1)
+          labels and set the Reply Path Return Code to 0x0006.  Then, PE1 should
+          use this Reply Path TLV in subsequent echo requests.  In this
+          example, when the subsequent echo request reaches P3, it should use
+          this Reply Path TLV for sending the echo reply. The same Reply Path
+          TLV is sufficient for any router in AS2 to send the reply.  This is
+          because the first label (N-ASBR4) can direct the echo reply to ASBR4
+          and the second one (EPE-ASBR4-ASBR1) can direct the echo reply to
+          AS1. Once the echo reply reaches AS1, normal IP forwarding or the
+          N-PE1 helps it to reach PE1.<a href="#appendix-A.1.3-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.3-3">The example described in the above paragraphs can be extended to
+   multiple ASes.  This is done by following the same procedure for
+   each ASBR, i.e., adding Node-SIDs and EPE-SIDs on receiving echo
+   requests from neighboring ASes.<a href="#appendix-A.1.3-3" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.3-4">Let us consider the topology from <a href="#Topology_2" class="auto internal xref">Figure 2</a>.  It consists of multiple IGP domains with
+          multiple areas/levels or separate IGP instances.  There is a single
+          border node that separates the two domains. In this case, PE1 sends
+          a traceroute packet with the TTL set to 1 and includes N-PE1 in the
+          Reply Path TLV.  ABR1 receives the echo request, adds its node label
+   to the Reply Path TLV (while sending the echo reply), and sets
+          the Reply Path Return Code to 0x0006.  The Reply Path TLV in the echo
+          reply from ABR1 consists of [N-ABR1, N-PE1]. The next echo request
+          with a TTL of 2 reaches the P node. It is an internal node, so
+          it does not change the return path.  The echo request with a TTL of 3
+          reaches ABR2, and it adds its node label so the Reply Path TLV sent
+          in the echo reply will be [N-ABR2, N-ABR1, N-PE1]. The echo request with a
+          TTL of 4 reaches PE4, and it sends an echo reply Return Code as an
+          egress. PE4 does not include any Reply Path TLVs in the echo
+          reply. The above example assumes a uniform SRGB throughout the
+          domain. In the case of different SRGBs, the top segment will be a
+          Type-C/Type-D segment and all other segments will be Type-A. Each
+          border node converts the Type-C/Type-D segment to Type-A before
+          adding its segment to the Reply Path TLV.<a href="#appendix-A.1.3-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+<section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1">Thanks to <span class="contact-name">Bruno Decraene</span> for suggesting the use
+      of the generic Segment sub-TLV.  Thanks to <span class="contact-name">Adrian       Farrel</span>, <span class="contact-name">Huub van Helvoort</span>, <span class="contact-name">Dhruv Dhody</span>, and <span class="contact-name">Dongjie</span> for their careful
+      reviews and comments.  Thanks to <span class="contact-name">Mach Chen</span> for
+      suggesting the use of the Reply Path TLV. Thanks to <span class="contact-name">Gregory Mirsky</span> for the detailed review, which helped
+      improve the readability of the document to a great extent.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-C">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Carlos Pignataro</span></div>
+<div dir="auto" class="left"><span class="org">NC State University</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:cpignata@gmail.com" class="email">cpignata@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Zafar Ali</span></div>
+<div dir="auto" class="left"><span class="org">Cisco Systems, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:zali@cisco.com" class="email">zali@cisco.com</a>
+</div>
+</address>
+</section>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Shraddha Hegde</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks, Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">Exora Business Park</span></div>
+<div dir="auto" class="left">
+<span class="locality">Bangalore</span> <span class="postal-code">560103</span>
+</div>
+<div dir="auto" class="left"><span class="region">KA</span></div>
+<div dir="auto" class="left"><span class="country-name">India</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:shraddha@juniper.net" class="email">shraddha@juniper.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Kapil Arora</span></div>
+<div dir="auto" class="left"><span class="org">Individual Contributor</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kapil.it@gmail.com" class="email">kapil.it@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mukul Srivastava</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:msri@juniper.net" class="email">msri@juniper.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Samson Ninan</span></div>
+<div dir="auto" class="left"><span class="org">Ciena</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:samson.cse@gmail.com" class="email">samson.cse@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Nagendra Kumar</span></div>
+<div dir="auto" class="left"><span class="org">Oracle</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:nagendrakumar.nainar@gmail.com" class="email">nagendrakumar.nainar@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
