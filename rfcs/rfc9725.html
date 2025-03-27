@@ -1,0 +1,2971 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9725: WebRTC-HTTP Ingestion Protocol (WHIP)</title>
+<meta content="Sergio Garcia Murillo" name="author">
+<meta content="Alexandre Gouaillard" name="author">
+<meta content="
+       This document describes a simple HTTP-based protocol that will allow
+      WebRTC-based ingestion of content into streaming services and/or
+      Content Delivery Networks (CDNs). 
+       This document updates RFCs 8840 and 8842. 
+    " name="description">
+<meta content="xml2rfc 3.28.0" name="generator">
+<meta content="9725" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 64.1
+-->
+<link href="rfc9725.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-wish-whip-16" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9725" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9725</td>
+<td class="center">whip</td>
+<td class="right">March 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Garcia Murillo &amp; Gouaillard</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9725" class="eref">9725</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc8840" class="eref">8840</a>, <a href="https://www.rfc-editor.org/rfc/rfc8842" class="eref">8842</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-03" class="published">March 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Garcia Murillo</div>
+<div class="org">Millicast</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Gouaillard</div>
+<div class="org">CoSMo Software</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9725</h1>
+<h1 id="title">WebRTC-HTTP Ingestion Protocol (WHIP)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document describes a simple HTTP-based protocol that will allow
+      WebRTC-based ingestion of content into streaming services and/or
+      Content Delivery Networks (CDNs).<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document updates RFCs 8840 and 8842.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9725">https://www.rfc-editor.org/info/rfc9725</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-overview" class="internal xref">Overview</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-protocol-operation" class="internal xref">Protocol Operation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-http-usage" class="internal xref">HTTP Usage</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-ingest-session-setup" class="internal xref">Ingest Session Setup</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-ice-support" class="internal xref">ICE Support</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.1">
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="auto internal xref">4.3.1</a>.  <a href="#name-http-patch-request-usage" class="internal xref">HTTP PATCH Request Usage</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.2">
+                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="auto internal xref">4.3.2</a>.  <a href="#name-trickle-ice" class="internal xref">Trickle ICE</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.3">
+                    <p id="section-toc.1-1.4.2.3.2.3.1"><a href="#section-4.3.3" class="auto internal xref">4.3.3</a>.  <a href="#name-ice-restarts" class="internal xref">ICE Restarts</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-webrtc-constraints" class="internal xref">WebRTC Constraints</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.1">
+                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-sdp-bundle" class="internal xref">SDP Bundle</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.2">
+                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="auto internal xref">4.4.2</a>.  <a href="#name-single-mediastream" class="internal xref">Single MediaStream</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.3">
+                    <p id="section-toc.1-1.4.2.4.2.3.1"><a href="#section-4.4.3" class="auto internal xref">4.4.3</a>.  <a href="#name-no-partially-successful-ans" class="internal xref">No Partially Successful Answers</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.4">
+                    <p id="section-toc.1-1.4.2.4.2.4.1"><a href="#section-4.4.4" class="auto internal xref">4.4.4</a>.  <a href="#name-dtls-setup-role-and-sdp-set" class="internal xref">DTLS Setup Role and SDP "setup" Attribute</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.5">
+                    <p id="section-toc.1-1.4.2.4.2.5.1"><a href="#section-4.4.5" class="auto internal xref">4.4.5</a>.  <a href="#name-trickle-ice-and-ice-restart" class="internal xref">Trickle ICE and ICE Restarts</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-load-balancing-and-redirect" class="internal xref">Load Balancing and Redirections</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
+                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-stun-turn-server-configurat" class="internal xref">STUN/TURN Server Configuration</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6.2.1">
+                    <p id="section-toc.1-1.4.2.6.2.1.1"><a href="#section-4.6.1" class="auto internal xref">4.6.1</a>.  <a href="#name-congestion-control" class="internal xref">Congestion Control</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.7">
+                <p id="section-toc.1-1.4.2.7.1"><a href="#section-4.7" class="auto internal xref">4.7</a>.  <a href="#name-authentication-and-authoriz" class="internal xref">Authentication and Authorization</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.7.2.1">
+                    <p id="section-toc.1-1.4.2.7.2.1.1"><a href="#section-4.7.1" class="auto internal xref">4.7.1</a>.  <a href="#name-bearer-token-authentication" class="internal xref">Bearer Token Authentication</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.8">
+                <p id="section-toc.1-1.4.2.8.1"><a href="#section-4.8" class="auto internal xref">4.8</a>.  <a href="#name-simulcast-and-scalable-vide" class="internal xref">Simulcast and Scalable Video Coding</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.9">
+                <p id="section-toc.1-1.4.2.9.1"><a href="#section-4.9" class="auto internal xref">4.9</a>.  <a href="#name-protocol-extensions" class="internal xref">Protocol Extensions</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-link-relation-type-ice-serv" class="internal xref">Link Relation Type: ice-server</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-urn-sub-namespace-for-whip-" class="internal xref">URN Sub-namespace for WHIP (urn:ietf:params:whip)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-webrtc-http-ingestion-proto" class="internal xref">WebRTC-HTTP Ingestion Protocol (WHIP) URNs Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-webrtc-http-ingestion-protoc" class="internal xref">WebRTC-HTTP Ingestion Protocol (WHIP) Extension URNs Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5">
+                <p id="section-toc.1-1.6.2.5.1"><a href="#section-6.5" class="auto internal xref">6.5</a>.  <a href="#name-registering-whip-urns-and-w" class="internal xref">Registering WHIP URNs and WHIP Extension URNs</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5.2.1">
+                    <p id="section-toc.1-1.6.2.5.2.1.1"><a href="#section-6.5.1" class="auto internal xref">6.5.1</a>.  <a href="#name-registration-procedure" class="internal xref">Registration Procedure</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5.2.2">
+                    <p id="section-toc.1-1.6.2.5.2.2.1"><a href="#section-6.5.2" class="auto internal xref">6.5.2</a>.  <a href="#name-guidance-for-the-designated" class="internal xref">Guidance for the Designated Expert</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5.2.3">
+                    <p id="section-toc.1-1.6.2.5.2.3.1"><a href="#section-6.5.3" class="auto internal xref">6.5.3</a>.  <a href="#name-registration-template" class="internal xref">Registration Template</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The IETF RTCWEB Working Group standardized the JavaScript Session Establishment Protocol (JSEP) <span>[<a href="#RFC9429" class="cite xref">RFC9429</a>]</span>, a mechanism used to control the setup, management,
+      and teardown of a multimedia session. It also describes how to negotiate
+      media flows using the offer/answer model with the Session Description
+      Protocol (SDP) <span>[<a href="#RFC3264" class="cite xref">RFC3264</a>]</span>, including the formats for data
+      sent over the wire (e.g., media types, codec parameters, and
+      encryption). WebRTC intentionally does not specify a signaling transport
+      protocol at the application level.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Unfortunately, the lack of a standardized signaling mechanism in
+WebRTC has been an obstacle to its adoption as an ingestion protocol
+within the broadcast and streaming industry, where a streamlined
+production pipeline is taken for granted. For example, cables carrying raw
+media to hardware encoders are plugged in and then the encoded media is
+pushed to any streaming service or Content Delivery Network (CDN) using an
+ingestion protocol.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">While WebRTC can be integrated with standard signaling protocols like
+      SIP <span>[<a href="#RFC3261" class="cite xref">RFC3261</a>]</span> or Extensible Messaging and Presence
+      Protocol (XMPP) <span>[<a href="#RFC6120" class="cite xref">RFC6120</a>]</span>, they are not designed to be
+      used in broadcasting and streaming services, and there is also no sign of
+      adoption in that industry. The Real-Time Streaming Protocol (RTSP) <span>[<a href="#RFC7826" class="cite xref">RFC7826</a>]</span>, which is based
+      on RTP, does not support the SDP offer/answer model <span>[<a href="#RFC3264" class="cite xref">RFC3264</a>]</span> for negotiating the characteristics of the media
+      session.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This document proposes a simple protocol based on HTTP for supporting WebRTC as a media ingestion method that:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-5.1">
+          <p id="section-1-5.1.1">is easy to implement,<a href="#section-1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.2">
+          <p id="section-1-5.2.1">is as easy to use as popular IP-based broadcast protocols,<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.3">
+          <p id="section-1-5.3.1">is fully compliant with WebRTC and RTCWEB specs,<a href="#section-1-5.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.4">
+          <p id="section-1-5.4.1">enables ingestion on both classical media platforms and WebRTC end-to-end platforms (achieving the lowest possible latency),<a href="#section-1-5.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.5">
+          <p id="section-1-5.5.1">lowers the requirements on both hardware encoders and broadcasting services to support WebRTC, and<a href="#section-1-5.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.6">
+          <p id="section-1-5.6.1">is usable in both web browsers and standalone encoders.<a href="#section-1-5.6.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="overview">
+<section id="section-3">
+      <h2 id="name-overview">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-overview" class="section-name selfRef">Overview</a>
+      </h2>
+<p id="section-3-1">The WebRTC-HTTP Ingestion Protocol (WHIP) is designed to facilitate a
+      one-time exchange of Session Description Protocol (SDP) offers and
+      answers using HTTP POST requests. This exchange is a fundamental step in
+      establishing an Interactive Connectivity Establishment (ICE) and
+      Datagram Transport Layer Security (DTLS) session between the WHIP
+      client, which represents the encoder or media producer, and the media
+      server, which is the broadcasting ingestion endpoint.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Upon successful establishment of the ICE/DTLS session, unidirectional
+      media data transmission commences from the WHIP client to the media
+      server. It is important to note that SDP renegotiations are not
+      supported in WHIP. This means that no modifications to the "m=" sections
+      can be made after the initial SDP offer/answer exchange via HTTP POST is
+      completed and that only ICE-related information can be updated via HTTP PATCH
+      requests as defined in <a href="#ice-support" class="auto internal xref">Section 4.3</a>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">The following diagram illustrates the core operation of WHIP
+      for initiating and terminating an ingest session:<a href="#section-3-3" class="pilcrow">¶</a></p>
+<span id="name-whip-session-setup-and-tear"></span><div id="whip-protocol-operation">
+<figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-3-4.1">
+<pre>
++-------------+    +---------------+ +--------------+ +---------------+
+| WHIP client |    | WHIP endpoint | | Media server | | WHIP session  |
++--+----------+    +---------+-----+ +------+-------+ +--------|------+
+   |                         |              |                  |
+   |                         |              |                  |
+   |HTTP POST (SDP offer)    |              |                  |
+   +------------------------&gt;+              |                  |
+   |201 Created (SDP answer) |              |                  |
+   +&lt;------------------------+              |                  |
+   |          ICE/STUN REQUEST              |                  |
+   +---------------------------------------&gt;+                  |
+   |          ICE/STUN RESPONSE             |                  |
+   |&lt;---------------------------------------+                  |
+   |          DTLS SETUP                    |                  |
+   |&lt;======================================&gt;|                  |
+   |          RTP/RTCP FLOW                 |                  |
+   +&lt;--------------------------------------&gt;+                  |
+   | HTTP DELETE                                               |
+   +----------------------------------------------------------&gt;+
+   | 200 OK                                                    |
+   &lt;-----------------------------------------------------------x
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-whip-session-setup-and-tear" class="selfRef">WHIP Session Setup and Teardown</a>
+        </figcaption></figure>
+</div>
+<p id="section-3-5">The elements in <a href="#whip-protocol-operation" class="auto internal xref">Figure 1</a> are
+      described as follows:<a href="#section-3-5" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3-6">
+        <dt id="section-3-6.1">WHIP client:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-6.2">This represents the WebRTC media encoder or
+          producer, which functions as a client of WHIP by
+          encoding and delivering media to a remote media server.<a href="#section-3-6.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-6.3">WHIP endpoint:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-6.4">This denotes the ingest server that
+          receives the initial WHIP request.<a href="#section-3-6.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-6.5">WHIP endpoint URL:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-6.6">This refers to the URL of the WHIP endpoint responsible for creating the WHIP session.<a href="#section-3-6.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-6.7">Media server:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-6.8">This is the WebRTC media server or
+          consumer responsible for establishing the media session with the
+          WHIP client and receiving the media content it produces.<a href="#section-3-6.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-6.9">WHIP session:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-6.10">This indicates the server handling the
+          allocated HTTP resource by the WHIP endpoint for an ongoing ingest
+          session.<a href="#section-3-6.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-6.11">WHIP session URL:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-6.12">This refers to the URL of the WHIP resource
+          allocated by the WHIP endpoint for a specific media session. To
+          modify the session (e.g., ICE operations or session termination), the
+          WHIP client can send requests to the WHIP session using this URL.<a href="#section-3-6.12" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-7"><a href="#whip-protocol-operation" class="auto internal xref">Figure 1</a> illustrates the
+      communication flow between a WHIP client, WHIP endpoint, media server,
+      and WHIP session. This flow outlines the process of setting up and
+      tearing down an ingest session using WHIP, which involves
+      negotiation, ICE for Network Address Translation (NAT) traversal, DTLS 
+      and the Secure Real-time Transport Protocol (SRTP) for security, and
+      RTP/RTCP for media transport:<a href="#section-3-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-8.1">The WHIP client initiates the communication by sending an HTTP
+        POST with an SDP offer to the WHIP endpoint.<a href="#section-3-8.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-8.2">The WHIP endpoint responds with a "201 Created" message containing
+        an SDP answer.<a href="#section-3-8.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-8.3">The WHIP client and media server establish ICE and DTLS
+        sessions for NAT traversal and secure communication.<a href="#section-3-8.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-8.4">RTP and RTCP flows are established for media transmission from the
+          WHIP client to the media server, secured by the SRTP profile.<a href="#section-3-8.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-8.5">The WHIP client sends an HTTP DELETE to terminate the WHIP session.<a href="#section-3-8.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-8.6">The WHIP session responds with a "200 OK" to confirm the session
+          termination.<a href="#section-3-8.6" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="protocol-operation">
+<section id="section-4">
+      <h2 id="name-protocol-operation">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-protocol-operation" class="section-name selfRef">Protocol Operation</a>
+      </h2>
+<div id="http-usage">
+<section id="section-4.1">
+        <h3 id="name-http-usage">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-http-usage" class="section-name selfRef">HTTP Usage</a>
+        </h3>
+<p id="section-4.1-1">Following the guidelines in <span>[<a href="#BCP56" class="cite xref">BCP56</a>]</span>, WHIP clients
+        <span class="bcp14">MUST NOT</span> match error codes returned by the WHIP
+        endpoints and resources to a specific error cause indicated in this
+        specification. WHIP clients <span class="bcp14">MUST</span> be able to handle all
+        applicable status codes by gracefully falling back to the generic n00
+        semantics of a given status code on unknown error codes. WHIP
+        endpoints and resources could convey finer-grained error information
+        by a problem details json object in the response message body of the
+        failed request as per <span>[<a href="#RFC9457" class="cite xref">RFC9457</a>]</span>.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">The WHIP endpoints and sessions are origin servers as defined in
+        <span><a href="https://rfc-editor.org/rfc/rfc9110#section-3.6" class="relref">Section 3.6</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>; they handle the
+        requests and provide responses for the underlying HTTP
+        resources. Those HTTP resources do not have any representation defined
+        in this specification, so the WHIP endpoints and sessions
+        <span class="bcp14">MUST</span> return a 2xx successful response with no content
+        when a GET request is received.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ingest-session-set-up">
+<section id="section-4.2">
+        <h3 id="name-ingest-session-setup">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-ingest-session-setup" class="section-name selfRef">Ingest Session Setup</a>
+        </h3>
+<p id="section-4.2-1">In order to set up an ingest session, the WHIP client
+        <span class="bcp14">MUST</span> generate an SDP offer according to the JSEP rules
+        for an initial offer as per <span><a href="https://rfc-editor.org/rfc/rfc9429#section-5.2.1" class="relref">Section 5.2.1</a> of [<a href="#RFC9429" class="cite xref">RFC9429</a>]</span> and send an HTTP POST request as per <span><a href="https://rfc-editor.org/rfc/rfc9110#section-9.3.3" class="relref">Section 9.3.3</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> to the
+        configured WHIP endpoint URL.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The HTTP POST request <span class="bcp14">MUST</span> have a content type of
+        "application/sdp" and contain the SDP offer as the body. The WHIP
+        endpoint <span class="bcp14">MUST</span> generate an SDP answer according to the
+        JSEP rules for an initial answer as per <span><a href="https://rfc-editor.org/rfc/rfc9429#section-5.3.1" class="relref">Section 5.3.1</a> of [<a href="#RFC9429" class="cite xref">RFC9429</a>]</span> and return the following: a "201 Created"
+        response with a content type of "application/sdp", the SDP answer as
+        the body, and a Location header field pointing to the newly created
+        WHIP session. If the HTTP POST to the WHIP endpoint has a content type
+        different than "application/sdp" or the SDP is malformed, the WHIP
+        endpoint <span class="bcp14">MUST</span> reject the HTTP POST request with an
+        appropriate 4xx error response.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">As WHIP only supports the ingestion use case with
+        unidirectional media, the WHIP client <span class="bcp14">SHOULD</span> use the
+        "sendonly" attribute in the SDP offer but <span class="bcp14">MAY</span> use the
+        "sendrecv" attribute instead; the "inactive" and "recvonly" attributes
+        <span class="bcp14">MUST NOT</span> be used. The WHIP endpoint <span class="bcp14">MUST</span>
+        use the "recvonly" attribute in the SDP answer.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4"><a href="#sdp-exchange-example" class="auto internal xref">Figure 2</a> is an example of an
+        HTTP POST sent from a WHIP client to a WHIP endpoint and the "201
+        Created" response from the WHIP endpoint containing the Location
+        header pointing to the newly created WHIP session.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<span id="name-example-of-the-sdp-offer-an"></span><div id="sdp-exchange-example">
+<figure id="figure-2">
+          <div class="breakable lang-http-message sourcecode" id="section-4.2-5.1">
+<pre>
+POST /whip/endpoint HTTP/1.1
+Host: whip.example.com
+Content-Type: application/sdp
+Content-Length: 1101
+
+v=0
+o=- 5228595038118931041 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=extmap-allow-mixed
+a=ice-options:trickle ice2
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:EsAw
+a=ice-pwd:bP+XJMM09aR8AiX1jdukzR6Y
+a=fingerprint:sha-256 DA:7B:57:DC:28:CE:04:4F:31:79:85:C4:31:67:EB:
+   27:58:29:ED:77:2A:0D:24:AE:ED:AD:30:BC:BD:F1:9C:02
+a=setup:actpass
+a=mid:0
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=sendonly
+a=msid:d46fb922-d52a-4e9c-aa87-444eadc1521b ce326ecf-a081-453a-8f9f-
+   0605d5ef4128
+a=rtcp-mux
+a=rtcp-mux-only
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 minptime=10;useinbandfec=1
+m=video 0 UDP/TLS/RTP/SAVPF 96 97
+a=mid:1
+a=bundle-only
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
+a=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id
+a=sendonly
+a=msid:d46fb922-d52a-4e9c-aa87-444eadc1521b 3956b460-40f4-4d05-acef-
+   03abcdd8c6fd
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+
+HTTP/1.1 201 Created
+ETag: "xyzzy"
+Content-Type: application/sdp
+Content-Length: 1053
+Location: https://whip.example.com/session/id
+
+v=0
+o=- 1657793490019 1 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=extmap-allow-mixed
+a=ice-lite
+a=ice-options:trickle ice2
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:38sdf4fdsf54
+a=ice-pwd:2e13dde17c1cb009202f627fab90cbec358d766d049c9697
+a=fingerprint:sha-256 F7:EB:F3:3E:AC:D2:EA:A7:C1:EC:79:D9:B3:8A:35:
+   DA:70:86:4F:46:D9:2D:CC:D0:BC:81:9F:67:EF:34:2E:BD
+a=candidate:1 1 UDP 2130706431 198.51.100.1 39132 typ host
+a=setup:passive
+a=mid:0
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=recvonly
+a=rtcp-mux
+a=rtcp-mux-only
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 minptime=10;useinbandfec=1
+m=video 0 UDP/TLS/RTP/SAVPF 96 97
+c=IN IP4 0.0.0.0
+a=mid:1
+a=bundle-only
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
+a=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id
+a=recvonly
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-example-of-the-sdp-offer-an" class="selfRef">Example of the SDP Offer/Answer Exchange Done via an HTTP POST</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.2-6">Once a session is set up, consent freshness as per <span>[<a href="#RFC7675" class="cite xref">RFC7675</a>]</span> <span class="bcp14">SHALL</span> be used to detect non-graceful
+        disconnection by full ICE implementations and DTLS teardown for
+        session termination by either side.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.2-7">To explicitly terminate a WHIP session, the WHIP client
+        <span class="bcp14">MUST</span> send an HTTP DELETE request to the WHIP session
+        URL returned in the Location header field of the initial HTTP
+        POST. Upon receiving the HTTP DELETE request, the WHIP session will be
+        removed and the resources freed on the media server, terminating the
+        ICE and DTLS sessions.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
+<p id="section-4.2-8">A media server terminating a session <span class="bcp14">MUST</span> follow the
+        procedures in <span><a href="https://rfc-editor.org/rfc/rfc7675#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC7675" class="cite xref">RFC7675</a>]</span> for immediate revocation of consent.<a href="#section-4.2-8" class="pilcrow">¶</a></p>
+<p id="section-4.2-9">The WHIP endpoints <span class="bcp14">MUST</span> support OPTIONS requests for
+        Cross-Origin Resource Sharing (CORS) as defined in <span>[<a href="#FETCH" class="cite xref">FETCH</a>]</span>. The "200 OK" response to any OPTIONS request
+        <span class="bcp14">SHOULD</span> include an Accept-Post header with a media
+        type value of "application/sdp" as per <span>[<a href="#W3C.REC-ldp-20150226" class="cite xref">W3C.REC-ldp-20150226</a>]</span>.<a href="#section-4.2-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ice-support">
+<section id="section-4.3">
+        <h3 id="name-ice-support">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-ice-support" class="section-name selfRef">ICE Support</a>
+        </h3>
+<p id="section-4.3-1">ICE <span>[<a href="#RFC8445" class="cite xref">RFC8445</a>]</span> is a protocol that addresses the
+        complexities of NAT traversal commonly encountered in Internet
+        communication. NATs hinder direct communication between devices on
+        different local networks, posing challenges for real-time
+        applications. ICE facilitates seamless connectivity by employing
+        techniques to discover and negotiate efficient communication
+        paths.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">Trickle ICE <span>[<a href="#RFC8838" class="cite xref">RFC8838</a>]</span> optimizes the connectivity
+        process by incrementally sharing potential communication paths,
+        reducing latency, and facilitating quicker establishment.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">ICE restarts are crucial for maintaining connectivity in dynamic
+        network conditions or disruptions, allowing devices to re-establish
+        communication paths without complete renegotiation. This ensures
+        minimal latency and reliable real-time communication.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-4">Trickle ICE and ICE restart support are <span class="bcp14">RECOMMENDED</span>
+        for both WHIP sessions and clients.<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<div id="http-patch-usage">
+<section id="section-4.3.1">
+          <h4 id="name-http-patch-request-usage">
+<a href="#section-4.3.1" class="section-number selfRef">4.3.1. </a><a href="#name-http-patch-request-usage" class="section-name selfRef">HTTP PATCH Request Usage</a>
+          </h4>
+<p id="section-4.3.1-1">The WHIP client <span class="bcp14">MAY</span> perform Trickle ICE or ICE
+          restarts by sending an HTTP PATCH request as per <span>[<a href="#RFC5789" class="cite xref">RFC5789</a>]</span> to the WHIP session URL. This HTTP PATCH request <span class="bcp14">MUST</span> contain a body with
+          an SDP fragment with media type "application/trickle-ice-sdpfrag" as
+          specified in <span>[<a href="#RFC8840" class="cite xref">RFC8840</a>]</span>, which carries the relevant ICE
+          information. If the HTTP PATCH request sent to the WHIP session URL has a content
+          type different than "application/trickle-ice-sdpfrag" or the SDP
+          fragment is malformed, the WHIP session <span class="bcp14">MUST</span> reject
+          the HTTP PATCH with an appropriate 4xx error response.<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-2">If the WHIP session supports either Trickle ICE or ICE restarts,
+          but not both, it <span class="bcp14">MUST</span> return a "422 Unprocessable
+          Content" error response for the HTTP PATCH requests that are not
+          supported as per <span><a href="https://rfc-editor.org/rfc/rfc9110#section-15.5.21" class="relref">Section 15.5.21</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>.<a href="#section-4.3.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-3">The WHIP client <span class="bcp14">MAY</span> send overlapping HTTP PATCH
+          requests to one WHIP session.
+
+   Consequently, those HTTP PATCH requests may be received out of order
+   by the WHIP session. Thus, if the WHIP session supports ICE
+   restarts, it <span class="bcp14">MUST</span> generate a unique strong entity-tag
+   identifying the ICE session as per <span><a href="https://rfc-editor.org/rfc/rfc9110#section-8.8.3" class="relref">Section 8.8.3</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>.
+   The initial value of the
+          entity-tag identifying the initial ICE session <span class="bcp14">MUST</span>
+          be returned in an ETag header field in the "201 Created" response to
+          the initial POST request to the WHIP endpoint.<a href="#section-4.3.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-4">WHIP clients <span class="bcp14">SHOULD NOT</span> use entity-tag validation
+          when matching a specific ICE session is not required, for example, when
+          initiating a DELETE request to terminate a session.
+          WHIP sessions <span class="bcp14">MUST</span> ignore any entity-tag
+          value sent by the WHIP client when ICE session matching is not
+          required, as in the HTTP DELETE request.<a href="#section-4.3.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-5">Missing or outdated ETags in the PATCH requests from WHIP clients
+          will be answered by WHIP sessions as per <span><a href="https://rfc-editor.org/rfc/rfc9110#section-13.1.1" class="relref">Section 13.1.1</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc6585#section-3" class="relref">Section 3</a> of [<a href="#RFC6585" class="cite xref">RFC6585</a>]</span>, with a "428 Precondition
+          Required" response for a missing entity-tag and a "412 Precondition
+          Failed" response for a non-matching entity-tag.<a href="#section-4.3.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="trickle-ice">
+<section id="section-4.3.2">
+          <h4 id="name-trickle-ice">
+<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-trickle-ice" class="section-name selfRef">Trickle ICE</a>
+          </h4>
+<p id="section-4.3.2-1">Depending on the Trickle ICE support on the WHIP client, the
+          initial offer by the WHIP client <span class="bcp14">MAY</span> be sent after
+          the full ICE gathering is complete with the full list of ICE
+          candidates, or it <span class="bcp14">MAY</span> only contain local candidates
+          (or even an empty list of candidates) as per <span>[<a href="#RFC8445" class="cite xref">RFC8445</a>]</span>. For the purpose of reducing setup times, when
+          using Trickle ICE, the WHIP client <span class="bcp14">SHOULD</span> send the SDP
+          offer (containing either locally gathered ICE
+          candidates or an empty list of candidates) as soon as possible.<a href="#section-4.3.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-2">In order to simplify the protocol, the WHIP session cannot signal
+          additional ICE candidates to the WHIP client after the SDP answer
+          has been sent. The WHIP endpoint <span class="bcp14">SHALL</span> gather all the
+          ICE candidates for the media server before responding to the client
+          request, and the SDP answer <span class="bcp14">SHALL</span> contain the full
+          list of ICE candidates of the media server.<a href="#section-4.3.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-3">As the WHIP client needs to know the WHIP session URL associated
+          with the ICE session in order to send a PATCH request containing new
+          ICE candidates, it <span class="bcp14">MUST</span> wait and buffer any gathered
+          candidates until the "201 Created" HTTP response to the initial POST
+          request is received.  In order to reduce the HTTP traffic and
+          processing time required, the WHIP client <span class="bcp14">SHOULD</span> send
+          a single aggregated HTTP PATCH request with all the buffered ICE
+          candidates once the response is received.  Additionally, if ICE
+          restarts are supported by the WHIP session, the WHIP client needs to
+          know the entity-tag associated with the ICE session in order to send
+          a PATCH request containing new ICE candidates; thus, it
+          <span class="bcp14">MUST</span> also wait and buffer any gathered candidates
+          until it receives the HTTP response with the new entity-tag value to
+          the last PATCH request performing an ICE restart.<a href="#section-4.3.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-4">WHIP clients generating the HTTP PATCH body with the SDP fragment
+          and its subsequent processing by WHIP sessions <span class="bcp14">MUST</span>
+          follow the guidelines defined in <span><a href="https://rfc-editor.org/rfc/rfc8840#section-4.4" class="relref">Section 4.4</a> of [<a href="#RFC8840" class="cite xref">RFC8840</a>]</span> with the following
+          considerations:<a href="#section-4.3.2-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3.2-5.1">
+              <p id="section-4.3.2-5.1.1">As per <span>[<a href="#RFC9429" class="cite xref">RFC9429</a>]</span>, only "m=" sections not marked
+              as bundle-only can gather ICE candidates, so given that the
+              "max-bundle" policy is being used, the SDP fragment will contain
+              only the offerer-tagged "m=" line of the bundle group.<a href="#section-4.3.2-5.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.3.2-5.2">
+              <p id="section-4.3.2-5.2.1">The WHIP client <span class="bcp14">MAY</span> exclude ICE candidates
+              from the HTTP PATCH body if they have already been confirmed by
+              the WHIP session with a successful HTTP response to a previous
+              HTTP PATCH request.<a href="#section-4.3.2-5.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4.3.2-6">WHIP sessions and clients that support Trickle ICE
+          <span class="bcp14">MUST</span> make use of entity-tags and conditional requests
+          as explained in <a href="#http-patch-usage" class="auto internal xref">Section 4.3.1</a>.<a href="#section-4.3.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-7">When a WHIP session receives a PATCH request that adds new ICE
+          candidates without performing an ICE restart, it <span class="bcp14">MUST</span>
+          return a "204 No Content" response without a body and <span class="bcp14">MUST NOT</span> include an ETag header in the response. If the WHIP
+          session does not support a candidate transport or is not able to
+          resolve the connection address, it <span class="bcp14">MUST</span> silently
+          discard the candidate and continue processing the rest of the
+          request normally.<a href="#section-4.3.2-7" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-8"><a href="#trickle-ice-example" class="auto internal xref">Figure 3</a> shows an example of the
+          Trickle ICE procedure where the WHIP client sends a PATCH request
+          with updated ICE candidate information and receives a successful
+          response from the WHIP session.<a href="#section-4.3.2-8" class="pilcrow">¶</a></p>
+<span id="name-example-of-a-trickle-ice-re"></span><div id="trickle-ice-example">
+<figure id="figure-3">
+            <div class="lang-http-message sourcecode" id="section-4.3.2-9.1">
+<pre>
+PATCH /session/id HTTP/1.1
+Host: whip.example.com
+If-Match: "xyzzy"
+Content-Type: application/trickle-ice-sdpfrag
+Content-Length: 576
+
+a=group:BUNDLE 0 1
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+a=mid:0
+a=ice-ufrag:EsAw
+a=ice-pwd:P2uYro0UCOQ4zxjKXaWCBui1
+a=candidate:1387637174 1 udp 2122260223 192.0.2.1 61764 typ host
+   generation 0 ufrag EsAw network-id 1
+a=candidate:3471623853 1 udp 2122194687 198.51.100.2 61765 typ host
+   generation 0 ufrag EsAw network-id 2
+a=candidate:473322822 1 tcp 1518280447 192.0.2.1 9 typ host tcptype
+   active generation 0 ufrag EsAw network-id 1
+a=candidate:2154773085 1 tcp 1518214911 198.51.100.2 9 typ host
+   tcptype active generation 0 ufrag EsAw network-id 2
+a=end-of-candidates
+
+HTTP/1.1 204 No Content
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-example-of-a-trickle-ice-re" class="selfRef">Example of a Trickle ICE Request and Response</a>
+            </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="ice-restarts">
+<section id="section-4.3.3">
+          <h4 id="name-ice-restarts">
+<a href="#section-4.3.3" class="section-number selfRef">4.3.3. </a><a href="#name-ice-restarts" class="section-name selfRef">ICE Restarts</a>
+          </h4>
+<p id="section-4.3.3-1">As defined in <span>[<a href="#RFC8839" class="cite xref">RFC8839</a>]</span>, when an ICE restart
+          occurs, a new SDP offer/answer exchange is triggered. However, as
+          WHIP does not support renegotiation of non-ICE-related SDP
+          information, a WHIP client will not send a new offer when an ICE
+          restart occurs. Instead, the WHIP client and WHIP session will only
+          exchange the relevant ICE information via an HTTP PATCH request as
+          defined in <a href="#http-patch-usage" class="auto internal xref">Section 4.3.1</a> and <span class="bcp14">MUST</span>
+          assume that the previously negotiated non-ICE-related SDP
+          information still applies after the ICE restart.<a href="#section-4.3.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3.3-2">When performing an ICE restart, the WHIP client
+          <span class="bcp14">MUST</span> include the updated "ice-pwd" and "ice-ufrag" in
+          the SDP fragment of the HTTP PATCH request body as well as the new
+          set of gathered ICE candidates as defined in <span>[<a href="#RFC8840" class="cite xref">RFC8840</a>]</span>.  Similar to what is defined in <a href="#trickle-ice" class="auto internal xref">Section 4.3.2</a>, as per <span>[<a href="#RFC9429" class="cite xref">RFC9429</a>]</span>, only
+          "m=" sections not marked as bundle-only can gather ICE candidates, so
+          given that the "max-bundle" policy is being used, the SDP fragment
+          will contain only the offerer-tagged "m=" line of the bundle group.  A
+          WHIP client sending a PATCH request for performing ICE restart
+          <span class="bcp14">MUST</span> contain an If-Match header field with a
+          field-value of "*" as per <span><a href="https://rfc-editor.org/rfc/rfc9110#section-13.1.1" class="relref">Section 13.1.1</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>.<a href="#section-4.3.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3.3-3"><span>[<a href="#RFC8840" class="cite xref">RFC8840</a>]</span> states that an agent <span class="bcp14">MUST</span>
+          discard any received requests containing "ice-pwd" and "ice-ufrag"
+          attributes that do not match those of the current ICE Negotiation
+          Session. However, any WHIP session receiving updated "ice-pwd"
+          and "ice-ufrag" attributes <span class="bcp14">MUST</span> consider the request
+          as performing an ICE restart instead and, if supported,
+          <span class="bcp14">SHALL</span> return a "200 OK" with an
+          "application/trickle-ice-sdpfrag" body containing the new ICE
+          username fragment and password and a new set of ICE candidates for
+          the WHIP session. Also, the "200 OK" response for a successful ICE
+          restart <span class="bcp14">MUST</span> contain the new entity-tag corresponding
+          to the new ICE session in an ETag response header field and
+          <span class="bcp14">MAY</span> contain a new set of ICE candidates for the media
+          server.<a href="#section-4.3.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3.3-4">As defined in <span><a href="https://rfc-editor.org/rfc/rfc8839#section-4.4.1.1.1" class="relref">Section 4.4.1.1.1</a> of [<a href="#RFC8839" class="cite xref">RFC8839</a>]</span>, the set of candidates after an ICE restart may
+          include some, none, or all of the previous candidates for that data
+          stream and may include a totally new set of candidates. Therefore, after
+          performing a successful ICE restart, both the WHIP client and the
+          WHIP session <span class="bcp14">MUST</span> replace the previous set of remote
+          candidates with the new set exchanged in the HTTP PATCH request and
+          response, discarding any remote ICE candidate not present on the new
+          set. Both the WHIP client and the WHIP session <span class="bcp14">MUST</span>
+          ensure that the HTTP PATCH request and response bodies include the
+          same "ice-options," "ice-pacing," and "ice-lite" attributes as those
+          used in the SDP offer or answer.<a href="#section-4.3.3-4" class="pilcrow">¶</a></p>
+<p id="section-4.3.3-5">If the ICE restart request cannot be satisfied by the WHIP
+          session, the resource <span class="bcp14">MUST</span> return an appropriate HTTP
+          error code and <span class="bcp14">MUST NOT</span> terminate the session
+          immediately and keep the existing ICE session. The WHIP client
+          <span class="bcp14">MAY</span> retry performing a new ICE restart or terminate
+          the session by issuing an HTTP DELETE request instead. In any case,
+          the session <span class="bcp14">MUST</span> be terminated if the ICE consent
+          expires as a consequence of the failed ICE restart as per <span><a href="https://rfc-editor.org/rfc/rfc7675#section-5.1" class="relref">Section 5.1</a> of [<a href="#RFC7675" class="cite xref">RFC7675</a>]</span>.<a href="#section-4.3.3-5" class="pilcrow">¶</a></p>
+<p id="section-4.3.3-6">In case of unstable network conditions, the ICE restart HTTP
+          PATCH requests and responses might be received out of order. In
+          order to mitigate this scenario, when the client performs an ICE
+          restart, it <span class="bcp14">MUST</span> discard any previous ICE username fragment
+          and password and ignore any further HTTP PATCH response
+          received from a pending HTTP PATCH request. WHIP clients
+          <span class="bcp14">MUST</span> apply only the ICE information received in the
+          response to the last sent request. If there is a mismatch between
+          the ICE information at the WHIP client and at the WHIP session
+          (because of an out-of-order request), the Session Traversal
+          Utilities for NAT (STUN) requests will contain invalid ICE
+          information and will be dropped by the receiving side. If this
+          situation is detected by the WHIP client, it <span class="bcp14">MUST</span>
+          send a new ICE restart request to the server.<a href="#section-4.3.3-6" class="pilcrow">¶</a></p>
+<p id="section-4.3.3-7"><a href="#trickle-restart-example" class="auto internal xref">Figure 4</a> demonstrates a Trickle ICE
+          restart procedure example. The WHIP client sends a PATCH request
+          containing updated ICE information, including a new username fragment and
+          password, along with newly gathered ICE candidates. In response, the
+          WHIP session provides ICE information for the session after the ICE
+          restart, including the updated username fragment and password, as well as the
+          previous ICE candidate.<a href="#section-4.3.3-7" class="pilcrow">¶</a></p>
+<span id="name-example-of-an-ice-restart-r"></span><div id="trickle-restart-example">
+<figure id="figure-4">
+            <div class="lang-http-message sourcecode" id="section-4.3.3-8.1">
+<pre>
+PATCH /session/id HTTP/1.1
+Host: whip.example.com
+If-Match: "*"
+Content-Type: application/trickle-ice-sdpfrag
+Content-Length: 82
+
+a=ice-options:trickle ice2
+a=group:BUNDLE 0 1
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+a=mid:0
+a=ice-ufrag:ysXw
+a=ice-pwd:vw5LmwG4y/e6dPP/zAP9Gp5k
+a=candidate:1387637174 1 udp 2122260223 192.0.2.1 61764 typ host
+   generation 0 ufrag EsAw network-id 1
+a=candidate:3471623853 1 udp 2122194687 198.51.100.2 61765 typ host
+   generation 0 ufrag EsAw network-id 2
+a=candidate:473322822 1 tcp 1518280447 192.0.2.1 9 typ host tcptype
+   active generation 0 ufrag EsAw network-id 1
+a=candidate:2154773085 1 tcp 1518214911 198.51.100.2 9 typ host
+   tcptype active generation 0 ufrag EsAw network-id 2
+
+HTTP/1.1 200 OK
+ETag: "abccd"
+Content-Type: application/trickle-ice-sdpfrag
+Content-Length: 252
+
+a=ice-lite
+a=ice-options:trickle ice2
+a=group:BUNDLE 0 1
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+a=mid:0
+a=ice-ufrag:289b31b754eaa438
+a=ice-pwd:0b66f472495ef0ccac7bda653ab6be49ea13114472a5d10a
+a=candidate:1 1 udp 2130706431 198.51.100.1 39132 typ host
+a=end-of-candidates
+</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-example-of-an-ice-restart-r" class="selfRef">Example of an ICE Restart Request and Response</a>
+            </figcaption></figure>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="webrtc-constraints">
+<section id="section-4.4">
+        <h3 id="name-webrtc-constraints">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-webrtc-constraints" class="section-name selfRef">WebRTC Constraints</a>
+        </h3>
+<p id="section-4.4-1">To simplify the implementation of WHIP in both clients and media
+        servers, WHIP introduces specific restrictions on WebRTC usage. The
+        following subsections will explain these restrictions in detail.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<div id="sdp-bundle">
+<section id="section-4.4.1">
+          <h4 id="name-sdp-bundle">
+<a href="#section-4.4.1" class="section-number selfRef">4.4.1. </a><a href="#name-sdp-bundle" class="section-name selfRef">SDP Bundle</a>
+          </h4>
+<p id="section-4.4.1-1">Both the WHIP client and the WHIP endpoint <span class="bcp14">SHALL</span>
+          support <span>[<a href="#RFC9143" class="cite xref">RFC9143</a>]</span> and use the "max-bundle" policy as
+          defined in <span>[<a href="#RFC9429" class="cite xref">RFC9429</a>]</span>. The WHIP client and the media
+          server <span class="bcp14">MUST</span> support multiplexed media associated with
+          the BUNDLE group as per <span><a href="https://rfc-editor.org/rfc/rfc9143#section-9" class="relref">Section 9</a> of [<a href="#RFC9143" class="cite xref">RFC9143</a>]</span>. In addition, per <span>[<a href="#RFC9143" class="cite xref">RFC9143</a>]</span>, the
+          WHIP client and media server <span class="bcp14">SHALL</span> use RTP/RTCP
+          multiplexing for all bundled media. In order to reduce the network
+          resources required at the media server, both the WHIP client and
+          WHIP endpoints <span class="bcp14">MUST</span> include the "rtcp-mux-only"
+          attribute in each bundled "m=" section as per <span><a href="https://rfc-editor.org/rfc/rfc8858#section-3" class="relref">Section 3</a> of [<a href="#RFC8858" class="cite xref">RFC8858</a>]</span>.<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="single-mediastream">
+<section id="section-4.4.2">
+          <h4 id="name-single-mediastream">
+<a href="#section-4.4.2" class="section-number selfRef">4.4.2. </a><a href="#name-single-mediastream" class="section-name selfRef">Single MediaStream</a>
+          </h4>
+<p id="section-4.4.2-1">WHIP only supports a single MediaStream as defined in <span>[<a href="#RFC8830" class="cite xref">RFC8830</a>]</span>; therefore, all "m=" sections <span class="bcp14">MUST</span>
+          contain a "msid" attribute with the same value. The MediaStream
+          <span class="bcp14">MUST</span> contain at least one MediaStreamTrack of any
+          media kind, and it <span class="bcp14">MUST NOT</span> have two or more 
+          MediaStreamTracks for the same media (audio or video). However, it
+          would be possible for future revisions of this specification to allow more
+          than a single MediaStream or MediaStreamTrack of each media
+          kind. Therefore, in order to ensure forward compatibility, if the
+          number of audio and/or video MediaStreamTracks or the number of
+          MediaStreams are not supported by the WHIP endpoint, it
+          <span class="bcp14">MUST</span> reject the HTTP POST request with a "422
+          Unprocessable Content" or "400 Bad Request" error response. The WHIP
+          endpoint <span class="bcp14">MAY</span> also return a problem statement that provides further error
+          details about the failed request, as
+          recommended in <a href="#http-usage" class="auto internal xref">Section 4.1</a>.<a href="#section-4.4.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="no-partially-successful-answers">
+<section id="section-4.4.3">
+          <h4 id="name-no-partially-successful-ans">
+<a href="#section-4.4.3" class="section-number selfRef">4.4.3. </a><a href="#name-no-partially-successful-ans" class="section-name selfRef">No Partially Successful Answers</a>
+          </h4>
+<p id="section-4.4.3-1">The WHIP endpoint <span class="bcp14">SHOULD NOT</span> reject individual
+          "m=" sections, as specified in <span><a href="https://rfc-editor.org/rfc/rfc9429#section-5.3.1" class="relref">Section 5.3.1</a> of [<a href="#RFC9429" class="cite xref">RFC9429</a>]</span>, if an error occurs when processing the "m="
+          section; instead, it <span class="bcp14">SHOULD</span> reject the HTTP POST request with a "422 Unprocessable
+          Content" or "400 Bad Request" error response to prevent having
+          partially successful ingest sessions, which can be misleading to end
+          users. The WHIP endpoint <span class="bcp14">MAY</span> also return a problem
+          statement as recommended in <a href="#http-usage" class="auto internal xref">Section 4.1</a> proving
+          further error details about the failed request.<a href="#section-4.4.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="dtls-setup-role-and-sdp-setup-attribute">
+<section id="section-4.4.4">
+          <h4 id="name-dtls-setup-role-and-sdp-set">
+<a href="#section-4.4.4" class="section-number selfRef">4.4.4. </a><a href="#name-dtls-setup-role-and-sdp-set" class="section-name selfRef">DTLS Setup Role and SDP "setup" Attribute</a>
+          </h4>
+<p id="section-4.4.4-1">When a WHIP client sends an SDP offer, it <span class="bcp14">SHOULD</span>
+          insert an SDP "setup" attribute with an "actpass" attribute value,
+          as defined in <span>[<a href="#RFC8842" class="cite xref">RFC8842</a>]</span>. However, if the WHIP client
+          only implements the DTLS client role, it <span class="bcp14">MAY</span> use an
+          SDP "setup" attribute with an "active" attribute value. If the WHIP
+          endpoint does not support an SDP offer with an SDP "setup" attribute
+          with an "active" attribute value, it <span class="bcp14">SHOULD</span> reject
+          the request with a "422 Unprocessable Content" or "400 Bad Request"
+          error response.<a href="#section-4.4.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.4-2">NOTE: <span>[<a href="#RFC8842" class="cite xref">RFC8842</a>]</span> defines that the offerer
+          must insert an SDP "setup" attribute with an "actpass" attribute
+          value. However, the WHIP client will always communicate with a media
+          server that is expected to support the DTLS server role, in which
+          case the client might choose to only implement support for the DTLS
+          client role.<a href="#section-4.4.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="trickle-ice-and-ice-restarts">
+<section id="section-4.4.5">
+          <h4 id="name-trickle-ice-and-ice-restart">
+<a href="#section-4.4.5" class="section-number selfRef">4.4.5. </a><a href="#name-trickle-ice-and-ice-restart" class="section-name selfRef">Trickle ICE and ICE Restarts</a>
+          </h4>
+<p id="section-4.4.5-1">The media server <span class="bcp14">SHOULD</span> support full ICE, unless
+          it is connected to the Internet with an IP address that is
+          accessible by each WHIP client that is authorized to use it, in
+          which case it <span class="bcp14">MAY</span> support only ICE lite. The WHIP
+          client <span class="bcp14">MUST</span> implement and use full ICE.<a href="#section-4.4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.5-2">Trickle ICE and ICE restart support is <span class="bcp14">OPTIONAL</span>
+          for both the WHIP clients and media servers as explained in <a href="#ice-support" class="auto internal xref">Section 4.3</a>.<a href="#section-4.4.5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="load-balancing-and-redirections">
+<section id="section-4.5">
+        <h3 id="name-load-balancing-and-redirect">
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-load-balancing-and-redirect" class="section-name selfRef">Load Balancing and Redirections</a>
+        </h3>
+<p id="section-4.5-1">WHIP endpoints and media servers might not be colocated on the same
+        server, so it is possible to load balance incoming requests to
+        different media servers.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-2">WHIP clients <span class="bcp14">SHALL</span> support HTTP redirections as per
+        <span><a href="https://rfc-editor.org/rfc/rfc9110#section-15.4" class="relref">Section 15.4</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>. In order
+        to avoid POST requests being redirected as GET requests, status codes
+        "301 Moved Permanently" and "302 Found" <span class="bcp14">MUST NOT</span> be used; the preferred method
+        for performing load balancing is via the "307 Temporary Redirect"
+        response status code as described in <span><a href="https://rfc-editor.org/rfc/rfc9110#section-15.4.8" class="relref">Section 15.4.8</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>. Redirections are not required
+        to be supported for the PATCH and DELETE requests.<a href="#section-4.5-2" class="pilcrow">¶</a></p>
+<p id="section-4.5-3">In case of high load, the WHIP endpoints <span class="bcp14">MAY</span> return
+        a "503 Service Unavailable" response indicating that the server is
+        currently unable to handle the request due to a temporary overload or
+        scheduled maintenance as described in <span><a href="https://rfc-editor.org/rfc/rfc9110#section-15.6.4" class="relref">Section 15.6.4</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, which will likely be alleviated
+        after some delay. The WHIP endpoint might send a Retry-After header
+        field indicating the minimum time that the user agent ought to wait
+        before making a follow-up request as described in <span><a href="https://rfc-editor.org/rfc/rfc9110#section-10.2.3" class="relref">Section 10.2.3</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>.<a href="#section-4.5-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="stunturn-server-configuration">
+<section id="section-4.6">
+        <h3 id="name-stun-turn-server-configurat">
+<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-stun-turn-server-configurat" class="section-name selfRef">STUN/TURN Server Configuration</a>
+        </h3>
+<p id="section-4.6-1">The WHIP endpoint <span class="bcp14">MAY</span> return STUN/TURN server configuration URLs and credentials usable by the client in the "201 Created" response to the HTTP POST request to the WHIP endpoint URL.<a href="#section-4.6-1" class="pilcrow">¶</a></p>
+<p id="section-4.6-2">A reference to each STUN/TURN server will be returned using the Link header field <span>[<a href="#RFC8288" class="cite xref">RFC8288</a>]</span> with a "rel" attribute value of "ice-server". The Link target URI is the server URI as defined in <span>[<a href="#RFC7064" class="cite xref">RFC7064</a>]</span> and <span>[<a href="#RFC7065" class="cite xref">RFC7065</a>]</span>. The credentials are encoded in the Link target attributes as follows:<a href="#section-4.6-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.6-3.1">username: If the Link header field represents a Traversal Using Relays around NAT (TURN) server, then this attribute specifies the username to use with that TURN server.<a href="#section-4.6-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.6-3.2">credential: This attribute represents a long-term
+            authentication password, as described in <span><a href="https://rfc-editor.org/rfc/rfc8489#section-9.2" class="relref">Section 9.2</a> of [<a href="#RFC8489" class="cite xref">RFC8489</a>]</span>.<a href="#section-4.6-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.6-4"><a href="#stun-server-example" class="auto internal xref">Figure 5</a> illustrates the Link headers included in a "201 Created" response, providing the ICE server URLs and associated credentials.<a href="#section-4.6-4" class="pilcrow">¶</a></p>
+<span id="name-example-of-a-stun-turn-serv"></span><div id="stun-server-example">
+<figure id="figure-5">
+          <div class="lang-http-message sourcecode" id="section-4.6-5.1">
+<pre>
+Link: &lt;stun:stun.example.net&gt;; rel="ice-server"
+Link: &lt;turn:turn.example.net?transport=udp&gt;; rel="ice-server";
+      username="user"; credential="myPassword"
+Link: &lt;turn:turn.example.net?transport=tcp&gt;; rel="ice-server";
+      username="user"; credential="myPassword"
+Link: &lt;turns:turn.example.net?transport=tcp&gt;; rel="ice-server";
+      username="user"; credential="myPassword"
+</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-example-of-a-stun-turn-serv" class="selfRef">Example of a STUN/TURN Server's Configuration</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.6-6">NOTE: The naming of both the "rel" attribute value of
+        "ice-server" and the target attributes follows that used in the
+        RTCConfiguration dictionary in Section 4.2.1 of the W3C WebRTC
+        recommendation (see <span>[<a href="#W3C.REC-webrtc-20250313" class="cite xref">W3C.REC-webrtc-20250313</a>]</span>). The "rel"
+        attribute value of "ice-server" is not prepended with the
+        "urn:ietf:params:whip:" so it can be reused by other specifications,
+        which may use this mechanism to configure the usage of STUN/TURN
+        servers.<a href="#section-4.6-6" class="pilcrow">¶</a></p>
+<p id="section-4.6-7">NOTE: Depending on the ICE agent implementation, the WHIP
+        client may need to call the setConfiguration method before calling the
+        setLocalDescription method with the local SDP offer in order
+        to avoid having to perform an ICE restart for applying the updated
+        STUN/TURN server configuration on the next ICE gathering
+        phase.<a href="#section-4.6-7" class="pilcrow">¶</a></p>
+<p id="section-4.6-8">There are some WebRTC implementations that do not support updating
+        the STUN/TURN server configuration after the local offer has been
+        created as specified in <span><a href="https://rfc-editor.org/rfc/rfc9429#section-4.1.18" class="relref">Section 4.1.18</a> of [<a href="#RFC9429" class="cite xref">RFC9429</a>]</span>. In order to support these clients, the WHIP
+        endpoint <span class="bcp14">MAY</span> also include the STUN/TURN server
+        configuration in the responses to OPTIONS requests sent to the WHIP
+        endpoint URL before the POST request is sent. However, this method is
+        <span class="bcp14">NOT RECOMMENDED</span> to be used by the WHIP clients, and if it is
+        supported by the underlying WHIP client's WebRTC implementation, the
+        WHIP client <span class="bcp14">SHOULD</span> wait for the information to be
+        returned by the WHIP endpoint in the response of the HTTP POST request
+        instead.<a href="#section-4.6-8" class="pilcrow">¶</a></p>
+<p id="section-4.6-9">The generation of the TURN server credentials may require
+        sending a request to an external provider, which can both add
+        latency to the OPTIONS request processing and increase the processing
+        required to handle that request. In order to prevent this, the WHIP
+        endpoint <span class="bcp14">SHOULD NOT</span> return the STUN/TURN server
+        configuration if the OPTIONS request is a preflight request for CORS
+        as defined in <span>[<a href="#FETCH" class="cite xref">FETCH</a>]</span>, that is, if the OPTIONS request
+        does not contain an Access-Control-Request-Method with a POST value
+        and the Access-Control-Request-Headers HTTP header does not contain
+        the Link value.<a href="#section-4.6-9" class="pilcrow">¶</a></p>
+<p id="section-4.6-10">The WHIP clients <span class="bcp14">MAY</span> also support configuring the
+        STUN/TURN server URIs with long-term credentials provided by either
+        the broadcasting service or an external TURN provider, overriding the
+        values provided by the WHIP endpoint.<a href="#section-4.6-10" class="pilcrow">¶</a></p>
+<div id="congestion-control">
+<section id="section-4.6.1">
+          <h4 id="name-congestion-control">
+<a href="#section-4.6.1" class="section-number selfRef">4.6.1. </a><a href="#name-congestion-control" class="section-name selfRef">Congestion Control</a>
+          </h4>
+<p id="section-4.6.1-1"><span>[<a href="#RFC8836" class="cite xref">RFC8836</a>]</span> defines the congestion control
+          requirements for interactive real-time media to be used in
+          WebRTC. These requirements are based on the assumption that the data
+          needs to be provided continuously within a very limited time window
+          (a delay of no more than hundreds of milliseconds end-to-end). If
+          the latency target is higher, some of the requirements present in
+          <span>[<a href="#RFC8836" class="cite xref">RFC8836</a>]</span> could be relaxed to allow more flexible
+          implementations.<a href="#section-4.6.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="authentication-and-authorization">
+<section id="section-4.7">
+        <h3 id="name-authentication-and-authoriz">
+<a href="#section-4.7" class="section-number selfRef">4.7. </a><a href="#name-authentication-and-authoriz" class="section-name selfRef">Authentication and Authorization</a>
+        </h3>
+<p id="section-4.7-1">All WHIP endpoints, sessions, and clients <span class="bcp14">MUST</span>
+        support HTTP authentication as per <span><a href="https://rfc-editor.org/rfc/rfc9110#section-11" class="relref">Section 11</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>. Additionally, in order to
+        ensure interoperability, bearer token authentication as defined in the
+        next section <span class="bcp14">MUST</span> be supported by all WHIP
+        entities. However, this does not preclude the support of additional
+        HTTP authentication schemes as defined in <span><a href="https://rfc-editor.org/rfc/rfc9110#section-11.6" class="relref">Section 11.6</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>.<a href="#section-4.7-1" class="pilcrow">¶</a></p>
+<div id="bearer-token-authentication">
+<section id="section-4.7.1">
+          <h4 id="name-bearer-token-authentication">
+<a href="#section-4.7.1" class="section-number selfRef">4.7.1. </a><a href="#name-bearer-token-authentication" class="section-name selfRef">Bearer Token Authentication</a>
+          </h4>
+<p id="section-4.7.1-1">WHIP endpoints and sessions <span class="bcp14">MAY</span> require the HTTP
+          request to be authenticated using an HTTP Authorization header field
+          with a bearer token as specified in <span><a href="https://rfc-editor.org/rfc/rfc6750#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC6750" class="cite xref">RFC6750</a>]</span>. WHIP clients
+          <span class="bcp14">MUST</span> implement this authentication and authorization
+          mechanism and send the HTTP Authorization header field in all HTTP
+          requests sent to either the WHIP endpoint or session (except the
+          preflight OPTIONS requests for CORS).<a href="#section-4.7.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.7.1-2">The nature, syntax, and semantics of the bearer token, as well as
+          how to distribute it to the client, are outside the scope of this
+          document. Examples of tokens that could be used
+          include, but are not limited to, JSON Web Tokens (JWTs) as per
+          <span>[<a href="#RFC8725" class="cite xref">RFC8725</a>]</span> and a shared secret
+          stored on a database. The tokens are typically made available to the
+          end user alongside the WHIP endpoint URL and configured on the WHIP
+          clients (similar to the way Real Time Messaging Protocol (RTMP) URLs
+          and Stream Keys are distributed).<a href="#section-4.7.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.7.1-3">WHIP endpoints and sessions could perform the authentication and
+          authorization by encoding an authentication token within the URLs
+          for the WHIP endpoints or sessions instead. In case the WHIP client
+          is not configured to use a bearer token, the HTTP Authorization
+          header field <span class="bcp14">MUST NOT</span> be sent in any request.<a href="#section-4.7.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="simulcast-and-scalable-video-coding">
+<section id="section-4.8">
+        <h3 id="name-simulcast-and-scalable-vide">
+<a href="#section-4.8" class="section-number selfRef">4.8. </a><a href="#name-simulcast-and-scalable-vide" class="section-name selfRef">Simulcast and Scalable Video Coding</a>
+        </h3>
+<p id="section-4.8-1">Simulcast as per <span>[<a href="#RFC8853" class="cite xref">RFC8853</a>]</span> <span class="bcp14">MAY</span> be
+        supported by both the media servers and WHIP clients through
+        negotiation in the SDP offer/answer.<a href="#section-4.8-1" class="pilcrow">¶</a></p>
+<p id="section-4.8-2">If the client supports simulcast and wants to enable it for
+        ingesting, it <span class="bcp14">MUST</span> negotiate the support in the SDP
+        offer according to the procedures in <span><a href="https://rfc-editor.org/rfc/rfc8853#section-5.3" class="relref">Section 5.3</a> of [<a href="#RFC8853" class="cite xref">RFC8853</a>]</span>. A server accepting a simulcast
+        offer <span class="bcp14">MUST</span> create an answer according to the procedures
+        in <span><a href="https://rfc-editor.org/rfc/rfc8853#section-5.3.2" class="relref">Section 5.3.2</a> of [<a href="#RFC8853" class="cite xref">RFC8853</a>]</span>.<a href="#section-4.8-2" class="pilcrow">¶</a></p>
+<p id="section-4.8-3">It is possible for both media servers and WHIP clients to support
+        Scalable Video Coding (SVC). However, as there is no universal
+        negotiation mechanism in SDP for SVC, the encoder must consider the
+        negotiated codec(s), intended usage, and SVC support in available
+        decoders when configuring SVC.<a href="#section-4.8-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="protocol-extensions">
+<section id="section-4.9">
+        <h3 id="name-protocol-extensions">
+<a href="#section-4.9" class="section-number selfRef">4.9. </a><a href="#name-protocol-extensions" class="section-name selfRef">Protocol Extensions</a>
+        </h3>
+<p id="section-4.9-1">In order to support future extensions to be defined for WHIP, a common procedure for registering and announcing the new
+        extensions is defined.<a href="#section-4.9-1" class="pilcrow">¶</a></p>
+<p id="section-4.9-2">Protocol extensions supported by the WHIP sessions
+        <span class="bcp14">MUST</span> be advertised to the WHIP client in the "201
+        Created" response to the initial HTTP POST request sent to the WHIP
+        endpoint.  The WHIP endpoint <span class="bcp14">MUST</span> return one Link
+        header field for each extension that it supports, with the extension
+        "rel" attribute value containing the extension URN and the URL for the
+        HTTP resource that will be available for receiving requests related to
+        that extension.<a href="#section-4.9-2" class="pilcrow">¶</a></p>
+<p id="section-4.9-3">Protocol extensions are optional for both WHIP clients and
+        servers. WHIP clients <span class="bcp14">MUST</span> ignore any Link target attribute
+        with an unknown "rel" attribute value, and WHIP sessions <span class="bcp14">MUST NOT</span> require the usage of any extension.<a href="#section-4.9-3" class="pilcrow">¶</a></p>
+<p id="section-4.9-4">Each protocol extension <span class="bcp14">MUST</span> register a unique "rel"
+        attribute value that starts with the prefix
+        "urn:ietf:params:whip:ext" in the "WebRTC-HTTP Ingestion Protocol (WHIP)
+    Extension URNs" registry (<a href="#urn-whip-ext-registry" class="auto internal xref">Section 6.4</a>).<a href="#section-4.9-4" class="pilcrow">¶</a></p>
+<p id="section-4.9-5">For example, consider a potential extension of server-to-client
+        communication using server-sent events as specified in Section 9.2 of
+        <span>[<a href="#HTML" class="cite xref">HTML</a>]</span>. The URL for connecting to the server-sent event
+        resource for the ingested stream could be returned in the initial HTTP
+        "201 Created" response with a Link header field and a "rel"
+        attribute of "urn:ietf:params:whip:ext:example:server-sent-events"
+        (this document does not specify such an extension and uses it only as
+        an example).<a href="#section-4.9-5" class="pilcrow">¶</a></p>
+<p id="section-4.9-6">In this theoretical case, the "201 Created" response to the HTTP
+        POST request would look like:<a href="#section-4.9-6" class="pilcrow">¶</a></p>
+<p id="section-4.9-7"><a href="#protocol-extension-example" class="auto internal xref">Figure 6</a> shows the "201 Created"
+        response to the HTTP POST request in this theoretical case (i.e., the
+        WHIP extension supported by the WHIP session, as indicated in
+        the Link header of the "201 Created" response).<a href="#section-4.9-7" class="pilcrow">¶</a></p>
+<span id="name-example-of-a-whip-extension"></span><div id="protocol-extension-example">
+<figure id="figure-6">
+          <div class="lang-http-message sourcecode" id="section-4.9-8.1">
+<pre>
+HTTP/1.1 201 Created
+Content-Type: application/sdp
+Location: https://whip.example.com/session/id
+Link: &lt;https://whip.example.com/session/id/sse&gt;;
+      rel="urn:ietf:params:whip:ext:example:server-sent-events"
+</pre>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-example-of-a-whip-extension" class="selfRef">Example of a WHIP Extension</a>
+          </figcaption></figure>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">This document specifies a new protocol on top of HTTP and WebRTC;
+      thus, security protocols and considerations from related specifications
+      apply to the WHIP specification. These include:<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-2.1">WebRTC security considerations: See <span>[<a href="#RFC8826" class="cite xref">RFC8826</a>]</span>. HTTPS <span class="bcp14">SHALL</span> be used in order to
+          preserve the WebRTC security model.<a href="#section-5-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.2">Transport Layer Security (TLS): See <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> and
+          <span>[<a href="#RFC9147" class="cite xref">RFC9147</a>]</span>.<a href="#section-5-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.3">HTTP security: See <span><a href="https://rfc-editor.org/rfc/rfc9112#section-11" class="relref">Section 11</a> of [<a href="#RFC9112" class="cite xref">RFC9112</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc9110#section-17" class="relref">Section 17</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>.<a href="#section-5-2.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.4">URI security: See <span><a href="https://rfc-editor.org/rfc/rfc3986#section-7" class="relref">Section 7</a> of [<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-5-2.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-5-3">On top of that, WHIP exposes a thin new attack surface
+      specific to the REST API methods used within it:<a href="#section-5-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-4.1">HTTP POST flooding and resource exhaustion: It would be possible
+          for an attacker in possession of authentication credentials valid
+          for ingesting a WHIP stream to make multiple HTTP POST requests to the WHIP
+          endpoint.  This will force the WHIP endpoint to process the incoming
+          SDP and allocate resources for being able to set up the DTLS/ICE
+          connection.  While the malicious client does not need to initiate
+          the DTLS/ICE connection at all, the WHIP session will have to wait
+          for the DTLS/ICE connection timeout in order to release the
+          associated resources.  If the connection rate is high enough, this
+          could lead to resource exhaustion on the servers handling the
+          requests, and they will not be able to process legitimate incoming
+          ingests.  In order to prevent this scenario, WHIP endpoints
+          <span class="bcp14">SHOULD</span> implement a rate limit and avalanche control
+          mechanism for incoming initial HTTP POST requests.<a href="#section-5-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-4.2">Insecure Direct Object References (IDORs) for WHIP session URLs:
+     If the URLs returned by the WHIP endpoint for the location of WHIP
+     sessions are easy to guess, it would be possible for an
+     attacker to send multiple HTTP DELETE requests and terminate all
+     the WHIP sessions currently running.
+   In order to prevent this scenario,
+          WHIP endpoints <span class="bcp14">SHOULD</span> generate URLs with enough
+          randomness, using a cryptographically secure pseudorandom number
+          generator following the best practices in "Randomness Requirements
+          for Security" <span>[<a href="#RFC4086" class="cite xref">RFC4086</a>]</span>, and implement a rate limit and avalanche control
+          mechanism for HTTP DELETE requests.  The security considerations for
+          Universally Unique IDentifiers (UUIDs) in <span><a href="https://rfc-editor.org/rfc/rfc9562#section-8" class="relref">Section 8</a> of [<a href="#RFC9562" class="cite xref">RFC9562</a>]</span> are applicable for generating the
+          WHIP session URLs.<a href="#section-5-4.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-4.3">HTTP PATCH flooding: Similar to the HTTP POST flooding, a
+          malicious client could also create resource exhaustion by sending
+          multiple HTTP PATCH requests to the WHIP session, although the WHIP
+          sessions can limit the impact by not allocating new ICE candidates
+          and reusing the existing ICE candidates when doing ICE restarts.  In
+          order to prevent this scenario, WHIP endpoints <span class="bcp14">SHOULD</span>
+          implement a rate limit and avalanche control mechanism for incoming
+          HTTP PATCH requests.<a href="#section-5-4.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">Per this specification, IANA has added a new link relation type and
+   a new URN sub-namespace for WHIP. IANA has also created registries
+   to manage entries within the "urn:ietf:params:whip" and
+   "urn:ietf:params:whip:ext" namespaces.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="link-relation-type-ice-server">
+<section id="section-6.1">
+        <h3 id="name-link-relation-type-ice-serv">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-link-relation-type-ice-serv" class="section-name selfRef">Link Relation Type: ice-server</a>
+        </h3>
+<p id="section-6.1-1">The link relation type below has been registered by IANA in the
+        "Link Relation Types" registry per <span><a href="https://rfc-editor.org/rfc/rfc8288#section-4.2" class="relref">Section 4.2</a> of [<a href="#RFC8288" class="cite xref">RFC8288</a>]</span>:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6.1-2">
+          <dt id="section-6.1-2.1">Relation Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.2">ice-server<a href="#section-6.1-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.4">Conveys the STUN and TURN servers that can be used by
+        an ICE agent to establish a connection with a peer.<a href="#section-6.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.5">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.6">RFC 9725<a href="#section-6.1-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="urn-whip-subspace">
+<section id="section-6.2">
+        <h3 id="name-urn-sub-namespace-for-whip-">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-urn-sub-namespace-for-whip-" class="section-name selfRef">URN Sub-namespace for WHIP (urn:ietf:params:whip)</a>
+        </h3>
+<p id="section-6.2-1"> IANA has added a new entry in the "IETF URN Sub-namespace for Registered
+Protocol Parameter Identifiers" registry, following the template in <span>[<a href="#RFC3553" class="cite xref">RFC3553</a>]</span>:<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6.2-2">
+          <dt id="section-6.2-2.1">Registry name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-2.2">whip<a href="#section-6.2-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-2.3">Specification:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-2.4">RFC 9725<a href="#section-6.2-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-2.5">Repository:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-2.6">&lt;https://www.iana.org/assignments/whip&gt;<a href="#section-6.2-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-2.7">Index value:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-2.8">An IANA-assigned positive integer that identifies
+ the registration.  The first entry added to this registry uses the value 1,
+ and this value is incremented for each subsequent entry added to the
+ registry.<a href="#section-6.2-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-6.2-3">To manage this sub-namespace, IANA has created two registries within
+a new registry group called "WebRTC-HTTP Ingestion Protocol (WHIP)":<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.2-4.1">"WebRTC-HTTP Ingestion Protocol (WHIP) URNs" registry (<a href="#urn-whip-registry" class="auto internal xref">Section 6.3</a>)<a href="#section-6.2-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-6.2-4.2">"WebRTC-HTTP Ingestion Protocol (WHIP) Extension URNs" registry (<a href="#urn-whip-ext-registry" class="auto internal xref">Section 6.4</a>)<a href="#section-6.2-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="urn-whip-registry">
+<section id="section-6.3">
+        <h3 id="name-webrtc-http-ingestion-proto">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-webrtc-http-ingestion-proto" class="section-name selfRef">WebRTC-HTTP Ingestion Protocol (WHIP) URNs Registry</a>
+        </h3>
+<p id="section-6.3-1">The "WebRTC-HTTP Ingestion Protocol (WHIP) URNs" registry is used
+          to manage entries within the "urn:ietf:params:whip" namespace. The
+          registration procedure is "Specification Required" <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>.  The registry contains the following fields:
+   URN, Name, Reference, IANA Registry Reference, and Change Controller. This document is listed as the reference.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2">The registry contains a single initial entry:<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6.3-3">
+          <dt id="section-6.3-3.1">URN:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.2">urn:ietf:params:whip:ext<a href="#section-6.3-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.3">Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.4">WebRTC-HTTP Ingestion Protocol (WHIP) extension URNs<a href="#section-6.3-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.5">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.6">
+            <a href="#urn-whip-ext-registry" class="auto internal xref">Section 6.4</a> of RFC 9725<a href="#section-6.3-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.7">IANA Registry Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.8">See "WebRTC-HTTP Ingestion Protocol (WHIP) Extension URNs" on &lt;https://www.iana.org/assignments/whip&gt;<a href="#section-6.3-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.9">Change Controller:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.10">IETF<a href="#section-6.3-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="urn-whip-ext-registry">
+<section id="section-6.4">
+        <h3 id="name-webrtc-http-ingestion-protoc">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-webrtc-http-ingestion-protoc" class="section-name selfRef">WebRTC-HTTP Ingestion Protocol (WHIP) Extension URNs Registry</a>
+        </h3>
+<p id="section-6.4-1">The "WebRTC-HTTP Ingestion Protocol (WHIP) Extension URNs" registry is
+          used to manage entries within the "urn:ietf:params:whip:ext"
+          namespace.  The registration procedure is "Specification Required"
+          <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>.
+          The registry contains the following fields:
+   URN, Name, Reference, IANA Registry Reference, and Change Controller. This document is listed as the reference.<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<p id="section-6.4-2">A WHIP extension URN is used as a value in the "rel" attribute of the Link header as defined in <a href="#protocol-extensions" class="auto internal xref">Section 4.9</a> for the purpose of signaling the WHIP extensions supported by the WHIP endpoint. WHIP extension URNs have an "ext" type.<a href="#section-6.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="registering-whip-protocol-extensions-urns">
+<section id="section-6.5">
+        <h3 id="name-registering-whip-urns-and-w">
+<a href="#section-6.5" class="section-number selfRef">6.5. </a><a href="#name-registering-whip-urns-and-w" class="section-name selfRef">Registering WHIP URNs and WHIP Extension URNs</a>
+        </h3>
+<p id="section-6.5-1">This section defines the process for registering new URNs in the
+        "WebRTC-HTTP Ingestion Protocol (WHIP) URNs" registry (<a href="#urn-whip-registry" class="auto internal xref">Section 6.3</a>) and the "WebRTC-HTTP Ingestion Protocol
+        (WHIP) Extension URNs" registry (<a href="#urn-whip-ext-registry" class="auto internal xref">Section 6.4</a>).<a href="#section-6.5-1" class="pilcrow">¶</a></p>
+<div id="registration-procedure">
+<section id="section-6.5.1">
+          <h4 id="name-registration-procedure">
+<a href="#section-6.5.1" class="section-number selfRef">6.5.1. </a><a href="#name-registration-procedure" class="section-name selfRef">Registration Procedure</a>
+          </h4>
+<p id="section-6.5.1-1">The IETF has created a mailing list, &lt;wish@ietf.org&gt;, which can
+          be used for public discussion of proposals
+          prior to registration.  Use of the mailing list is strongly
+          encouraged. A designated expert (DE) <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>, appointed by the IESG,  will monitor the &lt;wish@ietf.org&gt; mailing list
+          and review registrations.<a href="#section-6.5.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.5.1-2">Registration of new entries in the WHIP registries defined in this document
+          <span class="bcp14">MUST</span> be documented in a permanent and readily
+          available public specification, in sufficient detail so that
+          interoperability between independent implementations is possible, and
+          reviewed by the DE as per <span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.6" class="relref">Section 4.6</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>.  A Standards Track RFC is
+          <span class="bcp14">REQUIRED</span> for the registration of new value data types
+          that modify existing properties.  A Standards Track RFC is also
+          <span class="bcp14">REQUIRED</span> for registration of WHIP extension
+          URNs that modify WHIP extensions previously documented in
+          an existing RFC.<a href="#section-6.5.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.5.1-3">The registration procedure begins when a completed registration template, defined in <a href="#whip-protocol-extension-registration-template" class="auto internal xref">Section 6.5.3</a>, is sent to &lt;iana@iana.org&gt;.
+   Decisions made by the DE can be appealed to an Applications and Real-Time (ART) Area Director, then to the IESG.
+   The normal appeals procedure described in RFC 2026 <span>[<a href="#BCP9" class="cite xref">BCP9</a>]</span> is to be followed.<a href="#section-6.5.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.5.1-4">Once the registration procedure concludes successfully, IANA will create
+   or modify the corresponding record in the "WebRTC-HTTP Ingestion Protocol (WHIP) URNs Registry" or "WebRTC-HTTP Ingestion Protocol (WHIP) Extension URNs" registry.<a href="#section-6.5.1-4" class="pilcrow">¶</a></p>
+<p id="section-6.5.1-5">An RFC specifying one or more new WHIP extension URNs <span class="bcp14">MUST</span> include the
+   completed registration template(s), which <span class="bcp14">MAY</span> be expanded with
+   additional information. These completed template(s) are intended to go
+   in the body of the document, not in the IANA Considerations section.
+   The RFC <span class="bcp14">MUST</span> include the syntax and semantics of any extension-specific attributes that may be provided in a Link header
+   field advertising the extension.<a href="#section-6.5.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="guidance-for-designated-experts">
+<section id="section-6.5.2">
+          <h4 id="name-guidance-for-the-designated">
+<a href="#section-6.5.2" class="section-number selfRef">6.5.2. </a><a href="#name-guidance-for-the-designated" class="section-name selfRef">Guidance for the Designated Expert</a>
+          </h4>
+<p id="section-6.5.2-1">The DE is expected to do the following:<a href="#section-6.5.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.5.2-2.1">Ascertain the existence of suitable documentation (a
+   specification) as described in <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span> and verify
+   that the document is permanently and publicly
+   available. Specifications should be documented in an
+   Internet-Draft.<a href="#section-6.5.2-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-6.5.2-2.2">Check the clarity of purpose and use of the requested
+          registration.<a href="#section-6.5.2-2.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-6.5.2-2.3">Verify that any request for one of these
+          registrations has been made available for review and comments by
+          posting the request to the &lt;wish@ietf.org&gt; mailing list.<a href="#section-6.5.2-2.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-6.5.2-2.4">Ensure that any other request for a code point does not conflict with work that is active or already published by the IETF.<a href="#section-6.5.2-2.4" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<div id="whip-protocol-extension-registration-template">
+<section id="section-6.5.3">
+          <h4 id="name-registration-template">
+<a href="#section-6.5.3" class="section-number selfRef">6.5.3. </a><a href="#name-registration-template" class="section-name selfRef">Registration Template</a>
+          </h4>
+<p id="section-6.5.3-1">A WHIP extension URN is defined by completing the following template:<a href="#section-6.5.3-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6.5.3-2">
+            <dt id="section-6.5.3-2.1">URN:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.5.3-2.2">A unique URN (e.g., "urn:ietf:params:whip:ext:example:server-sent-events")<a href="#section-6.5.3-2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-6.5.3-2.3">Name:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.5.3-2.4">A descriptive name (e.g., "Sender Side events")<a href="#section-6.5.3-2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-6.5.3-2.5">Reference:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.5.3-2.6">A formal reference to the publicly available specification<a href="#section-6.5.3-2.6" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-6.5.3-2.7">IANA Registry Reference:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.5.3-2.8">The registry related to the new URN<a href="#section-6.5.3-2.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-6.5.3-2.9">Change Controller:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.5.3-2.10">For Standards Track documents, this is "IETF".
+       Otherwise, this is the name of the person or body
+       that has change control over the specification.<a href="#section-6.5.3-2.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="FETCH">[FETCH]</dt>
+        <dd>
+<span class="refAuthor">WHATWG</span>, <span class="refTitle">"Fetch"</span>, <span class="refContent">WHATWG Living Standard</span>, <span>&lt;<a href="https://fetch.spec.whatwg.org">https://fetch.spec.whatwg.org</a>&gt;</span>. <span class="annotation">Commit snapshot: <span>&lt;<a href="https://fetch.spec.whatwg.org/commit-snapshots/edfa8d100cf1ecfde385f65c172e0e8d018fcd98/">https://fetch.spec.whatwg.org/commit-snapshots/edfa8d100cf1ecfde385f65c172e0e8d018fcd98/</a>&gt;</span>.</span>
+        </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3264">[RFC3264]</dt>
+        <dd>
+<span class="refAuthor">Rosenberg, J.</span> and <span class="refAuthor">H. Schulzrinne</span>, <span class="refTitle">"An Offer/Answer Model with Session Description Protocol (SDP)"</span>, <span class="seriesInfo">RFC 3264</span>, <span class="seriesInfo">DOI 10.17487/RFC3264</span>, <time datetime="2002-06" class="refDate">June 2002</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3264">https://www.rfc-editor.org/info/rfc3264</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3553">[RFC3553]</dt>
+        <dd>
+<span class="refAuthor">Mealling, M.</span>, <span class="refAuthor">Masinter, L.</span>, <span class="refAuthor">Hardie, T.</span>, and <span class="refAuthor">G. Klyne</span>, <span class="refTitle">"An IETF URN Sub-namespace for Registered Protocol Parameters"</span>, <span class="seriesInfo">BCP 73</span>, <span class="seriesInfo">RFC 3553</span>, <span class="seriesInfo">DOI 10.17487/RFC3553</span>, <time datetime="2003-06" class="refDate">June 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3553">https://www.rfc-editor.org/info/rfc3553</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3986">[RFC3986]</dt>
+        <dd>
+<span class="refAuthor">Berners-Lee, T.</span>, <span class="refAuthor">Fielding, R.</span>, and <span class="refAuthor">L. Masinter</span>, <span class="refTitle">"Uniform Resource Identifier (URI): Generic Syntax"</span>, <span class="seriesInfo">STD 66</span>, <span class="seriesInfo">RFC 3986</span>, <span class="seriesInfo">DOI 10.17487/RFC3986</span>, <time datetime="2005-01" class="refDate">January 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3986">https://www.rfc-editor.org/info/rfc3986</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4086">[RFC4086]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Schiller, J.</span>, and <span class="refAuthor">S. Crocker</span>, <span class="refTitle">"Randomness Requirements for Security"</span>, <span class="seriesInfo">BCP 106</span>, <span class="seriesInfo">RFC 4086</span>, <span class="seriesInfo">DOI 10.17487/RFC4086</span>, <time datetime="2005-06" class="refDate">June 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4086">https://www.rfc-editor.org/info/rfc4086</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5789">[RFC5789]</dt>
+        <dd>
+<span class="refAuthor">Dusseault, L.</span> and <span class="refAuthor">J. Snell</span>, <span class="refTitle">"PATCH Method for HTTP"</span>, <span class="seriesInfo">RFC 5789</span>, <span class="seriesInfo">DOI 10.17487/RFC5789</span>, <time datetime="2010-03" class="refDate">March 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5789">https://www.rfc-editor.org/info/rfc5789</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6585">[RFC6585]</dt>
+        <dd>
+<span class="refAuthor">Nottingham, M.</span> and <span class="refAuthor">R. Fielding</span>, <span class="refTitle">"Additional HTTP Status Codes"</span>, <span class="seriesInfo">RFC 6585</span>, <span class="seriesInfo">DOI 10.17487/RFC6585</span>, <time datetime="2012-04" class="refDate">April 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6585">https://www.rfc-editor.org/info/rfc6585</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6750">[RFC6750]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span> and <span class="refAuthor">D. Hardt</span>, <span class="refTitle">"The OAuth 2.0 Authorization Framework: Bearer Token Usage"</span>, <span class="seriesInfo">RFC 6750</span>, <span class="seriesInfo">DOI 10.17487/RFC6750</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6750">https://www.rfc-editor.org/info/rfc6750</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7064">[RFC7064]</dt>
+        <dd>
+<span class="refAuthor">Nandakumar, S.</span>, <span class="refAuthor">Salgueiro, G.</span>, <span class="refAuthor">Jones, P.</span>, and <span class="refAuthor">M. Petit-Huguenin</span>, <span class="refTitle">"URI Scheme for the Session Traversal Utilities for NAT (STUN) Protocol"</span>, <span class="seriesInfo">RFC 7064</span>, <span class="seriesInfo">DOI 10.17487/RFC7064</span>, <time datetime="2013-11" class="refDate">November 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7064">https://www.rfc-editor.org/info/rfc7064</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7065">[RFC7065]</dt>
+        <dd>
+<span class="refAuthor">Petit-Huguenin, M.</span>, <span class="refAuthor">Nandakumar, S.</span>, <span class="refAuthor">Salgueiro, G.</span>, and <span class="refAuthor">P. Jones</span>, <span class="refTitle">"Traversal Using Relays around NAT (TURN) Uniform Resource Identifiers"</span>, <span class="seriesInfo">RFC 7065</span>, <span class="seriesInfo">DOI 10.17487/RFC7065</span>, <time datetime="2013-11" class="refDate">November 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7065">https://www.rfc-editor.org/info/rfc7065</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7675">[RFC7675]</dt>
+        <dd>
+<span class="refAuthor">Perumal, M.</span>, <span class="refAuthor">Wing, D.</span>, <span class="refAuthor">Ravindranath, R.</span>, <span class="refAuthor">Reddy, T.</span>, and <span class="refAuthor">M. Thomson</span>, <span class="refTitle">"Session Traversal Utilities for NAT (STUN) Usage for Consent Freshness"</span>, <span class="seriesInfo">RFC 7675</span>, <span class="seriesInfo">DOI 10.17487/RFC7675</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7675">https://www.rfc-editor.org/info/rfc7675</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8288">[RFC8288]</dt>
+        <dd>
+<span class="refAuthor">Nottingham, M.</span>, <span class="refTitle">"Web Linking"</span>, <span class="seriesInfo">RFC 8288</span>, <span class="seriesInfo">DOI 10.17487/RFC8288</span>, <time datetime="2017-10" class="refDate">October 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8288">https://www.rfc-editor.org/info/rfc8288</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8445">[RFC8445]</dt>
+        <dd>
+<span class="refAuthor">Keranen, A.</span>, <span class="refAuthor">Holmberg, C.</span>, and <span class="refAuthor">J. Rosenberg</span>, <span class="refTitle">"Interactive Connectivity Establishment (ICE): A Protocol for Network Address Translator (NAT) Traversal"</span>, <span class="seriesInfo">RFC 8445</span>, <span class="seriesInfo">DOI 10.17487/RFC8445</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8445">https://www.rfc-editor.org/info/rfc8445</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8489">[RFC8489]</dt>
+        <dd>
+<span class="refAuthor">Petit-Huguenin, M.</span>, <span class="refAuthor">Salgueiro, G.</span>, <span class="refAuthor">Rosenberg, J.</span>, <span class="refAuthor">Wing, D.</span>, <span class="refAuthor">Mahy, R.</span>, and <span class="refAuthor">P. Matthews</span>, <span class="refTitle">"Session Traversal Utilities for NAT (STUN)"</span>, <span class="seriesInfo">RFC 8489</span>, <span class="seriesInfo">DOI 10.17487/RFC8489</span>, <time datetime="2020-02" class="refDate">February 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8489">https://www.rfc-editor.org/info/rfc8489</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8725">[RFC8725]</dt>
+        <dd>
+<span class="refAuthor">Sheffer, Y.</span>, <span class="refAuthor">Hardt, D.</span>, and <span class="refAuthor">M. Jones</span>, <span class="refTitle">"JSON Web Token Best Current Practices"</span>, <span class="seriesInfo">BCP 225</span>, <span class="seriesInfo">RFC 8725</span>, <span class="seriesInfo">DOI 10.17487/RFC8725</span>, <time datetime="2020-02" class="refDate">February 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8725">https://www.rfc-editor.org/info/rfc8725</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8826">[RFC8826]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"Security Considerations for WebRTC"</span>, <span class="seriesInfo">RFC 8826</span>, <span class="seriesInfo">DOI 10.17487/RFC8826</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8826">https://www.rfc-editor.org/info/rfc8826</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8830">[RFC8830]</dt>
+        <dd>
+<span class="refAuthor">Alvestrand, H.</span>, <span class="refTitle">"WebRTC MediaStream Identification in the Session Description Protocol"</span>, <span class="seriesInfo">RFC 8830</span>, <span class="seriesInfo">DOI 10.17487/RFC8830</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8830">https://www.rfc-editor.org/info/rfc8830</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8838">[RFC8838]</dt>
+        <dd>
+<span class="refAuthor">Ivov, E.</span>, <span class="refAuthor">Uberti, J.</span>, and <span class="refAuthor">P. Saint-Andre</span>, <span class="refTitle">"Trickle ICE: Incremental Provisioning of Candidates for the Interactive Connectivity Establishment (ICE) Protocol"</span>, <span class="seriesInfo">RFC 8838</span>, <span class="seriesInfo">DOI 10.17487/RFC8838</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8838">https://www.rfc-editor.org/info/rfc8838</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8839">[RFC8839]</dt>
+        <dd>
+<span class="refAuthor">Petit-Huguenin, M.</span>, <span class="refAuthor">Nandakumar, S.</span>, <span class="refAuthor">Holmberg, C.</span>, <span class="refAuthor">Keränen, A.</span>, and <span class="refAuthor">R. Shpount</span>, <span class="refTitle">"Session Description Protocol (SDP) Offer/Answer Procedures for Interactive Connectivity Establishment (ICE)"</span>, <span class="seriesInfo">RFC 8839</span>, <span class="seriesInfo">DOI 10.17487/RFC8839</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8839">https://www.rfc-editor.org/info/rfc8839</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8840">[RFC8840]</dt>
+        <dd>
+<span class="refAuthor">Ivov, E.</span>, <span class="refAuthor">Stach, T.</span>, <span class="refAuthor">Marocco, E.</span>, and <span class="refAuthor">C. Holmberg</span>, <span class="refTitle">"A Session Initiation Protocol (SIP) Usage for Incremental Provisioning of Candidates for the Interactive Connectivity Establishment (Trickle ICE)"</span>, <span class="seriesInfo">RFC 8840</span>, <span class="seriesInfo">DOI 10.17487/RFC8840</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8840">https://www.rfc-editor.org/info/rfc8840</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8842">[RFC8842]</dt>
+        <dd>
+<span class="refAuthor">Holmberg, C.</span> and <span class="refAuthor">R. Shpount</span>, <span class="refTitle">"Session Description Protocol (SDP) Offer/Answer Considerations for Datagram Transport Layer Security (DTLS) and Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 8842</span>, <span class="seriesInfo">DOI 10.17487/RFC8842</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8842">https://www.rfc-editor.org/info/rfc8842</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8853">[RFC8853]</dt>
+        <dd>
+<span class="refAuthor">Burman, B.</span>, <span class="refAuthor">Westerlund, M.</span>, <span class="refAuthor">Nandakumar, S.</span>, and <span class="refAuthor">M. Zanaty</span>, <span class="refTitle">"Using Simulcast in Session Description Protocol (SDP) and RTP Sessions"</span>, <span class="seriesInfo">RFC 8853</span>, <span class="seriesInfo">DOI 10.17487/RFC8853</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8853">https://www.rfc-editor.org/info/rfc8853</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8858">[RFC8858]</dt>
+        <dd>
+<span class="refAuthor">Holmberg, C.</span>, <span class="refTitle">"Indicating Exclusive Support of RTP and RTP Control Protocol (RTCP) Multiplexing Using the Session Description Protocol (SDP)"</span>, <span class="seriesInfo">RFC 8858</span>, <span class="seriesInfo">DOI 10.17487/RFC8858</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8858">https://www.rfc-editor.org/info/rfc8858</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9110">[RFC9110]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="seriesInfo">STD 97</span>, <span class="seriesInfo">RFC 9110</span>, <span class="seriesInfo">DOI 10.17487/RFC9110</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9110">https://www.rfc-editor.org/info/rfc9110</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9112">[RFC9112]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP/1.1"</span>, <span class="seriesInfo">STD 99</span>, <span class="seriesInfo">RFC 9112</span>, <span class="seriesInfo">DOI 10.17487/RFC9112</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9112">https://www.rfc-editor.org/info/rfc9112</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9143">[RFC9143]</dt>
+        <dd>
+<span class="refAuthor">Holmberg, C.</span>, <span class="refAuthor">Alvestrand, H.</span>, and <span class="refAuthor">C. Jennings</span>, <span class="refTitle">"Negotiating Media Multiplexing Using the Session Description Protocol (SDP)"</span>, <span class="seriesInfo">RFC 9143</span>, <span class="seriesInfo">DOI 10.17487/RFC9143</span>, <time datetime="2022-02" class="refDate">February 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9143">https://www.rfc-editor.org/info/rfc9143</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9147">[RFC9147]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refAuthor">Tschofenig, H.</span>, and <span class="refAuthor">N. Modadugu</span>, <span class="refTitle">"The Datagram Transport Layer Security (DTLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 9147</span>, <span class="seriesInfo">DOI 10.17487/RFC9147</span>, <time datetime="2022-04" class="refDate">April 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9147">https://www.rfc-editor.org/info/rfc9147</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9429">[RFC9429]</dt>
+        <dd>
+<span class="refAuthor">Uberti, J.</span>, <span class="refAuthor">Jennings, C.</span>, and <span class="refAuthor">E. Rescorla, Ed.</span>, <span class="refTitle">"JavaScript Session Establishment Protocol (JSEP)"</span>, <span class="seriesInfo">RFC 9429</span>, <span class="seriesInfo">DOI 10.17487/RFC9429</span>, <time datetime="2024-04" class="refDate">April 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9429">https://www.rfc-editor.org/info/rfc9429</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9562">[RFC9562]</dt>
+        <dd>
+<span class="refAuthor">Davis, K.</span>, <span class="refAuthor">Peabody, B.</span>, and <span class="refAuthor">P. Leach</span>, <span class="refTitle">"Universally Unique IDentifiers (UUIDs)"</span>, <span class="seriesInfo">RFC 9562</span>, <span class="seriesInfo">DOI 10.17487/RFC9562</span>, <time datetime="2024-05" class="refDate">May 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9562">https://www.rfc-editor.org/info/rfc9562</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="W3C.REC-ldp-20150226">[W3C.REC-ldp-20150226]</dt>
+      <dd>
+<span class="refAuthor">Arwe, J., Ed.</span>, <span class="refAuthor">Speicher, S., Ed.</span>, and <span class="refAuthor">A. Malhotra, Ed.</span>, <span class="refTitle">"Linked Data Platform 1.0"</span>, <span class="refContent">W3C Recommendation</span>, <time datetime="2015-02-26" class="refDate">26 February 2015</time>, <span>&lt;<a href="https://www.w3.org/TR/2015/REC-ldp-20150226/">https://www.w3.org/TR/2015/REC-ldp-20150226/</a>&gt;</span>. <span class="annotation">Latest version available at: <span>&lt;<a href="https://www.w3.org/TR/ldp/">https://www.w3.org/TR/ldp/</a>&gt;</span>.</span>
+        </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="BCP56">[BCP56]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 56, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp56">https://www.rfc-editor.org/info/bcp56</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC9205">
+            <span class="refAuthor">Nottingham, M.</span>, <span class="refTitle">"Building Protocols with HTTP"</span>, <span class="seriesInfo">BCP 56</span>, <span class="seriesInfo">RFC 9205</span>, <span class="seriesInfo">DOI 10.17487/RFC9205</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9205">https://www.rfc-editor.org/info/rfc9205</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="BCP9">[BCP9]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 9, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp9">https://www.rfc-editor.org/info/bcp9</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC2026">
+            <span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"The Internet Standards Process -- Revision 3"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 2026</span>, <span class="seriesInfo">DOI 10.17487/RFC2026</span>, <time datetime="1996-10" class="refDate">October 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2026">https://www.rfc-editor.org/info/rfc2026</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC5657">
+            <span class="refAuthor">Dusseault, L.</span> and <span class="refAuthor">R. Sparks</span>, <span class="refTitle">"Guidance on Interoperation and Implementation Reports for Advancement to Draft Standard"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 5657</span>, <span class="seriesInfo">DOI 10.17487/RFC5657</span>, <time datetime="2009-09" class="refDate">September 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5657">https://www.rfc-editor.org/info/rfc5657</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC6410">
+            <span class="refAuthor">Housley, R.</span>, <span class="refAuthor">Crocker, D.</span>, and <span class="refAuthor">E. Burger</span>, <span class="refTitle">"Reducing the Standards Track to Two Maturity Levels"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 6410</span>, <span class="seriesInfo">DOI 10.17487/RFC6410</span>, <time datetime="2011-10" class="refDate">October 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6410">https://www.rfc-editor.org/info/rfc6410</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC7100">
+            <span class="refAuthor">Resnick, P.</span>, <span class="refTitle">"Retirement of the "Internet Official Protocol Standards" Summary Document"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 7100</span>, <span class="seriesInfo">DOI 10.17487/RFC7100</span>, <time datetime="2013-12" class="refDate">December 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7100">https://www.rfc-editor.org/info/rfc7100</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC7127">
+            <span class="refAuthor">Kolkman, O.</span>, <span class="refAuthor">Bradner, S.</span>, and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"Characterization of Proposed Standards"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 7127</span>, <span class="seriesInfo">DOI 10.17487/RFC7127</span>, <time datetime="2014-01" class="refDate">January 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7127">https://www.rfc-editor.org/info/rfc7127</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC7475">
+            <span class="refAuthor">Dawkins, S.</span>, <span class="refTitle">"Increasing the Number of Area Directors in an IETF Area"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 7475</span>, <span class="seriesInfo">DOI 10.17487/RFC7475</span>, <time datetime="2015-03" class="refDate">March 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7475">https://www.rfc-editor.org/info/rfc7475</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC8789">
+            <span class="refAuthor">Halpern, J., Ed.</span> and <span class="refAuthor">E. Rescorla, Ed.</span>, <span class="refTitle">"IETF Stream Documents Require IETF Rough Consensus"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 8789</span>, <span class="seriesInfo">DOI 10.17487/RFC8789</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8789">https://www.rfc-editor.org/info/rfc8789</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9282">
+            <span class="refAuthor">Rosen, B.</span>, <span class="refTitle">"Responsibility Change for the RFC Series"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 9282</span>, <span class="seriesInfo">DOI 10.17487/RFC9282</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9282">https://www.rfc-editor.org/info/rfc9282</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="HTML">[HTML]</dt>
+        <dd>
+<span class="refAuthor">WHATWG</span>, <span class="refTitle">"HTML"</span>, <span class="refContent">WHATWG Living Standard</span>, <span>&lt;<a href="https://html.spec.whatwg.org/">https://html.spec.whatwg.org/</a>&gt;</span>. <span class="annotation">Commit snapshot: <span>&lt;<a href="https://html.spec.whatwg.org/commit-snapshots/09db56ba9343c597340b2c7715f43ff9b10826f6/">https://html.spec.whatwg.org/commit-snapshots/09db56ba9343c597340b2c7715f43ff9b10826f6/</a>&gt;</span>.</span>
+        </dd>
+<dd class="break"></dd>
+<dt id="RFC3261">[RFC3261]</dt>
+        <dd>
+<span class="refAuthor">Rosenberg, J.</span>, <span class="refAuthor">Schulzrinne, H.</span>, <span class="refAuthor">Camarillo, G.</span>, <span class="refAuthor">Johnston, A.</span>, <span class="refAuthor">Peterson, J.</span>, <span class="refAuthor">Sparks, R.</span>, <span class="refAuthor">Handley, M.</span>, and <span class="refAuthor">E. Schooler</span>, <span class="refTitle">"SIP: Session Initiation Protocol"</span>, <span class="seriesInfo">RFC 3261</span>, <span class="seriesInfo">DOI 10.17487/RFC3261</span>, <time datetime="2002-06" class="refDate">June 2002</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3261">https://www.rfc-editor.org/info/rfc3261</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6120">[RFC6120]</dt>
+        <dd>
+<span class="refAuthor">Saint-Andre, P.</span>, <span class="refTitle">"Extensible Messaging and Presence Protocol (XMPP): Core"</span>, <span class="seriesInfo">RFC 6120</span>, <span class="seriesInfo">DOI 10.17487/RFC6120</span>, <time datetime="2011-03" class="refDate">March 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6120">https://www.rfc-editor.org/info/rfc6120</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7826">[RFC7826]</dt>
+        <dd>
+<span class="refAuthor">Schulzrinne, H.</span>, <span class="refAuthor">Rao, A.</span>, <span class="refAuthor">Lanphier, R.</span>, <span class="refAuthor">Westerlund, M.</span>, and <span class="refAuthor">M. Stiemerling, Ed.</span>, <span class="refTitle">"Real-Time Streaming Protocol Version 2.0"</span>, <span class="seriesInfo">RFC 7826</span>, <span class="seriesInfo">DOI 10.17487/RFC7826</span>, <time datetime="2016-12" class="refDate">December 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7826">https://www.rfc-editor.org/info/rfc7826</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8836">[RFC8836]</dt>
+        <dd>
+<span class="refAuthor">Jesup, R.</span> and <span class="refAuthor">Z. Sarker, Ed.</span>, <span class="refTitle">"Congestion Control Requirements for Interactive Real-Time Media"</span>, <span class="seriesInfo">RFC 8836</span>, <span class="seriesInfo">DOI 10.17487/RFC8836</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8836">https://www.rfc-editor.org/info/rfc8836</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9457">[RFC9457]</dt>
+        <dd>
+<span class="refAuthor">Nottingham, M.</span>, <span class="refAuthor">Wilde, E.</span>, and <span class="refAuthor">S. Dalal</span>, <span class="refTitle">"Problem Details for HTTP APIs"</span>, <span class="seriesInfo">RFC 9457</span>, <span class="seriesInfo">DOI 10.17487/RFC9457</span>, <time datetime="2023-07" class="refDate">July 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9457">https://www.rfc-editor.org/info/rfc9457</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="W3C.REC-webrtc-20250313">[W3C.REC-webrtc-20250313]</dt>
+      <dd>
+<span class="refAuthor">Jennings, C., Ed.</span>, <span class="refAuthor">Castelli, F., Ed.</span>, <span class="refAuthor">Boström, H., Ed.</span>, and <span class="refAuthor">J. Bruaroey, Ed.</span>, <span class="refTitle">"WebRTC: Real-Time Communication in Browsers"</span>, <span class="refContent">W3C Recommendation</span>, <time datetime="2025-03-13" class="refDate">13 March 2025</time>, <span>&lt;<a href="https://www.w3.org/TR/2025/REC-webrtc-20250313/">https://www.w3.org/TR/2025/REC-webrtc-20250313/</a>&gt;</span>. <span class="annotation">Latest version available at: <span>&lt;<a href="https://www.w3.org/TR/webrtc/">https://www.w3.org/TR/webrtc/</a>&gt;</span>.</span>
+        </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors wish to thank <span class="contact-name">Lorenzo Miniero</span>,
+      <span class="contact-name">Juliusz Chroboczek</span>, <span class="contact-name">Adam       Roach</span>, <span class="contact-name">Nils Ohlmeier</span>, <span class="contact-name">Christer Holmberg</span>, <span class="contact-name">Cameron Elliott</span>,
+      <span class="contact-name">Gustavo Garcia</span>, <span class="contact-name">Jonas Birme</span>,
+      <span class="contact-name">Sandro Gauci</span>, <span class="contact-name">Christer       Holmberg</span>, and everyone else in the WebRTC community that have provided
+      comments, feedback, text, and improvement proposals on the document and
+      contributed early implementations of the spec.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Sergio Garcia Murillo</span></div>
+<div dir="auto" class="left"><span class="org">Millicast</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:sergio.garcia.murillo@cosmosoftware.io" class="email">sergio.garcia.murillo@cosmosoftware.io</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Alexandre Gouaillard</span></div>
+<div dir="auto" class="left"><span class="org">CoSMo Software</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:alex.gouaillard@cosmosoftware.io" class="email">alex.gouaillard@cosmosoftware.io</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
