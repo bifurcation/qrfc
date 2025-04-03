@@ -1,0 +1,3089 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9696: Routing in Fat Trees (RIFT) Applicability and Operational Considerations</title>
+<meta content="Yuehua Wei" name="author">
+<meta content="Zheng (Sandy) Zhang" name="author">
+<meta content="Dmitry Afanasiev" name="author">
+<meta content="Pascal Thubert" name="author">
+<meta content="Tony Przygienda" name="author">
+<meta content="
+       
+This document discusses the properties, applicability, and operational
+considerations of Routing in Fat Trees (RIFT) in different network scenarios
+with the intention of providing a rough guide on how RIFT can be deployed
+to simplify routing operations in Clos topologies and their variations.
+ 
+    " name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="9696" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9696.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-rift-applicability-17" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9696" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9696</td>
+<td class="center">RIFT Applicability Statement</td>
+<td class="right">April 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Wei, et al.</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9696" class="eref">9696</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-04" class="published">April 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">Y. Wei, <span class="editor">Ed.</span>
+</div>
+<div class="org">ZTE Corporation</div>
+</div>
+<div class="author">
+      <div class="author-name">Z. Zhang</div>
+<div class="org">ZTE Corporation</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Afanasiev</div>
+<div class="org">Yandex</div>
+</div>
+<div class="author">
+      <div class="author-name">P. Thubert</div>
+<div class="org">Individual</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Przygienda</div>
+<div class="org">Juniper Networks</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9696</h1>
+<h1 id="title">Routing in Fat Trees (RIFT) Applicability and Operational Considerations</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+This document discusses the properties, applicability, and operational
+considerations of Routing in Fat Trees (RIFT) in different network scenarios
+with the intention of providing a rough guide on how RIFT can be deployed
+to simplify routing operations in Clos topologies and their variations.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9696">https://www.rfc-editor.org/info/rfc9696</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-problem-statement-of-routin" class="internal xref">Problem Statement of Routing in Modern IP Fabric Fat Tree Networks</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-applicability-of-rift-to-cl" class="internal xref">Applicability of RIFT to Clos IP Fabrics</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-overview-of-rift" class="internal xref">Overview of RIFT</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-applicable-topologies" class="internal xref">Applicable Topologies</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-horizontal-links" class="internal xref">Horizontal Links</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-vertical-shortcuts" class="internal xref">Vertical Shortcuts</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-generalizing-to-any-directe" class="internal xref">Generalizing to Any Directed Acyclic Graph</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.4">
+                    <p id="section-toc.1-1.4.2.2.2.4.1"><a href="#section-4.2.4" class="auto internal xref">4.2.4</a>.  <a href="#name-reachability-of-internal-no" class="internal xref">Reachability of Internal Nodes in the Fabric</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-use-cases" class="internal xref">Use Cases</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.1">
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="auto internal xref">4.3.1</a>.  <a href="#name-data-center-topologies" class="internal xref">Data Center Topologies</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.2">
+                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="auto internal xref">4.3.2</a>.  <a href="#name-metro-networks" class="internal xref">Metro Networks</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.3">
+                    <p id="section-toc.1-1.4.2.3.2.3.1"><a href="#section-4.3.3" class="auto internal xref">4.3.3</a>.  <a href="#name-building-cabling" class="internal xref">Building Cabling</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.4">
+                    <p id="section-toc.1-1.4.2.3.2.4.1"><a href="#section-4.3.4" class="auto internal xref">4.3.4</a>.  <a href="#name-internal-router-switching-f" class="internal xref">Internal Router Switching Fabrics</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.5">
+                    <p id="section-toc.1-1.4.2.3.2.5.1"><a href="#section-4.3.5" class="auto internal xref">4.3.5</a>.  <a href="#name-cloudco" class="internal xref">CloudCO</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-south-reflection" class="internal xref">South Reflection</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-suboptimal-routing-on-link-" class="internal xref">Suboptimal Routing on Link Failures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-black-holing-on-link-failur" class="internal xref">Black-Holing on Link Failures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-zero-touch-provisioning-ztp" class="internal xref">Zero Touch Provisioning (ZTP)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-miscabling" class="internal xref">Miscabling</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5.2.1">
+                    <p id="section-toc.1-1.5.2.5.2.1.1"><a href="#section-5.5.1" class="auto internal xref">5.5.1</a>.  <a href="#name-miscabling-examples" class="internal xref">Miscabling Examples</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5.2.2">
+                    <p id="section-toc.1-1.5.2.5.2.2.1"><a href="#section-5.5.2" class="auto internal xref">5.5.2</a>.  <a href="#name-miscabling-considerations" class="internal xref">Miscabling Considerations</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
+                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-multicast-and-broadcast-imp" class="internal xref">Multicast and Broadcast Implementations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.7">
+                <p id="section-toc.1-1.5.2.7.1"><a href="#section-5.7" class="auto internal xref">5.7</a>.  <a href="#name-positive-vs-negative-disagg" class="internal xref">Positive vs. Negative Disaggregation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.8">
+                <p id="section-toc.1-1.5.2.8.1"><a href="#section-5.8" class="auto internal xref">5.8</a>.  <a href="#name-mobile-edge-and-anycast" class="internal xref">Mobile Edge and Anycast</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.9">
+                <p id="section-toc.1-1.5.2.9.1"><a href="#section-5.9" class="auto internal xref">5.9</a>.  <a href="#name-ipv4-over-ipv6" class="internal xref">IPv4 over IPv6</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.10">
+                <p id="section-toc.1-1.5.2.10.1"><a href="#section-5.10" class="auto internal xref">5.10</a>. <a href="#name-in-band-reachability-of-nod" class="internal xref">In-Band Reachability of Nodes</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.11">
+                <p id="section-toc.1-1.5.2.11.1"><a href="#section-5.11" class="auto internal xref">5.11</a>. <a href="#name-dual-homing-servers" class="internal xref">Dual-Homing Servers</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.12">
+                <p id="section-toc.1-1.5.2.12.1"><a href="#section-5.12" class="auto internal xref">5.12</a>. <a href="#name-fabric-with-a-controller" class="internal xref">Fabric with a Controller</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.12.2.1">
+                    <p id="section-toc.1-1.5.2.12.2.1.1"><a href="#section-5.12.1" class="auto internal xref">5.12.1</a>.  <a href="#name-controller-attached-to-tofs" class="internal xref">Controller Attached to ToFs</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.12.2.2">
+                    <p id="section-toc.1-1.5.2.12.2.2.1"><a href="#section-5.12.2" class="auto internal xref">5.12.2</a>.  <a href="#name-controller-attached-to-leaf" class="internal xref">Controller Attached to Leaf</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.13">
+                <p id="section-toc.1-1.5.2.13.1"><a href="#section-5.13" class="auto internal xref">5.13</a>. <a href="#name-internet-connectivity-withi" class="internal xref">Internet Connectivity Within Underlay</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.13.2.1">
+                    <p id="section-toc.1-1.5.2.13.2.1.1"><a href="#section-5.13.1" class="auto internal xref">5.13.1</a>.  <a href="#name-internet-default-on-the-lea" class="internal xref">Internet Default on the Leaf</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.13.2.2">
+                    <p id="section-toc.1-1.5.2.13.2.2.1"><a href="#section-5.13.2" class="auto internal xref">5.13.2</a>.  <a href="#name-internet-default-on-the-tof" class="internal xref">Internet Default on the ToFs</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.14">
+                <p id="section-toc.1-1.5.2.14.1"><a href="#section-5.14" class="auto internal xref">5.14</a>. <a href="#name-subnet-mismatch-and-address" class="internal xref">Subnet Mismatch and Address Families</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.15">
+                <p id="section-toc.1-1.5.2.15.1"><a href="#section-5.15" class="auto internal xref">5.15</a>. <a href="#name-anycast-considerations" class="internal xref">Anycast Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.16">
+                <p id="section-toc.1-1.5.2.16.1"><a href="#section-5.16" class="auto internal xref">5.16</a>. <a href="#name-iot-applicability" class="internal xref">IoT Applicability</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.17">
+                <p id="section-toc.1-1.5.2.17.1"><a href="#section-5.17" class="auto internal xref">5.17</a>. <a href="#name-key-management" class="internal xref">Key Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.18">
+                <p id="section-toc.1-1.5.2.18.1"><a href="#section-5.18" class="auto internal xref">5.18</a>. <a href="#name-ttl-hop-limit-of-1-vs-255-o" class="internal xref">TTL/Hop Limit of 1 vs. 255 on LIEs/TIEs</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document discusses the properties and applicability of
+<span><a href="#RFC9692" class="internal xref">"RIFT: Routing in Fat Trees"</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span> in
+different deployment scenarios and highlights the operational simplicity of the
+technology compared to classical routing solutions.
+It also documents special considerations when RIFT is used with or without overlays and/or controllers and how RIFT identifies miscablings and reroutes around node and link failures.<a href="#section-1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">This document uses the terminology defined in <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>.
+The most frequently used terms and their definitions from that document are
+listed here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-2-2">
+        <dt id="section-2-2.1">Clos / Fat Tree:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">
+                            This document uses the terms "Clos" and "Fat Tree" interchangeably
+                            where it always refers to a folded spine-and-leaf topology with possibly multiple Points of Delivery (PoDs) and one or multiple Top of Fabric (ToF) planes.
+                            Several modifications such as leaf-2-leaf
+                            shortcuts and multiple level shortcuts are possible and described further in
+                            the document.<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">Crossbar:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">
+                            Physical arrangement of ports in a switching matrix without
+                            implying any further scheduling or buffering disciplines.<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">Directed Acyclic Graph (DAG):</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">A finite directed graph with no directed cycles (loops).
+  If links in a Clos are considered as either being all directed towards the
+  top or bottom, each of such two graphs is a DAG.<a href="#section-2-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">Disaggregation:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">
+                            The process in which a node decides to
+                            advertise more specific prefixes southwards, either positively to
+                            attract the corresponding traffic or negatively to repel it.
+                            Disaggregation is performed to prevent traffic loss and suboptimal
+                            routing to the more specific prefixes.<a href="#section-2-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.9">Leaf:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.10">A node without southbound adjacencies. Level 0 implies a leaf in RIFT, but a leaf does not have to be level 0.<a href="#section-2-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.11">LIE:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.12">This is an acronym for "Link Information Element" exchanged
+          on all the system's links running RIFT to form <em>ThreeWay</em>
+          adjacencies and carry information used to perform RIFT Zero Touch
+          Provisioning (ZTP) of levels.<a href="#section-2-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.13">South Reflection:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.14">Often abbreviated just as
+                            "reflection", South Reflection defines a mechanism where South Node TIEs
+                            are "reflected" from the level south back up north to allow
+                            nodes in the same level
+                            without East-West links to be aware of each other's node Topology
+                            Information Elements (TIEs).<a href="#section-2-2.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.15">Spine:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.16">Any nodes north of leaves and south of ToF nodes. Multiple
+                            layers of spines in a PoD are possible.<a href="#section-2-2.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.17">TIE:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.18">This is an acronym for "Topology Information Element". TIEs are
+          exchanged between RIFT nodes to describe parts of a network such as
+          links and address prefixes.  A TIE always has a direction and a
+          type.  North TIEs (sometimes abbreviated as N-TIEs) are used when
+          dealing with TIEs in the northbound representation, and South-TIEs
+          (sometimes abbreviated as S-TIEs) are used for the southbound
+          equivalent. TIEs have different types, such as node and prefix TIEs.<a href="#section-2-2.18" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-3">
+      <h2 id="name-problem-statement-of-routin">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-problem-statement-of-routin" class="section-name selfRef">Problem Statement of Routing in Modern IP Fabric Fat Tree Networks</a>
+      </h2>
+<p id="section-3-1">
+
+
+   <span><a href="#CLOS" class="internal xref">Clos</a> [<a href="#CLOS" class="cite xref">CLOS</a>]</span> topologies (commonly called a Fat Tree/network in modern
+   IP fabric considerations as a similar term for the original definition of the
+   term <span><a href="#FATTREE" class="internal xref">Fat Tree</a> [<a href="#FATTREE" class="cite xref">FATTREE</a>]</span>) have gained prominence in today's
+   networking, primarily as a result of the paradigm shift towards a
+   centralized data-center-based architecture that delivers a majority of
+   computation and storage services.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Current routing protocols were geared towards a network with an
+irregular topology with isotropic properties and a low degree of connectivity.
+When applied to Fat Tree topologies:<a href="#section-3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-3.1">They tend to need extensive configuration or provisioning
+            during initialization and adding or removing nodes from the
+            fabric.<a href="#section-3-3.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-3.2">For link-state routing protocols, all nodes including
+            spine-and-leaf nodes learn the entire network topology and routing
+            information, which is actually not needed on the leaf nodes during
+            normal operation. They flood significant amounts of duplicate
+            link-state information between spine-and-leaf nodes during
+            topology updates and convergence events, requiring that additional
+            CPU and link bandwidth be consumed.  This may impact the stability
+            and scalability of the fabric, make the fabric less reactive to
+            failures, and prevent the use of cheaper hardware at the lower
+            levels (i.e., spine-and-leaf nodes).<a href="#section-3-3.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+<section id="section-4">
+      <h2 id="name-applicability-of-rift-to-cl">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-applicability-of-rift-to-cl" class="section-name selfRef">Applicability of RIFT to Clos IP Fabrics</a>
+      </h2>
+<p id="section-4-1">
+Further content of this document assumes that the reader is familiar with the
+terms and concepts used in the <span><a href="#RFC2328" class="internal xref">Open Shortest Path First
+(OSPF)</a> [<a href="#RFC2328" class="cite xref">RFC2328</a>]</span>, <span><a href="#RFC5340" class="internal xref">OSPF for IPv6</a> [<a href="#RFC5340" class="cite xref">RFC5340</a>]</span>, and <span><a href="#ISO10589-Second-Edition" class="internal xref">Intermediate System to Intermediate System
+(IS-IS)</a> [<a href="#ISO10589-Second-Edition" class="cite xref">ISO10589-Second-Edition</a>]</span> link-state
+protocols. <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span> outlines the
+requirements of routing in IP fabrics and RIFT protocol concepts.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<section id="section-4.1">
+        <h3 id="name-overview-of-rift">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-overview-of-rift" class="section-name selfRef">Overview of RIFT</a>
+        </h3>
+<p id="section-4.1-1">
+RIFT is a dynamic routing protocol that is tailored for use in Clos, Fat Tree, and other anisotropic topologies.
+Therefore, a core property of RIFT is that its operation is
+sensitive to the structure of the fabric -- it is anisotropic. RIFT acts as a link-state protocol when "pointing north", advertising southward routes to northward peers (parents) through flooding and database synchronization. When "pointing south", RIFT operates hop-by-hop like a distance-vector protocol, typically advertising a fabric default route towards the ToF, aka superspine, to southward peers (children).<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">
+  The fabric default is typically the default route as described in
+Section <span><a href="https://rfc-editor.org/rfc/rfc9692#section-6.3.8" class="relref">6.3.8</a> (<a href="https://rfc-editor.org/rfc/rfc9692#section-6.3.8" class="relref">"Southbound Default Route Origination"</a>)</span> of <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>.
+The ToF nodes may alternatively originate more specific prefixes (P') southbound
+instead of the default route. In such a scenario, all addresses carried within
+the RIFT domain must be contained within P', and it is possible for a leaf that
+acts as gateway to the Internet to advertise the default route instead.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">RIFT floods flat link-state information northbound only so that each level
+obtains the full topology of the levels that are south of it. That information is never flooded
+East-West or back south again, so a top tier node has a full set of prefixes from
+the Shortest Path First (SPF) calculation.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">In the southbound direction, the protocol operates like a "fully summarizing,
+unidirectional" path-vector protocol or, rather, a distance-vector with implicit split horizon. Routing information, normally just the default route, propagates one hop south and is "re-advertised" by nodes at next lower level.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<span id="name-rift-overview"></span><div id="pic-rift">
+<figure id="figure-1">
+          <div class="alignCenter art-text artwork" id="section-4.1-5.1">
+<pre>
+         +---------------+       +----------------+
+         |      ToF      |       |       ToF      |     LEVEL 2
++        ++------+--+--+-+       ++-+--+----+-----+
+|         |      |  |  |          | |  |    |        ^
++         |      |  |  +-------------------------+   |
+Distance- |   +-------------------+ |  |    |    |   |
+Vector    |   |  |  |               |  |    |    |   +
+South     |   |  |  |      +--------+  |    |    |   Link-State
++         |   |  |  |      |           |    |    |   Flooding
+|         |   |  +----------------+    |    |    |   North
+v         |   |     |      |      |    |    |    |   +
+         ++---+-+   +------+    +-+----+   ++----++  |
+         |SPINE |   |SPINE |    | SPINE|   | SPINE|  |  LEVEL 1
++        ++----++   ++---+-+    +-+--+-+   ++----++  |
++         |    |     |   |        |  |      |    |   |     ^ N
+Distance- |    +-------+ |        |  +--------+  |   |     |   E
+Vector    |          | | |        |         | |  |   |  +------&gt;
+South     |  +-------+ | |        |  +------+ |  |   |     |
++         |  |         | |        |  |        |  |   |     +
+v        ++--++      +-+-++      ++--++      ++--++  +
+         |LEAF|      |LEAF|      |LEAF|      |LEAF|     LEVEL 0
+         +----+      +----+      +----+      +----+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-rift-overview" class="selfRef">RIFT Overview</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.1-6">A spine node only has information necessary for its level, which is all
+destinations south of the node based on SPF calculation, the default route, and
+potentially disaggregated routes.<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.1-7">RIFT combines the advantages of both link-state and distance-vector protocols:<a href="#section-4.1-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-8.1">Fastest possible convergence<a href="#section-4.1-8.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-8.2">Automatic detection of topology<a href="#section-4.1-8.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-8.3">Minimal routes/information on Top-of-Rack (ToR) switches, aka leaf nodes<a href="#section-4.1-8.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-8.4">High degree of ECMP<a href="#section-4.1-8.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-8.5">Fast decommissioning of nodes<a href="#section-4.1-8.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-8.6">Maximum propagation speed with flexible prefixes in an update<a href="#section-4.1-8.6" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.1-9">There are two types of link-state databases that are "north representation"
+North Topology Information Elements (N-TIEs) and "south representation" South
+Topology Information Elements (S-TIEs). The N-TIEs contain a link-state
+topology description of lower levels, and the S-TIEs simply carry default and
+disaggregated routes for the lower levels.<a href="#section-4.1-9" class="pilcrow">¶</a></p>
+<p id="section-4.1-10">RIFT also eliminates major disadvantages of link-state and distance-vector protocols with the following:<a href="#section-4.1-10" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-11.1">Reduced and balanced flooding<a href="#section-4.1-11.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-11.2">Level-constrained automatic neighbor discovery<a href="#section-4.1-11.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.1-12"></p>
+<p id="section-4.1-13">To achieve this, RIFT builds on the art of IGPs, such as OSPF, IS-IS,  Mobile Ad Hoc Network (MANET), and Internet of Things (IoT) to provide unique features:<a href="#section-4.1-13" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-14.1">Automatic (positive or negative) route disaggregation of northward routes upon fallen leaves<a href="#section-4.1-14.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-14.2">Recursive operation in the case of negative route
+            disaggregation<a href="#section-4.1-14.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-14.3">Anisotropic routing that extends a principle seen in the <span><a href="#RFC6550" class="internal xref">Routing Protocol for Low-Power and Lossy Networks (RPL)</a> [<a href="#RFC6550" class="cite xref">RFC6550</a>]</span> to wide superspines<a href="#section-4.1-14.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-14.4">Optimal flooding reduction that derives from the concept of a "multipoint relay" (MPR) found in <span><a href="#RFC3626" class="internal xref">Optimized Link State Routing (OLSR)</a> [<a href="#RFC3626" class="cite xref">RFC3626</a>]</span> and
+            balances the flooding load over northbound links and nodes<a href="#section-4.1-14.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.1-15">Additional advantages that are unique to RIFT are listed below. The details of these advantages can be found in <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>.<a href="#section-4.1-15" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-16.1">True ZTP<a href="#section-4.1-16.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-16.2">Minimal blast radius on failures<a href="#section-4.1-16.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-16.3">Can utilize all paths through fabric without looping<a href="#section-4.1-16.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-16.4">Simple leaf implementation that can scale down to servers<a href="#section-4.1-16.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-16.5">Key-value store<a href="#section-4.1-16.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-16.6">Horizontal links used for protection only<a href="#section-4.1-16.6" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+<section id="section-4.2">
+        <h3 id="name-applicable-topologies">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-applicable-topologies" class="section-name selfRef">Applicable Topologies</a>
+        </h3>
+<p id="section-4.2-1">
+Albeit RIFT is specified primarily for "proper" Clos or Fat Tree topologies,
+the protocol natively supports Points of Delivery (PoD) concepts, which, strictly speaking, are not found in the original Clos concept.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">Further, the specification explains and supports operations of multi-plane
+Clos variants where the protocol recommends the use of inter-plane rings at the
+ToF level to allow the reconciliation of topology view of different planes
+to make the Negative Disaggregation viable in case of failures within a plane.
+These observations hold not only in case of RIFT but also in the generic
+case of dynamic routing on Clos variants with multiple planes and failures
+in bisectional bandwidth, especially on the leaves.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<section id="section-4.2.1">
+          <h4 id="name-horizontal-links">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-horizontal-links" class="section-name selfRef">Horizontal Links</a>
+          </h4>
+<p id="section-4.2.1-1">
+RIFT is not limited to pure Clos divided into PoD and multi-planes but
+supports horizontal (East-West) links below the ToF level. Those links
+are used only for last resort northbound forwarding when a spine loses all its
+northbound links or cannot compute a default route through them.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">A full-mesh connectivity between nodes on the same level can be deployed,
+which allows North SPF (N-SPF) to provide for any node losing all its
+northbound adjacencies (as long as any of the other nodes in the level are
+northbound connected) and still participate in northbound forwarding.<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-3">Note that a "ring" of horizontal links at any level below ToF does not provide a "ring-based protection" scheme since the SPF computation would have to deal with breaking of "loops", an application for which RIFT is not intended.<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2.2">
+          <h4 id="name-vertical-shortcuts">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-vertical-shortcuts" class="section-name selfRef">Vertical Shortcuts</a>
+          </h4>
+<p id="section-4.2.2-1">
+Through relaxations of the specified adjacency forming rules, RIFT implementations can be extended to support vertical "shortcuts". The RIFT specification
+itself does not provide the exact details since the resulting solution suffers from
+either a much larger blast radius with increased flooding volumes or
+bow tie problems in the case of maximum aggregation routing.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2.3">
+          <h4 id="name-generalizing-to-any-directe">
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-generalizing-to-any-directe" class="section-name selfRef">Generalizing to Any Directed Acyclic Graph</a>
+          </h4>
+<p id="section-4.2.3-1">
+RIFT is an anisotropic routing protocol, meaning that it has a sense of direction (northbound, southbound, and East-West) and operates differently depending on the direction.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-2">
+   Since a DAG provides a sense of north (the
+   direction of the DAG) and south (the reverse), it can be used to
+   apply RIFT -- an edge in the DAG that has only incoming vertices is a
+   ToF node.<a href="#section-4.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-3">
+  There are a number of caveats though:<a href="#section-4.2.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.3-4.1">The DAG structure must exist before RIFT starts, so there is a need for a companion protocol to establish the logical DAG structure.<a href="#section-4.2.3-4.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.3-4.2">A generic DAG does not have a sense of East and West. The operation specified for East-West links and the southbound reflection between nodes are not applicable.
+  Also, ZTP will derive a sense of depth that will eliminate some links. Variations of ZTP could be derived to meet specific objectives, e.g., make it so that most routers have at least two parents to reach the ToF.<a href="#section-4.2.3-4.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.3-4.3">
+  RIFT applies to any Destination-Oriented DAG (DODAG) where there's only one ToF node and the problem of disaggregation does not exist. 
+
+In that case, RIFT operates very much like RPL <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>, but
+uses link-state information for southbound routes (downwards in RPL's terms).
+For an arbitrary DAG with multiple destinations (ToFs), the way disaggregation
+happens has to be considered.<a href="#section-4.2.3-4.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.3-4.4">Positive Disaggregation expects that most of the ToF nodes reach most of the leaves, so disaggregation is the exception as opposed to the rule. When this is no longer true, it makes sense to turn off disaggregation and route between the ToF nodes over a ring, a full mesh, a transit network, or a form of area zero. Then again, this operation is similar to RPL operating as a single DODAG with a virtual root.<a href="#section-4.2.3-4.4" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.3-4.5">
+  In order to aggregate and disaggregate routes, RIFT requires that all the ToF nodes share the full knowledge of the prefixes in the fabric. This can be achieved with a ring as suggested by <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>, by some preconfiguration, or by using a synchronization with a common repository where all the active prefixes are registered.<a href="#section-4.2.3-4.5" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+<div id="onastick">
+<section id="section-4.2.4">
+          <h4 id="name-reachability-of-internal-no">
+<a href="#section-4.2.4" class="section-number selfRef">4.2.4. </a><a href="#name-reachability-of-internal-no" class="section-name selfRef">Reachability of Internal Nodes in the Fabric</a>
+          </h4>
+<p id="section-4.2.4-1">RIFT does not require that nodes have reachable addresses in the
+    fabric, though it is clearly desirable for operational purposes. Under
+    normal operating conditions, this can be easily achieved by injecting the
+    node's loopback address into Prefix North TIEs and Prefix South TIEs or
+    other implementation-specific mechanisms.<a href="#section-4.2.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.4-2">
+
+        Special considerations arise when a node loses all northbound
+        adjacencies but is not at the top of the fabric. If a spine node loses
+        all northbound links, the spine node doesn't advertise a default
+        route. But if the level of the spine node is auto-determined by ZTP,
+        it will "fall down" as depicted in <a href="#Fallen-spine" class="auto internal xref">Figure 8</a>.<a href="#section-4.2.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+<section id="section-4.3">
+        <h3 id="name-use-cases">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-use-cases" class="section-name selfRef">Use Cases</a>
+        </h3>
+<section id="section-4.3.1">
+          <h4 id="name-data-center-topologies">
+<a href="#section-4.3.1" class="section-number selfRef">4.3.1. </a><a href="#name-data-center-topologies" class="section-name selfRef">Data Center Topologies</a>
+          </h4>
+<section id="section-4.3.1.1">
+            <h5 id="name-data-center-fabrics">
+<a href="#section-4.3.1.1" class="section-number selfRef">4.3.1.1. </a><a href="#name-data-center-fabrics" class="section-name selfRef">Data Center Fabrics</a>
+            </h5>
+<p id="section-4.3.1.1-1">
+   RIFT is suited for applying underlay routing in data center (DC) IP
+   fabrics, with the vast majority of these IP fabrics being Clos
+   architectures (and will be for the foreseeable future). It significantly
+   simplifies operation and deployment of such fabrics as described in <a href="#opex" class="auto internal xref">Section 5</a> for environments compared to extensive proprietary
+   provisioning and operational solutions.<a href="#section-4.3.1.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.3.1.2">
+            <h5 id="name-adaptations-to-other-propos">
+<a href="#section-4.3.1.2" class="section-number selfRef">4.3.1.2. </a><a href="#name-adaptations-to-other-propos" class="section-name selfRef">Adaptations to Other Proposed Data Center Topologies</a>
+            </h5>
+<span id="name-level-shortcut"></span><div id="levelshortcuts">
+<figure id="figure-2">
+              <div class="alignCenter art-text artwork" id="section-4.3.1.2-1.1">
+<pre>
+.  +-----+        +-----+
+.  |     |        |     |
+.+-+ S0  |        | S1  |
+.| ++---++        ++---++
+.|  |   |          |   |
+.|  | +------------+   |
+.|  | | +------------+ |
+.|  | |              | |
+.| ++-+--+        +--+-++
+.| |     |        |     |
+.| | A0  |        | A1  |
+.| +-+--++        ++---++
+.|   |  |          |   |
+.|   |  +------------+ |
+.|   | +-----------+ | |
+.|   | |             | |
+.| +-+-+-+        +--+-++
+.+-+     |        |     |
+.  | L0  |        | L1  |
+.  +-----+        +-----+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-level-shortcut" class="selfRef">Level Shortcut</a>
+              </figcaption></figure>
+</div>
+<p id="section-4.3.1.2-2">
+        RIFT is not strictly limited to Clos topologies.  The protocol only
+        requires a sense of "compass rose directionality" either achieved
+        through configuration or derivation of levels.
+        So conceptually, shortcuts between levels could be included.
+
+
+        <a href="#levelshortcuts" class="auto internal xref">Figure 2</a> depicts an example of a shortcut
+        between levels.  In this example, suboptimal routing will
+        occur when traffic is sent from L0 to L1 via S0's
+        default route and back down through A0 or A1.
+        In order to avoid that, only default routes from A0 or A1
+        are used. All leaves would be required to install each other's routes.<a href="#section-4.3.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.3.1.2-3">
+        While various technical and operational challenges may require the use of such modifications,
+        discussion of those topics is outside the scope of this document.<a href="#section-4.3.1.2-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4.3.2">
+          <h4 id="name-metro-networks">
+<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-metro-networks" class="section-name selfRef">Metro Networks</a>
+          </h4>
+<p id="section-4.3.2-1">
+The demand for bandwidth is increasing steadily, driven primarily by
+environments close to
+content producers (server farms connection via DC fabrics) but in
+proximity to content consumers as well.
+Consumers are often clustered in metro areas with their own network
+architectures that can benefit
+from simplified, regular Clos structures. Thus, they can also benefit from RIFT.<a href="#section-4.3.2-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.3.3">
+          <h4 id="name-building-cabling">
+<a href="#section-4.3.3" class="section-number selfRef">4.3.3. </a><a href="#name-building-cabling" class="section-name selfRef">Building Cabling</a>
+          </h4>
+<p id="section-4.3.3-1">
+Commercial edifices are often cabled in topologies that are
+either Clos or its isomorphic equivalents. The
+Clos can grow rather high with many levels. That presents a challenge
+for classical routing protocols (except BGP <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> and Private Network-Network Interface (PNNI) <span>[<a href="#PNNI" class="cite xref">PNNI</a>]</span>, which is largely
+phased-out by now) that do not support
+an arbitrary number of levels, which RIFT does naturally. Moreover, due to the limited sizes of forwarding tables in network elements of building cabling, the minimum FIB size RIFT maintains under normal conditions is cost-effective in terms of hardware and operational costs.<a href="#section-4.3.3-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.3.4">
+          <h4 id="name-internal-router-switching-f">
+<a href="#section-4.3.4" class="section-number selfRef">4.3.4. </a><a href="#name-internal-router-switching-f" class="section-name selfRef">Internal Router Switching Fabrics</a>
+          </h4>
+<p id="section-4.3.4-1">
+It is common in high-speed communications switching and routing 
+devices to use switch fabrics that are interconnection networks inside the devices connecting the input ports to their output ports. For example, a crossbar is one of the switch fabric techniques, even though it is not feasible due to cost, head-of-line blocking, or size trade-offs. Normally, such fabrics are not self-healing or rely on 1:1 or 1+1 protection schemes, but it is conceivable to use RIFT to operate Clos fabrics that can deal effectively with interconnections
+or subsystem failures in such a module. RIFT is not IP specific and
+hence any link addressing connecting internal device subnets is
+conceivable.<a href="#section-4.3.4-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.3.5">
+          <h4 id="name-cloudco">
+<a href="#section-4.3.5" class="section-number selfRef">4.3.5. </a><a href="#name-cloudco" class="section-name selfRef">CloudCO</a>
+          </h4>
+<p id="section-4.3.5-1">
+The Cloud Central Office (CloudCO) is a new stage of the telecom Central Office. It takes the advantage of Software-Defined Networking (SDN) and Network Function Virtualization (NFV) in conjunction with general purpose hardware to optimize current networks.
+The following figure illustrates this architecture at a high level. It describes a single instance or macro-node of CloudCO that provides a number of value-added services (VASes), a Broadband Access Abstraction (BAA), and virtualized network services. An Access I/O module faces a CloudCO access node and the Customer Premises Equipment (CPE) behind it. A Network I/O module is facing the core network. 
+The two I/O modules are interconnected by a spine-and-leaf fabric <span>[<a href="#TR-384" class="cite xref">TR-384</a>]</span>.<a href="#section-4.3.5-1" class="pilcrow">¶</a></p>
+<span id="name-cloudco-architecture-exampl"></span><div id="pic-CloudCO">
+<figure id="figure-3">
+            <div class="alignCenter art-text artwork" id="section-4.3.5-2.1">
+<pre>
++---------------------+           +----------------------+
+|         Spine       |           |     Spine            |
+|         Switch      |           |     Switch           |
++------+---+------+-+-+           +--+-+-+-+-----+-------+
+|      |   |      | | |              | | | |     |       |
+|      |   |      | | +-------------------------------+  |
+|      |   |      | |                | | | |     |    |  |
+|      |   |      | +-------------------------+  |    |  |
+|      |   |      |                  | | | |  |  |    |  |
+|      |   +----------------------+  | | | |  |  |    |  |
+|      |          |               |  | | | |  |  |    |  |
+|  +---------------------------------+ | | |  |  |    |  |
+|  |   |          |               |    | | |  |  |    |  |
+|  |   |   +-----------------------------+ |  |  |    |  |
+|  |   |   |      |               |    |   |  |  |    |  |
+|  |   |   |      |   +--------------------+  |  |    |  |
+|  |   |   |      |   |           |    |      |  |    |  |
++--+ +-+---+--+ +-+---+--+     +--+----+--+ +-+--+--+ +--+
+|L | | Leaf   | | Leaf   |     |  Leaf    | | Leaf  | |L |
+|S | | Switch | | Switch |     |  Switch  | | Switch| |S |
+++-+ +-+-+-+--+ +-+-+-+--+     +--+-+--+--+ ++-+--+-+ +-++
+ |     | | |      | | |           | |  |     | |  |     |
+ |   +-+-+-+--+ +-+-+-+--+     +--+-+--+--+ ++-+--+-+   |
+ |   |Compute | |Compute |     | Compute  | |Compute|   |
+ |   |Node    | |Node    |     | Node     | |Node   |   |
+ |   +--------+ +--------+     +----------+ +-------+   |
+ |   || VAS5 || || vDHCP||     || vRouter|| ||VAS1 ||   |
+ |   |--------| |--------|     |----------| |-------|   |
+ |   |--------| |--------|     |----------| |-------|   |
+ |   || VAS6 || || VAS3 ||     || v802.1x|| ||VAS2 ||   |
+ |   |--------| |--------|     |----------| |-------|   |
+ |   |--------| |--------|     |----------| |-------|   |
+ |   || VAS7 || || VAS4 ||     ||  vIGMP || ||BAA  ||   |
+ |   |--------| |--------|     |----------| |-------|   |
+ |   +--------+ +--------+     +----------+ +-------+   |
+ |                                                      |
+++-----------+                                +---------++
+|Network I/O |                                |Access I/O|
++------------+                                +----------+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-cloudco-architecture-exampl" class="selfRef">CloudCO Architecture Example</a>
+            </figcaption></figure>
+</div>
+<p id="section-4.3.5-3">
+The Spine-Leaf architecture deployed inside CloudCO meets the network requirements of being adaptable, agile, scalable, and dynamic.<a href="#section-4.3.5-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+</section>
+<div id="opex">
+<section id="section-5">
+      <h2 id="name-operational-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<p id="section-5-1">
+RIFT presents the features for organizations building and operating
+IP fabrics to simplify the operation and deployments while achieving
+many desirable
+properties of a dynamic routing protocol on such a substrate:<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-2.1">
+RIFT only floods routing information to the devices that need it.<a href="#section-5-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.2">
+RIFT allows for ZTP within the protocol.
+In its most extreme version, RIFT does not rely on any specific addressing
+and can operate using <span><a href="#RFC4861" class="internal xref">IPv6 Neighbor Discovery (ND)</a> [<a href="#RFC4861" class="cite xref">RFC4861</a>]</span> only for IP fabric.<a href="#section-5-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.3">
+RIFT has provisions to detect common IP fabric miscabling scenarios.<a href="#section-5-2.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.4">
+RIFT automatically negotiates Bidirectional Forwarding Detection (BFD) per link. This allows for IP and <span><a href="#RFC7130" class="internal xref">micro-BFD</a> [<a href="#RFC7130" class="cite xref">RFC7130</a>]</span> to replace Link Aggregation Groups (LAGs) that hide bandwidth
+imbalances in case of constituent failures. Further automatic link validation
+techniques similar to those in <span>[<a href="#RFC5357" class="cite xref">RFC5357</a>]</span> could be supported as well.<a href="#section-5-2.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.5">
+RIFT inherently solves many problems associated with the use of
+classical routing topologies with dense meshes and high degrees of ECMP by
+including automatic bandwidth balancing, flood reduction, and automatic
+disaggregation on failures while providing maximum aggregation of prefixes
+in default scenarios. ECMP in RIFT eliminates the need for more Loop-Free Alternate (LFA) procedures.<a href="#section-5-2.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.6">
+RIFT reduces FIB size towards the bottom of the IP fabric where most nodes
+reside. This allows for cheaper hardware on the edges and introduction of
+modern IP fabric architectures that encompass server multihoming and other
+mechanisms.<a href="#section-5-2.6" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.7">
+RIFT provides valley-free routing that is loop free. A valley-free path allows for reversal of direction at most once from a packet heading northbound to southbound while permitting traversal of horizontal links in the northbound phase.  This allows for the use of any such valley-free path in bisectional fabric bandwidth between two destinations irrespective of their metrics that can be used to balance load on the fabric in different ways.  Valley-free routing eliminates the need for any specific micro-loop avoidance procedures for RIFT.<a href="#section-5-2.7" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.8">
+RIFT includes a key-value distribution mechanism
+that allows for future applications
+such as automatic provisioning of basic overlay services or automatic key
+rollovers over whole fabrics.<a href="#section-5-2.8" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.9">
+RIFT is designed for minimum delay in case of prefix mobility on the fabric. In
+conjunction with <span>[<a href="#RFC8505" class="cite xref">RFC8505</a>]</span>, RIFT can differentiate anycast advertisements from mobility events and retain only the most recent advertisement in the latter case.<a href="#section-5-2.9" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-2.10">
+Many further operational and design points collected over many years of
+routing protocol deployments have been incorporated in RIFT such as
+fast flooding rates, protection of information lifetimes, and operationally
+ recognizable remote ends of links and node names.<a href="#section-5-2.10" class="pilcrow">¶</a>
+</li>
+      </ul>
+<section id="section-5.1">
+        <h3 id="name-south-reflection">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-south-reflection" class="section-name selfRef">South Reflection</a>
+        </h3>
+<p id="section-5.1-1">South reflection is a mechanism where South Node TIEs are "reflected"
+    back up north to allow nodes in the same level without East-West links to "see"
+    each other.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">For example, in <a href="#pic-suboptimal" class="auto internal xref">Figure 4</a>, Spine111\Spine112\Spine121\Spine122 reflects Node S-TIEs
+    from ToF21 to ToF22 separately. Respectively, Spine111\Spine112\Spine121\Spine122 reflects Node
+    S-TIEs from ToF22 to ToF21 separately, so ToF22 and ToF21 see each other's
+        node information as level 2 nodes.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">In an equivalent fashion, as the result of the south reflection between Spine121-Leaf121-Spine122
+    and Spine121-Leaf122-Spine122, Spine121 and Spine 122 know each other at
+    level 1.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.2">
+        <h3 id="name-suboptimal-routing-on-link-">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-suboptimal-routing-on-link-" class="section-name selfRef">Suboptimal Routing on Link Failures</a>
+        </h3>
+<span id="name-suboptimal-routing-upon-lin"></span><div id="pic-suboptimal">
+<figure id="figure-4">
+          <div class="alignCenter art-text artwork" id="section-5.2-1.1">
+<pre>
+              +--------+          +--------+
+              | ToF21  |          |  ToF22 |                LEVEL 2
+              ++--+-+-++          ++-+--+-++
+               |  | | |            | |  | +
+               |  | | |            | |  | linkTS8
+  +------------+  | +-+linkTS3+-+  | |  | +-------------+
+  |               |   |         |  | |  +               |
+  |    +---------------------------+ |  linkTS7         |
+  |    |          |   |         +    +  +               |
+  |    |          |   +-------+linkTS4+------------+    |
+  |    |          |             +    +  |          |    |
+  |    |          |    +-------------+--+          |    |
+  |    |          |    |        |  linkTS6         |    |
++-+----+-+      +-+----+-+     ++--------+       +-+----+-+
+|Spine111|      |Spine112|     |Spine121 |       |Spine122| LEVEL 1
++-+---+--+      +-+----+-+     +-+---+---+       +-+----+-+
+  |   |           |    |         |   |             |    |
+  |   +-------------+  |         +   ++XX+linkSL6+---+  +
+  |               | |  |      linkSL5              | |  linkSL8
+  |   +-----------+ |  |         +   +---+linkSL7+-+ |  +
+  |   |             |  |         |   |               |  |
++-+---+-+        +--+--+-+     +-+---+-+          +--+--+-+
+|Leaf111|        |Leaf112|     |Leaf121|          |Leaf122| LEVEL 0
++-+-----+        +-+-----+     +-----+-+          +-+-----+
+  +                +                 +              +
+Prefix111        Prefix112     Prefix121          Prefix122</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-suboptimal-routing-upon-lin" class="selfRef">Suboptimal Routing Upon Link Failure Use Case</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.2-2">As shown in <a href="#pic-suboptimal" class="auto internal xref">Figure 4</a>, as the result of the south
+    reflection, Spine121 and Spine 122 know each other via Leaf121 or Leaf 122 at level 1.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">Without disaggregation mechanisms, the packet from
+    leaf121 to prefix122 will probably go up through linkSL5 to linkTS3 when linkSL6 fails. Then, the packet will go
+    down through linkTS4 to linkSL8 to Leaf122 or go up through linkSL5 to linkTS6,
+    then go down through linkTS8 and linkSL8 to Leaf122 based on the pure default route.
+    This is the case of suboptimal routing or bow tying.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">With disaggregation mechanisms, Spine122 will detect the
+    failure according to the reflected node S-TIE from Spine121 when linkSL6 fails. Based on the
+    disaggregation algorithm provided by RIFT, Spine122 will explicitly advertise
+    prefix122 in Disaggregated Prefix S-TIE PrefixTIEElement(prefix122, cost 1). The packet
+    from leaf121 to prefix122 will only be sent to linkSL7 following a longest-prefix
+    match to prefix 122 directly, then it will go down through linkSL8 to Leaf122.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.3">
+        <h3 id="name-black-holing-on-link-failur">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-black-holing-on-link-failur" class="section-name selfRef">Black-Holing on Link Failures</a>
+        </h3>
+<span id="name-black-holing-upon-link-fail"></span><div id="pic-blackhole">
+<figure id="figure-5">
+          <div class="alignCenter art-text artwork" id="section-5.3-1.1">
+<pre>
+                +--------+          +--------+
+                | ToF 21 |          | ToF 22 |                LEVEL 2
+                ++-+--+-++          ++-+--+-++
+                 | |  | |            | |  | +
+                 | |  | |            | |  | linkTS8
+  +--------------+ |  +-+linkTS3+X+  | |  | +--------------+
+  linkTS1          |    |         |  | |  +                |
+  +    +-----------------------------+ |  linkTS7          |
+  |    |           +    |         +    +  +                |
+  |    |      linkTS2   +-------+linkTS4+X+----------+     |
+  |    +           +              +    +  |          |     |
+  |   linkTS5      +-+    +------------+--+          |     |
+  |    +             |    |       |  linkTS6         |     |
++-+----+-+         +-+----+-+    ++-------+        +-+-----++
+|Spine111|         |Spine112|    |Spine121|        |Spine122| LEVEL 1
++-+---+--+         ++----+--+    +-+---+--+        +-+----+-+
+  |   |             |    |         |   |             |    |
+  +   +---------------+  |         +   +---+linkSL6+---+  +
+  linkSL1           | |  |      linkSL5              | |  linkSL8
+  +   +--+linkSL3+--+ |  |         +   +---+linkSL7+-+ |  +
+  |   |               |  |         |   |               |  |
++-+---+-+          +--+--+-+     +-+---+-+          +--+--+-+
+|Leaf111|          |Leaf112|     |Leaf121|          |Leaf122| LEVEL 0
++-+-----+          +-+-----+     +-----+-+          +-----+-+
+  +                  +                 +                  +
+Prefix111          Prefix112     Prefix121          Prefix122</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-black-holing-upon-link-fail" class="selfRef">Black-Holing Upon Link Failure Use Case</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.3-2">This scenario illustrates a case where double link failure occurs and
+    black-holing can happen.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">Without disaggregation mechanisms, 
+    the packet from leaf111 to prefix122 would suffer 50% black-holing based
+    on pure default route when linkTS3 and linkTS4 both fail.  The packet is supposed to go up through linkSL1 to
+    linkTS1 and then go down through linkTS3 or linkTS4 will be dropped.  The
+    packet is supposed to go up through linkSL3 to linkTS2, then go down through
+    linkTS3 or linkTS4 will be dropped as well. This is the case of black-holing.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-4">With disaggregation mechanisms, ToF22 will
+    detect the failure according to the reflected node S-TIE of ToF21 from
+    Spine111\Spine112 when linkTS3 and linkTS4 both fail. Based on the disaggregation algorithm
+    provided by RIFT, ToF22 will explicitly originate an S-TIE with prefix 121 and
+    prefix 122 that is flooded to spines 111, 112, 121, and 122.<a href="#section-5.3-4" class="pilcrow">¶</a></p>
+<p id="section-5.3-5">The packet from leaf111 to prefix122 will not be routed to linkTS1 or
+    linkTS2. The packet from leaf111 to prefix122 will only be routed to linkTS5
+    or linkTS7 following a longest-prefix match to prefix122.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.4">
+        <h3 id="name-zero-touch-provisioning-ztp">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-zero-touch-provisioning-ztp" class="section-name selfRef">Zero Touch Provisioning (ZTP)</a>
+        </h3>
+<p id="section-5.4-1">
+RIFT is designed to require a very minimal configuration to simplify its operation and avoid human errors; based on that minimal information, ZTP auto configures the key operational parameters of all the RIFT nodes, including the System ID of the node that must be unique in the RIFT network and the level of the node in the Fat Tree, which determines which peers are northward "parents" and which are southward "children".<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.4-2">
+ZTP is always on, but its decisions can be overridden when a network
+administrator prefers to impose its own configuration. In that case, it is the
+responsibility of the administrator to ensure that the configured parameters
+are correct, i.e., ensure that the System ID of each node is unique and that
+the administratively set levels truly reflect the relative position of the
+nodes in the fabric. It is recommended to let ZTP configure the network, and
+when ZTP does not configure the network, it is recommended to configure the
+level of all the nodes to avoid an undesirable interaction between ZTP and the
+manual configuration.<a href="#section-5.4-2" class="pilcrow">¶</a></p>
+<p id="section-5.4-3">ZTP requires that the administrator points out the ToF nodes to set the
+baseline from which the fabric topology is derived. The ToF nodes are
+configured with the TOP_OF_FABRIC flag, which are initial 'seeds' needed for
+other ZTP nodes to derive their level in the topology.  ZTP computes the level
+of each node based on the Highest Available Level (HAL) of the potential
+parent closest to that baseline, which represents the superspine.  In a
+fashion, RIFT can be seen as a distance-vector protocol that computes a set of
+feasible successors towards the superspine and autoconfigures the rest of the
+topology.<a href="#section-5.4-3" class="pilcrow">¶</a></p>
+<p id="section-5.4-4">
+ The autoconfiguration mechanism computes a global maximum of levels by
+ diffusion.  The derivation of the level of each node happens then based on
+ LIEs received from its neighbors, whereas each node (with possible exceptions
+ of configured leaves) tries to attach at the highest possible point in the
+ fabric. This guarantees that even if the diffusion front reaches a node from
+ "below" faster than from "above", it will greedily abandon already negotiated
+ levels derived from nodes topologically below it and properly peer with nodes
+ above.<a href="#section-5.4-4" class="pilcrow">¶</a></p>
+<p id="section-5.4-5">
+ The achieved equilibrium can be disturbed massively by all nodes with the highest level either leaving or entering the domain (with some finer distinctions not explained further).
+ It is therefore recommended that each node is multihomed towards nodes with respective HAL offerings. Fortunately, this is the natural state of things for the topology variants considered in RIFT.<a href="#section-5.4-5" class="pilcrow">¶</a></p>
+<p id="section-5.4-6">
+A RIFT node may also be configured to confine it to the leaf role with the LEAF_ONLY flag. A leaf node can also be configured to support leaf-2-leaf procedures with the LEAF_2_LEAF flag. In both cases, the node cannot be TOP_OF_FABRIC and its level cannot be configured. RIFT will fully determine the node's level after it is attached to the topology and ensure that the node is at the "bottom of the hierarchy" (southernmost).<a href="#section-5.4-6" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.5">
+        <h3 id="name-miscabling">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-miscabling" class="section-name selfRef">Miscabling</a>
+        </h3>
+<section id="section-5.5.1">
+          <h4 id="name-miscabling-examples">
+<a href="#section-5.5.1" class="section-number selfRef">5.5.1. </a><a href="#name-miscabling-examples" class="section-name selfRef">Miscabling Examples</a>
+          </h4>
+<span id="name-a-single-plane-miscabling-e"></span><div id="single-plane-mis-cabling">
+<figure id="figure-6">
+            <div class="alignCenter art-text artwork" id="section-5.5.1-1.1">
+<pre>
+  +----------------+              +-----------------+
+  |     ToF21      |       +------+      ToF22      |   LEVEL 2
+  +-------+----+---+       |      +----+---+--------+
+  |       |    |   |       |      |    |   |        |
+  |       |    |   +----------------------------+   |
+  |   +---------------------------+    |   |    |   |
+  |   |   |    |           |           |   |    |   |
+  |   |   |    |   +-----------------------+    |   |
+  |   |   +------------------------+   |        |   |
+  |   |        |   |       |       |   |        |   |
++-+---+--+   +-+---+--+    |    +--+---+-+  +--+---+-+
+|Spine111|   |Spine112|    |    |Spine121|  |Spine122| LEVEL 1
++-+---+--+   ++----+--+    |    +--+---+-+  +-+----+-+
+  |   |       |    |       |       |   |       |    |
+  |   +---------+  |     link-M    |   +---------+  |
+  |           | |  |       |       |           | |  |
+  |   +-------+ |  |       |       |   +-------+ |  |
+  |   |         |  |       |       |   |         |  |
++-+---+-+    +--+--+-+     |     +-+---+-+    +--+--+-+
+|Leaf111|    |Leaf112+-----+     |Leaf121|    |Leaf122| LEVEL 0
++-------+    +-------+           +-------+    +-------+</pre>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-a-single-plane-miscabling-e" class="selfRef">A Single-Plane Miscabling Example</a>
+            </figcaption></figure>
+</div>
+<p id="section-5.5.1-2"><a href="#single-plane-mis-cabling" class="auto internal xref">Figure 6</a> shows a single-plane miscabling example. It's a perfect Fat Tree fabric except for link-M connecting Leaf112 to ToF22.<a href="#section-5.5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-3">The RIFT control protocol can discover the physical links automatically and is able to detect cabling that violates Fat Tree topology constraints.
+        It reacts accordingly to such miscabling attempts, preventing adjacencies between nodes from being formed and traffic from being forwarded on those miscabled links at a minimum.
+        In such scenario, Leaf112 will use link-M to derive its level (unless it is leaf) and can report links to Spine111 and Spine112 as miscabled unless the implementations
+        allow horizontal links.<a href="#section-5.5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-4"><a href="#multi-plane-mis-cabling" class="auto internal xref">Figure 7</a> shows a multi-plane miscabling example. Since Leaf112 and Spine121 belong to two different PoDs, the adjacency between Leaf112 and Spine121 cannot be formed. Link-W would be detected and prevented.<a href="#section-5.5.1-4" class="pilcrow">¶</a></p>
+<span id="name-a-multiple-plane-miscabling"></span><div id="multi-plane-mis-cabling">
+<figure id="figure-7">
+            <div class="alignCenter art-text artwork" id="section-5.5.1-5.1">
+<pre>
+ +-------+    +-------+           +-------+    +-------+
+ |ToF  A1|    |ToF  A2|           |ToF  B1|    |ToF  B2| LEVEL 2
+ +-------+    +-------+           +-------+    +-------+
+ |       |    |       |           |       |    |       |
+ |       |    |       +-----------------+ |    |       |
+ |       +--------------------------+   | |    |       |
+ |     +------+                   | |   | +------+     |
+ |     |        +-----------------+ |   |      | |     |
+ |     |        |   +--------------------------+ |     |
+ |  A  |        | B |               | A |        |  B  |
+ +-----+--+   +-+---+--+         +--+---+-+   +--+-----+
+ |Spine111|   |Spine112|     +---+Spine121|   |Spine122| LEVEL 1
+ +-+---+--+   ++----+--+     |   +--+---+-+   +-+----+-+
+   |   |       |    |        |      |   |       |    |
+   |   +---------+  |        |      |   +---------+  |
+   |           | |  |      link-W   |           | |  |
+   |   +-------+ |  |        |      |   +-------+ |  |
+   |   |         |  |        |      |   |         |  |
+ +-+---+-+    +--+--+-+      |    +-+---+-+    +--+--+-+
+ |Leaf111|    |Leaf112+------+    |Leaf121|    |Leaf122| LEVEL 0
+ +-------+    +-------+           +-------+    +-------+
++--------PoD#1----------+       +---------PoD#2---------+</pre>
+</div>
+<figcaption><a href="#figure-7" class="selfRef">Figure 7</a>:
+<a href="#name-a-multiple-plane-miscabling" class="selfRef">A Multiple Plane Miscabling Example</a>
+            </figcaption></figure>
+</div>
+<p id="section-5.5.1-6">RIFT provides an optional level determination procedure in its ZTP mode. Nodes in the fabric without
+        their level configured determine it automatically. However, this can have possible counter-intuitive consequences.
+        One extreme failure scenario is depicted in <a href="#Fallen-spine" class="auto internal xref">Figure 8</a>, and it shows that if all northbound links of Spine11 fail at the same time,
+        Spine11 negotiates a lower level than Leaf11 and Leaf12.<a href="#section-5.5.1-6" class="pilcrow">¶</a></p>
+<p id="section-5.5.1-7">To prevent such scenario where leaves are expected to act as switches, the LEAF_ONLY flag can be set for Leaf111 and Leaf112.
+        Since level -1 is invalid, Spine11 would not derive a valid level from the topology in <a href="#Fallen-spine" class="auto internal xref">Figure 8</a>. It will be isolated from the whole fabric,
+        and it would be up to the leaves to declare the links towards such spine as miscabled.<a href="#section-5.5.1-7" class="pilcrow">¶</a></p>
+<span id="name-fallen-spine"></span><div id="Fallen-spine">
+<figure id="figure-8">
+            <div class="alignCenter art-text artwork" id="section-5.5.1-8.1">
+<pre>
++-------+    +-------+        +-------+    +-------+
+|ToF  A1|    |ToF  A2|        |ToF  A1|    |ToF  A2|
++-------+    +-------+        +-------+    +-------+
+|       |    |       |                |            |
+|    +-------+       |                |            |
++    +  |            |  ====&gt;         |            |
+X    X  +------+     |                +------+     |
++    +         |     |                       |     |
++----+--+    +-+-----+                     +-+-----+
+|Spine11|    |Spine12|                     |Spine12|
++-+---+-+    ++----+-+                     ++----+-+
+  |   |       |    |                        |    |
+  |   +---------+  |                        |    |
+  |   +-------+ |  |                +-------+    |
+  |   |         |  |                |            |
++-+---+-+    +--+--+-+        +-----+-+    +-----+-+
+|Leaf111|    |Leaf112|        |Leaf111|    |Leaf112|
++-------+    +-------+        +-+-----+    +-+-----+
+                                |            |
+                                |   +--------+
+                                |   |
+                              +-+---+-+
+                              |Spine11|
+                              +-------+</pre>
+</div>
+<figcaption><a href="#figure-8" class="selfRef">Figure 8</a>:
+<a href="#name-fallen-spine" class="selfRef">Fallen Spine</a>
+            </figcaption></figure>
+</div>
+</section>
+<section id="section-5.5.2">
+          <h4 id="name-miscabling-considerations">
+<a href="#section-5.5.2" class="section-number selfRef">5.5.2. </a><a href="#name-miscabling-considerations" class="section-name selfRef">Miscabling Considerations</a>
+          </h4>
+<p id="section-5.5.2-1">There are scenarios where operators may want to leverage ZTP and implement additional cabling constraints that go beyond the previously described topology violations. Enforcing cabling down to specific level, node, and port combinations might make it simpler for onsite staff to perform troubleshooting activities or replace optical transceivers and/or cabling as the physical layout will be consistent across the fabric. This is especially true for densely connected fabrics where it is difficult to physically manipulate those components. It is also easy to imagine other models, such as one where the strict port requirement is relaxed.<a href="#section-5.5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.5.2-2"><a href="#miscalbe-cons" class="auto internal xref">Figure 9</a> illustrates an example where the first port on Leaf1 must connect to the first port on Spine1, the second port on Leaf1 must connect to the first port on Spine2, and so on. Consider a case where (Leaf1, Port1) and (Leaf1, Port2) were reversed. RIFT would not consider this to be miscabled by default; however, an operator might want to.<a href="#section-5.5.2-2" class="pilcrow">¶</a></p>
+<span id="name-additional-cabling-constrai"></span><div id="miscalbe-cons">
+<figure id="figure-9">
+            <div class="alignCenter art-text artwork" id="section-5.5.2-3.1">
+<pre>
+           +--------+    +--------+    +--------+    +--------+
+           | Spine1 |    | Spine2 |    | Spine3 |    | Spine4 |
+           +-1------+    +-1------+    +-1------+    +-1------+
+             +             +             +             +
+             |  +----------+             |             |
+             |  |                        |             |
+             |  |  +---------------------+             |
+             |  |  |                                   |
+             |  |  |  +--------------------------------+
+             |  |  |  |
+             |  |  |  |
+             |  |  |  |
+             |  |  |  |
+             +  +  +  +
+           +-1--2--3--4--+
+           |   Leaf1     |   ......
+           +-------------+
+</pre>
+</div>
+<figcaption><a href="#figure-9" class="selfRef">Figure 9</a>:
+<a href="#name-additional-cabling-constrai" class="selfRef">Additional Cabling Constraint Example</a>
+            </figcaption></figure>
+</div>
+<p id="section-5.5.2-4">RIFT allows implementations to provide programmable plug-ins that can adjust
+ZTP operation or capture information during computation. While defining this
+is outside the scope of this document, such a mechanism could be used to
+extend the miscabling functionality.<a href="#section-5.5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.5.2-5">For other protocols to achieve this, it would require additional
+operational overhead. Consider a fabric that is using unnumbered OSPF links;
+it is still very likely that a miscabled link will form an adjacency. Each
+attempt to move cables to the correct port may result in the need for
+additional troubleshooting as other links will become miscabled in the
+process. Without automation to explicitly tell the operator which ports need
+to be moved where, the process becomes manually intensive and error-prone very
+quickly. If the problem goes unnoticed, it will result in suboptimal
+performance in the fabric.<a href="#section-5.5.2-5" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-5.6">
+        <h3 id="name-multicast-and-broadcast-imp">
+<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-multicast-and-broadcast-imp" class="section-name selfRef">Multicast and Broadcast Implementations</a>
+        </h3>
+<p id="section-5.6-1">RIFT supports both multicast and broadcast implementations. While a
+multicast implementation is preferred, there might cases where a broadcast
+implementation is optimal or even required. For example, operating systems on
+IoT devices and embedded devices may not have the required multicast
+support. Another example is containers, which do support multicast in some
+cases but tend to be very CPU-inefficient and difficult to tune.<a href="#section-5.6-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.7">
+        <h3 id="name-positive-vs-negative-disagg">
+<a href="#section-5.7" class="section-number selfRef">5.7. </a><a href="#name-positive-vs-negative-disagg" class="section-name selfRef">Positive vs. Negative Disaggregation</a>
+        </h3>
+<p id="section-5.7-1">                                                                                                                                                                                                   
+    Disaggregation is the procedure whereby <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span> advertises a more specific route
+    southwards as an exception to the aggregated fabric-default
+    north. Disaggregation is useful when a prefix within the aggregation is
+    reachable via some of the parents but not the others at the same level of
+    the fabric.  It is mandatory when the level is the ToF since a ToF node
+    that cannot reach a prefix becomes a black hole for that prefix.  The hard
+    problem is to know which prefixes are reachable by whom.<a href="#section-5.7-1" class="pilcrow">¶</a></p>
+<p id="section-5.7-2">                                                                                                                                                                                                   
+    In the general case, <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span> solves
+    that problem by interconnecting the ToF nodes so that the ToF nodes can
+    exchange the full list of prefixes that exist in the fabric and figure out
+    when a ToF node lacks reachability to some prefixes. This requires
+    additional ports at the ToF, typically two ports per ToF node to form a
+    ToF-spanning ring.  <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span> also
+    defines the southbound reflection procedure that enables a parent to
+    explore the direct connectivity of its peers, meaning their own parents
+    and children; based on the advertisements received from the shared parents
+    and children, it may enable the parent to infer the prefixes its peers can
+    reach.<a href="#section-5.7-2" class="pilcrow">¶</a></p>
+<p id="section-5.7-3">                                                                                                                                                                                                   
+    When a parent lacks reachability to a prefix, it may disaggregate the
+    prefix negatively, i.e., advertise that this parent can be used to reach
+    any prefix in the aggregation except that one. The Negative Disaggregation
+    signaling is simple and functions transitively from ToF to Top-of-Pod
+    (ToP) and then from ToP to Leaf.  However, it is hard for a parent to
+    figure out which prefix it needs to disaggregate because it does not know
+    what it does not know; it results that the use of a spanning ring at the
+    ToF is required to operate the Negative Disaggregation.  Also, though it
+    is only an implementation problem, the programming of the FIB is complex
+    compared to normal routes and may incur recursions.<a href="#section-5.7-3" class="pilcrow">¶</a></p>
+<p id="section-5.7-4">                                                                                                                                                                                                   
+    The more classical alternative is, for the parents that can reach a prefix
+    that peers at the same level cannot, to advertise a more specific route to
+    that prefix. This leverages the normal longest prefix match in the FIB
+    and does not require a special implementation. As opposed to the
+    Negative Disaggregation, the Positive Disaggregation is difficult and
+    inefficient to operate transitively.<a href="#section-5.7-4" class="pilcrow">¶</a></p>
+<p id="section-5.7-5">                                                                                                                                                                                                   
+    Transitivity is not needed by a grandchild if all its parents received the
+    Positive Disaggregation, meaning that they shall all avoid the black hole;
+    when that is the case, they collectively build a ceiling that protects the
+    grandchild. Until then, a parent that received the Positive
+    Disaggregation may believe that some peers are lacking the reachability
+    and re-advertise too early or defer and maintain a black hole situation
+    longer than necessary.<a href="#section-5.7-5" class="pilcrow">¶</a></p>
+<p id="section-5.7-6">                                                                                                                                                                                                   
+                                                                                                                                                                                                          
+    In a non-partitioned fabric, all the ToF nodes see one another through the
+    reflection and can figure out if one is missing a child. In that case, it is
+    possible to compute the prefixes that the peer cannot reach and
+    disaggregate positively without a ToF-spanning ring. The ToF nodes can
+    also ascertain that the ToP nodes are each connected to at least a ToF
+    node that can still reach the prefix, meaning that the transitive
+    operation is not required.<a href="#section-5.7-6" class="pilcrow">¶</a></p>
+<p id="section-5.7-7">                                                                                                                                                                                                   
+    The bottom line is that in a fabric that is partitioned (e.g., using
+    multiple planes) and/or where the ToP nodes are not guaranteed to always
+    form a ceiling for their children, it is mandatory to use Negative
+    Disaggregation.  On the other hand, in a highly symmetrical and fully
+    connected fabric (e.g., a canonical Clos Network), the Positive
+    Disaggregation methods save the complexity and cost associated
+    to the ToF-spanning ring.<a href="#section-5.7-7" class="pilcrow">¶</a></p>
+<p id="section-5.7-8">                                                                                                                                                                                                   
+    Note that in the case of Positive Disaggregation, the first ToF nodes
+    that announce a more-specific route attract all the traffic for that
+    route and may suffer from a transient incast. A ToP node that defers
+    injecting the longer prefix in the FIB, in order to receive more
+    advertisements and spread the packets better, also keeps on sending a
+    portion of the traffic to the black hole in the meantime. In the case of
+    Negative Disaggregation, the last ToF nodes that inject the route may
+    also incur an incast issue; this problem would occur if a prefix that
+    becomes totally unreachable is disaggregated.<a href="#section-5.7-8" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.8">
+        <h3 id="name-mobile-edge-and-anycast">
+<a href="#section-5.8" class="section-number selfRef">5.8. </a><a href="#name-mobile-edge-and-anycast" class="section-name selfRef">Mobile Edge and Anycast</a>
+        </h3>
+<p id="section-5.8-1">                                                                                                                                                                                                   
+    When a physical or a virtual node changes its point of attachment in the
+    fabric from a previous-leaf to a next-leaf, new routes must be installed
+    that supersede the old ones. Since the flooding flows northwards, the
+    nodes (if any) between the previous-leaf and the common parent are not
+    immediately aware that the path via the previous-leaf is obsolete and a stale
+    route may exist for a while. The common parent needs to select the
+    freshest route advertisement in order to install the correct route via the
+    next-leaf. This requires that the fabric determines the sequence of the
+    movements of the mobile node.<a href="#section-5.8-1" class="pilcrow">¶</a></p>
+<p id="section-5.8-2">                                                                                                                                                                                                   
+    On the one hand, a classical sequence counter provides a total order for a
+    while, but it will eventually wrap. On the other hand, a timestamp provides
+    a permanent order, but it may miss a movement that happens too quickly vs. the granularity of the timing information.
+                                                                                                                                                                                                          
+   It is not envisioned that an average fabric supports the <span><a href="#IEEEstd1588" class="internal xref">Precision Time Protocol</a> [<a href="#IEEEstd1588" class="cite xref">IEEEstd1588</a>]</span> in the short term nor
+   that the precision available with the <span><a href="#RFC5905" class="internal xref">Network Time
+   Protocol</a> [<a href="#RFC5905" class="cite xref">RFC5905</a>]</span> (in the order of 100 to 200 ms) may not be necessarily
+   enough to cover, e.g., the fast mobility of a Virtual Machine (VM).<a href="#section-5.8-2" class="pilcrow">¶</a></p>
+<p id="section-5.8-3">Section <span><a href="https://rfc-editor.org/rfc/rfc9692#section-6.8.4" class="relref">6.8.4</a> (<a href="https://rfc-editor.org/rfc/rfc9692#section-6.8.4" class="relref">"Mobility"</a>)</span> of <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>
+    specifies a hybrid method that combines a sequence counter from the mobile
+    node and a timestamp from the network taken at the leaf when the route is
+    injected. If the timestamps of the concurrent advertisements are
+    comparable (i.e., more distant than the precision of the timing protocol),
+    then the timestamp alone is used to determine the relative freshness of
+    the routes.  Otherwise, the sequence counter from the mobile node is used if it is available.  One caveat is that the sequence counter must not wrap
+    within the precision of the timing protocol. Another is that the mobile
+    node may not even provide a sequence counter; in which case, the mobility
+    itself must be slower than the precision of the timing.<a href="#section-5.8-3" class="pilcrow">¶</a></p>
+<p id="section-5.8-4">                                                                                                                                                                                                   
+    Mobility must not be confused with anycast. In both cases, the same
+    address is injected in RIFT at different leaves. In the case of mobility,
+    only the freshest route must be conserved since the mobile node changes its
+    point of attachment for a leaf to the next. In the case of anycast, the
+    node may either be multihomed (attached to multiple leaves in parallel) or
+    reachable beyond the fabric via multiple routes that are redistributed to
+    different leaves. Either way, the multiple routes are equally valid and
+    should be conserved in the case of anycast. Without further information
+    from the redistributed routing protocol, it is impossible to sort out a
+    movement from a redistribution that happens asynchronously on different
+    leaves.  <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span> expects that anycast addresses
+    are advertised within the timing precision, which is typically the case
+    with a low-precision timing and a multihomed node. Beyond that time
+    interval, RIFT interprets the lag as a mobility and only the freshest
+    route is retained.<a href="#section-5.8-4" class="pilcrow">¶</a></p>
+<p id="section-5.8-5"> When using <span><a href="#RFC8200" class="internal xref">IPv6</a> [<a href="#RFC8200" class="cite xref">RFC8200</a>]</span>, RIFT suggests
+    leveraging 6LoWPAN ND <span>[<a href="#RFC8505" class="cite xref">RFC8505</a>]</span> as the IPv6 ND interaction
+    between the mobile node and the leaf.  This not only provides a sequence
+    counter but also a lifetime and a security token that may be used to
+    protect the ownership of an address <span>[<a href="#RFC8928" class="cite xref">RFC8928</a>]</span>.  When using
+    6LoWPAN ND <span>[<a href="#RFC8505" class="cite xref">RFC8505</a>]</span>, the parallel registration of an
+    anycast address to multiple leaves is done with the same sequence counter,
+    whereas the sequence counter is incremented when the point of attachment
+    changes. This way, it is possible to differentiate a mobile node from a
+    multihomed node, even when the mobility happens within the timing
+    precision. It is also possible for a mobile node to be multihomed as well,
+    e.g., to change only one of its points of attachment.<a href="#section-5.8-5" class="pilcrow">¶</a></p>
+</section>
+<div id="v4ov6">
+<section id="section-5.9">
+        <h3 id="name-ipv4-over-ipv6">
+<a href="#section-5.9" class="section-number selfRef">5.9. </a><a href="#name-ipv4-over-ipv6" class="section-name selfRef">IPv4 over IPv6</a>
+        </h3>
+<p id="section-5.9-1">RIFT allows advertising IPv4 prefixes over an IPv6 RIFT network.  An
+    IPv6 Address Family (AF) configures via the usual ND mechanisms and then
+    V4 can use V6 next-hops analogous to <span>[<a href="#RFC8950" class="cite xref">RFC8950</a>]</span>. It is
+    expected that the whole fabric supports the same type of forwarding of
+    AFs on all the links. RIFT provides an indication whether a
+    node is capable of V4-forwarding and implementations are possible where
+    different routing tables are computed per AF as long as the
+    computation remains loop-free.<a href="#section-5.9-1" class="pilcrow">¶</a></p>
+<span id="name-ipv4-over-ipv6-2"></span><div id="IPV4-o-IPV6">
+<figure id="figure-10">
+          <div class="alignCenter art-text artwork" id="section-5.9-2.1">
+<pre>
+
+                            +-----+        +-----+
+                 +---+---+  | ToF |        | ToF |
+                     ^      +--+--+        +-----+
+                     |      |  |           |     |
+                     |      |  +-------------+   |
+                     |      |     +--------+ |   |
+                     +      |     |          |   |
+                    V6      +-----+        +-+---+
+                 Forwarding |Spine|        |Spine|
+                     +      +--+--+        +-----+
+                     |      |  |           |     |
+                     |      |  +-------------+   |
+                     |      |     +--------+ |   |
+                     |      |     |          |   |
+                     v      +-----+        +-+---+
+                 +---+---+  |Leaf |        | Leaf|
+                            +--+--+        +--+--+
+                               |              |
+                  IPv4 prefixes|              |IPv4 prefixes
+                               |              |
+                           +---+----+     +---+----+
+                           |   V4   |     |   V4   |
+                           | subnet |     | subnet |
+                           +--------+     +--------+
+</pre>
+</div>
+<figcaption><a href="#figure-10" class="selfRef">Figure 10</a>:
+<a href="#name-ipv4-over-ipv6-2" class="selfRef">IPv4 over IPv6</a>
+          </figcaption></figure>
+</div>
+</section>
+</div>
+<section id="section-5.10">
+        <h3 id="name-in-band-reachability-of-nod">
+<a href="#section-5.10" class="section-number selfRef">5.10. </a><a href="#name-in-band-reachability-of-nod" class="section-name selfRef">In-Band Reachability of Nodes</a>
+        </h3>
+<p id="section-5.10-1">RIFT doesn't precondition that nodes of the fabric have reachable
+        addresses, but operational reasons to reach the internal nodes may
+        exist. <a href="#in-band-reach" class="auto internal xref">Figure 11</a> shows an example that the
+        network management station (NMS) attaches to Leaf1.<a href="#section-5.10-1" class="pilcrow">¶</a></p>
+<span id="name-in-band-reachability-of-node"></span><div id="in-band-reach">
+<figure id="figure-11">
+          <div class="alignCenter art-text artwork" id="section-5.10-2.1">
+<pre>
++-------+      +-------+
+| ToF1  |      | ToF2  |
+++---- ++      ++-----++
+ |     |        |     |
+ |     +----------+   |
+ |     +--------+ |   |
+ |     |          |   |
+++-----++      +--+---++
+|Spine1 |      |Spine2 |
+++-----++      ++-----++
+ |     |        |     |
+ |     +----------+   |
+ |     +--------+ |   |
+ |     |          |   |
+++-----++      +--+---++
+| Leaf1 |      | Leaf2 |
++---+---+      +-------+
+    |
+    |NMS</pre>
+</div>
+<figcaption><a href="#figure-11" class="selfRef">Figure 11</a>:
+<a href="#name-in-band-reachability-of-node" class="selfRef">In-Band Reachability of Nodes</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.10-3">If the NMS wants to access Leaf2, it simply works because the loopback address of Leaf2 is flooded in its Prefix North TIE.<a href="#section-5.10-3" class="pilcrow">¶</a></p>
+<p id="section-5.10-4">If the NMS wants to access Spine2, it also works because a spine node always advertises its loopback address in the Prefix North TIE. The NMS may reach Spine2 from Leaf1-Spine2 or Leaf1-Spine1-ToF1/ToF2-Spine2.<a href="#section-5.10-4" class="pilcrow">¶</a></p>
+<p id="section-5.10-5">If the NMS wants to access ToF2, ToF2's loopback address needs to be injected into its Prefix South TIE. This TIE must be seen by all nodes at the level below -- the spine nodes in <a href="#in-band-reach" class="auto internal xref">Figure 11</a> -- that must form a ceiling for all the traffic coming from below (south). Otherwise, the traffic from the NMS may follow the default route to the wrong ToF Node, e.g., ToF1.<a href="#section-5.10-5" class="pilcrow">¶</a></p>
+<p id="section-5.10-6">In the case of failure between ToF2 and spine nodes, ToF2's loopback address must be disaggregated recursively all the way to the leaves. In a partitioned ToF, even with recursive disaggregation, a ToF node is only reachable within its plane.<a href="#section-5.10-6" class="pilcrow">¶</a></p>
+<p id="section-5.10-7">A possible alternative to recursive disaggregation is to use a ring that interconnects the ToF nodes to transmit packets between them for their loopback addresses only. The idea is that this is mostly control traffic and should not alter the load-balancing properties of the fabric.<a href="#section-5.10-7" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.11">
+        <h3 id="name-dual-homing-servers">
+<a href="#section-5.11" class="section-number selfRef">5.11. </a><a href="#name-dual-homing-servers" class="section-name selfRef">Dual-Homing Servers</a>
+        </h3>
+<p id="section-5.11-1">Each RIFT node may operate in ZTP mode.  It has no configuration (unless it
+is a ToF node at the top of the topology or if it must operate in the topology
+as a leaf and/or support leaf-2-leaf procedures), and it will fully configure
+itself after being attached to the topology.<a href="#section-5.11-1" class="pilcrow">¶</a></p>
+<span id="name-dual-homing-servers-2"></span><div id="dualhoming-servers">
+<figure id="figure-12">
+          <div class="alignCenter art-text artwork" id="section-5.11-2.1">
+<pre>
+    +---+         +---+         +---+
+    |ToF|         |ToF|         |ToF|      ToF
+    +---+         +---+         +---+
+    |   |         |   |         |   |
+    |   +----------------+      |   |
+    |          +----------------+   |
+    |          |  |   |  |          |
+    +----------+--+   +--+----------+
+    |     ToR1    |   |     ToR2    |      Spine
+    +--+------+---+   +--+-------+--+
++---+  |      |   |   |  |       |  +---+
+|   +-----------------+  |       |      |
+|   |  |   +-------------+       |      |
+|   |  |   |  |   +-----------------+   |
+|   |  |   |  +--------------+   |  |   |
+|   |  |   |                 |   |  |   |
++---+  +---+                 +---+  +---+
+|   |  |   |                 |   |  |   |
++---+  +---+  .............  +---+  +---+
+SV(1) SV(2)                 SV(n-1) SV(n)  Leaf</pre>
+</div>
+<figcaption><a href="#figure-12" class="selfRef">Figure 12</a>:
+<a href="#name-dual-homing-servers-2" class="selfRef">Dual-Homing Servers</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.11-3">Sometimes people may prefer to disaggregate from ToR nodes to servers from
+startup, i.e., the servers have multiple routes in the FIB from startup other
+than default routes to avoid breakages at the rack level.  Full disaggregation
+of the fabric could be achieved by configuration supported by RIFT.<a href="#section-5.11-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.12">
+        <h3 id="name-fabric-with-a-controller">
+<a href="#section-5.12" class="section-number selfRef">5.12. </a><a href="#name-fabric-with-a-controller" class="section-name selfRef">Fabric with a Controller</a>
+        </h3>
+<p id="section-5.12-1">There are many different ways to deploy the controller. One possibility is attaching a controller to the RIFT domain from ToF and another possibility is attaching a controller from the leaf.<a href="#section-5.12-1" class="pilcrow">¶</a></p>
+<span id="name-fabric-with-a-controller-2"></span><div id="Fabric-controller">
+<figure id="figure-13">
+          <div class="alignCenter art-text artwork" id="section-5.12-2.1">
+<pre>
+                 +------------+
+                 | Controller |
+                 ++----------++
+                  |          |
+                  |          |
+             +----++        ++----+
+ -------     | ToF |        | ToF |
+    |        +--+--+        +-----+
+    |        |  |           |     |
+    |        |  +-------------+   |
+    |        |     +--------+ |   |
+    |        |     |          |   |
+             +-----+        +-+---+
+RIFT domain  |Spine|        |Spine|
+             +--+--+        +-----+
+    |        |  |           |     |
+    |        |  +-------------+   |
+    |        |     +--------+ |   |
+    |        |     |          |   |
+    |        +-----+        +-+---+
+ -------     |Leaf |        | Leaf|
+             +-----+        +-----+</pre>
+</div>
+<figcaption><a href="#figure-13" class="selfRef">Figure 13</a>:
+<a href="#name-fabric-with-a-controller-2" class="selfRef">Fabric with a Controller</a>
+          </figcaption></figure>
+</div>
+<section id="section-5.12.1">
+          <h4 id="name-controller-attached-to-tofs">
+<a href="#section-5.12.1" class="section-number selfRef">5.12.1. </a><a href="#name-controller-attached-to-tofs" class="section-name selfRef">Controller Attached to ToFs</a>
+          </h4>
+<p id="section-5.12.1-1">If a controller is attaching to the RIFT domain from ToF, it usually uses dual-homing connections. The loopback prefix of the controller should be advertised down by the ToF and spine to the leaves. If the controller loses the link to ToF, make sure the ToF withdraws the prefix of the controller.<a href="#section-5.12.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.12.2">
+          <h4 id="name-controller-attached-to-leaf">
+<a href="#section-5.12.2" class="section-number selfRef">5.12.2. </a><a href="#name-controller-attached-to-leaf" class="section-name selfRef">Controller Attached to Leaf</a>
+          </h4>
+<p id="section-5.12.2-1">If the controller is attaching from a leaf to the fabric, no special provisions are needed.<a href="#section-5.12.2-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-5.13">
+        <h3 id="name-internet-connectivity-withi">
+<a href="#section-5.13" class="section-number selfRef">5.13. </a><a href="#name-internet-connectivity-withi" class="section-name selfRef">Internet Connectivity Within Underlay</a>
+        </h3>
+<p id="section-5.13-1">If global addressing is running without overlay, an external default route needs to be advertised through the RIFT fabric to achieve internet connectivity. For the purpose of forwarding of the entire RIFT fabric, an internal fabric prefix needs to be advertised in the Prefix South TIE by ToF and spine nodes.<a href="#section-5.13-1" class="pilcrow">¶</a></p>
+<section id="section-5.13.1">
+          <h4 id="name-internet-default-on-the-lea">
+<a href="#section-5.13.1" class="section-number selfRef">5.13.1. </a><a href="#name-internet-default-on-the-lea" class="section-name selfRef">Internet Default on the Leaf</a>
+          </h4>
+<p id="section-5.13.1-1">In the case that the internet gateway is a leaf, the leaf node as the internet gateway needs to advertise a default route in its Prefix North TIE.<a href="#section-5.13.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.13.2">
+          <h4 id="name-internet-default-on-the-tof">
+<a href="#section-5.13.2" class="section-number selfRef">5.13.2. </a><a href="#name-internet-default-on-the-tof" class="section-name selfRef">Internet Default on the ToFs</a>
+          </h4>
+<p id="section-5.13.2-1">In the case that the internet gateway is a ToF, the ToF and spine nodes need to advertise a default route in the Prefix South TIE.<a href="#section-5.13.2-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-5.14">
+        <h3 id="name-subnet-mismatch-and-address">
+<a href="#section-5.14" class="section-number selfRef">5.14. </a><a href="#name-subnet-mismatch-and-address" class="section-name selfRef">Subnet Mismatch and Address Families</a>
+        </h3>
+<span id="name-subnet-mismatch"></span><div id="subnet-mismatch">
+<figure id="figure-14">
+          <div class="alignCenter art-text artwork" id="section-5.14-1.1">
+<pre>
++--------+                     +--------+
+|        |  LIE          LIE   |        |
+|   A    | +----&gt;       &lt;----+ |   B    |
+|        +---------------------+        |
++--------+                     +--------+
+   X/24                           Y/24</pre>
+</div>
+<figcaption><a href="#figure-14" class="selfRef">Figure 14</a>:
+<a href="#name-subnet-mismatch" class="selfRef">Subnet Mismatch</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.14-2" class="keepWithPrevious"></p>
+<p id="section-5.14-3">LIEs are exchanged over all links running RIFT to perform Link (Neighbor) Discovery. A node must NOT originate LIEs on an AF if it does not process received LIEs on that family.
+        LIEs on the same link are considered part of the same negotiation independent from the AF they arrive on.
+        An implementation must be ready to accept TIEs on all addresses it used as the source of LIE frames.<a href="#section-5.14-3" class="pilcrow">¶</a></p>
+<p id="section-5.14-4">As shown in <a href="#subnet-mismatch" class="auto internal xref">Figure 14</a>, an adjacency of nodes A
+    and B may form without further checks, but the forwarding between nodes A and B may fail
+    because subnet X mismatches with subnet Y.<a href="#section-5.14-4" class="pilcrow">¶</a></p>
+<p id="section-5.14-5">To prevent this, a RIFT implementation should check for subnet mismatch in a way that is similar to how IS-IS does. This can lead to scenarios where an adjacency, despite the exchange of LIEs in both
+        AFs, may end up having an adjacency in a single AF only. This is especially a consideration in scenarios relating to <a href="#v4ov6" class="auto internal xref">Section 5.9</a>.<a href="#section-5.14-5" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.15">
+        <h3 id="name-anycast-considerations">
+<a href="#section-5.15" class="section-number selfRef">5.15. </a><a href="#name-anycast-considerations" class="section-name selfRef">Anycast Considerations</a>
+        </h3>
+<span id="name-anycast"></span><div id="AnycastTL">
+<figure id="figure-15">
+          <div class="alignCenter art-text artwork" id="section-5.15-1.1">
+<pre>
+                        + traffic
+                        |
+                        v
+                 +------+------+
+                 |     ToF     |
+                 +---+-----+---+
+                 |   |     |   |
+    +------------+   |     |   +------------+
+    |                |     |                |
++---+---+    +-------+     +-------+    +---+---+
+|       |    |       |     |       |    |       |
+|Spine11|    |Spine12|     |Spine21|    |Spine22| LEVEL 1
++-+---+-+    ++----+-+     +-+---+-+    ++----+-+
+  |   |       |    |         |   |       |    |
+  |   +---------+  |         |   +---------+  |
+  |   +-------+ |  |         |   +-------+ |  |
+  |   |         |  |         |   |         |  |
++-+---+-+    +--+--+-+     +-+---+-+    +--+--+-+
+|       |    |       |     |       |    |       |
+|Leaf111|    |Leaf112|     |Leaf121|    |Leaf122| LEVEL 0
++-+-----+    ++------+     +-----+-+    +-----+-+
+  +           +                  +      ^     +
+PrefixA      PrefixB         PrefixA    | PrefixC
+                                        |
+                                        + traffic</pre>
+</div>
+<figcaption><a href="#figure-15" class="selfRef">Figure 15</a>:
+<a href="#name-anycast" class="selfRef">Anycast</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.15-2">If the traffic comes from ToF to Leaf111 or Leaf121, which has anycast prefix PrefixA, RIFT can deal with this case well. However, if the traffic comes from Leaf122, it arrives to Spine21 or Spine22 at LEVEL 1. Additionally, Spine21 or Spine22 doesn't know another PrefixA attaching Leaf111, so it will always get to Leaf121 and never Leaf111. If the intention is that the traffic should be offloaded to Leaf111, then use the policy-guided prefixes defined in <span><a href="#RFC9692" class="internal xref">RIFT</a> [<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>.<a href="#section-5.15-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.16">
+        <h3 id="name-iot-applicability">
+<a href="#section-5.16" class="section-number selfRef">5.16. </a><a href="#name-iot-applicability" class="section-name selfRef">IoT Applicability</a>
+        </h3>
+<p id="section-5.16-1">The design of RIFT inherits the anisotropic design of a default route upwards (northwards) from RPL <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>. It also inherits the capability to inject external host routes at the Leaf level using Wireless ND (WiND) <span>[<a href="#RFC8505" class="cite xref">RFC8505</a>]</span> <span>[<a href="#RFC8928" class="cite xref">RFC8928</a>]</span> between a RIFT-agnostic host and a RIFT router. Both the RPL and the RIFT protocols are meant for a large scale, and WiND enables device mobility at the edge the same way in both cases.<a href="#section-5.16-1" class="pilcrow">¶</a></p>
+<p id="section-5.16-2">The main difference between RIFT and RPL is that there's a single root with RPL, whereas RIFT has many ToF nodes. This adds huge capabilities for leaf-2-leaf ECMP paths but additional complexity with the need to disaggregate. Also, RIFT uses link-state flooding northwards and is not designed for low-power operation.<a href="#section-5.16-2" class="pilcrow">¶</a></p>
+<p id="section-5.16-3">Still, nothing prevents that the IP devices connected at the Leaf are IoT devices, which typically expose their address using WiND -- this is an upgrade from 6LoWPAN ND <span>[<a href="#RFC6775" class="cite xref">RFC6775</a>]</span>.<a href="#section-5.16-3" class="pilcrow">¶</a></p>
+<p id="section-5.16-4">A network that serves high speed / high power IoT devices should typically provide deterministic capabilities for applications such as high speed control loops or movement detection. The Fat Tree is highly reliable and, in normal conditions, provides an equivalent multipath operation; however, the ECMP doesn't provide hard guarantees for either delivery or latency. As long as the fabric is non-blocking, the result is the same, but there can be load unbalances resulting in incast and possibly congestion loss that will prevent the delivery within bounded latency.<a href="#section-5.16-4" class="pilcrow">¶</a></p>
+<p id="section-5.16-5">This could be alleviated with Packet Replication, Elimination, and
+      Ordering Functions (PREOF) <span>[<a href="#RFC8655" class="cite xref">RFC8655</a>]</span> leaf-2-leaf, but PREOF is hard to provide at the scale of all flows and the replication may increase the probability of the overload that it attempts to solve.<a href="#section-5.16-5" class="pilcrow">¶</a></p>
+<p id="section-5.16-6">Note that the load balancing is not RIFT's problem, but it is key to serve IoT adequately.<a href="#section-5.16-6" class="pilcrow">¶</a></p>
+</section>
+<div id="keys">
+<section id="section-5.17">
+        <h3 id="name-key-management">
+<a href="#section-5.17" class="section-number selfRef">5.17. </a><a href="#name-key-management" class="section-name selfRef">Key Management</a>
+        </h3>
+<p id="section-5.17-1">
+
+        As outlined in Section <span><a href="https://rfc-editor.org/rfc/rfc9692#section-9" class="relref">9</a> (<a href="https://rfc-editor.org/rfc/rfc9692#section-9" class="relref">"Security Considerations"</a>)</span> of <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>, either a private shared key or a public/private key pair is used to authenticate the adjacency.
+        Both the key distribution and key synchronization methods are out of
+        scope for this document.  Both nodes in the adjacency must share the
+        same keys, key type, and algorithm for a given key ID.  Mismatched
+        keys will not interoperate as their security envelopes will be unverifiable.<a href="#section-5.17-1" class="pilcrow">¶</a></p>
+<p id="section-5.17-2">
+        Key rollover while the adjacency is active may be supported.  The
+        specific mechanism is well documented in <span>[<a href="#RFC6518" class="cite xref">RFC6518</a>]</span>.
+As outlined in <span><a href="https://rfc-editor.org/rfc/rfc9692#section-9.9" class="relref">9.9</a> (<a href="https://rfc-editor.org/rfc/rfc9692#section-9.9" class="relref">"Host Implementations"</a>)</span> of <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>, hosts as well as VMs acting as RIFT devices are possible. Key Management Protocols (KMPs), such as Key Value (KV) for key rollover in the fabric, use a symmetric key that can be changed easily when compromised; in which case, the symmetric key of a host is more likely to be compromised than an in-fabric networking node.<a href="#section-5.17-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="TTL-HopLimit">
+<section id="section-5.18">
+        <h3 id="name-ttl-hop-limit-of-1-vs-255-o">
+<a href="#section-5.18" class="section-number selfRef">5.18. </a><a href="#name-ttl-hop-limit-of-1-vs-255-o" class="section-name selfRef">TTL/Hop Limit of 1 vs. 255 on LIEs/TIEs</a>
+        </h3>
+<p id="section-5.18-1">
+        The use of a packet's Time to Live (TTL) (IPv4) or Hop Limit (IPv6) to verify whether the packet was originated by an adjacent node on a connected link has been used in RIFT. 
+RIFT explicitly requires the use of a TTL/HL value of 1 or 255 when sending/receiving LIEs and TIEs so that implementers have a choice between the two.<a href="#section-5.18-1" class="pilcrow">¶</a></p>
+<p id="section-5.18-2">  
+ TTL=1 or HL=1 protects against the information disseminating more than 1 hop in the fabric and should be the default unless configured otherwise. TTL=255 or HL=255 can lead RIFT TIE packet propagation to more than one hop (the multicast address is already in local subnetwork range) in case of implementation problems but does protect against a remote attack as well, and the receiving remote router will ignore such TIE packet unless the remote router is exactly 254 hops away and accepts only TTL=1 or HL=1. <span>[<a href="#RFC5082" class="cite xref">RFC5082</a>]</span> defines a Generalized TTL Security Mechanism (GTSM). The GTSM is applicable to LIE/TIE implementations that use a TTL or HL of 255. It provides a defense from infrastructure attacks based on forged protocol packets from outside the fabric.<a href="#section-5.18-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="Security">
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">This document presents applicability of RIFT. As such, it does not
+   introduce any security considerations.  However, there are a number
+   of security concerns in <span>[<a href="#RFC9692" class="cite xref">RFC9692</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-tlv-class-reg-sec">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="ISO10589-Second-Edition">[ISO10589-Second-Edition]</dt>
+        <dd>
+<span class="refAuthor">ISO/IEC</span>, <span class="refTitle">"Information technology - Telecommunications and information exchange between systems - Intermediate System to Intermediate System intra-domain routeing information exchange protocol for use in conjunction with the protocol for providing the connectionless-mode network service (ISO 8473)"</span>, <span class="seriesInfo">ISO/IEC 10589:2002</span>, <time datetime="2002-11" class="refDate">November 2002</time>, <span>&lt;<a href="https://www.iso.org/standard/30932.html">https://www.iso.org/standard/30932.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2328">[RFC2328]</dt>
+        <dd>
+<span class="refAuthor">Moy, J.</span>, <span class="refTitle">"OSPF Version 2"</span>, <span class="seriesInfo">STD 54</span>, <span class="seriesInfo">RFC 2328</span>, <span class="seriesInfo">DOI 10.17487/RFC2328</span>, <time datetime="1998-04" class="refDate">April 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2328">https://www.rfc-editor.org/info/rfc2328</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4861">[RFC4861]</dt>
+        <dd>
+<span class="refAuthor">Narten, T.</span>, <span class="refAuthor">Nordmark, E.</span>, <span class="refAuthor">Simpson, W.</span>, and <span class="refAuthor">H. Soliman</span>, <span class="refTitle">"Neighbor Discovery for IP version 6 (IPv6)"</span>, <span class="seriesInfo">RFC 4861</span>, <span class="seriesInfo">DOI 10.17487/RFC4861</span>, <time datetime="2007-09" class="refDate">September 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4861">https://www.rfc-editor.org/info/rfc4861</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5082">[RFC5082]</dt>
+        <dd>
+<span class="refAuthor">Gill, V.</span>, <span class="refAuthor">Heasley, J.</span>, <span class="refAuthor">Meyer, D.</span>, <span class="refAuthor">Savola, P., Ed.</span>, and <span class="refAuthor">C. Pignataro</span>, <span class="refTitle">"The Generalized TTL Security Mechanism (GTSM)"</span>, <span class="seriesInfo">RFC 5082</span>, <span class="seriesInfo">DOI 10.17487/RFC5082</span>, <time datetime="2007-10" class="refDate">October 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5082">https://www.rfc-editor.org/info/rfc5082</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5340">[RFC5340]</dt>
+        <dd>
+<span class="refAuthor">Coltun, R.</span>, <span class="refAuthor">Ferguson, D.</span>, <span class="refAuthor">Moy, J.</span>, and <span class="refAuthor">A. Lindem</span>, <span class="refTitle">"OSPF for IPv6"</span>, <span class="seriesInfo">RFC 5340</span>, <span class="seriesInfo">DOI 10.17487/RFC5340</span>, <time datetime="2008-07" class="refDate">July 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5340">https://www.rfc-editor.org/info/rfc5340</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5357">[RFC5357]</dt>
+        <dd>
+<span class="refAuthor">Hedayat, K.</span>, <span class="refAuthor">Krzanowski, R.</span>, <span class="refAuthor">Morton, A.</span>, <span class="refAuthor">Yum, K.</span>, and <span class="refAuthor">J. Babiarz</span>, <span class="refTitle">"A Two-Way Active Measurement Protocol (TWAMP)"</span>, <span class="seriesInfo">RFC 5357</span>, <span class="seriesInfo">DOI 10.17487/RFC5357</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5357">https://www.rfc-editor.org/info/rfc5357</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6518">[RFC6518]</dt>
+        <dd>
+<span class="refAuthor">Lebovitz, G.</span> and <span class="refAuthor">M. Bhatia</span>, <span class="refTitle">"Keying and Authentication for Routing Protocols (KARP) Design Guidelines"</span>, <span class="seriesInfo">RFC 6518</span>, <span class="seriesInfo">DOI 10.17487/RFC6518</span>, <time datetime="2012-02" class="refDate">February 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6518">https://www.rfc-editor.org/info/rfc6518</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6550">[RFC6550]</dt>
+        <dd>
+<span class="refAuthor">Winter, T., Ed.</span>, <span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Brandt, A.</span>, <span class="refAuthor">Hui, J.</span>, <span class="refAuthor">Kelsey, R.</span>, <span class="refAuthor">Levis, P.</span>, <span class="refAuthor">Pister, K.</span>, <span class="refAuthor">Struik, R.</span>, <span class="refAuthor">Vasseur, JP.</span>, and <span class="refAuthor">R. Alexander</span>, <span class="refTitle">"RPL: IPv6 Routing Protocol for Low-Power and Lossy Networks"</span>, <span class="seriesInfo">RFC 6550</span>, <span class="seriesInfo">DOI 10.17487/RFC6550</span>, <time datetime="2012-03" class="refDate">March 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6550">https://www.rfc-editor.org/info/rfc6550</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6775">[RFC6775]</dt>
+        <dd>
+<span class="refAuthor">Shelby, Z., Ed.</span>, <span class="refAuthor">Chakrabarti, S.</span>, <span class="refAuthor">Nordmark, E.</span>, and <span class="refAuthor">C. Bormann</span>, <span class="refTitle">"Neighbor Discovery Optimization for IPv6 over Low-Power Wireless Personal Area Networks (6LoWPANs)"</span>, <span class="seriesInfo">RFC 6775</span>, <span class="seriesInfo">DOI 10.17487/RFC6775</span>, <time datetime="2012-11" class="refDate">November 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6775">https://www.rfc-editor.org/info/rfc6775</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7130">[RFC7130]</dt>
+        <dd>
+<span class="refAuthor">Bhatia, M., Ed.</span>, <span class="refAuthor">Chen, M., Ed.</span>, <span class="refAuthor">Boutros, S., Ed.</span>, <span class="refAuthor">Binderberger, M., Ed.</span>, and <span class="refAuthor">J. Haas, Ed.</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD) on Link Aggregation Group (LAG) Interfaces"</span>, <span class="seriesInfo">RFC 7130</span>, <span class="seriesInfo">DOI 10.17487/RFC7130</span>, <time datetime="2014-02" class="refDate">February 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7130">https://www.rfc-editor.org/info/rfc7130</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8655">[RFC8655]</dt>
+        <dd>
+<span class="refAuthor">Finn, N.</span>, <span class="refAuthor">Thubert, P.</span>, <span class="refAuthor">Varga, B.</span>, and <span class="refAuthor">J. Farkas</span>, <span class="refTitle">"Deterministic Networking Architecture"</span>, <span class="seriesInfo">RFC 8655</span>, <span class="seriesInfo">DOI 10.17487/RFC8655</span>, <time datetime="2019-10" class="refDate">October 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8655">https://www.rfc-editor.org/info/rfc8655</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8950">[RFC8950]</dt>
+        <dd>
+<span class="refAuthor">Litkowski, S.</span>, <span class="refAuthor">Agrawal, S.</span>, <span class="refAuthor">Ananthamurthy, K.</span>, and <span class="refAuthor">K. Patel</span>, <span class="refTitle">"Advertising IPv4 Network Layer Reachability Information (NLRI) with an IPv6 Next Hop"</span>, <span class="seriesInfo">RFC 8950</span>, <span class="seriesInfo">DOI 10.17487/RFC8950</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8950">https://www.rfc-editor.org/info/rfc8950</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9692">[RFC9692]</dt>
+        <dd>
+<span class="refAuthor">Przygienda, T., Ed.</span>, <span class="refAuthor">Head, J., Ed.</span>, <span class="refAuthor">Sharma, A.</span>, <span class="refAuthor">Thubert, P.</span>, <span class="refAuthor">Rijsman, B.</span>, and <span class="refAuthor">D. Afanasiev</span>, <span class="refTitle">"RIFT: Routing in Fat Trees"</span>, <span class="seriesInfo">RFC 9692</span>, <span class="seriesInfo">DOI 10.17487/RFC9692</span>, <time datetime="2025-04" class="refDate">April 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9692">https://www.rfc-editor.org/info/rfc9692</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="TR-384">[TR-384]</dt>
+      <dd>
+<span class="refAuthor">Broadband Forum Technical Report</span>, <span class="refTitle">"TR-384: Cloud Central Office Reference Architectural Framework"</span>, <span class="refContent">TR-384, Issue 1</span>, <time datetime="2018-01" class="refDate">January 2018</time>, <span>&lt;<a href="https://www.broadband-forum.org/pdfs/tr-384-1-0-0.pdf">https://www.broadband-forum.org/pdfs/tr-384-1-0-0.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="CLOS">[CLOS]</dt>
+        <dd>
+<span class="refAuthor">Yuan, X.</span>, <span class="refTitle">"On Nonblocking Folded-Clos Networks in Computer Communication Environments"</span>, <span class="refContent">2011 IEEE International Parallel &amp; Distributed Processing Symposium</span>, <span class="seriesInfo">DOI 10.1109/IPDPS.2011.27</span>, <time datetime="2011-05" class="refDate">May 2011</time>, <span>&lt;<a href="https://ieeexplore.ieee.org/document/6012836">https://ieeexplore.ieee.org/document/6012836</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="FATTREE">[FATTREE]</dt>
+        <dd>
+<span class="refAuthor">Leiserson, C. E.</span>, <span class="refTitle">"Fat-Trees: Universal Networks for Hardware-Efficient Supercomputing"</span>, <span class="refContent">IEEE Transactions on Computers, vol. C-34, no. 10, pp. 892-901</span>, <span class="seriesInfo">DOI 10.1109/TC.1985.6312192</span>, <time datetime="1985-10" class="refDate">October 1985</time>, <span>&lt;<a href="https://ieeexplore.ieee.org/document/6312192">https://ieeexplore.ieee.org/document/6312192</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IEEEstd1588">[IEEEstd1588]</dt>
+        <dd>
+<span class="refAuthor">IEEE</span>, <span class="refTitle">"IEEE Standard for a Precision Clock Synchronization Protocol for Networked Measurement and Control Systems"</span>, <span class="seriesInfo">IEEE Std 1588-2019</span>, <span class="seriesInfo">DOI 10.1109/IEEESTD.2020.9120376</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://ieeexplore.ieee.org/document/9120376">https://ieeexplore.ieee.org/document/9120376</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="PNNI">[PNNI]</dt>
+        <dd>
+<span class="refAuthor">The ATM Forum Technical Committee</span>, <span class="refTitle">"Private Network-Network Interface - Specification Version 1.1 - (PNNI 1.1)"</span>, <span class="refContent">af-pnni-0055.001</span>, <time datetime="2002-04" class="refDate">April 2002</time>, <span>&lt;<a href="https://www.broadband-forum.org/download/af-pnni-0055.001.pdf">https://www.broadband-forum.org/download/af-pnni-0055.001.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3626">[RFC3626]</dt>
+        <dd>
+<span class="refAuthor">Clausen, T., Ed.</span> and <span class="refAuthor">P. Jacquet, Ed.</span>, <span class="refTitle">"Optimized Link State Routing Protocol (OLSR)"</span>, <span class="seriesInfo">RFC 3626</span>, <span class="seriesInfo">DOI 10.17487/RFC3626</span>, <time datetime="2003-10" class="refDate">October 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3626">https://www.rfc-editor.org/info/rfc3626</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4271">[RFC4271]</dt>
+        <dd>
+<span class="refAuthor">Rekhter, Y., Ed.</span>, <span class="refAuthor">Li, T., Ed.</span>, and <span class="refAuthor">S. Hares, Ed.</span>, <span class="refTitle">"A Border Gateway Protocol 4 (BGP-4)"</span>, <span class="seriesInfo">RFC 4271</span>, <span class="seriesInfo">DOI 10.17487/RFC4271</span>, <time datetime="2006-01" class="refDate">January 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4271">https://www.rfc-editor.org/info/rfc4271</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5905">[RFC5905]</dt>
+        <dd>
+<span class="refAuthor">Mills, D.</span>, <span class="refAuthor">Martin, J., Ed.</span>, <span class="refAuthor">Burbank, J.</span>, and <span class="refAuthor">W. Kasch</span>, <span class="refTitle">"Network Time Protocol Version 4: Protocol and Algorithms Specification"</span>, <span class="seriesInfo">RFC 5905</span>, <span class="seriesInfo">DOI 10.17487/RFC5905</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5905">https://www.rfc-editor.org/info/rfc5905</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8200">[RFC8200]</dt>
+        <dd>
+<span class="refAuthor">Deering, S.</span> and <span class="refAuthor">R. Hinden</span>, <span class="refTitle">"Internet Protocol, Version 6 (IPv6) Specification"</span>, <span class="seriesInfo">STD 86</span>, <span class="seriesInfo">RFC 8200</span>, <span class="seriesInfo">DOI 10.17487/RFC8200</span>, <time datetime="2017-07" class="refDate">July 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8200">https://www.rfc-editor.org/info/rfc8200</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8505">[RFC8505]</dt>
+        <dd>
+<span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Nordmark, E.</span>, <span class="refAuthor">Chakrabarti, S.</span>, and <span class="refAuthor">C. Perkins</span>, <span class="refTitle">"Registration Extensions for IPv6 over Low-Power Wireless Personal Area Network (6LoWPAN) Neighbor Discovery"</span>, <span class="seriesInfo">RFC 8505</span>, <span class="seriesInfo">DOI 10.17487/RFC8505</span>, <time datetime="2018-11" class="refDate">November 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8505">https://www.rfc-editor.org/info/rfc8505</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8928">[RFC8928]</dt>
+      <dd>
+<span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Sarikaya, B.</span>, <span class="refAuthor">Sethi, M.</span>, and <span class="refAuthor">R. Struik</span>, <span class="refTitle">"Address-Protected Neighbor Discovery for Low-Power and Lossy Networks"</span>, <span class="seriesInfo">RFC 8928</span>, <span class="seriesInfo">DOI 10.17487/RFC8928</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8928">https://www.rfc-editor.org/info/rfc8928</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">
+        The authors would like to thank <span class="contact-name">Jaroslaw Kowalczyk</span>, <span class="contact-name">Alvaro Retana</span>, <span class="contact-name">Jim Guichard</span>, and <span class="contact-name">Jeffrey Zhang</span> for providing invaluable concepts and content for this document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+<div id="Contributors">
+<section id="appendix-B">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<p id="appendix-B-1">
+   The following people contributed substantially to the content of this
+   document and should be considered coauthors:<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jordan Head</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jhead@juniper.net" class="email">jhead@juniper.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tom Verhaeg</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:tverhaeg@juniper.net" class="email">tverhaeg@juniper.net</a>
+</div>
+</address>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Yuehua Wei (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">ZTE Corporation</span></div>
+<div dir="auto" class="left"><span class="street-address">No.50, Software Avenue</span></div>
+<div dir="auto" class="left"><span class="locality">Nanjing</span></div>
+<div dir="auto" class="left"><span class="postal-code">210012</span></div>
+<div dir="auto" class="left"><span class="country-name">China</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:wei.yuehua@zte.com.cn" class="email">wei.yuehua@zte.com.cn</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Zheng (Sandy) Zhang</span></div>
+<div dir="auto" class="left"><span class="org">ZTE Corporation</span></div>
+<div dir="auto" class="left"><span class="street-address">No.50, Software Avenue</span></div>
+<div dir="auto" class="left"><span class="locality">Nanjing</span></div>
+<div dir="auto" class="left"><span class="postal-code">210012</span></div>
+<div dir="auto" class="left"><span class="country-name">China</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:zhang.zheng@zte.com.cn" class="email">zhang.zheng@zte.com.cn</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Dmitry Afanasiev</span></div>
+<div dir="auto" class="left"><span class="org">Yandex</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:fl0w@yandex-team.ru" class="email">fl0w@yandex-team.ru</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Pascal Thubert</span></div>
+<div dir="auto" class="left"><span class="org">Individual</span></div>
+<div dir="auto" class="left"><span class="country-name">France</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:pascal.thubert@gmail.com" class="email">pascal.thubert@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tony Przygienda</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks</span></div>
+<div dir="auto" class="left"><span class="street-address">1194 N. Mathilda Ave</span></div>
+<div dir="auto" class="left">
+<span class="locality">Sunnyvale</span>, <span class="region">CA</span> <span class="postal-code">94089</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:prz@juniper.net" class="email">prz@juniper.net</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
