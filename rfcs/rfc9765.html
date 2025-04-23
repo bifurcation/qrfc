@@ -1,0 +1,3304 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9765: RADIUS/1.1: Leveraging Application-Layer Protocol Negotiation (ALPN) to Remove MD5</title>
+<meta content="Alan DeKok" name="author">
+<meta content='
+       This document defines Application-Layer Protocol Negotiation (ALPN)
+      extensions for use with RADIUS/TLS and RADIUS/DTLS.  These extensions
+      permit the negotiation of an application protocol variant of RADIUS
+      called "RADIUS/1.1".  No changes are made to RADIUS/UDP or RADIUS/TCP.
+      The extensions allow the negotiation of a transport profile where the
+      RADIUS shared secret is no longer used, and all MD5-based packet
+      authentication and attribute obfuscation methods are removed. 
+       This document updates RFCs 2865, 2866, 5176, 6613, 6614, and 7360. 
+    ' name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="RADIUS" name="keyword">
+<meta content="ALPN" name="keyword">
+<meta content="MD5" name="keyword">
+<meta content="FIPS 140" name="keyword">
+<meta content="TLS" name="keyword">
+<meta content="9765" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9765.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-radext-radiusv11-11" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9765" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9765</td>
+<td class="center">RADIUS/1.1</td>
+<td class="right">April 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">DeKok</td>
+<td class="center">Experimental</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9765" class="eref">9765</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc2865" class="eref">2865</a>, <a href="https://www.rfc-editor.org/rfc/rfc2866" class="eref">2866</a>, <a href="https://www.rfc-editor.org/rfc/rfc5176" class="eref">5176</a>, <a href="https://www.rfc-editor.org/rfc/rfc6613" class="eref">6613</a>, <a href="https://www.rfc-editor.org/rfc/rfc6614" class="eref">6614</a>, <a href="https://www.rfc-editor.org/rfc/rfc7360" class="eref">7360</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Experimental</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-04" class="published">April 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">A. DeKok</div>
+<div class="org">FreeRADIUS</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9765</h1>
+<h1 id="title">RADIUS/1.1: Leveraging Application-Layer Protocol Negotiation (ALPN) to Remove MD5</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines Application-Layer Protocol Negotiation (ALPN)
+      extensions for use with RADIUS/TLS and RADIUS/DTLS.  These extensions
+      permit the negotiation of an application protocol variant of RADIUS
+      called "RADIUS/1.1".  No changes are made to RADIUS/UDP or RADIUS/TCP.
+      The extensions allow the negotiation of a transport profile where the
+      RADIUS shared secret is no longer used, and all MD5-based packet
+      authentication and attribute obfuscation methods are removed.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document updates RFCs 2865, 2866, 5176, 6613, 6614, and 7360.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for examination, experimental implementation, and
+            evaluation.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document defines an Experimental Protocol for the Internet
+            community.  This document is a product of the Internet Engineering
+            Task Force (IETF).  It represents the consensus of the IETF community.
+            It has received public review and has been approved for publication
+            by the Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9765">https://www.rfc-editor.org/info/rfc9765</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-the-radius-11-transport-pro" class="internal xref">The RADIUS/1.1 Transport Profile for RADIUS</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-alpn-name-for-radius-11" class="internal xref">ALPN Name for RADIUS/1.1</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-operation-of-alpn" class="internal xref">Operation of ALPN</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-configuration-of-alpn-for-r" class="internal xref">Configuration of ALPN for RADIUS/1.1</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3.2.1">
+                    <p id="section-toc.1-1.3.2.3.2.1.1"><a href="#section-3.3.1" class="auto internal xref">3.3.1</a>.  <a href="#name-using-protocol-error-for-si" class="internal xref">Using Protocol-Error for Signaling ALPN Failure</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3.2.2">
+                    <p id="section-toc.1-1.3.2.3.2.2.1"><a href="#section-3.3.2" class="auto internal xref">3.3.2</a>.  <a href="#name-tabular-summary" class="internal xref">Tabular Summary</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-miscellaneous-items" class="internal xref">Miscellaneous Items</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-session-resumption" class="internal xref">Session Resumption</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-radius-11-packet-and-attrib" class="internal xref">RADIUS/1.1 Packet and Attribute Formats</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-radius-11-packet-format" class="internal xref">RADIUS/1.1 Packet Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-the-token-field" class="internal xref">The Token Field</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-sending-packets" class="internal xref">Sending Packets</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-receiving-packets" class="internal xref">Receiving Packets</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-attribute-handling" class="internal xref">Attribute Handling</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-obfuscated-attributes" class="internal xref">Obfuscated Attributes</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-user-password" class="internal xref">User-Password</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-chap-challenge" class="internal xref">CHAP-Challenge</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3">
+                    <p id="section-toc.1-1.5.2.1.2.3.1"><a href="#section-5.1.3" class="auto internal xref">5.1.3</a>.  <a href="#name-tunnel-password" class="internal xref">Tunnel-Password</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4">
+                    <p id="section-toc.1-1.5.2.1.2.4.1"><a href="#section-5.1.4" class="auto internal xref">5.1.4</a>.  <a href="#name-vendor-specific-attributes" class="internal xref">Vendor-Specific Attributes</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-message-authenticator" class="internal xref">Message-Authenticator</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-message-authentication-code" class="internal xref">Message-Authentication-Code</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-chap-ms-chap-and-similar-at" class="internal xref">CHAP, MS-CHAP, and Similar Attributes</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-original-packet-code" class="internal xref">Original-Packet-Code</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-other-considerations-when-u" class="internal xref">Other Considerations When Using ALPN</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-protocol-error" class="internal xref">Protocol-Error</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-status-server" class="internal xref">Status-Server</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-proxies" class="internal xref">Proxies</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-other-radius-considerations" class="internal xref">Other RADIUS Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-crypto-agility" class="internal xref">Crypto-Agility</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-error-cause-attribute" class="internal xref">Error-Cause Attribute</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-future-standards" class="internal xref">Future Standards</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The RADIUS protocol <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>]</span> uses MD5 <span>[<a href="#RFC1321" class="cite xref">RFC1321</a>]</span> to authenticate packets and to obfuscate certain
+      attributes.  Additional transport protocols were defined for TCP <span>[<a href="#RFC6613" class="cite xref">RFC6613</a>]</span>, TLS <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span>, and DTLS <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>.  However, those transport protocols still use MD5
+      to authenticate individual packets.  That is, the shared secret was used
+      along with MD5, even when the RADIUS packets were being transported in
+      (D)TLS.  At the time, the consensus of the RADEXT Working Group was that
+      this continued use of MD5 was acceptable.  TLS was seen as a simple
+      "wrapper" around RADIUS, while using a fixed shared secret.  The
+      intention at the time was to allow the use of (D)TLS while making
+      essentially no changes to the basic RADIUS encoding, decoding,
+      authentication, and packet validation.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Issues of MD5 security have been known for decades, most notably in
+      <span>[<a href="#RFC6151" class="cite xref">RFC6151</a>]</span> and in <span><a href="https://rfc-editor.org/rfc/rfc6421#section-3" class="relref">Section 3</a> of [<a href="#RFC6421" class="cite xref">RFC6421</a>]</span>, among others.  The reliance on MD5 for security
+      makes it impossible to use RADIUS in secure systems that forbid the use
+      of digest algorithms with known vulnerabilities.  For example, FIPS 140
+      forbids systems from relying on insecure cryptographic methods for
+      security <span>[<a href="#FIPS-140-3" class="cite xref">FIPS-140-3</a>]</span>.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">While the use of MD5 in RADIUS/TLS has not been proven to be insecure,
+     it has not been proven to be secure.  This gap means that it is
+     difficult to use RADIUS in organizations that require the use of systems
+     that have proven security.  Those organizations tend to simply ban the
+     use of insecure digests such as MD5 entirely, even if the use of MD5 has
+     no known security impact.  While the resulting system might still not be
+     secure, it at least does not contain any known insecurities.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">In addition, the use of MD5 in RADIUS/TLS and RADIUS/DLTS adds no
+      security or privacy over that provided by TLS.  In hindsight, the
+      decision of the RADEXT Working Group to retain MD5 for historic
+      RADIUS/TLS was likely wrong.  It was an easy decision to make in the
+      short term, but it has caused ongoing problems that this document
+      addresses.  The author of this document played a part in that original
+      decision, which is now being corrected by this document.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This document defines an Application-Layer Protocol Negotiation
+      (ALPN) <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span> extension for RADIUS over (D)TLS that
+      removes the need to use MD5 for (D)TLS, which we call RADIUS/1.1.  This
+      specification makes no changes to UDP or TCP transport.  The RADIUS/1.1
+      protocol can be best understood as a transport profile for RADIUS over
+      TLS, rather than a wholesale revision of the RADIUS protocol.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">Systems that implement this transport profile can be more easily
+      verified to be FIPS 140 compliant.  A preliminary implementation has
+      shown that only minor code changes are required to support RADIUS/1.1 on
+      top of an existing RADIUS/TLS server implementation. These include:<a href="#section-1-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-7.1">A method to set the list of supported ALPN protocols before the TLS handshake starts.<a href="#section-1-7.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-7.2">A method to query if ALPN has chosen a protocol (and if yes, which
+        protocol was chosen) after the TLS handshake has completed.<a href="#section-1-7.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-7.3">Changes to the packet encoder and decoder, so that the individual
+        packets are not authenticated, and no attribute is encoded with the
+        historic obfuscation methods.<a href="#section-1-7.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-8">That is, the bulk of the ALPN protocol can be left to the underlying
+      TLS implementation.  This document discusses the ALPN exchange in detail
+      in order to give simplified descriptions for the reader, and so that the
+      reader does not have to read or understand all of <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span>.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">The detailed list of changes from historic TLS-based transports to
+      RADIUS/1.1 is as follows:<a href="#section-1-9" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-10.1">ALPN is used for negotiation of this extension.<a href="#section-1-10.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.2">TLS 1.3 or later is required.<a href="#section-1-10.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.3">All uses of the RADIUS shared secret have been removed.<a href="#section-1-10.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.4">The now unused Request and Response Authenticator fields have been
+        repurposed to carry an opaque Token that identifies requests and
+        responses.<a href="#section-1-10.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.5">The functionality of the Identifier field has been replaced by the
+        Token field, and the space previously taken by the Identifier field is
+        now reserved and unused.<a href="#section-1-10.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.6">The Message-Authenticator attribute (<span>[<a href="#RFC3579" class="cite xref">RFC3579</a>], <a href="https://rfc-editor.org/rfc/rfc3579#section-3.2" class="relref">Section 3.2</a></span>) is not sent in any packet,
+        and is ignored if received.<a href="#section-1-10.6" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.7">Attributes such as User-Password, Tunnel-Password, and MS-MPPE keys are sent encoded as "text" (<span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.4" class="relref">Section 3.4</a></span>) or "octets" (<span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.5" class="relref">Section 3.5</a></span>), without the
+        previous MD5-based obfuscation.  This obfuscation is no longer
+        necessary, as the data is secured and kept private through the use of
+        TLS.<a href="#section-1-10.7" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.8">The conclusion of the efforts stemming from <span>[<a href="#RFC6421" class="cite xref">RFC6421</a>]</span> is that crypto-agility in RADIUS is best done via a
+        TLS wrapper, and not by extending the RADIUS protocol.<a href="#section-1-10.8" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-10.9">
+          <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>]</span> is updated to allow the Error-Cause
+          attribute to appear in Access-Reject packets.<a href="#section-1-10.9" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-11">The following items are left unchanged from historic TLS-based
+      transports for RADIUS:<a href="#section-1-11" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-12.1">The RADIUS packet header is the same size, and the Code and Length
+        fields (<span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-3" class="relref">Section 3</a></span>)
+        have the same meaning as before.<a href="#section-1-12.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-12.2">The default 4096-octet packet size from <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-3" class="relref">Section 3</a></span> is unchanged, although <span>[<a href="#RFC7930" class="cite xref">RFC7930</a>]</span> can still be leveraged to use larger packets.<a href="#section-1-12.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-12.3">All attributes that have simple encodings (that is, attributes
+        that do not use MD5 obfuscation) have the same encoding and meaning
+        as before.<a href="#section-1-12.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-12.4">As this extension is a transport profile for one "hop"
+        (client-to-server connection), it does not impact any other connection
+        used by a client or server.  The only systems that are aware that this
+        transport profile is in use are the client and server who have
+        negotiated the use of this extension on a particular shared
+        connection.<a href="#section-1-12.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-12.5">This extension uses the same ports (2083/tcp and 2083/udp) that
+        are defined for RADIUS/TLS <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and RADIUS/DTLS
+        <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>.<a href="#section-1-12.5" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-13">A major benefit of this extension is that a server that implements it
+      can also be more easily verified for FIPS 140 compliance.  That is, a
+      server can remove all uses of MD5, which means that those algorithms are
+      provably not used for security purposes.  In that case, however, the
+      server will not support the Challenge Handshake Authentication Protocol
+      (CHAP) or any authentication method that uses MD5.  The choice of which
+      authentication method to accept is always left to the server.  This
+      specification does not change any authentication method carried in
+      RADIUS, and does not mandate (or forbid) the use of any authentication
+      method for any system.<a href="#section-1-13" class="pilcrow">¶</a></p>
+<p id="section-1-14">As for proxies, there was never a requirement that proxies implement
+      CHAP or Microsoft CHAP (MS-CHAP) authentication.  So far as a proxy is concerned, attributes relating to
+      CHAP and MS-CHAP are simply opaque data that is transported unchanged to
+      the next hop.  Therefore, it is possible for a FIPS 140 compliant proxy
+      to transport authentication methods that depend on MD5, so long as that
+      data is forwarded to a server that supports those methods.<a href="#section-1-14" class="pilcrow">¶</a></p>
+<p id="section-1-15">We reiterate that the decision to support (or not support) any authentication
+      method is entirely site local, and is not a requirement of this
+      specification.  The contents or meaning of any RADIUS attribute other
+      than the Message-Authenticator (and similar attributes) are not modified.
+      The only change to the Message-Authenticator attribute is that it is no
+      longer used in RADIUS/1.1.<a href="#section-1-15" class="pilcrow">¶</a></p>
+<p id="section-1-16">Unless otherwise described in this document, all RADIUS requirements
+      apply to this extension.  That is, this specification defines a
+      transport profile for RADIUS.  It is not an entirely new protocol, and
+      it defines only minor changes to the existing RADIUS protocol.  It does
+      not change the RADIUS packet format, attribute format, etc.  This
+      specification is compatible with all RADIUS attributes of the past, present,
+      and future.<a href="#section-1-16" class="pilcrow">¶</a></p>
+<p id="section-1-17">This specification is compatible with existing implementations of
+      RADIUS/TLS and RADIUS/DTLS.  Systems that implement this specification can
+      fall back to historic RADIUS/TLS if no ALPN signaling is performed, and
+      the local configuration permits such fallback.<a href="#section-1-17" class="pilcrow">¶</a></p>
+<p id="section-1-18">This specification is compatible with all existing RADIUS
+      specifications.  There is no need for any RADIUS specification to
+      mention this transport profile by name or to make provisions for this
+      specification.  This document defines how to transform RADIUS into
+      RADIUS/1.1, and no further discussion of that transformation is
+      necessary.<a href="#section-1-18" class="pilcrow">¶</a></p>
+<p id="section-1-19">We note that this document makes no changes to previous RADIUS
+      specifications.  Existing RADIUS implementations can continue to be used
+      without modification.  Where previous specifications are explicitly
+      mentioned and updated, those updates or changes apply only when the
+      RADIUS/1.1 transport profile is being used.<a href="#section-1-19" class="pilcrow">¶</a></p>
+<p id="section-1-20">In short, when negotiated on a connection, the RADIUS/1.1 transport
+      profile permits implementations to avoid MD5 when authenticating
+      packets or when obfuscating certain attributes.<a href="#section-1-20" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">The following list describes the terminology and abbreviations that are used in this document.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-2-3">
+        <dt id="section-2-3.1">ALPN</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.2">Application-Layer Protocol Negotiation (as defined in <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span>).<a href="#section-2-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.3">RADIUS</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.4">
+          <p id="section-2-3.4.1">Remote Authentication Dial-In User Service (as defined in <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>]</span>, <span>[<a href="#RFC2866" class="cite xref">RFC2866</a>]</span>, and
+   <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>]</span>, among others).<a href="#section-2-3.4.1" class="pilcrow">¶</a></p>
+<p id="section-2-3.4.2">While this protocol can be viewed as "RADIUS/1.0", for simplicity
+          and historical compatibility, we keep the name "RADIUS".<a href="#section-2-3.4.2" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.5">RADIUS/UDP</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.6">RADIUS over the User Datagram Protocol (see <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>]</span>,
+          <span>[<a href="#RFC2866" class="cite xref">RFC2866</a>]</span>, and <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>]</span>, among others).<a href="#section-2-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.7">RADIUS/TCP</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.8">RADIUS over the Transmission Control Protocol <span>[<a href="#RFC6613" class="cite xref">RFC6613</a>]</span>.<a href="#section-2-3.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.9">RADIUS/TLS</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.10">RADIUS over Transport Layer Security <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span>.<a href="#section-2-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.11">RADIUS/DTLS</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.12">RADIUS over Datagram Transport Layer Security <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>.<a href="#section-2-3.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.13">RADIUS over TLS</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.14">Refers to any RADIUS packets transported over TLS or DTLS.  This
+          terminology is used instead of alternatives such as "RADIUS/(D)TLS"
+          or "either RADIUS/TLS or RADIUS/DTLS".  This term is generally used
+          when referring to TLS-layer requirements for RADIUS packet
+          transport.<a href="#section-2-3.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.15">historic RADIUS/TLS</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.16">Refers to RADIUS over (D)TLS (as defined in <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and
+          <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>).  This term does not include the protocol
+          defined in this specification.<a href="#section-2-3.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.17">RADIUS/1.1</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.18">
+          <p id="section-2-3.18.1">RADIUS version 1.1, i.e.,
+     the transport profile defined in this document.  We use
+     RADIUS/1.1 to refer interchangeably to TLS and DTLS
+     transport.<a href="#section-2-3.18.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.19">TLS</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.20">
+          <p id="section-2-3.20.1">Transport Layer Security.
+     Generally, when we refer to TLS in this document, we are
+     referring interchangeably to TLS or DTLS transport.<a href="#section-2-3.20.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="the-radius11-transport-profile-for-radius">
+<section id="section-3">
+      <h2 id="name-the-radius-11-transport-pro">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-the-radius-11-transport-pro" class="section-name selfRef">The RADIUS/1.1 Transport Profile for RADIUS</a>
+      </h2>
+<p id="section-3-1">This section describes the ALPN transport profile in detail.  It
+      first gives the name used for ALPN, and then describes how ALPN is
+      configured and negotiated by the client and server.  It then concludes by
+      discussing TLS issues such as what to do for ALPN during session
+      resumption.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="alpn-name-for-radius11">
+<section id="section-3.1">
+        <h3 id="name-alpn-name-for-radius-11">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-alpn-name-for-radius-11" class="section-name selfRef">ALPN Name for RADIUS/1.1</a>
+        </h3>
+<p id="section-3.1-1">The ALPN name defined for RADIUS/1.1 is as follows:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.1-2">
+          <dt id="section-3.1-2.1">"radius/1.1"</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-2.2">The protocol defined by this specification.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.1-3">Where ALPN is not configured or is not received in a TLS
+        connection, systems supporting ALPN <span class="bcp14">MUST NOT</span> use
+        RADIUS/1.1.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">Where ALPN is configured, the client signals support by sending
+        ALPN strings listing which protocols it supports.  The server can
+        accept one of these proposals and reply with a matching ALPN string,
+        or reject this proposal and not reply with any ALPN string.  A full
+        walkthrough of the protocol negotiation is given below.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1-5">Implementations <span class="bcp14">MUST</span> signal ALPN "radius/1.1" in
+        order for it to be used in a connection.<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+<p id="section-3.1-6">The next step in defining RADIUS/1.1 is to review how ALPN
+        works.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="operation-of-alpn">
+<section id="section-3.2">
+        <h3 id="name-operation-of-alpn">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-operation-of-alpn" class="section-name selfRef">Operation of ALPN</a>
+        </h3>
+<p id="section-3.2-1">In order to provide a high-level description of ALPN for readers
+        who are not familiar with the details of <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span>, we
+        provide a brief overview here.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">Once a system has been configured to support ALPN, it is negotiated
+        on a per-connection basis as per <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span>.  The
+        negotiation proceeds as follows:<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-3.2-3">
+          <dt>1)</dt>
+<dd id="section-3.2-3.1">The client sends an ALPN extension in the ClientHello.  This
+          extension lists one or more application protocols by name.  These
+          names are the protocols that the client is claiming to support.<a href="#section-3.2-3.1" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt>2)</dt>
+<dd id="section-3.2-3.2">
+            <p id="section-3.2-3.2.1">The server receives the extension and validates the
+     application protocol name(s) against the list it has
+     configured.<a href="#section-3.2-3.2.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-3.2.2">If the server finds no acceptable common protocols (ALPN or
+            otherwise), it closes the connection.<a href="#section-3.2-3.2.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt>3)</dt>
+<dd id="section-3.2-3.3">
+            <p id="section-3.2-3.3.1">Otherwise, the server returns a ServerHello with either no ALPN
+     extension or an ALPN extension containing only one named
+     application protocol, which needs to be one of the names proposed
+     by the client.<a href="#section-3.2-3.3.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-3.3.2">If the client did not signal ALPN, or the server does not
+            accept the ALPN proposal, the server does not reply with any ALPN
+            name.<a href="#section-3.2-3.3.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt>4)</dt>
+<dd id="section-3.2-3.4">
+            <p id="section-3.2-3.4.1">The client receives the ServerHello, validates the received
+     application protocol (if any) against the name(s) it sent, and
+     records which application protocol was chosen.<a href="#section-3.2-3.4.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-3.4.2">This check is necessary in order for the client to both know
+            which protocol the server has selected, and to validate that the
+            protocol sent by the server is one that is acceptable to the
+            client.<a href="#section-3.2-3.4.2" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.2-4">The next step in defining RADIUS/1.1 is to define how ALPN is
+        configured on the client and server and to give more detailed
+        requirements on its configuration and operation.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="configuration-of-alpn-for-radius11">
+<section id="section-3.3">
+        <h3 id="name-configuration-of-alpn-for-r">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-configuration-of-alpn-for-r" class="section-name selfRef">Configuration of ALPN for RADIUS/1.1</a>
+        </h3>
+<p id="section-3.3-1">Clients or servers supporting this specification can do so by
+        extending their TLS configuration through the addition of a new
+        configuration variable, called "Version" here.  The exact name given
+        below does not need to be used, but it is <span class="bcp14">RECOMMENDED</span>
+        that administrative interfaces or programming interfaces use a similar
+        name in order to provide consistent terminology.  This variable
+        controls how the implementation signals use of this protocol via
+        ALPN.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">When set, this variable should contain the list of permitted RADIUS
+        versions as numbers, e.g., "1.0" or "1.1".  The implementation may
+        allow multiple values in one variable, allow multiple variables, or
+        instead use two configurations for the "minimum" and "maximum" allowed
+        versions.  We assume here that there is one variable, which can
+        contain either no value or a list of one or more versions that the
+        current implementation supports.  In this specification, the possible
+        values, ALPN strings, and corresponding interpretations are:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<div id="alpn-configuration-for-radius11">
+<table class="center" id="table-1">
+          <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">ALPN String(s)</th>
+              <th class="text-left" rowspan="1" colspan="1">Interpretation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">unset</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+              <td class="text-left" rowspan="1" colspan="1">no ALPN strings are sent</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1.0</td>
+              <td class="text-left" rowspan="1" colspan="1">radius/1.0</td>
+              <td class="text-left" rowspan="1" colspan="1">require historic RADIUS/TLS</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1.0, 1.1</td>
+              <td class="text-left" rowspan="1" colspan="1">radius/1.0, radius/1.1</td>
+              <td class="text-left" rowspan="1" colspan="1">allow either historic RADIUS/TLS or RADIUS/1.1</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1.1</td>
+              <td class="text-left" rowspan="1" colspan="1">radius/1.1</td>
+              <td class="text-left" rowspan="1" colspan="1">require RADIUS/1.1</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-3.3-4">This configuration is also extensible to future RADIUS versions if
+        that extension becomes necessary.  New values and ALPN names can
+        simply be added to the list.  Implementations can then negotiate the
+        highest version that is supported by both client and server.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+<p id="section-3.3-5">Implementations <span class="bcp14">SHOULD</span> support both historic
+        RADIUS/TLS and RADIUS/1.1.  Such implementations <span class="bcp14">MUST</span>
+        set the default value for this configuration variable to "1.0, 1.1".
+        This setting ensures that both versions of RADIUS can be
+        negotiated.<a href="#section-3.3-5" class="pilcrow">¶</a></p>
+<p id="section-3.3-6">Implementations <span class="bcp14">MAY</span> support only RADIUS/1.1.  In
+        this case, the default value for this configuration variable
+        <span class="bcp14">MUST</span> be "1.1".  This behavior is <span class="bcp14">NOT RECOMMENDED</span>, as it is incompatible with historic RADIUS/TLS.
+        This behavior can only be a reasonable default when all (or nearly
+        all) RADIUS clients have been updated to support RADIUS/1.1.<a href="#section-3.3-6" class="pilcrow">¶</a></p>
+<p id="section-3.3-7">A more detailed definition of the variable and the meaning of the
+        values is given below.<a href="#section-3.3-7" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.3-8">
+          <dt id="section-3.3-8.1">Configuration Variable Name</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-8.2">Version<a href="#section-3.3-8.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlNewline" id="section-3.3-9">
+          <dt id="section-3.3-9.1">For "Value":</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-9.2">
+            <ol start="1" type="A" class="normal type-A" id="section-3.3-9.2.1">
+      <li id="section-3.3-9.2.1.1">
+                <p id="section-3.3-9.2.1.1.1">If unset, ALPN is not used.<a href="#section-3.3-9.2.1.1.1" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.1.2">Any connection <span class="bcp14">MUST</span> use historic RADIUS/TLS.<a href="#section-3.3-9.2.1.1.2" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.1.3">This variable is included here only for logical
+        completeness. Implementations of this specification
+        <span class="bcp14">SHOULD</span> be configured to always send one or more ALPN
+        strings. This data signals that the implementation is capable of
+        performing ALPN negotiation, even if it is not currently configured to
+        use RADIUS/1.1.<a href="#section-3.3-9.2.1.1.3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.3-9.2.1.1.4">
+                  <dt id="section-3.3-9.2.1.1.4.1">Client Behavior</dt>
+                  <dd style="margin-left: 1.5em" id="section-3.3-9.2.1.1.4.2">The client <span class="bcp14">MUST NOT</span> send any protocol name via ALPN.<a href="#section-3.3-9.2.1.1.4.2" class="pilcrow">¶</a>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-3.3-9.2.1.1.4.3">Server Behavior</dt>
+                  <dd style="margin-left: 1.5em" id="section-3.3-9.2.1.1.4.4">
+                    <p id="section-3.3-9.2.1.1.4.4.1">The server <span class="bcp14">MUST NOT</span> signal any protocol name via
+            ALPN.<a href="#section-3.3-9.2.1.1.4.4.1" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.1.4.4.2">If the server receives an ALPN name from the client, it
+            <span class="bcp14">MUST NOT</span> close the connection. Instead, it simply
+            does not reply with ALPN and finishes the TLS connection setup as
+            defined for historic RADIUS/TLS.<a href="#section-3.3-9.2.1.1.4.4.2" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.1.4.4.3">Note that if a client sends "radius/1.1", the client will see
+            that the server failed to acknowledge this request and will close
+            the connection. For any other client configuration, the connection
+            will use historic RADIUS/TLS.<a href="#section-3.3-9.2.1.1.4.4.3" class="pilcrow">¶</a></p>
+</dd>
+                <dd class="break"></dd>
+</dl>
+</li>
+              <li id="section-3.3-9.2.1.2">
+                <p id="section-3.3-9.2.1.2.1">If set to "1.0", "1.0, 1.1", "1.1", or future values:<a href="#section-3.3-9.2.1.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.3-9.2.1.2.2">
+                  <dt id="section-3.3-9.2.1.2.2.1">Client Behavior</dt>
+                  <dd style="margin-left: 1.5em" id="section-3.3-9.2.1.2.2.2">
+                    <p id="section-3.3-9.2.1.2.2.2.1">The client <span class="bcp14">MUST</span> send the ALPN string(s)
+            associated with the configured version. For example, send
+            "radius/1.0" for "1.0".<a href="#section-3.3-9.2.1.2.2.2.1" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.2.2.2.2">The client will receive either no ALPN response from the
+     server; or it will receive an ALPN response of one version string
+     that <span class="bcp14">MUST</span> match one of the strings it sent; or else they will
+     receive a TLS alert of "no_application_protocol" (120).<a href="#section-3.3-9.2.1.2.2.2.2" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.2.2.2.3">If the connection remains open, the client <span class="bcp14">MUST</span>
+            treat the connection as using the matching ALPN version.<a href="#section-3.3-9.2.1.2.2.2.3" class="pilcrow">¶</a></p>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-3.3-9.2.1.2.2.3">Server Behavior</dt>
+                  <dd style="margin-left: 1.5em" id="section-3.3-9.2.1.2.2.4">
+                    <p id="section-3.3-9.2.1.2.2.4.1">If the server receives no ALPN name from the client, it
+            <span class="bcp14">MUST</span> use historic RADIUS/TLS.<a href="#section-3.3-9.2.1.2.2.4.1" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.2.2.4.2">If the server receives one or more ALPN names from the client,
+            it <span class="bcp14">MUST</span> reply with the highest mutually supported
+            version and then use the latest supported version for this
+            connection.<a href="#section-3.3-9.2.1.2.2.4.2" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.2.2.4.3">If the server receives one or more ALPN names from the client,
+            but none of the names match the versions supported by (or
+            configured on) the server, it <span class="bcp14">MUST</span> reply with a TLS
+            alert of "no_application_protocol" (120), and then it
+            <span class="bcp14">MUST</span> close the TLS connection.<a href="#section-3.3-9.2.1.2.2.4.3" class="pilcrow">¶</a></p>
+<p id="section-3.3-9.2.1.2.2.4.4">These requirements for negotiation are not specific to
+            RADIUS/1.1; therefore, they can be used unchanged if any new
+            version of RADIUS is defined.<a href="#section-3.3-9.2.1.2.2.4.4" class="pilcrow">¶</a></p>
+</dd>
+                <dd class="break"></dd>
+</dl>
+</li>
+            </ol>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.3-10">By requiring the default configuration to allow historic
+        RADIUS/TLS, implementations will be able to negotiate both historic
+        RADIUS/TLS connections and also RADIUS/1.1 connections.  Any other
+        recommended default setting would prevent either the negotiation of
+        historic RADIUS/TLS or prevent the negotiation of RADIUS/1.1.<a href="#section-3.3-10" class="pilcrow">¶</a></p>
+<p id="section-3.3-11">Once administrators verify that both ends of a connection support
+        RADIUS/1.1, and that it has been negotiated successfully, the
+        configurations <span class="bcp14">SHOULD</span> be updated to require RADIUS/1.1.
+        The connections should be monitored after this change to ensure that
+        the systems continue to remain connected.  If there are connection
+        issues, then the configuration should be reverted to allowing both
+        "radius/1.0" and "radius/1.1" ALPN strings, until the administrator
+        has resolved the connection problems.<a href="#section-3.3-11" class="pilcrow">¶</a></p>
+<p id="section-3.3-12">We reiterate that systems implementing this specification, but
+        which are configured with settings that forbid RADIUS/1.1, will behave
+        largely the same as systems that do not implement this specification.
+        The only difference is that clients may send the ALPN name
+        "radius/1.0".<a href="#section-3.3-12" class="pilcrow">¶</a></p>
+<p id="section-3.3-13">Systems implementing RADIUS/1.1 <span class="bcp14">SHOULD NOT</span> be
+        configured by default to forbid that protocol.  That setting exists
+        mainly for completeness, and to give administrators the flexibility to
+        control their own deployments.<a href="#section-3.3-13" class="pilcrow">¶</a></p>
+<p id="section-3.3-14">While <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span> does not discuss the possibility of
+        the server sending a TLS alert of "no_application_protocol" (120) when
+        the client does not use ALPN, this behavior appears to be useful.  As
+        such, servers <span class="bcp14">MAY</span> send a TLS alert of
+        "no_application_protocol" (120) when the client does not use ALPN.<a href="#section-3.3-14" class="pilcrow">¶</a></p>
+<p id="section-3.3-15">However, some TLS implementations may not permit an application to
+        send a TLS alert of its choice at a time of its choice.  This
+        limitation means that it is not always possible for an application to
+        send the TLS alert as discussed in the previous section.  The impact
+        is that an implementation may attempt to connect and then see that
+        the connection fails, but it may not be able to determine why that failure
+        has occurred.  Implementers and administrators should be aware that
+        unexplained connection failures may be due to ALPN issues.<a href="#section-3.3-15" class="pilcrow">¶</a></p>
+<p id="section-3.3-16">The server <span class="bcp14">MAY</span> send this alert during the
+        ClientHello if it requires ALPN but does not receive it.  That is,
+        there may not always be a need to wait for the TLS connection to be
+        fully established before realizing that no common ALPN protocol can be
+        negotiated.<a href="#section-3.3-16" class="pilcrow">¶</a></p>
+<p id="section-3.3-17">Where the client does perform signaling via ALPN, and the server
+        determines that there is no compatible application protocol name, then
+        as per <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>], <a href="https://rfc-editor.org/rfc/rfc7301#section-3.2" class="relref">Section 3.2</a></span>,
+        it <span class="bcp14">MUST</span> send a TLS alert of "no_application_protocol"
+        (120).<a href="#section-3.3-17" class="pilcrow">¶</a></p>
+<p id="section-3.3-18">The server <span class="bcp14">MUST</span> close the connection whether or not
+        the server sent a TLS alert for no compatible ALPN.  The above
+        requirements on ALPN apply to both new sessions and to resumed
+        sessions.<a href="#section-3.3-18" class="pilcrow">¶</a></p>
+<p id="section-3.3-19">In contrast, there is no need for the client to signal that there
+        are no compatible application protocol names.  The client sends zero
+        or more protocol names, and the server responds as above.  From the
+        point of view of the client, the list it sent results in either a
+        connection failure or a connection success.<a href="#section-3.3-19" class="pilcrow">¶</a></p>
+<p id="section-3.3-20">It is <span class="bcp14">RECOMMENDED</span> that the server logs a descriptive
+        error in this situation, so that an administrator can determine why a
+        particular connection failed.  The log message <span class="bcp14">SHOULD</span>
+        include information about the other end of the connection, such as the IP
+        address, certificate information, etc.  Similarly, when the client
+        receives a TLS alert of "no_application_protocol" (120), it
+        <span class="bcp14">SHOULD</span> log a descriptive error message.  Such error
+        messages are critical for helping administrators diagnose
+        connectivity issues.<a href="#section-3.3-20" class="pilcrow">¶</a></p>
+<div id="using-protocol-error-for-signaling-alpn-failure">
+<section id="section-3.3.1">
+          <h4 id="name-using-protocol-error-for-si">
+<a href="#section-3.3.1" class="section-number selfRef">3.3.1. </a><a href="#name-using-protocol-error-for-si" class="section-name selfRef">Using Protocol-Error for Signaling ALPN Failure</a>
+          </h4>
+<p id="section-3.3.1-1">When it is not possible to send a TLS alert of
+          "no_application_protocol" (120), then the only remaining method for
+          one party to signal the other is to send application data inside of
+          the TLS tunnel.  Therefore, for the situation when one end of a
+          connection determines that it requires ALPN, while the other end does
+          not support ALPN, then the end requiring ALPN <span class="bcp14">MAY</span> send a
+          Protocol-Error packet <span>[<a href="#RFC7930" class="cite xref">RFC7930</a>]</span> inside of the tunnel
+          and then <span class="bcp14">MUST</span> close the connection.  If this is done,
+          the Token field of the Protocol-Error packet cannot be copied from
+          any request; therefore, that field <span class="bcp14">MUST</span> be set to
+          all zeros.<a href="#section-3.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.3.1-2">The Protocol-Error packet <span class="bcp14">SHOULD</span> contain a
+          Reply-Message attribute with a textual string describing the cause
+          of the error.  The packet <span class="bcp14">SHOULD</span> also contain an
+          Error-Cause attribute, with value 406 (Unsupported Extension).  The
+          packet <span class="bcp14">SHOULD NOT</span> contain other attributes.<a href="#section-3.3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.3.1-3">An implementation sending this packet could bypass any RADIUS
+          encoder and simply write this packet as a predefined, fixed set of
+          data to the TLS connection.  That process would likely be simpler
+          than trying to call the normal RADIUS packet encoder to encode a
+          reply packet with no corresponding request packet.<a href="#section-3.3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.3.1-4">As this packet is an unexpected response packet, existing client
+          implementations of RADIUS over TLS will ignore it.  They may either
+          log an error and close the connection, or they may discard the
+          packet and leave the connection open.  If the connection remains
+          open, the end supporting ALPN will close the connection, so there
+          will be no side effects from sending this packet.  Therefore, while
+          using a Protocol-Error packet in this way is unusual, it is both
+          informative and safe.<a href="#section-3.3.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.3.1-5">The purpose of this packet is not to have the other end of the
+          connection automatically determine what went wrong and fix it.
+          Instead, the packet is intended to be (eventually) seen by an
+          administrator, who can then take remedial action.<a href="#section-3.3.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="tabular-summary">
+<section id="section-3.3.2">
+          <h4 id="name-tabular-summary">
+<a href="#section-3.3.2" class="section-number selfRef">3.3.2. </a><a href="#name-tabular-summary" class="section-name selfRef">Tabular Summary</a>
+          </h4>
+<p id="section-3.3.2-1">The preceding text gives a large number of recommendations. In order
+   to give a simpler description of the outcomes, a table of possible
+   behaviors for client/server values of the Version variable is given
+   below.  The row and column headings are the RADIUS version numbers
+   sent in ALPN (or no ALPN).  The contents of the table are the
+   resulting RADIUS version that is negotiated.  For clarity, only the
+   RADIUS version numbers have been given, and not the full ALPN
+   strings (e.g., "radius/1.0").<a href="#section-3.3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.3.2-2">This table and the names given below are for informational and
+   descriptive purposes only.<a href="#section-3.3.2-2" class="pilcrow">¶</a></p>
+<span id="name-possible-outcomes-for-alpn"></span><table class="center" id="table-2">
+            <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-possible-outcomes-for-alpn" class="selfRef">Possible Outcomes for ALPN</a>
+            </caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="2" colspan="1">Client</th>
+                <th class="text-center" rowspan="1" colspan="4">Server</th>
+              </tr>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">no ALPN</th>
+                <th class="text-left" rowspan="1" colspan="1">1.0</th>
+                <th class="text-left" rowspan="1" colspan="1">1.0, 1.1</th>
+                <th class="text-left" rowspan="1" colspan="1">1.1</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">no ALPN</th>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">Close-S</td>
+              </tr>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">1.0</th>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">Alert</td>
+              </tr>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">1.0, 1.1</th>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">TLS</td>
+                <td class="text-left" rowspan="1" colspan="1">1.1</td>
+                <td class="text-left" rowspan="1" colspan="1">1.1</td>
+              </tr>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">1.1</th>
+                <td class="text-left" rowspan="1" colspan="1">Close-C</td>
+                <td class="text-left" rowspan="1" colspan="1">Alert</td>
+                <td class="text-left" rowspan="1" colspan="1">1.1</td>
+                <td class="text-left" rowspan="1" colspan="1">1.1</td>
+              </tr>
+            </tbody>
+          </table>
+<p id="section-3.3.2-4">The table entries above have the following meaning:<a href="#section-3.3.2-4" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.3.2-5">
+            <dt id="section-3.3.2-5.1">Alert</dt>
+            <dd style="margin-left: 1.5em" id="section-3.3.2-5.2">
+              <p id="section-3.3.2-5.2.1">The client sends ALPN, and the server does not agree to
+                  the client's ALPN proposal.  The server replies with a TLS
+                  alert of "no_application_protocol" (120) and then closes
+                  the TLS connection.<a href="#section-3.3.2-5.2.1" class="pilcrow">¶</a></p>
+<p id="section-3.3.2-5.2.2">As the server replies with a TLS alert, the
+                  Protocol-Error packet is not used here.<a href="#section-3.3.2-5.2.2" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.3.2-5.3">Close-C</dt>
+            <dd style="margin-left: 1.5em" id="section-3.3.2-5.4">
+              <p id="section-3.3.2-5.4.1">The client sends ALPN, but the server does not respond
+                  with ALPN.  The client closes the connection.<a href="#section-3.3.2-5.4.1" class="pilcrow">¶</a></p>
+<p id="section-3.3.2-5.4.2">As noted in the previous section, the client
+                  <span class="bcp14">MAY</span> send a Protocol-Error packet to the
+                  server before closing the connection.<a href="#section-3.3.2-5.4.2" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.3.2-5.5">Close-S</dt>
+            <dd style="margin-left: 1.5em" id="section-3.3.2-5.6">
+              <p id="section-3.3.2-5.6.1">The client does not send ALPN string(s), but the server
+                  requires ALPN.  The server closes the connection.<a href="#section-3.3.2-5.6.1" class="pilcrow">¶</a></p>
+<p id="section-3.3.2-5.6.2">As noted in the previous section, the server
+                  <span class="bcp14">MAY</span> send a Protocol-Error packet to the
+                  client before closing the connection.  The server
+                  <span class="bcp14">MAY</span> also send a TLS alert of
+                  "no_application_protocol" (120) before closing the
+                  connection.<a href="#section-3.3.2-5.6.2" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.3.2-5.7">TLS</dt>
+            <dd style="margin-left: 1.5em" id="section-3.3.2-5.8">
+              <p id="section-3.3.2-5.8.1">Historic RADIUS/TLS is used.  The client either sends no
+                  ALPN string or sends "radius/1.0".  The server either
+                  replies with no ALPN string or with "radius/1.0".  The
+                  connection <span class="bcp14">MUST</span> use historic RADIUS/TLS.<a href="#section-3.3.2-5.8.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.3.2-5.9">1.1</dt>
+            <dd style="margin-left: 1.5em" id="section-3.3.2-5.10">
+              <p id="section-3.3.2-5.10.1">The client sends the ALPN string "radius/1.1".  The server
+                  acknowledges this negotiation with a reply of "radius/1.1",
+                  and then RADIUS/1.1 is used.<a href="#section-3.3.2-5.10.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-3.3.2-6">Implementations should note that this table may be extended in
+          future specifications.  The above text is informative, and does not
+          mandate that only the above ALPN strings are used.  The actual ALPN
+          takes place as defined in the preceding sections of this document
+          and in <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span>.<a href="#section-3.3.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="miscellaneous-items">
+<section id="section-3.4">
+        <h3 id="name-miscellaneous-items">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-miscellaneous-items" class="section-name selfRef">Miscellaneous Items</a>
+        </h3>
+<p id="section-3.4-1">Implementations of this specification <span class="bcp14">MUST</span> require
+        TLS version 1.3 or later.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">The use of the ALPN string "radius/1.0" is technically unnecessary,
+        as it is largely equivalent to not sending any ALPN string.  However,
+        that value is useful for RADIUS administrators.  A system that sends
+        the ALPN string "radius/1.0" is explicitly signaling that it supports
+        ALPN, but that it is not currently configured to support
+        RADIUS/1.1.  That information can be used by administrators to
+        determine which devices are capable of ALPN.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">The use of the ALPN string "radius/1.0" also permits server
+        implementations to send a TLS alert of "no_application_protocol" (120)
+        when it cannot find a matching ALPN string.  Experiments with TLS
+        library implementations suggest that in some cases it is possible to
+        send that TLS alert when ALPN is not used.  However, such a scenario
+        is not discussed in <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span> and is likely not
+        universal.  As a result, ALPN as defined in <span>[<a href="#RFC7301" class="cite xref">RFC7301</a>]</span>
+        permits servers to send that TLS alert in situations where it would be
+        otherwise forbidden or perhaps unsupported.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+<p id="section-3.4-4">Finally, defining ALPN strings for all known RADIUS versions will
+        make it easier to support additional ALPN strings if that
+        functionality is ever needed.<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="session-resumption">
+<section id="section-3.5">
+        <h3 id="name-session-resumption">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-session-resumption" class="section-name selfRef">Session Resumption</a>
+        </h3>
+<p id="section-3.5-1"><span>[<a href="#RFC7301" class="cite xref">RFC7301</a>], <a href="https://rfc-editor.org/rfc/rfc7301#section-3.1" class="relref">Section 3.1</a></span> states
+        that ALPN is negotiated on each connection, even if session resumption
+        is used:<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<blockquote id="section-3.5-2">When session resumption or session tickets <span>[<a href="#RFC5077" class="cite xref">RFC5077</a>]</span> are used, the previous contents of this extension
+        are irrelevant, and only the values in the new handshake messages are
+        considered.<a href="#section-3.5-2" class="pilcrow">¶</a>
+</blockquote>
+<p id="section-3.5-3">(Note: RFC 5077 was obsoleted by <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.)<a href="#section-3.5-3" class="pilcrow">¶</a></p>
+<p id="section-3.5-4">In order to prevent down-bidding attacks, RADIUS systems that
+        negotiate the "radius/1.1" protocol <span class="bcp14">MUST</span> associate that
+        information with the session ticket and enforce the use of
+        "radius/1.1" on session resumption.  That is, if "radius/1.1" was
+        negotiated for a session, both clients and servers <span class="bcp14">MUST</span>
+        behave as if the RADIUS/1.1 variable was set to "require" for that
+        session.<a href="#section-3.5-4" class="pilcrow">¶</a></p>
+<p id="section-3.5-5">A client that is resuming a "radius/1.1" connection
+        <span class="bcp14">MUST</span> advertise only the capability to do "radius/1.1"
+        for the resumed session.  That is, even if the client configuration
+        allows historic RADIUS/TLS for new connections, it <span class="bcp14">MUST</span>
+        signal "radius/1.1" when resuming a session that had previously
+        negotiated "radius/1.1".<a href="#section-3.5-5" class="pilcrow">¶</a></p>
+<p id="section-3.5-6">Similarly, when a server does resumption for a session that had
+        previously negotiated "radius/1.1",  if the client attempts to resume
+        the sessions without signaling the use of RADIUS/1.1, the server
+        <span class="bcp14">MUST</span> close the connection.  The server
+        <span class="bcp14">MUST</span> send an appropriate TLS error, and also
+        <span class="bcp14">SHOULD</span> log a descriptive message as described
+        above.<a href="#section-3.5-6" class="pilcrow">¶</a></p>
+<p id="section-3.5-7">In contrast, there is no requirement for a client or server to
+        force the use of RADIUS/TLS from <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> on session
+        resumption.  Clients are free to signal support for "radius/1.1" on
+        resumed sessions, even if the original session did not negotiate
+        "radius/1.1".  Servers are free to accept this request and to
+        negotiate the use of "radius/1.1" for such sessions.<a href="#section-3.5-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="radius11-packet-and-attribute-formats">
+<section id="section-4">
+      <h2 id="name-radius-11-packet-and-attrib">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-radius-11-packet-and-attrib" class="section-name selfRef">RADIUS/1.1 Packet and Attribute Formats</a>
+      </h2>
+<p id="section-4-1">This section describes the application-layer data that is sent
+      inside of (D)TLS when using the RADIUS/1.1 protocol.  Unless otherwise
+      discussed herein, the application-layer data is unchanged from historic RADIUS.  This protocol is only used when "radius/1.1" has
+      been negotiated by both ends of a connection.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="radius11-packet-format">
+<section id="section-4.1">
+        <h3 id="name-radius-11-packet-format">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-radius-11-packet-format" class="section-name selfRef">RADIUS/1.1 Packet Format</a>
+        </h3>
+<p id="section-4.1-1">When RADIUS/1.1 is used, the RADIUS header is modified from
+        standard RADIUS.  While the header has the same size, some fields have
+        different meanings.  The Identifier and the Request and Response
+        Authenticator fields are no longer used in RADIUS/1.1.  Any operations
+        that depend on those fields <span class="bcp14">MUST NOT</span> be performed.  As
+        packet authentication, secrecy, and security are handled by the TLS
+        layer, RADIUS-specific cryptographic primitives are no longer needed
+        or used in RADIUS/1.1.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">A summary of the RADIUS/1.1 packet format is shown below.  The
+        fields are transmitted from left to right.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<span id="name-the-radius-11-packet-format"></span><div id="Header">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-4.1-3.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Code      |  Reserved-1   |            Length             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             Token                             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                           Reserved-2                          |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Attributes ...
++-+-+-+-+-+-+-+-+-+-+-+-+-
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-the-radius-11-packet-format" class="selfRef">The RADIUS/1.1 Packet Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-4.1-4">
+          <dt id="section-4.1-4.1">Code</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.2">
+            <p id="section-4.1-4.2.1">The Code field is one octet and identifies the type of RADIUS packet.<a href="#section-4.1-4.2.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.2.2">The meaning of the Code field is unchanged from previous RADIUS specifications.<a href="#section-4.1-4.2.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.3">Reserved-1</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.4">
+            <p id="section-4.1-4.4.1">The Reserved-1 field is one octet.<a href="#section-4.1-4.4.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.4.2">This field was previously used as the "Identifier" in historic
+            RADIUS/TLS.  It is now unused, as the Token field replaces it both
+            as the way to identify requests and to associate responses with
+            requests.<a href="#section-4.1-4.4.2" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.4.3">When sending packets, the Reserved-1 field <span class="bcp14">MUST</span>
+            be set to zero.  The Reserved-1 field <span class="bcp14">MUST</span> be
+            ignored when receiving a packet.<a href="#section-4.1-4.4.3" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.5">Length</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.6">
+            <p id="section-4.1-4.6.1">The Length field is two octets.<a href="#section-4.1-4.6.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.6.2">The meaning of the Length field is unchanged from previous RADIUS specifications.<a href="#section-4.1-4.6.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.7">Token</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.8">
+            <p id="section-4.1-4.8.1">The Token field is four octets and aids in matching requests
+            and replies, as a replacement for the Identifier field.  The
+            RADIUS server can detect a duplicate request if it receives the
+            same Token value for two packets on a particular connection.<a href="#section-4.1-4.8.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.8.2">All values are possible for the Token field.  Implementations
+            <span class="bcp14">MUST</span> treat the Token as an opaque blob when
+            comparing Token values.<a href="#section-4.1-4.8.2" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.8.3">Further requirements are given below in <a href="#sending-packets" class="auto internal xref">Section 4.2.1</a> for sending packets and in <a href="#receiving-packets" class="auto internal xref">Section 4.2.2</a> for receiving packets.<a href="#section-4.1-4.8.3" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.9">Reserved-2</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.10">
+            <p id="section-4.1-4.10.1">The Reserved-2 field is twelve (12) octets in length.<a href="#section-4.1-4.10.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.10.2">These octets <span class="bcp14">MUST</span> be set to zero when sending a packet.<a href="#section-4.1-4.10.2" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.10.3">These octets <span class="bcp14">MUST</span> be ignored when receiving a packet.<a href="#section-4.1-4.10.3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4.10.4">These octets are reserved for future protocol extensions.<a href="#section-4.1-4.10.4" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="the-token-field">
+<section id="section-4.2">
+        <h3 id="name-the-token-field">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-the-token-field" class="section-name selfRef">The Token Field</a>
+        </h3>
+<p id="section-4.2-1">This section describes in more detail how the Token field is used.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div id="sending-packets">
+<section id="section-4.2.1">
+          <h4 id="name-sending-packets">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-sending-packets" class="section-name selfRef">Sending Packets</a>
+          </h4>
+<p id="section-4.2.1-1">The Token field <span class="bcp14">MUST</span> change for every new unique
+          packet that is sent on the same connection. For DTLS transport, it
+          is possible to retransmit duplicate packets, in which case the Token
+          value <span class="bcp14">MUST NOT</span> be changed when a duplicate packet is
+          (re)sent.  When the contents of a retransmitted packet change for
+          any reason (such as changing Acct-Delay-Time as discussed in <span>[<a href="#RFC2866" class="cite xref">RFC2866</a>], <a href="https://rfc-editor.org/rfc/rfc2866#section-5.2" class="relref">Section 5.2</a></span>), the Token
+          value <span class="bcp14">MUST</span> be changed.  Note that on reliable
+          transports, packets are never retransmitted; therefore, every new
+          packet that is sent has a unique Token value.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">We note that in previous RADIUS specifications, the Identifier
+          field could have the same value for different packets on the same
+          connection.  For example, Access-Request (Code 1) and
+          Accounting-Request (Code 4) packets could both use ID 3 and still
+          be treated as different packets.  This overlap requires that RADIUS
+          clients and servers track the Identifier field, not only on a
+          per-connection basis, but also on a per-Code basis.  This behavior
+          adds complexity to implementations.<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-3">In contrast, the Token values <span class="bcp14">MUST</span> be generated
+   from a 32-bit counter that is unique to each connection.  Such a
+   counter <span class="bcp14">SHOULD</span> be initialized to a random value,
+   taken from a random number generator, whenever a new connection
+   is opened.  The counter <span class="bcp14">MUST</span> then be incremented for
+   every unique new packet that is sent by the client.  Retransmissions
+   of the same packet <span class="bcp14">MUST</span> use the same unchanged Token
+   value.  As the Token value is mandated to be unique per packet, a
+   duplicate Token value is the only way that a server can detect
+   duplicate transmissions.<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4">This counter method ensures that the Tokens are unique and are
+          also independent of any Code value in the RADIUS packet header.
+          This method is mandated because any other method of generating
+          unique and non-conflicting Token values is more complex, with no
+          additional benefit and only the likelihood of increased bugs and
+          interoperability issues.  Any other method for generating Token
+          values would require substantially more resources to track
+          outstanding Token values and their associated expiry times.  The
+          chance that initial values could potentially cause any confusion by
+          being reused across two connections is one in 2<sup>32</sup>, which
+          is acceptable.<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-5">The purpose for initializing the Token to a random counter is
+          mainly to aid administrators in debugging systems.  If the Token
+          values always used the same sequence, then it would easier for a
+          person to confuse different packets that have the same Token value.
+          By instead starting with a random value, those values are more
+          evenly distributed across the set of allowed values; therefore, they
+          are more likely to be unique.<a href="#section-4.2.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-6">As there is no special meaning for the Token, there is no meaning
+          when a counter "wraps" around from a high value back to zero.  The
+          originating system can simply continue to increment the Token value
+          without taking any special action in that situation.<a href="#section-4.2.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-7">Once a RADIUS response to a request has been received and there
+          is no need to track the packet any longer, the Token value can be
+          reused.  This reuse happens only when the counter "wraps around"
+          after 2<sup>32</sup> packets have been sent over one connection.
+          This method of managing the counter automatically ensures a long
+          delay (i.e., 2<sup>32</sup> packets) between multiple uses of the
+          same Token value.  This large number of packets ensures that the
+          only possible situation where there may be conflict is when a client
+          sends billions of packets a second across one connection, or when a
+          client sends billions of packets without receiving replies.  We
+          suggest that such situations are vanishingly rare.  The best
+          solution to those situations would be to limit the number of
+          outstanding packets over one connection to a number much lower than
+          billions.<a href="#section-4.2.1-7" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-8">If a RADIUS client has multiple independent subsystems that send
+          packets to a server, each subsystem <span class="bcp14">MAY</span> open a new
+          connection that is unique to that subsystem.  There is no
+          requirement that all packets go over one particular connection.
+          That is, despite the use of a 32-bit Token field, RADIUS/1.1 clients
+          are still permitted to open multiple source ports as discussed in
+          <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-2.5" class="relref">Section 2.5</a></span>.<a href="#section-4.2.1-8" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-9">While multiple connections from client to server are allowed, we
+          reiterate the suggestion of <span>[<a href="#RFC3539" class="cite xref">RFC3539</a>], <a href="https://rfc-editor.org/rfc/rfc3539#section-3.3" class="relref">Section 3.3</a></span> that a single connection is
+          preferred to multiple connections.  The use of a single connection
+          can improve throughput and latency, while simplifying the client's
+          efforts to determine server status.<a href="#section-4.2.1-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="receiving-packets">
+<section id="section-4.2.2">
+          <h4 id="name-receiving-packets">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-receiving-packets" class="section-name selfRef">Receiving Packets</a>
+          </h4>
+<p id="section-4.2.2-1">A server that receives RADIUS/1.1 packets <span class="bcp14">MUST</span>
+          perform packet deduplication for all situations where it is required
+          by RADIUS.  Where RADIUS does not require deduplication (e.g., TLS
+          transport), the server <span class="bcp14">SHOULD NOT</span> do deduplication.
+          However, DTLS transport is UDP-based, and therefore still requires
+          deduplication.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">When using RADIUS/1.1, implementations <span class="bcp14">MUST</span> do
+          deduplication only on the Token field, and not on any other field or
+          fields in the packet header. A server <span class="bcp14">MUST</span> treat the
+          Token as being an opaque field with no intrinsic meaning.  This
+          requirement makes the receiver behavior independent of the methods
+          by which the Counter is generated.<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">Where Token deduplication is done, it <span class="bcp14">MUST</span> be done
+          on a per-connection basis.  If two packets that are received on
+          different connections contain the same Token value, then those
+          packets <span class="bcp14">MUST</span> be treated as distinct (i.e., different)
+          packets.  Systems performing deduplication <span class="bcp14">MAY</span> still
+          track the packet Code, Length, and Attributes that are associated
+          with a Token value.  If it determines that the sender is reusing
+          Token values for distinct outstanding packets, then an error should
+          be logged, and the connection <span class="bcp14">MUST</span> be closed.  There
+          is no way to negotiate correct behavior in the protocol.  Either
+          both parties operate normally and can communicate, or one end
+          misbehaves and no communication is possible.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-4">Once a reply has been sent, a system doing deduplication
+          <span class="bcp14">SHOULD</span> cache the replies as discussed in <span>[<a href="#RFC5080" class="cite xref">RFC5080</a>], <a href="https://rfc-editor.org/rfc/rfc5080#section-2.2.2" class="relref">Section 2.2.2</a></span>:<a href="#section-4.2.2-4" class="pilcrow">¶</a></p>
+<blockquote id="section-4.2.2-5">Each cache entry <span class="bcp14">SHOULD</span> be purged after
+          a period of time.  This time <span class="bcp14">SHOULD</span> be no less than 5
+          seconds, and no more than 30 seconds.  After about 30 seconds, most
+          RADIUS clients and end users will have given up on the
+          authentication request.  Therefore, there is little value in having
+          a larger cache timeout.<a href="#section-4.2.2-5" class="pilcrow">¶</a>
+</blockquote>
+<p id="section-4.2.2-6">This change from RADIUS means that the Identifier field is no
+          longer useful for RADIUS/1.1.  The Reserved-1 field (previously used
+          as the Identifier) <span class="bcp14">MUST</span> be set to zero when encoding
+          all RADIUS/1.1 packets.  Implementations of RADIUS/1.1 that receive
+          packets <span class="bcp14">MUST</span> ignore this field.<a href="#section-4.2.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="attribute-handling">
+<section id="section-5">
+      <h2 id="name-attribute-handling">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-attribute-handling" class="section-name selfRef">Attribute Handling</a>
+      </h2>
+<p id="section-5-1">Most attributes in RADIUS have no special encoding "on the wire", or
+      any special meaning between client and server.  Unless discussed in this
+      section, all RADIUS attributes are unchanged in this specification.
+      This requirement includes attributes that contain a tag, as defined in
+      <span>[<a href="#RFC2868" class="cite xref">RFC2868</a>]</span>.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="obfuscated-attributes">
+<section id="section-5.1">
+        <h3 id="name-obfuscated-attributes">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-obfuscated-attributes" class="section-name selfRef">Obfuscated Attributes</a>
+        </h3>
+<p id="section-5.1-1">Since the (D)TLS layer provides for connection authentication,
+        integrity checks, and confidentiality, there is no need to hide the
+        contents of an attribute on a hop-by-hop basis.  As a result, all
+        attributes defined as being obfuscated via the shared secret no longer
+        have the obfuscation step applied when RADIUS/1.1 is used.  Instead,
+        those attributes <span class="bcp14">MUST</span> be encoded using the encoding for
+        the underlying data type, with any encryption / obfuscation step
+        omitted.  For example, the User-Password attribute is no longer
+        obfuscated and is instead sent as data type "text".<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">There are risks from sending passwords over the network, even when
+        they are protected by TLS.  One such risk comes from the common
+        practice of multi-hop RADIUS routing.  As all security in RADIUS is on
+        a hop-by-hop basis, every proxy that receives a RADIUS packet can see
+        (and modify) all of the information in the packet.  Sites wishing to
+        avoid proxies <span class="bcp14">SHOULD</span> use dynamic peer discovery <span>[<a href="#RFC7585" class="cite xref">RFC7585</a>]</span>, which permits clients to make connections directly
+        to authoritative servers for a realm.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">There are other ways to mitigate these risks.  The simplest is to
+        follow the requirements of item (3) from <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>], <a href="https://rfc-editor.org/rfc/rfc6614#section-3.4" class="relref">Section 3.4</a></span> and also follow <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>], <a href="https://rfc-editor.org/rfc/rfc7360#section-10.4" class="relref">Section 10.4</a></span>, which mandates that RADIUS
+        over TLS implementations validate the peer before sending any RADIUS
+        traffic.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">Another way to mitigate these risks is for the system being
+        authenticated to use an authentication protocol that never sends
+        passwords (e.g., an Extensible Authentication Protocol (EAP) method
+        like EAP-pwd <span>[<a href="#RFC5931" class="cite xref">RFC5931</a>]</span>), or one that sends passwords protected by a
+        TLS tunnel (e.g., EAP Tunneled Transport Layer Security (EAP-TTLS)
+        <span>[<a href="#RFC5281" class="cite xref">RFC5281</a>]</span>).  The processes to choose and configure an
+        authentication protocol are strongly site dependent, so further
+        discussions of these issues are outside of the scope of this document.
+        The goal here is to ensure that the reader has enough information to
+        make an informed decision.<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<p id="section-5.1-5">We note that as the RADIUS shared secret is no longer used in this
+        specification, it is no longer possible or necessary for any attribute
+        to be obfuscated on a hop-by-hop basis using the previous methods
+        defined for RADIUS.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
+<div id="user-password">
+<section id="section-5.1.1">
+          <h4 id="name-user-password">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-user-password" class="section-name selfRef">User-Password</a>
+          </h4>
+<p id="section-5.1.1-1">The User-Password attribute (<span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.2" class="relref">Section 5.2</a></span>) <span class="bcp14">MUST</span> be
+          encoded the same as any other attribute of data type "string" (<span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.5" class="relref">Section 3.5</a></span>).<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-2">The contents of the User-Password field <span class="bcp14">MUST</span> be at
+          least one octet in length and <span class="bcp14">MUST NOT</span> be more than
+          128 octets in length.  This limitation is maintained from <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.2" class="relref">Section 5.2</a></span> for
+          compatibility with historic transports.<a href="#section-5.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-3">Note that the User-Password attribute is not of data type "text".
+          The original reason in <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>]</span> was because the
+          attribute was encoded as an opaque and obfuscated binary blob.  This
+          document does not change the data type of User-Password, even though
+          the attribute is no longer obfuscated.  The contents of the
+          User-Password attribute do not have to be printable text or UTF-8
+          data as per the definition of the "text" data type in <span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.4" class="relref">Section 3.4</a></span>.<a href="#section-5.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-4">However, implementations should be aware that passwords are often
+          printable text, and where the passwords are printable text, it can
+          be useful to store and display them as printable text.  Where
+          implementations can process non-printable data in the "text" data
+          type, they <span class="bcp14">MAY</span> use the data type "text" for
+          User-Password.<a href="#section-5.1.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="chap-challenge">
+<section id="section-5.1.2">
+          <h4 id="name-chap-challenge">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-chap-challenge" class="section-name selfRef">CHAP-Challenge</a>
+          </h4>
+<p id="section-5.1.2-1"><span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.3" class="relref">Section 5.3</a></span>
+          allows for the CHAP challenge to be taken from either the
+          CHAP-Challenge attribute (<span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.40" class="relref">Section 5.40</a></span>) or the Request Authenticator field.  Since
+          RADIUS/1.1 connections no longer use a Request Authenticator field,
+          it is no longer possible to use the Request Authenticator field as
+          the CHAP-Challenge when this transport profile is used.<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.2-2">Clients that send a CHAP-Password attribute (<span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.3" class="relref">Section 5.3</a></span>) in an Access-Request
+          packet over a RADIUS/1.1 connection <span class="bcp14">MUST</span> also include
+          a CHAP-Challenge attribute (<span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.40" class="relref">Section 5.40</a></span>).<a href="#section-5.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.1.2-3">Proxies may need to receive Access-Request packets over a
+          non-RADIUS/1.1 transport and then forward those packets over a
+          RADIUS/1.1 connection.  In that case, if the received Access-Request
+          packet contains a CHAP-Password attribute but no CHAP-Challenge
+          attribute, the proxy <span class="bcp14">MUST</span> create a CHAP-Challenge
+          attribute in the proxied packet using the contents from the incoming
+          Request Authenticator of the received packet.<a href="#section-5.1.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="tunnel-password">
+<section id="section-5.1.3">
+          <h4 id="name-tunnel-password">
+<a href="#section-5.1.3" class="section-number selfRef">5.1.3. </a><a href="#name-tunnel-password" class="section-name selfRef">Tunnel-Password</a>
+          </h4>
+<p id="section-5.1.3-1">The Tunnel-Password attribute (<span>[<a href="#RFC2868" class="cite xref">RFC2868</a>], <a href="https://rfc-editor.org/rfc/rfc2868#section-3.5" class="relref">Section 3.5</a></span>) <span class="bcp14">MUST</span> be
+          encoded the same as any other attribute of data type "string" that
+          contains a tag, such as Tunnel-Client-Endpoint (<span>[<a href="#RFC2868" class="cite xref">RFC2868</a>], <a href="https://rfc-editor.org/rfc/rfc2868#section-3.3" class="relref">Section 3.3</a></span>).  Since the attribute is
+          no longer obfuscated in RADIUS/1.1, there is no need for a Salt
+          field or Data-Length fields as described in <span>[<a href="#RFC2868" class="cite xref">RFC2868</a>], <a href="https://rfc-editor.org/rfc/rfc2868#section-3.5" class="relref">Section 3.5</a></span>. The textual value of
+          the password can simply be encoded as is.<a href="#section-5.1.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.3-2">Note that the Tunnel-Password attribute is not of data type
+          "text".  The original reason in <span>[<a href="#RFC2868" class="cite xref">RFC2868</a>]</span> was because
+          the attribute was encoded as an opaque and obfuscated binary blob.
+          We maintain that data type here, even though the attribute is no
+          longer obfuscated.  The contents of the Tunnel-Password attribute do
+          not have to be printable text or UTF-8 data as per the definition
+          of the "text" data type in <span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.4" class="relref">Section 3.4</a></span>.<a href="#section-5.1.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.1.3-3">However, implementations should be aware that passwords are often
+          printable text, and where the passwords are printable text, it can
+          be useful to store and display them as printable text.  Where
+          implementations can process non-printable data in the "text" data
+          type, they <span class="bcp14">MAY</span> use the data type "text" for
+          Tunnel-Password.<a href="#section-5.1.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="vendor-specific-attributes">
+<section id="section-5.1.4">
+          <h4 id="name-vendor-specific-attributes">
+<a href="#section-5.1.4" class="section-number selfRef">5.1.4. </a><a href="#name-vendor-specific-attributes" class="section-name selfRef">Vendor-Specific Attributes</a>
+          </h4>
+<p id="section-5.1.4-1">Any Vendor-Specific attribute that uses similar obfuscation
+          <span class="bcp14">MUST</span> be encoded as per their base data type.
+          Specifically, the MS-MPPE-Send-Key and MS-MPPE-Recv-Key attributes
+          (<span>[<a href="#RFC2548" class="cite xref">RFC2548</a>], <a href="https://rfc-editor.org/rfc/rfc2548#section-2.4" class="relref">Section 2.4</a></span>)
+          <span class="bcp14">MUST</span> be encoded as any other attribute of data type
+          "string" (<span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.4" class="relref">Section 3.4</a></span>).<a href="#section-5.1.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="message-authenticator">
+<section id="section-5.2">
+        <h3 id="name-message-authenticator">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-message-authenticator" class="section-name selfRef">Message-Authenticator</a>
+        </h3>
+<p id="section-5.2-1">The Message-Authenticator attribute (<span>[<a href="#RFC3579" class="cite xref">RFC3579</a>], <a href="https://rfc-editor.org/rfc/rfc3579#section-3.2" class="relref">Section 3.2</a></span>) <span class="bcp14">MUST NOT</span> be
+        sent over a RADIUS/1.1 connection.  That attribute is not used or
+        needed in RADIUS/1.1.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">If the Message-Authenticator attribute is received over a
+        RADIUS/1.1 connection, the attribute <span class="bcp14">MUST</span> be silently
+        discarded or treated as an "invalid attribute", as defined in <span>[<a href="#RFC6929" class="cite xref">RFC6929</a>], <a href="https://rfc-editor.org/rfc/rfc6929#section-2.8" class="relref">Section 2.8</a></span>.  That is, the
+        Message-Authenticator attribute is no longer used to authenticate
+        packets for the RADIUS/1.1 transport.  Its existence (or not) in this
+        transport is meaningless.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">A system that receives a Message-Authenticator attribute in a
+        packet <span class="bcp14">MUST</span> treat it as an "invalid attribute" as
+        defined in <span>[<a href="#RFC6929" class="cite xref">RFC6929</a>], <a href="https://rfc-editor.org/rfc/rfc6929#section-2.8" class="relref">Section 2.8</a></span>.  That is, the packet can still be processed, even
+        if the Message-Authenticator attribute is ignored.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">For proxies, the Message-Authenticator attribute has always been
+        defined as being created and consumed on a "hop-by-hop" basis.  That
+        is, a proxy that received a Message-Authenticator attribute from a
+        client would never forward that attribute as is to another server.
+        Instead, the proxy would either suppress or recreate the
+        Message-Authenticator attribute in the outgoing request.  This
+        existing behavior is leveraged in RADIUS/1.1 to suppress the use of the
+        Message-Authenticator over a RADIUS/1.1 connection.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2-5">A proxy may receive an Access-Request packet over a RADIUS/1.1
+        connection and then forward that packet over a RADIUS/UDP or a
+        RADIUS/TCP connection.  In that situation, the proxy
+        <span class="bcp14">SHOULD</span> add a Message-Authenticator attribute to every
+        Access-Request packet that is sent over an insecure transport
+        protocol.<a href="#section-5.2-5" class="pilcrow">¶</a></p>
+<p id="section-5.2-6">The original text in <span>[<a href="#RFC3579" class="cite xref">RFC3579</a>], <a href="https://rfc-editor.org/rfc/rfc3579#section-3.3" class="relref">Section 3.3</a></span>, Note 1 required that the
+        Message-Authenticator attribute be present for certain Access-Request
+        packets.  It also required the use of the Message-Authenticator when
+        the Access-Request packet contained an EAP-Message attribute.
+        Experience has shown that some RADIUS clients never use the
+        Message-Authenticator, even for the situations where its use is
+        suggested.<a href="#section-5.2-6" class="pilcrow">¶</a></p>
+<p id="section-5.2-7">When the Message-Authenticator attribute is missing from Access-
+        Request packets, it is often possible to trivially forge or replay
+        those packets.  As such, it is <span class="bcp14">RECOMMENDED</span> that RADIUS
+        clients always include Message-Authenticator in Access-Request packets
+        when using UDP or TCP transport.  As the scope of this document is
+        limited to defining RADIUS/1.1, we cannot mandate that behavior here.
+        Instead, we can note that there are no known negatives to this
+        behavior, and there are definite positives, such as increased
+        security.<a href="#section-5.2-7" class="pilcrow">¶</a></p>
+<p id="section-5.2-8">Further issues related to Message-Authenticator are discussed in
+ <span>[<a href="#I-D.ietf-radext-deprecating-radius" class="cite xref">DEPRECATE-RADIUS</a>]</span>.<a href="#section-5.2-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="message-authentication-code">
+<section id="section-5.3">
+        <h3 id="name-message-authentication-code">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-message-authentication-code" class="section-name selfRef">Message-Authentication-Code</a>
+        </h3>
+<p id="section-5.3-1">Similarly, the Message-Authentication-Code attribute defined in
+        <span>[<a href="#RFC6218" class="cite xref">RFC6218</a>], <a href="https://rfc-editor.org/rfc/rfc6218#section-3.3" class="relref">Section 3.3</a></span>
+          <span class="bcp14">MUST NOT</span> be sent over a RADIUS/1.1 connection.  If it
+        is received in a packet, it <span class="bcp14">MUST</span> be treated as an "invalid
+        attribute" as defined in <span>[<a href="#RFC6929" class="cite xref">RFC6929</a>], <a href="https://rfc-editor.org/rfc/rfc6929#section-2.8" class="relref">Section 2.8</a></span>.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">As the Message-Authentication-Code attribute is no longer used in
+        RADIUS/1.1, the related MAC-Randomizer attribute (<span>[<a href="#RFC6218" class="cite xref">RFC6218</a>], <a href="https://rfc-editor.org/rfc/rfc6218#section-3.2" class="relref">Section 3.2</a></span>) <span class="bcp14">MUST NOT</span> be
+        sent over a RADIUS/1.1 connection.  If it is received in a packet, it
+        <span class="bcp14">MUST</span> be treated as an "invalid attribute" as defined in
+        <span>[<a href="#RFC6929" class="cite xref">RFC6929</a>], <a href="https://rfc-editor.org/rfc/rfc6929#section-2.8" class="relref">Section 2.8</a></span>.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="chap-ms-chap-etc">
+<section id="section-5.4">
+        <h3 id="name-chap-ms-chap-and-similar-at">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-chap-ms-chap-and-similar-at" class="section-name selfRef">CHAP, MS-CHAP, and Similar Attributes</a>
+        </h3>
+<p id="section-5.4-1">While some attributes such as CHAP-Password depend on
+        insecure cryptographic primitives such as MD5, these attributes are
+        treated as opaque blobs when sent between a RADIUS client and server.
+        The contents of the attributes are not obfuscated, and they do not
+        depend on the RADIUS shared secret.  As a result, these attributes are
+        unchanged in RADIUS/1.1.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.4-2">Similarly, MS-CHAP depends on MD4, and RADIUS/1.1 does not change
+        the definition of any MS-CHAP attributes.  However, MS-CHAP has been
+        broken for decades, as noted in <span>[<a href="#ASLEAP" class="cite xref">ASLEAP</a>]</span>.  The only
+        appropriate use case for MS-CHAP is when it is protected by a secure
+        transport such as RADIUS/TLS or RADIUS/DTLS, or when it is used for
+        "inner tunnel" authentication methods as with the Protected Extensible
+        Authentication Protocol (PEAP) or TTLS.<a href="#section-5.4-2" class="pilcrow">¶</a></p>
+<p id="section-5.4-3">A server implementing this specification can proxy and
+        authenticate CHAP, MS-CHAP, etc. without any issue.  The RADIUS/1.1
+        protocol changes how RADIUS packets are authenticated and how "secret"
+        data is obfuscated inside of a RADIUS packet.  It does not change any
+        authentication method that is transported inside of RADIUS.<a href="#section-5.4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="original-packet-code">
+<section id="section-5.5">
+        <h3 id="name-original-packet-code">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-original-packet-code" class="section-name selfRef">Original-Packet-Code</a>
+        </h3>
+<p id="section-5.5-1"><span>[<a href="#RFC7930" class="cite xref">RFC7930</a>], <a href="https://rfc-editor.org/rfc/rfc7930#section-4" class="relref">Section 4</a></span> defines
+        an Original-Packet-Code attribute.  This attribute is needed because
+        otherwise it is impossible to correlate the Protocol-Error response
+        packet with a particular request packet.  The definition in <span>[<a href="#RFC7930" class="cite xref">RFC7930</a>], <a href="https://rfc-editor.org/rfc/rfc7930#section-4" class="relref">Section 4</a></span> describes the
+        reasoning behind this need:<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<blockquote id="section-5.5-2">The Original-Packet-Code contains the code from the
+        request that generated the protocol error so that clients can
+        disambiguate requests with different codes and the same ID.<a href="#section-5.5-2" class="pilcrow">¶</a>
+</blockquote>
+<p id="section-5.5-3">This attribute is no longer needed in RADIUS/1.1.  The Identifier
+        field is unused, so it impossible for two requests to have the "same"
+        ID.  Instead, the Token field permits clients and servers to correlate
+        requests and responses, independent of the Code value being used.<a href="#section-5.5-3" class="pilcrow">¶</a></p>
+<p id="section-5.5-4">Therefore, the Original-Packet-Code attribute (<span>[<a href="#RFC7930" class="cite xref">RFC7930</a>], <a href="https://rfc-editor.org/rfc/rfc7930#section-4" class="relref">Section 4</a></span>) <span class="bcp14">MUST NOT</span> be
+        sent over a RADIUS/1.1 connection.  If it is received in a packet, it
+        <span class="bcp14">MUST</span> be treated as an "invalid attribute" as defined in
+        <span>[<a href="#RFC6929" class="cite xref">RFC6929</a>], <a href="https://rfc-editor.org/rfc/rfc6929#section-2.8" class="relref">Section 2.8</a></span>.<a href="#section-5.5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="other-considerations-when-using-alpn">
+<section id="section-6">
+      <h2 id="name-other-considerations-when-u">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-other-considerations-when-u" class="section-name selfRef">Other Considerations When Using ALPN</a>
+      </h2>
+<p id="section-6-1">Most of the differences between RADIUS and RADIUS/1.1 are in the
+      packet header and attribute handling, as discussed above.  The remaining
+      issues are a small set of unrelated topics, and are discussed here.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="protocol-error">
+<section id="section-6.1">
+        <h3 id="name-protocol-error">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-protocol-error" class="section-name selfRef">Protocol-Error</a>
+        </h3>
+<p id="section-6.1-1">There are a number of situations where a RADIUS server is unable to
+        respond to a request.  One situation is where the server depends on a
+        database, and the database is down.  While arguably the server should
+        close all incoming connections when it is unable to do anything, this
+        action is not always effective.  A client may aggressively try to open
+        new connections or send packets to an unconnected UDP destination
+        where the server is not listening.  Another situation where the server
+        is unable to respond is when the server is proxying packets, and the
+        outbound connections are either full or failed.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2">In all RADIUS specifications prior to this one, there is no way
+        for the server to send a client the positive signal that it received a
+        request but is unable to send a response.  Instead, the server
+        usually just discards the request, which to the client is
+        indistinguishable from the situation where the server is down.  This
+        failure case is made worse by the fact that perhaps some proxied
+        packets succeed while others fail.  The client can only conclude then
+        that the server is randomly dropping packets and is unreliable.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.1-3">It would be very useful for servers to signal to clients that they
+        have received a request but are unable to process it.  This
+        specification uses the Protocol-Error packet (<span>[<a href="#RFC7930" class="cite xref">RFC7930</a>], <a href="https://rfc-editor.org/rfc/rfc7930#section-4" class="relref">Section 4</a></span>) as that signal.  The use of
+        Protocol-Error allows for both hop-by-hop signaling in the case of
+        proxy forwarding errors, and also for end-to-end signaling of server
+        to client.  Such signaling should greatly improve the robustness of
+        the RADIUS protocol.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.1-4">When a RADIUS/1.1 server determines that it is unable to process an
+        Access-Request or Accounting-Request packet, it <span class="bcp14">MUST</span>
+        respond with a Protocol-Error packet containing an Error-Cause
+        attribute.  A proxy that cannot forward the packet
+        <span class="bcp14">MUST</span> respond with either 502 (Request Not Routable
+        (Proxy)) or 505 (Other Proxy Processing Error).  This requirement is
+        to help distinguish failures in the proxy chain from failures at the
+        final (i.e., home) server.<a href="#section-6.1-4" class="pilcrow">¶</a></p>
+<p id="section-6.1-5">For a home server, if none of the Error-Cause values match the
+        reason for the failure, then the value 506 (Resources Unavailable)
+        <span class="bcp14">MUST</span> be used.<a href="#section-6.1-5" class="pilcrow">¶</a></p>
+<p id="section-6.1-6">When a RADIUS proxy receives a Protocol-Error reply, it
+        <span class="bcp14">MUST</span> examine the value of the Error-Cause attribute.
+        If there is no Error-Cause attribute, or if its value is something other
+        than 502 (Request Not Routable (Proxy)), 505 (Other Proxy Processing
+        Error), or 506 (Resources Unavailable), then the proxy <span class="bcp14">MUST</span>
+        return the Protocol-Error response packet to the client and include
+        the Error-Cause attribute from the response it received.  This process
+        allows for full "end-to-end" signaling of servers to clients.<a href="#section-6.1-6" class="pilcrow">¶</a></p>
+<p id="section-6.1-7">In all situations other than those outlined in the preceding paragraph, a
+        client that receives a Protocol-Error reply <span class="bcp14">MUST</span>
+        reprocess the original outgoing packet through the client forwarding
+        algorithm.  This requirement includes both clients that originate
+        RADIUS traffic and proxies that see an Error-Cause attribute of 502
+        (Request Not Routable (Proxy)) or 505 (Other Proxy Processing
+        Error).<a href="#section-6.1-7" class="pilcrow">¶</a></p>
+<p id="section-6.1-8">The expected result of this processing is that the client forwards
+        the packet to a different server.  Clients <span class="bcp14">MUST NOT</span>
+        forward the packet over the same connection and <span class="bcp14">SHOULD NOT</span> forward it over a different connection to the same
+        server.<a href="#section-6.1-8" class="pilcrow">¶</a></p>
+<p id="section-6.1-9">This process may continue over multiple connections and multiple
+        servers, until the client either times out the request or fails to
+        find a forwarding destination for the packet.  A proxy that is unable
+        to forward a packet <span class="bcp14">MUST</span> reply with a Protocol-Error
+        packet containing an Error-Cause, as defined above.  A client that
+        originates packets <span class="bcp14">MUST</span> treat such a request as if it
+        had received no response.<a href="#section-6.1-9" class="pilcrow">¶</a></p>
+<p id="section-6.1-10">This behavior is intended to improve the stability of the RADIUS
+        protocol by addressing issues first raised in <span>[<a href="#RFC3539" class="cite xref">RFC3539</a>], <a href="https://rfc-editor.org/rfc/rfc3539#section-2.8" class="relref">Section 2.8</a></span>.<a href="#section-6.1-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="status-server">
+<section id="section-6.2">
+        <h3 id="name-status-server">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-status-server" class="section-name selfRef">Status-Server</a>
+        </h3>
+<p id="section-6.2-1"><span>[<a href="#RFC6613" class="cite xref">RFC6613</a>], <a href="https://rfc-editor.org/rfc/rfc6613#section-2.6.5" class="relref">Section 2.6.5</a></span>, and
+        by extension <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>, suggest that the Identifier
+        value zero (0) be reserved for use with Status-Server as an
+        application-layer watchdog.  This practice <span class="bcp14">MUST NOT</span> be
+        used for RADIUS/1.1, as the Identifier field is not used in this
+        transport profile.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2">The rationale for reserving one value of the Identifier field was
+        the limited number of Identifiers available (256) and the overlap in
+        Identifiers between Access-Request packets and Status-Server packets.
+        If all 256 Identifier values had been used to send Access-Request
+        packets, then there would be no Identifier value available for sending
+        a Status-Server packet.<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+<p id="section-6.2-3">In contrast, the Token field allows for 2<sup>32</sup> outstanding
+        packets on one RADIUS/1.1 connection.  If there is a need to send a
+        Status-Server packet, it is nearly always possible to allocate a new
+        value for the Token field.  If instead there are 2<sup>32</sup>
+        outstanding packets for one connection, then it is likely that
+        something has gone catastrophically wrong.  In that case, the safest
+        way forward is likely to just close the connection.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="proxies">
+<section id="section-6.3">
+        <h3 id="name-proxies">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-proxies" class="section-name selfRef">Proxies</a>
+        </h3>
+<p id="section-6.3-1">A RADIUS proxy normally decodes and then re-encodes all attributes,
+        including obfuscated ones.  A RADIUS proxy will not generally rewrite
+        the content of the attributes it proxies (unless site-local policy
+        requires such a rewrite).  While some attributes may be modified due
+        to administrative or policy rules on the proxy, the proxy will
+        generally not rewrite the contents of attributes such as
+        User-Password, Tunnel-Password, CHAP-Password, MS-CHAP-Password,
+        MS-MPPE keys, etc.  Therefore, all attributes are transported through a
+        RADIUS/1.1 connection without changing their values or contents.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2">A proxy may negotiate RADIUS/1.1 (or not) with a particular client
+        or clients, and it may negotiate RADIUS/1.1 (or not) with a server or
+        servers it connects to, in any combination.  As a result, this
+        specification is fully compatible with all past, present, and future
+        RADIUS attributes.<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="other-radius-considerations">
+<section id="section-7">
+      <h2 id="name-other-radius-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-other-radius-considerations" class="section-name selfRef">Other RADIUS Considerations</a>
+      </h2>
+<p id="section-7-1">This section discusses issues in RADIUS that need to be addressed in
+      order to support ALPN, but which aren't directly part of the RADIUS/1.1
+      protocol.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div id="crypto-agility">
+<section id="section-7.1">
+        <h3 id="name-crypto-agility">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-crypto-agility" class="section-name selfRef">Crypto-Agility</a>
+        </h3>
+<p id="section-7.1-1">The crypto-agility requirements of <span>[<a href="#RFC6421" class="cite xref">RFC6421</a>]</span> are
+        addressed in <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>], <a href="https://rfc-editor.org/rfc/rfc6614#appendix-C" class="relref">Appendix C</a></span> and in <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>], <a href="https://rfc-editor.org/rfc/rfc7360#section-10.1" class="relref">Section 10.1</a></span>.  This specification makes no changes or additions
+        to those specifications.  The use of ALPN and the removal of MD5 has
+        no impact on the security or privacy of the protocol.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">RADIUS/TLS has been widely deployed in at least eduroam (<span>[<a href="#RFC7593" class="cite xref">RFC7593</a>]</span> and <span>[<a href="#EDUROAM" class="cite xref">EDUROAM</a>]</span>) and in OpenRoaming
+        <span>[<a href="#OPENROAMING" class="cite xref">OPENROAMING</a>]</span>.  RADIUS/DTLS has seen less adoption, but
+        it is known to be supported in many RADIUS clients and servers.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">It is <span class="bcp14">RECOMMENDED</span> that all implementations of
+        historic RADIUS/TLS be updated to support this specification.  Where a
+        system already implements RADIUS over TLS, the additional effort to
+        implement this specification is minimal.  Once implementations support
+        it, administrators can gain the benefit of it with little or no
+        configuration changes.  This specification is backwards compatible
+        with <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>.  It is
+        only potentially subject to down-bidding attacks if implementations do
+        not enforce ALPN correctly on session resumption.<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<p id="section-7.1-4">All crypto-agility needed or used by this specification is
+        implemented in TLS.  This specification also removes all cryptographic
+        primitives from the application-layer protocol (RADIUS) being
+        transported by TLS.  As discussed in the following section, this
+        specification also bans the development of all new cryptographic or
+        crypto-agility methods in the RADIUS protocol.<a href="#section-7.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="error-cause-attribute">
+<section id="section-7.2">
+        <h3 id="name-error-cause-attribute">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-error-cause-attribute" class="section-name selfRef">Error-Cause Attribute</a>
+        </h3>
+<p id="section-7.2-1">The Error-Cause attribute is defined in <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>]</span>. The "Table of Attributes" section given in <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>], <a href="https://rfc-editor.org/rfc/rfc5176#section-3.6" class="relref">Section 3.6</a></span> permits that
+        attribute to appear in CoA-NAK and Disconnect-NAK packets.  As no
+        other packet type is listed, the implication is that the Error-Cause
+        attribute cannot appear in any other packet.  <span>[<a href="#RFC7930" class="cite xref">RFC7930</a>]</span>
+        also permits Error-Cause to appear in Protocol-Error packets.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">However, <span>[<a href="#RFC5080" class="cite xref">RFC5080</a>], <a href="https://rfc-editor.org/rfc/rfc5080#section-2.6.1" class="relref">Section 2.6.1</a></span> suggests that Error-Cause may appear in
+        Access-Reject packets.  No explanation is given for this change from
+        <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>]</span>.  There is not even an acknowledgment that
+        this suggestion is a change from any previous specification.  We
+        correct that issue here.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<p id="section-7.2-3">This specification updates <span>[<a href="#RFC5176" class="cite xref">RFC5176</a>]</span> to allow the
+        Error-Cause attribute to appear in Access-Reject packets.  It is
+        <span class="bcp14">RECOMMENDED</span> that implementations include the
+        Error-Cause attribute in Access-Reject packets where appropriate.<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<p id="section-7.2-4">That is, the reason for sending the Access-Reject packet (or the
+        Protocol-Error packet) may match a defined Error-Cause value.  In that
+        case, it is useful for implementations to send an Error-Cause
+        attribute with that value.  This behavior can help RADIUS system
+        administrators debug issues in complex proxy chains.<a href="#section-7.2-4" class="pilcrow">¶</a></p>
+<p id="section-7.2-5">For example, a proxy may normally forward Access-Request packets
+        that contain EAP-Message attributes.  The proxy can determine if the
+        contents of the EAP-Message are invalid.  One example of an invalid
+        EAP-Message is where the first octet has value larger than 4.  In that
+        case, there may be no benefit to forwarding the packet, as the home
+        server will reject it.  It may then be possible for the proxy (with
+        the knowledge and consent of involved parties) to immediately reply
+        with an Access-Reject containing an Error-Cause attribute with value
+        202 (Invalid EAP Packet (Ignored)).<a href="#section-7.2-5" class="pilcrow">¶</a></p>
+<p id="section-7.2-6">Another possibility is that a proxy is configured to forward
+        packets for a particular realm, but it has determined that there are
+        no available connections to the next hop for that realm.  In that
+        case, it may be possible for the proxy (again, with the knowledge and
+        consent of involved parties) to reply with an Access-Reject containing
+        an Error-Cause attribute with value 502 (Request Not Routable
+        (Proxy)).<a href="#section-7.2-6" class="pilcrow">¶</a></p>
+<p id="section-7.2-7">These examples are given only for illustrative and informational
+        purposes.  While it is useful to return an informative value for the
+        Error-Cause attribute, proxies can only modify the traffic they
+        forward with the explicit knowledge and consent of all involved
+        parties.<a href="#section-7.2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="future-standards">
+<section id="section-7.3">
+        <h3 id="name-future-standards">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-future-standards" class="section-name selfRef">Future Standards</a>
+        </h3>
+<p id="section-7.3-1">Future work may define new attributes, packet types, etc.  It is
+        important to be able to do such work without requiring that every new
+        standard mention RADIUS/1.1 explicitly.  This document defines
+        RADIUS/1.1 as having functional overlap with legacy RADIUS: the
+        protocol state machine is unchanged, the packet header Code field is
+        unchanged, and the attribute format is largely unchanged.  As a
+        result, any new packet Code or attribute defined for RADIUS is
+        explicitly compatible with RADIUS/1.1; the field contents and meanings
+        are identical.  The only difference between the two protocols is that
+        obfuscated attributes in RADIUS are not obfuscated in RADIUS/1.1, and
+        this document defines how that mapping is done.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<p id="section-7.3-2">Any future specification only needs to mention RADIUS/1.1 if it
+        adds fields to the RADIUS/1.1 packet header.  Otherwise, transport
+        considerations for RADIUS/1.1 are identical to RADIUS over (D)TLS.<a href="#section-7.3-2" class="pilcrow">¶</a></p>
+<p id="section-7.3-3">We reiterate that this specification defines a new transport
+        profile for RADIUS.  It does not define a completely new protocol.
+        Any future specification that defines a new attribute
+        <span class="bcp14">MUST</span> define it for RADIUS/UDP first, and afterwards those
+        definitions can be applied to this transport profile.<a href="#section-7.3-3" class="pilcrow">¶</a></p>
+<p id="section-7.3-4">New specifications <span class="bcp14">MAY</span> define new attributes that
+        use the obfuscation methods for User-Password as defined in <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>], <a href="https://rfc-editor.org/rfc/rfc2865#section-5.2" class="relref">Section 5.2</a></span> or for
+        Tunnel-Password as defined in <span>[<a href="#RFC2868" class="cite xref">RFC2868</a>], <a href="https://rfc-editor.org/rfc/rfc2868#section-3.5" class="relref">Section 3.5</a></span>.  There is no need for those
+        specifications to describe how those new attributes are transported in
+        RADIUS/1.1.  Since RADIUS/1.1 does not use MD5, any obfuscated
+        attributes will by definition be transported as their underlying data
+        type "text" (<span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.4" class="relref">Section 3.4</a></span>) or "string" (<span>[<a href="#RFC8044" class="cite xref">RFC8044</a>], <a href="https://rfc-editor.org/rfc/rfc8044#section-3.5" class="relref">Section 3.5</a></span>).<a href="#section-7.3-4" class="pilcrow">¶</a></p>
+<p id="section-7.3-5">New RADIUS specifications <span class="bcp14">MUST NOT</span> define attributes
+        that can only be transported via RADIUS over TLS.  The RADIUS
+        protocol has no way to signal the security requirements of individual
+        attributes.  Any existing implementation will handle these new
+        attributes as "invalid attributes" (<span>[<a href="#RFC6929" class="cite xref">RFC6929</a>], <a href="https://rfc-editor.org/rfc/rfc6929#section-2.8" class="relref">Section 2.8</a></span>) and could forward them over
+        an insecure link.  As RADIUS security and signaling is hop-by-hop,
+        there is no way for a RADIUS client or server to even know if such
+        forwarding is taking place.  For these reasons and more, it is
+        therefore inappropriate to define new attributes that are only secure
+        if they use a secure transport layer.<a href="#section-7.3-5" class="pilcrow">¶</a></p>
+<p id="section-7.3-6">The result is that specifications do not need to mention this
+        transport profile or make any special provisions for dealing with it.
+        This specification defines how RADIUS packet encoding, decoding,
+        authentication, and verification are performed when using RADIUS/1.1.
+        So long as any future specification uses the existing schemes for
+        encoding, decoding, etc., that are defined for RADIUS, no additional
+        text in future documents is necessary in order to be compatible with
+        RADIUS/1.1.<a href="#section-7.3-6" class="pilcrow">¶</a></p>
+<p id="section-7.3-7">We note that it is theoretically possible for future standards to
+        define new cryptographic primitives for use with RADIUS/UDP.  In that
+        case, those documents would likely have to describe how to transport
+        that data in RADIUS/1.1.  We believe that such standards are unlikely
+        to be published, as other efforts in the RADEXT Working Group are
+        forbidding such updates to RADIUS.<a href="#section-7.3-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-8">
+      <h2 id="name-privacy-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<p id="section-8-1">This specification requires secure transport for RADIUS.
+      RADIUS/1.1 has all of the privacy benefits of RADIUS/TLS <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and RADIUS/DTLS <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span> and none of
+      the privacy or security issues of RADIUS/UDP <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>]</span> or
+      RADIUS/TCP <span>[<a href="#RFC6613" class="cite xref">RFC6613</a>]</span>.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-9-1">The primary focus of this document is addressing security
+      considerations for RADIUS.  This specification relies on TLS and
+      associated ALPN for much of its security.  We refer the
+      reader to <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> and <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span> for
+      discussions of the security of those protocols.  The discussion in this
+      section is limited to issues unique to this specification.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<p id="section-9-2">Implementations should rely on the underlying TLS library to perform
+      ALPN version negotiation.  That is, implementations should supply a list
+      of permitted ALPN strings to the TLS library, and let it return the
+      negotiated value.<a href="#section-9-2" class="pilcrow">¶</a></p>
+<p id="section-9-3">There are few other opportunities for security issues.  If an
+      implementation gets ALPN wrong, then the wrong application
+      data will be transported inside of TLS.  While RADIUS/1.0 and RADIUS/1.1
+      share similar packet formats, the protocols are not mutually
+      compatible.<a href="#section-9-3" class="pilcrow">¶</a></p>
+<p id="section-9-4">When an implementation receives the packets for a RADIUS version
+      that is not supported by this connection, it will not be able to
+      process the packets.  Implementations can produce log messages
+      indicating that the application-layer data is unexpected and close the
+      connection. In addition, the implementations that see the incorrect
+      application data already have full access to all secrets, passwords,
+      etc. being transported, so any protocol differences do not result in any
+      security issues.  Since all of the application data is protected by TLS,
+      there is no possibility for an attacker to obtain any extra data as a
+      result of this misconfiguration.<a href="#section-9-4" class="pilcrow">¶</a></p>
+<p id="section-9-5">RADIUS/1.0 requests sent over a RADIUS/1.1 connection may be accepted
+      by the RADIUS/1.1 server, as the server will ignore the ID field and
+      try to use portions of the Request Authenticator as a Token.  However,
+      the reply from the RADIUS/1.1 server will fail the Response
+      Authenticator validation by the RADIUS/1.0 client.  Therefore, the responses will
+      be dropped.  The client will generally log these failures, and
+      an administrator will address the issue.<a href="#section-9-5" class="pilcrow">¶</a></p>
+<p id="section-9-6">RADIUS/1.1 requests sent over a RADIUS/1.0 connection will generally
+      be discarded by the RADIUS/1.0 server, as the packets will fail the
+      Request Authenticator checks.  That is, all request packets such as
+      Accounting-Request, CoA-Request, and Disconnect-Request will be
+      discarded by the server.  For Access-Request packets containing
+      EAP-Message, the packets will be missing Message-Authenticator and will
+      therefore be discarded by the server.  Other Access-Request packets that
+      contain obfuscated attributes such as User-Password will have those
+      attributes decoded to nonsense, thus resulting in Access-Reject
+      responses.<a href="#section-9-6" class="pilcrow">¶</a></p>
+<p id="section-9-7">RADIUS/1.1 Access-Request packets containing non-obfuscated
+      attributes such as CHAP-Password may be accepted by a RADIUS/1.0 server,
+      but the response will contain a Response Authenticator (i.e., MD5 hash)
+      and not a Token that matches the Token in the request.  A similar
+      analysis applies for Access-Request packets containing Service-Type =
+      Authorize-Only.<a href="#section-9-7" class="pilcrow">¶</a></p>
+<p id="section-9-8">In conclusion, any mismatch of versions between client and server
+      will result in most request packets being discarded by the server and
+      all response packets being discarded by the client.  Therefore, the two protocols
+      are incompatible and safe from misconfigurations or erroneous
+      implementations.<a href="#section-9-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-10-1">IANA has updated the "TLS Application-Layer Protocol
+      Negotiation (ALPN) Protocol IDs" registry with two new entries:<a href="#section-10-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-10-2">
+        <dt id="section-10-2.1">Protocol:</dt>
+        <dd style="margin-left: 1.5em" id="section-10-2.2">RADIUS/1.0<a href="#section-10-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-10-2.3">Identification Sequence:</dt>
+        <dd style="margin-left: 1.5em" id="section-10-2.4">0x72 0x61 0x64 0x69 0x75 0x73 0x2f 0x31 0x2e 0x30 ("radius/1.0")<a href="#section-10-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-10-2.5">Reference:</dt>
+        <dd style="margin-left: 1.5em" id="section-10-2.6">RFC 9765<a href="#section-10-2.6" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-10-3">
+        <dt id="section-10-3.1">Protocol:</dt>
+        <dd style="margin-left: 1.5em" id="section-10-3.2">RADIUS/1.1<a href="#section-10-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-10-3.3">Identification Sequence:</dt>
+        <dd style="margin-left: 1.5em" id="section-10-3.4">0x72 0x61 0x64 0x69 0x75 0x73 0x2f 0x31 0x2e 0x31 ("radius/1.1")<a href="#section-10-3.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-10-3.5">Reference:</dt>
+        <dd style="margin-left: 1.5em" id="section-10-3.6">RFC 9765<a href="#section-10-3.6" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2865">[RFC2865]</dt>
+        <dd>
+<span class="refAuthor">Rigney, C.</span>, <span class="refAuthor">Willens, S.</span>, <span class="refAuthor">Rubens, A.</span>, and <span class="refAuthor">W. Simpson</span>, <span class="refTitle">"Remote Authentication Dial In User Service (RADIUS)"</span>, <span class="seriesInfo">RFC 2865</span>, <span class="seriesInfo">DOI 10.17487/RFC2865</span>, <time datetime="2000-06" class="refDate">June 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2865">https://www.rfc-editor.org/info/rfc2865</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6421">[RFC6421]</dt>
+        <dd>
+<span class="refAuthor">Nelson, D., Ed.</span>, <span class="refTitle">"Crypto-Agility Requirements for Remote Authentication Dial-In User Service (RADIUS)"</span>, <span class="seriesInfo">RFC 6421</span>, <span class="seriesInfo">DOI 10.17487/RFC6421</span>, <time datetime="2011-11" class="refDate">November 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6421">https://www.rfc-editor.org/info/rfc6421</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6614">[RFC6614]</dt>
+        <dd>
+<span class="refAuthor">Winter, S.</span>, <span class="refAuthor">McCauley, M.</span>, <span class="refAuthor">Venaas, S.</span>, and <span class="refAuthor">K. Wierenga</span>, <span class="refTitle">"Transport Layer Security (TLS) Encryption for RADIUS"</span>, <span class="seriesInfo">RFC 6614</span>, <span class="seriesInfo">DOI 10.17487/RFC6614</span>, <time datetime="2012-05" class="refDate">May 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6614">https://www.rfc-editor.org/info/rfc6614</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6929">[RFC6929]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span> and <span class="refAuthor">A. Lior</span>, <span class="refTitle">"Remote Authentication Dial In User Service (RADIUS) Protocol Extensions"</span>, <span class="seriesInfo">RFC 6929</span>, <span class="seriesInfo">DOI 10.17487/RFC6929</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6929">https://www.rfc-editor.org/info/rfc6929</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7301">[RFC7301]</dt>
+        <dd>
+<span class="refAuthor">Friedl, S.</span>, <span class="refAuthor">Popov, A.</span>, <span class="refAuthor">Langley, A.</span>, and <span class="refAuthor">E. Stephan</span>, <span class="refTitle">"Transport Layer Security (TLS) Application-Layer Protocol Negotiation Extension"</span>, <span class="seriesInfo">RFC 7301</span>, <span class="seriesInfo">DOI 10.17487/RFC7301</span>, <time datetime="2014-07" class="refDate">July 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7301">https://www.rfc-editor.org/info/rfc7301</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7360">[RFC7360]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"Datagram Transport Layer Security (DTLS) as a Transport Layer for RADIUS"</span>, <span class="seriesInfo">RFC 7360</span>, <span class="seriesInfo">DOI 10.17487/RFC7360</span>, <time datetime="2014-09" class="refDate">September 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7360">https://www.rfc-editor.org/info/rfc7360</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8044">[RFC8044]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"Data Types in RADIUS"</span>, <span class="seriesInfo">RFC 8044</span>, <span class="seriesInfo">DOI 10.17487/RFC8044</span>, <time datetime="2017-01" class="refDate">January 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8044">https://www.rfc-editor.org/info/rfc8044</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="ASLEAP">[ASLEAP]</dt>
+        <dd>
+<span class="refTitle">"asleap - recovers weak LEAP and PPTP passwords"</span>, <span class="refContent">commit 254acab</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://github.com/joswr1ght/asleap">https://github.com/joswr1ght/asleap</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-radext-deprecating-radius">[DEPRECATE-RADIUS]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"Deprecating Insecure Practices in RADIUS"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-radext-deprecating-radius-05</span>, <time datetime="2024-11-26" class="refDate">26 November 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-radext-deprecating-radius-05">https://datatracker.ietf.org/doc/html/draft-ietf-radext-deprecating-radius-05</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="EDUROAM">[EDUROAM]</dt>
+        <dd>
+<span class="refAuthor">eduroam</span>, <span class="refTitle">"eduroam"</span>, <span>&lt;<a href="https://eduroam.org">https://eduroam.org</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="FIPS-140-3">[FIPS-140-3]</dt>
+        <dd>
+<span class="refAuthor">NIST</span>, <span class="refTitle">"Security Requirements for Cryptographic Modules"</span>, <span class="seriesInfo">NIST FIPS 140-3</span>, <span class="seriesInfo">DOI 10.6028/NIST.FIPS.140-3</span>, <time datetime="2019-03" class="refDate">March 2019</time>, <span>&lt;<a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.140-3.pdf">https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.140-3.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="OPENROAMING">[OPENROAMING]</dt>
+        <dd>
+<span class="refAuthor">Wireless Broadband Alliance</span>, <span class="refTitle">"OpenRoaming: One global Wi-Fi network"</span>, <span>&lt;<a href="https://wballiance.com/openroaming/">https://wballiance.com/openroaming/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1321">[RFC1321]</dt>
+        <dd>
+<span class="refAuthor">Rivest, R.</span>, <span class="refTitle">"The MD5 Message-Digest Algorithm"</span>, <span class="seriesInfo">RFC 1321</span>, <span class="seriesInfo">DOI 10.17487/RFC1321</span>, <time datetime="1992-04" class="refDate">April 1992</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1321">https://www.rfc-editor.org/info/rfc1321</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2548">[RFC2548]</dt>
+        <dd>
+<span class="refAuthor">Zorn, G.</span>, <span class="refTitle">"Microsoft Vendor-specific RADIUS Attributes"</span>, <span class="seriesInfo">RFC 2548</span>, <span class="seriesInfo">DOI 10.17487/RFC2548</span>, <time datetime="1999-03" class="refDate">March 1999</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2548">https://www.rfc-editor.org/info/rfc2548</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2866">[RFC2866]</dt>
+        <dd>
+<span class="refAuthor">Rigney, C.</span>, <span class="refTitle">"RADIUS Accounting"</span>, <span class="seriesInfo">RFC 2866</span>, <span class="seriesInfo">DOI 10.17487/RFC2866</span>, <time datetime="2000-06" class="refDate">June 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2866">https://www.rfc-editor.org/info/rfc2866</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2868">[RFC2868]</dt>
+        <dd>
+<span class="refAuthor">Zorn, G.</span>, <span class="refAuthor">Leifer, D.</span>, <span class="refAuthor">Rubens, A.</span>, <span class="refAuthor">Shriver, J.</span>, <span class="refAuthor">Holdrege, M.</span>, and <span class="refAuthor">I. Goyret</span>, <span class="refTitle">"RADIUS Attributes for Tunnel Protocol Support"</span>, <span class="seriesInfo">RFC 2868</span>, <span class="seriesInfo">DOI 10.17487/RFC2868</span>, <time datetime="2000-06" class="refDate">June 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2868">https://www.rfc-editor.org/info/rfc2868</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3539">[RFC3539]</dt>
+        <dd>
+<span class="refAuthor">Aboba, B.</span> and <span class="refAuthor">J. Wood</span>, <span class="refTitle">"Authentication, Authorization and Accounting (AAA) Transport Profile"</span>, <span class="seriesInfo">RFC 3539</span>, <span class="seriesInfo">DOI 10.17487/RFC3539</span>, <time datetime="2003-06" class="refDate">June 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3539">https://www.rfc-editor.org/info/rfc3539</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3579">[RFC3579]</dt>
+        <dd>
+<span class="refAuthor">Aboba, B.</span> and <span class="refAuthor">P. Calhoun</span>, <span class="refTitle">"RADIUS (Remote Authentication Dial In User Service) Support For Extensible Authentication Protocol (EAP)"</span>, <span class="seriesInfo">RFC 3579</span>, <span class="seriesInfo">DOI 10.17487/RFC3579</span>, <time datetime="2003-09" class="refDate">September 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3579">https://www.rfc-editor.org/info/rfc3579</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5077">[RFC5077]</dt>
+        <dd>
+<span class="refAuthor">Salowey, J.</span>, <span class="refAuthor">Zhou, H.</span>, <span class="refAuthor">Eronen, P.</span>, and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"Transport Layer Security (TLS) Session Resumption without Server-Side State"</span>, <span class="seriesInfo">RFC 5077</span>, <span class="seriesInfo">DOI 10.17487/RFC5077</span>, <time datetime="2008-01" class="refDate">January 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5077">https://www.rfc-editor.org/info/rfc5077</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5080">[RFC5080]</dt>
+        <dd>
+<span class="refAuthor">Nelson, D.</span> and <span class="refAuthor">A. DeKok</span>, <span class="refTitle">"Common Remote Authentication Dial In User Service (RADIUS) Implementation Issues and Suggested Fixes"</span>, <span class="seriesInfo">RFC 5080</span>, <span class="seriesInfo">DOI 10.17487/RFC5080</span>, <time datetime="2007-12" class="refDate">December 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5080">https://www.rfc-editor.org/info/rfc5080</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5176">[RFC5176]</dt>
+        <dd>
+<span class="refAuthor">Chiba, M.</span>, <span class="refAuthor">Dommety, G.</span>, <span class="refAuthor">Eklund, M.</span>, <span class="refAuthor">Mitton, D.</span>, and <span class="refAuthor">B. Aboba</span>, <span class="refTitle">"Dynamic Authorization Extensions to Remote Authentication Dial In User Service (RADIUS)"</span>, <span class="seriesInfo">RFC 5176</span>, <span class="seriesInfo">DOI 10.17487/RFC5176</span>, <time datetime="2008-01" class="refDate">January 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5176">https://www.rfc-editor.org/info/rfc5176</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5281">[RFC5281]</dt>
+        <dd>
+<span class="refAuthor">Funk, P.</span> and <span class="refAuthor">S. Blake-Wilson</span>, <span class="refTitle">"Extensible Authentication Protocol Tunneled Transport Layer Security Authenticated Protocol Version 0 (EAP-TTLSv0)"</span>, <span class="seriesInfo">RFC 5281</span>, <span class="seriesInfo">DOI 10.17487/RFC5281</span>, <time datetime="2008-08" class="refDate">August 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5281">https://www.rfc-editor.org/info/rfc5281</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5931">[RFC5931]</dt>
+        <dd>
+<span class="refAuthor">Harkins, D.</span> and <span class="refAuthor">G. Zorn</span>, <span class="refTitle">"Extensible Authentication Protocol (EAP) Authentication Using Only a Password"</span>, <span class="seriesInfo">RFC 5931</span>, <span class="seriesInfo">DOI 10.17487/RFC5931</span>, <time datetime="2010-08" class="refDate">August 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5931">https://www.rfc-editor.org/info/rfc5931</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6151">[RFC6151]</dt>
+        <dd>
+<span class="refAuthor">Turner, S.</span> and <span class="refAuthor">L. Chen</span>, <span class="refTitle">"Updated Security Considerations for the MD5 Message-Digest and the HMAC-MD5 Algorithms"</span>, <span class="seriesInfo">RFC 6151</span>, <span class="seriesInfo">DOI 10.17487/RFC6151</span>, <time datetime="2011-03" class="refDate">March 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6151">https://www.rfc-editor.org/info/rfc6151</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6218">[RFC6218]</dt>
+        <dd>
+<span class="refAuthor">Zorn, G.</span>, <span class="refAuthor">Zhang, T.</span>, <span class="refAuthor">Walker, J.</span>, and <span class="refAuthor">J. Salowey</span>, <span class="refTitle">"Cisco Vendor-Specific RADIUS Attributes for the Delivery of Keying Material"</span>, <span class="seriesInfo">RFC 6218</span>, <span class="seriesInfo">DOI 10.17487/RFC6218</span>, <time datetime="2011-04" class="refDate">April 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6218">https://www.rfc-editor.org/info/rfc6218</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6613">[RFC6613]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"RADIUS over TCP"</span>, <span class="seriesInfo">RFC 6613</span>, <span class="seriesInfo">DOI 10.17487/RFC6613</span>, <time datetime="2012-05" class="refDate">May 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6613">https://www.rfc-editor.org/info/rfc6613</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7585">[RFC7585]</dt>
+        <dd>
+<span class="refAuthor">Winter, S.</span> and <span class="refAuthor">M. McCauley</span>, <span class="refTitle">"Dynamic Peer Discovery for RADIUS/TLS and RADIUS/DTLS Based on the Network Access Identifier (NAI)"</span>, <span class="seriesInfo">RFC 7585</span>, <span class="seriesInfo">DOI 10.17487/RFC7585</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7585">https://www.rfc-editor.org/info/rfc7585</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7593">[RFC7593]</dt>
+        <dd>
+<span class="refAuthor">Wierenga, K.</span>, <span class="refAuthor">Winter, S.</span>, and <span class="refAuthor">T. Wolniewicz</span>, <span class="refTitle">"The eduroam Architecture for Network Roaming"</span>, <span class="seriesInfo">RFC 7593</span>, <span class="seriesInfo">DOI 10.17487/RFC7593</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7593">https://www.rfc-editor.org/info/rfc7593</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7930">[RFC7930]</dt>
+        <dd>
+<span class="refAuthor">Hartman, S.</span>, <span class="refTitle">"Larger Packets for RADIUS over TCP"</span>, <span class="seriesInfo">RFC 7930</span>, <span class="seriesInfo">DOI 10.17487/RFC7930</span>, <time datetime="2016-08" class="refDate">August 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7930">https://www.rfc-editor.org/info/rfc7930</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+      <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">Thanks to <span class="contact-name">Bernard Aboba</span>, <span class="contact-name">Karri Huhtanen</span>, <span class="contact-name">Heikki Vatiainen</span>,
+      <span class="contact-name">Alexander Clouter</span>, <span class="contact-name">Michael       Richardson</span>, <span class="contact-name">Hannes Tschofenig</span>, <span class="contact-name">Matthew Newton</span>, and <span class="contact-name">Josh Howlett</span> for
+      reviews and feedback.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Alan DeKok</span></div>
+<div dir="auto" class="left"><span class="org">FreeRADIUS</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:aland@freeradius.org" class="email">aland@freeradius.org</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
