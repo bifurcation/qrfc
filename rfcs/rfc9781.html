@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9781: A Concise Binary Object Representation (CBOR) Tag for Unprotected CBOR Web Token Claims Sets (UCCS)</title>
+<meta content="Henk Birkholz" name="author">
+<meta content="Jeremy O'Donoghue" name="author">
+<meta content="Nancy Cam-Winget" name="author">
+<meta content="Carsten Bormann" name="author">
+<meta content="
+       This document defines the Unprotected CWT Claims Set (UCCS), a data format for
+representing a CBOR Web Token (CWT) Claims Set without protecting it
+by a signature, Message Authentication Code (MAC), or encryption.
+UCCS enables the use of CWT claims in environments where protection is
+provided by other means, such as secure communication channels or
+trusted execution environments.
+This specification defines a CBOR tag for UCCS and describes the UCCS
+format, its encoding, and its processing considerations. It also discusses
+security implications of using unprotected claims sets. 
+    " name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="Secure Channel" name="keyword">
+<meta content="RATS" name="keyword">
+<meta content="Conceptual Message Conveyance" name="keyword">
+<meta content="Privacy" name="keyword">
+<meta content="Confidentiality" name="keyword">
+<meta content="CDDL" name="keyword">
+<meta content="EAT" name="keyword">
+<meta content="UJCS" name="keyword">
+<meta content="CWT" name="keyword">
+<meta content="9781" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9781.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-rats-uccs-12" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9781" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9781</td>
+<td class="center">Unprotected CWT Claims Sets</td>
+<td class="right">May 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Birkholz, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9781" class="eref">9781</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-05" class="published">May 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">H. Birkholz</div>
+<div class="org">Fraunhofer SIT</div>
+</div>
+<div class="author">
+      <div class="author-name">J. O'Donoghue</div>
+<div class="org">Qualcomm Technologies Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">N. Cam-Winget</div>
+<div class="org">Cisco Systems</div>
+</div>
+<div class="author">
+      <div class="author-name">C. Bormann</div>
+<div class="org">Universität Bremen TZI</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9781</h1>
+<h1 id="title">A Concise Binary Object Representation (CBOR) Tag for Unprotected CBOR Web Token Claims Sets (UCCS)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines the Unprotected CWT Claims Set (UCCS), a data format for
+representing a CBOR Web Token (CWT) Claims Set without protecting it
+by a signature, Message Authentication Code (MAC), or encryption.
+UCCS enables the use of CWT claims in environments where protection is
+provided by other means, such as secure communication channels or
+trusted execution environments.
+This specification defines a CBOR tag for UCCS and describes the UCCS
+format, its encoding, and its processing considerations. It also discusses
+security implications of using unprotected claims sets.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9781">https://www.rfc-editor.org/info/rfc9781</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-structure-of-this-document" class="internal xref">Structure of This Document</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-deployment-and-usage-of-ucc" class="internal xref">Deployment and Usage of UCCS</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-characteristics-of-a-secure" class="internal xref">Characteristics of a Secure Channel</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-uccs-in-rats-conceptual-mes" class="internal xref">UCCS in RATS Conceptual Message Conveyance</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-considerations-for-using-uc" class="internal xref">Considerations for Using UCCS in Other RATS Contexts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-delegated-attestation" class="internal xref">Delegated Attestation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-privacy-preservation" class="internal xref">Privacy Preservation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-cbor-tag-registration" class="internal xref">CBOR Tag Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-media-type-application-uccs" class="internal xref">Media-Type application/uccs+cbor Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-media-type-application-ujcs" class="internal xref">Media-Type application/ujcs+json Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-content-format-registration" class="internal xref">Content-Format Registration</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-general-considerations" class="internal xref">General Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-algorithm-specific-security" class="internal xref">Algorithm-Specific Security Considerations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-cddl" class="internal xref">CDDL</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-example" class="internal xref">Example</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref">Appendix C</a>.  <a href="#name-eat" class="internal xref">EAT</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-E" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">A CBOR Web Token (CWT) as specified by <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> is always wrapped in a
+CBOR Object Signing and Encryption (COSE) envelope <span>[<a href="#STD96" class="cite xref">STD96</a>]</span>.
+Among other things, COSE provides end-to-end data origin
+authentication and integrity protection employed by <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> as well as
+optional encryption for CWTs.
+Under the right circumstances (<a href="#secchan" class="auto internal xref">Section 3</a>), a signature providing proof for authenticity and integrity can be
+provided through the transfer protocol and thus omitted from the
+information in a CWT without compromising the intended goal of authenticity
+and integrity.
+In other words, if communicating parties have a preexisting security
+association, they can reuse it to provide authenticity and integrity
+for their messages, enabling the basic principle of using resources
+parsimoniously.
+Specifically, if a mutually secured channel is established between two
+remote peers, and if that secure channel provides the required
+properties (as discussed below), it is possible to omit the protection
+provided by COSE, creating a use case for unprotected CWT Claims Sets.
+Similarly, if there is one-way authentication, the party that did not
+authenticate may be in a position to send authentication information through
+this channel that allows the already authenticated party to authenticate the
+other party; this effectively turns the channel into a mutually
+secured channel.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This specification allocates a CBOR tag to mark Unprotected CWT Claims Sets
+(UCCS) as such and discusses conditions for its proper use in the scope of
+Remote Attestation Procedures (RATS <span>[<a href="#RFC9334" class="cite xref">RFC9334</a>]</span>) for the
+conveyance of RATS Conceptual Messages.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">This specification does not change <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span>: A CWT as defined by <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> does not make use of
+the tag allocated here; the UCCS tag is an alternative to using COSE
+protection and a CWT tag.
+Consequently, within the well-defined scope of a secure channel, it
+can be acceptable and economic to use the contents of a CWT without
+its COSE container and tag it with a UCCS CBOR tag for further
+processing within that scope -- or to use the contents of a UCCS CBOR
+tag for building a CWT to be signed by some entity that can vouch for
+those contents.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<div id="terminology">
+<section id="section-1.1">
+        <h3 id="name-terminology">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.1-1">The term Claim is used as in <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">The terms Claim Key, Claim Value, and CWT Claims Set are used as in
+<span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span>.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">The terms Attester, Attesting Environment, Evidence, Relying Party and Verifier are used as in <span>[<a href="#RFC9334" class="cite xref">RFC9334</a>]</span>.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-1.1-4">
+          <dt id="section-1.1-4.1">UCCS:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-4.2">
+            <p id="section-1.1-4.2.1">Unprotected CWT Claims Set(s); CBOR map(s) of
+          Claims as defined by the CWT Claims Registry that are composed of
+          pairs of Claim Keys and Claim Values.<a href="#section-1.1-4.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-4.3">Secure Channel:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-4.4">
+            <p id="section-1.1-4.4.1"><span>[<a href="#NIST-SP800-90Ar1" class="cite xref">NIST-SP800-90Ar1</a>]</span> defines a Secure Channel
+          as follows:<a href="#section-1.1-4.4.1" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-1.1-4.4.2">"A path for transferring data between two entities or components
+   that ensures confidentiality, integrity and replay protection, as
+   well as mutual authentication between the entities or
+   components. The secure channel may be provided using approved
+   cryptographic, physical or procedural methods, or a combination
+   thereof."<a href="#section-1.1-4.4.2" class="pilcrow">¶</a></p>
+<p id="section-1.1-4.4.3">For the purposes of the present document, we focus on a protected
+          communication channel used for conveyance that can ensure the same
+          qualities as a CWT without having COSE protection available, which includes
+          mutual authentication, integrity protection, and confidentiality.
+          (Replay protection can be added by including a nonce claim such as
+          Nonce (claim 10 <span>[<a href="#IANA.cwt" class="cite xref">IANA.cwt</a>]</span>).)  Examples include
+          conveyance via PCIe (Peripheral Component Interconnect Express) IDE
+          (Integrity and Data Encryption) or a TLS tunnel.<a href="#section-1.1-4.4.3" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-1.1-5">All terms referenced or defined in this section are capitalized in the remainder of
+this document.<a href="#section-1.1-5" class="pilcrow">¶</a></p>
+<p id="section-1.1-6">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-1.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="structure-of-this-document">
+<section id="section-1.2">
+        <h3 id="name-structure-of-this-document">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-structure-of-this-document" class="section-name selfRef">Structure of This Document</a>
+        </h3>
+<p id="section-1.2-1"><a href="#usage" class="auto internal xref">Section 2</a> briefly discusses use cases for UCCS.
+<a href="#secchan" class="auto internal xref">Section 3</a> addresses general characteristics of secure channels,
+followed by a specific discussion of using them in the context of RATS Conceptual
+Message Conveyance in <a href="#uccs-rats" class="auto internal xref">Section 4</a>, and more
+forward-looking considerations for using UCCS in other RATS contexts
+are discussed in <a href="#other-rats" class="auto internal xref">Section 5</a>.
+This is followed by the <a href="#iana" class="internal xref">IANA Considerations</a>, <a href="#seccons" class="internal xref">Security Considerations</a>,
+<a href="#sec-normative-references" class="internal xref">Normative References</a>, and <a href="#sec-informative-references" class="internal xref">Informative References</a>. 
+The normative <a href="#cddl" class="auto internal xref">Appendix A</a> provides a formal definition of the structure of
+UCCS, as no
+formal definition of CWT Claims Sets was provided in <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span>.
+
+This employs the Concise Data Definition Language (CDDL) <span>[<a href="#RFC8610" class="cite xref">RFC8610</a>]</span>, using its ability to also describe in the same definition
+the structurally similar use of JWT Claims Sets <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>,
+without any protective wrapper (such as JWS) applied, as Unprotected JWT
+Claims Sets (UJCS).
+
+<a href="#example" class="auto internal xref">Appendix B</a> provides an (informative) example for CBOR-Tagged UCCS.
+The normative <a href="#eat" class="auto internal xref">Appendix C</a> provides CDDL rules that add UCCS-format tokens to
+Entity Attestation Tokens (EATs) <span>[<a href="#RFC9711" class="cite xref">RFC9711</a>]</span> using its predefined
+extension points.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="usage">
+<section id="section-2">
+      <h2 id="name-deployment-and-usage-of-ucc">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-deployment-and-usage-of-ucc" class="section-name selfRef">Deployment and Usage of UCCS</a>
+      </h2>
+<p id="section-2-1">Usage scenarios involving the conveyance of Claims (RATS, in particular)
+require a standardized data definition and encoding format that
+can be transferred
+and transported using different communication channels.  As these are
+Claims, the Claims Sets defined in <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> are
+a suitable format.  However, the way these Claims are secured depends on the deployment, the security
+capabilities of the device, as well as their software stack.  For example, a Claim may be securely
+stored and conveyed using a device's Trusted Execution Environment (TEE) <span>[<a href="#RFC9397" class="cite xref">RFC9397</a>]</span> or
+a Trusted Platform Module (TPM) <span>[<a href="#TPM2" class="cite xref">TPM2</a>]</span>.
+Especially in some resource-constrained environments,
+the same process that provides the secure communication
+transport is also the delegate to compose the Claim to be conveyed. Whether it is a transfer
+or transport, a Secure Channel is presumed to be used for conveying such UCCS.  The following sections
+elaborate on Secure Channel characteristics in general and further describe RATS usage scenarios and
+corresponding requirements for UCCS deployment.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="secchan">
+<section id="section-3">
+      <h2 id="name-characteristics-of-a-secure">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-characteristics-of-a-secure" class="section-name selfRef">Characteristics of a Secure Channel</a>
+      </h2>
+<p id="section-3-1">A Secure Channel for the conveyance of UCCS needs to provide the security
+properties that would otherwise be provided by COSE for a CWT.
+
+In this regard, UCCS are similar in security considerations to JWTs <span>[<a href="#BCP225" class="cite xref">BCP225</a>]</span>
+using the algorithm "none".  Section <a href="https://rfc-editor.org/rfc/rfc8725#section-3.2" class="relref">3.2</a> of RFC 8725 <span>[<a href="#BCP225" class="cite xref">BCP225</a>]</span> states:<a href="#section-3-1" class="pilcrow">¶</a></p>
+<blockquote id="section-3-2">
+        <p id="section-3-2.1">[...] if a JWT is cryptographically
+protected end-to-end by a transport layer, such as TLS using
+cryptographically current algorithms, there may be no need to apply another
+layer of cryptographic protections to the JWT.  In such cases, the use of
+the "none" algorithm can be perfectly acceptable.<a href="#section-3-2.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-3-3">The security considerations discussed, e.g., in Sections <a href="https://rfc-editor.org/rfc/rfc8725#section-2.1" class="relref">2.1</a>, <a href="https://rfc-editor.org/rfc/rfc8725#section-3.1" class="relref">3.1</a>, and <a href="https://rfc-editor.org/rfc/rfc8725#section-3.2" class="relref">3.2</a> of RFC 8725 <span>[<a href="#BCP225" class="cite xref">BCP225</a>]</span> apply in an analogous way to the use of UCCS as
+elaborated on in this document.
+In particular, the need to "Use Appropriate Algorithms" (Section <a href="https://rfc-editor.org/rfc/rfc8725#section-3.2" class="relref">3.2</a> of RFC 8725 <span>[<a href="#BCP225" class="cite xref">BCP225</a>]</span>) includes choosing appropriate cryptographic
+algorithms for setting up and protecting the Secure Channel.
+For instance, their cryptographic strength should be at least as
+strong as any cryptographic keys the Secure Channel will be used for
+to protect in transport.
+<a href="#tab-algsec" class="auto internal xref">Table 5</a> in <a href="#algsec" class="auto internal xref">Section 7.2</a> provides references to some more security
+considerations for specific cryptography choices that are discussed in
+the COSE initial algorithms specification <span>[<a href="#RFC9053" class="cite xref">RFC9053</a>]</span>.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">Secure Channels are often set up in a handshake protocol that mutually
+derives a session key, where the handshake protocol establishes the (identity and thus) authenticity of one or both ends of the communication.
+The session key can
+then be used to provide confidentiality and integrity of the transfer of
+information inside the Secure Channel.
+(Where the handshake did not provide a mutually secure channel,
+further authentication information can be conveyed by the party not
+yet authenticated, leading to a mutually secured channel.)
+A well-known example of such a
+Secure Channel setup protocol is the TLS <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> handshake; the
+TLS record protocol can then be used for secure conveyance.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">As UCCS were initially created for use in RATS Secure Channels, the following
+section provides a discussion of
+their use in these channels.  Where other environments are intended to be
+used to convey UCCS, similar considerations need to be documented before
+UCCS can be used.<a href="#section-3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="uccs-rats">
+<section id="section-4">
+      <h2 id="name-uccs-in-rats-conceptual-mes">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-uccs-in-rats-conceptual-mes" class="section-name selfRef">UCCS in RATS Conceptual Message Conveyance</a>
+      </h2>
+<p id="section-4-1">This section describes a detailed usage scenario for UCCS in the
+context of RATS in conjunction with its attendant security
+requirements.
+The use of UCCS tag 601 outside of the RATS context <span class="bcp14">MUST</span> come with additional instruction leaflets and security considerations.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">For the purposes of this section, any RATS role can be the sender or the receiver of the UCCS.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">Secure Channels can be transient in nature.  For the purposes of this
+specification, the mechanisms used to establish a Secure Channel are out of
+scope.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">In the scope of RATS Claims, the receiver <span class="bcp14">MUST</span>
+authenticate the sender as part of the establishment of the Secure Channel.
+Furthermore, the channel <span class="bcp14">MUST</span> provide integrity of the communication between the
+communicating RATS roles.
+For data confidentiality <span>[<a href="#RFC4949" class="cite xref">RFC4949</a>]</span>, the receiving side <span class="bcp14">MUST</span> be
+authenticated as well. This is achieved if the sender and receiver
+mutually authenticate when establishing the Secure Channel.
+The quality of the receiver's authentication and authorization will
+influence whether the sender can disclose the UCCS.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">The extent to which a Secure Channel can provide assurances that UCCS
+originate from a trustworthy Attesting Environment depends on the
+characteristics of both the cryptographic mechanisms used to establish the
+channel and the characteristics of the Attesting Environment itself.
+The assurance provided to a Relying Party depends, among others, on the authenticity
+and integrity properties of the Secure Channel used for conveying
+the UCCS to the Relying Party.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">Ultimately, it is up to the receiver's policy to determine whether to accept
+a UCCS from the sender and to determine the type of Secure Channel it must negotiate.
+While the security considerations of the cryptographic algorithms used are similar
+to COSE, the considerations of the Secure Channel should also adhere to the policy
+configured at each of end of the Secure Channel.  However, the policy controls
+and definitions are out of scope for this document.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">Where an Attesting Environment serves as an endpoint of a Secure
+Channel used to convey a UCCS, the security assurance required of that
+Attesting Environment by a Relying Party generally calls for the
+Attesting Environment to be implemented using techniques designed to
+provide enhanced protection from an attacker wishing to tamper with or
+forge a UCCS originating from that Attesting Environment.
+A possible approach might be to implement the Attesting Environment in
+a hardened environment, such as a TEE <span>[<a href="#RFC9397" class="cite xref">RFC9397</a>]</span> or a TPM <span>[<a href="#TPM2" class="cite xref">TPM2</a>]</span>.<a href="#section-4-7" class="pilcrow">¶</a></p>
+<p id="section-4-8">When a UCCS emerges from the Secure Channel and into the receiver, the security
+properties of the secure channel no longer protect the UCCS, which is now subject to the same security properties
+as any other unprotected data in the Verifier environment.
+If the receiver subsequently forwards UCCS, they are treated as though they originated within the receiver.<a href="#section-4-8" class="pilcrow">¶</a></p>
+<p id="section-4-9">The Secure Channel context does not govern fully formed CWTs in the
+same way it governs UCCS.
+As with EATs (see <span>[<a href="#RFC9711" class="cite xref">RFC9711</a>]</span>) nested in other EATs (Section <span><a href="https://rfc-editor.org/rfc/rfc9711#section-4.2.18.3" class="relref">4.2.18.3</a> (<a href="https://rfc-editor.org/rfc/rfc9711#section-4.2.18.3" class="relref">Nested Tokens</a>)</span> of <span>[<a href="#RFC9711" class="cite xref">RFC9711</a>]</span>), the Secure
+Channel does not endorse fully formed CWTs transferred through it.
+Effectively, the COSE envelope of a CWT (or a nested EAT) shields the
+CWT Claims Set from the endorsement of the secure channel.
+(Note that a nested UCCS Claim might be added to EAT, and this statement does not apply to UCCS nested into UCCS; it only applies to
+fully formed CWTs.)<a href="#section-4-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="other-rats">
+<section id="section-5">
+      <h2 id="name-considerations-for-using-uc">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-considerations-for-using-uc" class="section-name selfRef">Considerations for Using UCCS in Other RATS Contexts</a>
+      </h2>
+<p id="section-5-1">This section discusses two additional usage scenarios for UCCS in the
+context of RATS.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="delegated-attestation">
+<section id="section-5.1">
+        <h3 id="name-delegated-attestation">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-delegated-attestation" class="section-name selfRef">Delegated Attestation</a>
+        </h3>
+<p id="section-5.1-1">Another usage scenario is that of a sub-Attester that has no signing
+keys (for example, to keep the implementation complexity to a minimum)
+and has a Secure Channel, such as local inter-process communication,
+to interact with a lead Attester (see "Composite Device", <span><a href="https://rfc-editor.org/rfc/rfc9334#section-3.3" class="relref">Section 3.3</a> of [<a href="#RFC9334" class="cite xref">RFC9334</a>]</span>).
+The sub-Attester produces a UCCS with the required CWT Claims Set and sends the UCCS through the Secure Channel to the lead Attester.
+The lead Attester then computes a cryptographic hash of the UCCS and
+protects that hash using its signing key for Evidence, for example,
+using a Detached-Submodule-Digest or Detached EAT Bundle (<span><a href="https://rfc-editor.org/rfc/rfc9711#section-5" class="relref">Section 5</a> of [<a href="#RFC9711" class="cite xref">RFC9711</a>]</span>).<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="privacy-preservation">
+<section id="section-5.2">
+        <h3 id="name-privacy-preservation">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-privacy-preservation" class="section-name selfRef">Privacy Preservation</a>
+        </h3>
+<p id="section-5.2-1">A Secure Channel that preserves the privacy of the Attester may provide
+security properties equivalent to COSE, but only inside the life-span of the
+session established.  In general, when a privacy-preserving Secure
+Channel is employed to convey a conceptual message, the receiver
+cannot correlate the message with the senders of
+other received UCCS messages beyond the information the Secure Channel
+authentication provides.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">An Attester must consider whether any UCCS it returns over a privacy-preserving Secure Channel compromises the privacy in unacceptable ways.  As
+an example, the use of the EAT UEID Claim (<span><a href="https://rfc-editor.org/rfc/rfc9711#section-4.2.1" class="relref">Section 4.2.1</a> of [<a href="#RFC9711" class="cite xref">RFC9711</a>]</span>) in UCCS over a privacy-preserving Secure Channel allows a Verifier to correlate UCCS from a single
+Attesting Environment across many Secure Channel sessions. This may be
+acceptable in some use cases (e.g., if the Attesting Environment is a
+physical sensor in a factory) and unacceptable in others (e.g., if the
+Attesting Environment is a user device belonging to a child).<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="cbor-tag-registration">
+<section id="section-6.1">
+        <h3 id="name-cbor-tag-registration">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-cbor-tag-registration" class="section-name selfRef">CBOR Tag Registration</a>
+        </h3>
+<p id="section-6.1-1">In the "CBOR Tags" registry <span>[<a href="#IANA.cbor-tags" class="cite xref">IANA.cbor-tags</a>]</span> as defined in Section <a href="https://rfc-editor.org/rfc/rfc8949#section-9.2" class="relref">9.2</a> of RFC 8949 <span>[<a href="#STD94" class="cite xref">STD94</a>]</span>, IANA has allocated the tag in <a href="#tab-tag-values" class="auto internal xref">Table 1</a> from
+the Specification Required space (1+2 size), with the present document
+as the specification reference.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<span id="name-values-for-tags"></span><div id="tab-tag-values">
+<table class="center" id="table-1">
+          <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-values-for-tags" class="selfRef">Values for Tags</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-right" rowspan="1" colspan="1">Tag</th>
+              <th class="text-left" rowspan="1" colspan="1">Data Item</th>
+              <th class="text-left" rowspan="1" colspan="1">Semantics</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-right" rowspan="1" colspan="1">601</td>
+              <td class="text-left" rowspan="1" colspan="1">map (Claims-Set as per <a href="#cddl" class="auto internal xref">Appendix A</a> of [RFC9781])</td>
+              <td class="text-left" rowspan="1" colspan="1">Unprotected CWT Claims Set [RFC9781]</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+<div id="media-type">
+<section id="section-6.2">
+        <h3 id="name-media-type-application-uccs">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-media-type-application-uccs" class="section-name selfRef">Media-Type application/uccs+cbor Registration</a>
+        </h3>
+<p id="section-6.2-1">IANA has added the following to the "Media Types"
+registry <span>[<a href="#IANA.media-types" class="cite xref">IANA.media-types</a>]</span>.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<span id="name-media-type-registration"></span><div id="new-media-type">
+<table class="center" id="table-2">
+          <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-media-type-registration" class="selfRef">Media Type Registration</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Name</th>
+              <th class="text-left" rowspan="1" colspan="1">Template</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">uccs+cbor</td>
+              <td class="text-left" rowspan="1" colspan="1">application/uccs+cbor</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#media-type" class="auto internal xref">Section 6.2</a> of RFC 9781</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-6.2-3">
+          <dt id="section-6.2-3.1">Type name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.2">application<a href="#section-6.2-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.3">Subtype name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.4">uccs+cbor<a href="#section-6.2-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.5">Required parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.6">N/A<a href="#section-6.2-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.7">Optional parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.8">N/A<a href="#section-6.2-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.9">Encoding considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.10">binary (CBOR data item)<a href="#section-6.2-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.11">Security considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.12">
+            <a href="#seccons" class="auto internal xref">Section 7</a> of RFC 9781<a href="#section-6.2-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.13">Interoperability considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.14">none<a href="#section-6.2-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.15">Published specification:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.16">RFC 9781<a href="#section-6.2-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.17">Applications that use this media type:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.18">Applications that transfer Unprotected CWT Claims Set(s) (UCCS)
+          over Secure Channels<a href="#section-6.2-3.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.19">Fragment identifier considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.20">The syntax and semantics of fragment identifiers is as specified
+          for "application/cbor".  (At publication of this document, there is
+          no fragment identification syntax defined for
+          "application/cbor".)<a href="#section-6.2-3.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.21">Additional information:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.22">
+            <p id="section-6.2-3.22.1"><br></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-6.2-3.22.2">
+              <dt id="section-6.2-3.22.2.1">Deprecated alias names for this type:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2-3.22.2.2">N/A<a href="#section-6.2-3.22.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2-3.22.2.3">Magic number(s):</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2-3.22.2.4">N/A<a href="#section-6.2-3.22.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2-3.22.2.5">File extension(s):</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2-3.22.2.6">.uccs<a href="#section-6.2-3.22.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2-3.22.2.7">Macintosh file type code(s):</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2-3.22.2.8">N/A<a href="#section-6.2-3.22.2.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.23">Person and email address to contact for further information:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.24">RATS WG mailing list (rats@ietf.org)<a href="#section-6.2-3.24" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.25">Intended usage:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.26">COMMON<a href="#section-6.2-3.26" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.27">Restrictions on usage:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.28">none<a href="#section-6.2-3.28" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.2-3.29">Author/Change controller:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.2-3.30">IETF<a href="#section-6.2-3.30" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="media-type-json">
+<section id="section-6.3">
+        <h3 id="name-media-type-application-ujcs">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-media-type-application-ujcs" class="section-name selfRef">Media-Type application/ujcs+json Registration</a>
+        </h3>
+<p id="section-6.3-1">IANA has added the following to the "Media Types"
+registry <span>[<a href="#IANA.media-types" class="cite xref">IANA.media-types</a>]</span>.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<span id="name-json-media-type-registratio"></span><div id="new-media-type-json">
+<table class="center" id="table-3">
+          <caption>
+<a href="#table-3" class="selfRef">Table 3</a>:
+<a href="#name-json-media-type-registratio" class="selfRef">JSON Media Type Registration</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Name</th>
+              <th class="text-left" rowspan="1" colspan="1">Template</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">ujcs+json</td>
+              <td class="text-left" rowspan="1" colspan="1">application/ujcs+json</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#media-type-json" class="auto internal xref">Section 6.3</a> of RFC 9781</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-6.3-3">
+          <dt id="section-6.3-3.1">Type name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.2">application<a href="#section-6.3-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.3">Subtype name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.4">ujcs+json<a href="#section-6.3-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.5">Required parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.6">N/A<a href="#section-6.3-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.7">Optional parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.8">N/A<a href="#section-6.3-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.9">Encoding considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.10">binary (UTF-8)<a href="#section-6.3-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.11">Security considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.12">
+            <a href="#seccons" class="auto internal xref">Section 7</a> of RFC 9781<a href="#section-6.3-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.13">Interoperability considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.14">none<a href="#section-6.3-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.15">Published specification:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.16">RFC 9781<a href="#section-6.3-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.17">Applications that use this media type:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.18">Applications that transfer Unprotected JWT Claims Set(s) (UJCS)
+          over Secure Channels<a href="#section-6.3-3.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.19">Fragment identifier considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.20">The syntax and semantics of fragment identifiers is as specified
+          for "application/json".  (At publication of this document, there is
+          no fragment identification syntax defined for
+          "application/json".)<a href="#section-6.3-3.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.21">Additional information:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.22">
+            <p id="section-6.3-3.22.1"><br></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-6.3-3.22.2">
+              <dt id="section-6.3-3.22.2.1">Deprecated alias names for this type:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.3-3.22.2.2">N/A<a href="#section-6.3-3.22.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.3-3.22.2.3">Magic number(s):</dt>
+              <dd style="margin-left: 1.5em" id="section-6.3-3.22.2.4">N/A<a href="#section-6.3-3.22.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.3-3.22.2.5">File extension(s):</dt>
+              <dd style="margin-left: 1.5em" id="section-6.3-3.22.2.6">.ujcs<a href="#section-6.3-3.22.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.3-3.22.2.7">Macintosh file type code(s):</dt>
+              <dd style="margin-left: 1.5em" id="section-6.3-3.22.2.8">N/A<a href="#section-6.3-3.22.2.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.23">Person and email address to contact for further information:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.24">RATS WG mailing list (rats@ietf.org)<a href="#section-6.3-3.24" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.25">Intended usage:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.26">COMMON<a href="#section-6.3-3.26" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.27">Restrictions on usage:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.28">none<a href="#section-6.3-3.28" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.3-3.29">Author/Change controller:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.3-3.30">IETF<a href="#section-6.3-3.30" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="ct">
+<section id="section-6.4">
+        <h3 id="name-content-format-registration">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-content-format-registration" class="section-name selfRef">Content-Format Registration</a>
+        </h3>
+<p id="section-6.4-1">IANA has registered the following in the "CoAP
+Content-Formats" registry within the "Constrained RESTful
+Environments (CoRE) Parameters" registry group <span>[<a href="#IANA.core-parameters" class="cite xref">IANA.core-parameters</a>]</span>.<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<span id="name-content-format-registration-2"></span><div id="content-format-reg">
+<table class="center" id="table-4">
+          <caption>
+<a href="#table-4" class="selfRef">Table 4</a>:
+<a href="#name-content-format-registration-2" class="selfRef">Content-Format Registration</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Content Type</th>
+              <th class="text-left" rowspan="1" colspan="1">Content Coding</th>
+              <th class="text-left" rowspan="1" colspan="1">ID</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">application/uccs+cbor</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">601</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <a href="#ct" class="auto internal xref">Section 6.4</a> of RFC 9781</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="seccons">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">The security considerations of <span>[<a href="#STD94" class="cite xref">STD94</a>]</span> apply.
+The security considerations of <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> need to be applied analogously,
+replacing the function of COSE with that of the Secure Channel; in
+particular, "it is not only important to protect the CWT in transit but also to ensure that the recipient can authenticate the party that assembled the claims and created the CWT".<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2"><a href="#secchan" class="auto internal xref">Section 3</a> discusses security considerations for Secure Channels in which
+UCCS might be used.
+This document provides the CBOR tag definition for UCCS and a discussion
+on security consideration for the use of UCCS in RATS.  Uses of UCCS outside the scope of
+RATS are not covered by this document.  The UCCS specification -- and the
+use of the UCCS CBOR tag, correspondingly -- is not intended for use in a
+scope where a scope-specific security consideration discussion has not
+been conducted, vetted, and approved for that use.
+In order to be able to use the UCCS CBOR tag in another such scope,
+the secure channel and/or the application protocol (e.g., TLS and the
+protocol identified by ALPN) <span class="bcp14">MUST</span> specify the roles of the endpoints
+in a fashion that the security properties of conveying UCCS via a
+Secure Channel between the roles are well-defined.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<div id="general-considerations">
+<section id="section-7.1">
+        <h3 id="name-general-considerations">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-general-considerations" class="section-name selfRef">General Considerations</a>
+        </h3>
+<p id="section-7.1-1">Implementations of Secure Channels are often separate from the application
+logic that has security requirements on them.  Similar security
+considerations to those described in <span>[<a href="#STD96" class="cite xref">STD96</a>]</span> for obtaining the
+required levels of assurance include:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.1-2.1">
+            <p id="section-7.1-2.1.1">Implementations need to provide sufficient protection for private or
+secret key material used to establish or protect the Secure Channel.<a href="#section-7.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.1-2.2">
+            <p id="section-7.1-2.2.1">Using a key for more than one algorithm can leak information about the
+key and is not recommended.<a href="#section-7.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.1-2.3">
+            <p id="section-7.1-2.3.1">An algorithm used to establish or protect the Secure Channel may have
+limits on the number of times that a key can be used without leaking
+information about the key.<a href="#section-7.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.1-2.4">
+            <p id="section-7.1-2.4.1">Evidence in a UCCS conveyed in a Secure Channel generally cannot be
+used to support trust in the credentials that were used to establish
+that secure channel, as this would create a circular dependency.<a href="#section-7.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-7.1-3">The Verifier needs to ensure that the management of key material used to
+establish or protect the Secure Channel is acceptable. This may include
+factors such as:<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.1-4.1">
+            <p id="section-7.1-4.1.1">Ensuring that any permissions associated with key ownership are respected
+in the establishment of the Secure Channel.<a href="#section-7.1-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.1-4.2">
+            <p id="section-7.1-4.2.1">Using cryptographic algorithms appropriately.<a href="#section-7.1-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.1-4.3">
+            <p id="section-7.1-4.3.1">Using key material in accordance with any usage restrictions such as
+freshness or algorithm restrictions.<a href="#section-7.1-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.1-4.4">
+            <p id="section-7.1-4.4.1">Ensuring that appropriate protections are in place to address potential
+traffic analysis attacks.<a href="#section-7.1-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="algsec">
+<section id="section-7.2">
+        <h3 id="name-algorithm-specific-security">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-algorithm-specific-security" class="section-name selfRef">Algorithm-Specific Security Considerations</a>
+        </h3>
+<p id="section-7.2-1"><a href="#tab-algsec" class="auto internal xref">Table 5</a> provides references to some security considerations of
+specific cryptography choices that are discussed in <span>[<a href="#RFC9053" class="cite xref">RFC9053</a>]</span>.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<span id="name-algorithm-specific-security-"></span><div id="tab-algsec">
+<table class="center" id="table-5">
+          <caption>
+<a href="#table-5" class="selfRef">Table 5</a>:
+<a href="#name-algorithm-specific-security-" class="selfRef">Algorithm-Specific Security Considerations</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Algorithm</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">AES-CBC-MAC</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <span><a href="https://rfc-editor.org/rfc/rfc9053#section-3.2.1" class="relref">Section 3.2.1</a> of [<a href="#RFC9053" class="cite xref">RFC9053</a>]</span>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">AES-GCM</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <span><a href="https://rfc-editor.org/rfc/rfc9053#section-4.1.1" class="relref">Section 4.1.1</a> of [<a href="#RFC9053" class="cite xref">RFC9053</a>]</span>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">AES-CCM</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <span><a href="https://rfc-editor.org/rfc/rfc9053#section-4.2.1" class="relref">Section 4.2.1</a> of [<a href="#RFC9053" class="cite xref">RFC9053</a>]</span>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">ChaCha20/Poly1305</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <span><a href="https://rfc-editor.org/rfc/rfc9053#section-4.3.1" class="relref">Section 4.3.1</a> of [<a href="#RFC9053" class="cite xref">RFC9053</a>]</span>
+</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="BCP225">[BCP225]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 225, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp225">https://www.rfc-editor.org/info/bcp225</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC8725">
+            <span class="refAuthor">Sheffer, Y.</span>, <span class="refAuthor">Hardt, D.</span>, and <span class="refAuthor">M. Jones</span>, <span class="refTitle">"JSON Web Token Best Current Practices"</span>, <span class="seriesInfo">BCP 225</span>, <span class="seriesInfo">RFC 8725</span>, <span class="seriesInfo">DOI 10.17487/RFC8725</span>, <time datetime="2020-02" class="refDate">February 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8725">https://www.rfc-editor.org/info/rfc8725</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="IANA.cbor-tags">[IANA.cbor-tags]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Concise Binary Object Representation (CBOR) Tags"</span>, <span>&lt;<a href="https://www.iana.org/assignments/cbor-tags">https://www.iana.org/assignments/cbor-tags</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IANA.cwt">[IANA.cwt]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"CBOR Web Token (CWT) Claims"</span>, <span>&lt;<a href="https://www.iana.org/assignments/cwt">https://www.iana.org/assignments/cwt</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7519">[RFC7519]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <span class="seriesInfo">DOI 10.17487/RFC7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7519">https://www.rfc-editor.org/info/rfc7519</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8392">[RFC8392]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Wahlstroem, E.</span>, <span class="refAuthor">Erdtman, S.</span>, and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"CBOR Web Token (CWT)"</span>, <span class="seriesInfo">RFC 8392</span>, <span class="seriesInfo">DOI 10.17487/RFC8392</span>, <time datetime="2018-05" class="refDate">May 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8392">https://www.rfc-editor.org/info/rfc8392</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8610">[RFC8610]</dt>
+        <dd>
+<span class="refAuthor">Birkholz, H.</span>, <span class="refAuthor">Vigano, C.</span>, and <span class="refAuthor">C. Bormann</span>, <span class="refTitle">"Concise Data Definition Language (CDDL): A Notational Convention to Express Concise Binary Object Representation (CBOR) and JSON Data Structures"</span>, <span class="seriesInfo">RFC 8610</span>, <span class="seriesInfo">DOI 10.17487/RFC8610</span>, <time datetime="2019-06" class="refDate">June 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8610">https://www.rfc-editor.org/info/rfc8610</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9165">[RFC9165]</dt>
+        <dd>
+<span class="refAuthor">Bormann, C.</span>, <span class="refTitle">"Additional Control Operators for the Concise Data Definition Language (CDDL)"</span>, <span class="seriesInfo">RFC 9165</span>, <span class="seriesInfo">DOI 10.17487/RFC9165</span>, <time datetime="2021-12" class="refDate">December 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9165">https://www.rfc-editor.org/info/rfc9165</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="STD94">[STD94]</dt>
+      <dd>
+<div class="refInstance">Internet Standard 94, <span>&lt;<a href="https://www.rfc-editor.org/info/std94">https://www.rfc-editor.org/info/std94</a>&gt;</span>.<br><span>At the time of writing, this STD comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC8949">
+            <span class="refAuthor">Bormann, C.</span> and <span class="refAuthor">P. Hoffman</span>, <span class="refTitle">"Concise Binary Object Representation (CBOR)"</span>, <span class="seriesInfo">STD 94</span>, <span class="seriesInfo">RFC 8949</span>, <span class="seriesInfo">DOI 10.17487/RFC8949</span>, <time datetime="2020-12" class="refDate">December 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8949">https://www.rfc-editor.org/info/rfc8949</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="IANA.core-parameters">[IANA.core-parameters]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Constrained RESTful Environments (CoRE) Parameters"</span>, <span>&lt;<a href="https://www.iana.org/assignments/core-parameters">https://www.iana.org/assignments/core-parameters</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IANA.media-types">[IANA.media-types]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Media Types"</span>, <span>&lt;<a href="https://www.iana.org/assignments/media-types">https://www.iana.org/assignments/media-types</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST-SP800-90Ar1">[NIST-SP800-90Ar1]</dt>
+        <dd>
+<span class="refAuthor">Barker, E.</span> and <span class="refAuthor">J. Kelsey</span>, <span class="refTitle">"Recommendation for Random Number Generation Using Deterministic Random Bit Generators"</span>, <span class="seriesInfo">NIST SP 800-90Ar1</span>, <span class="seriesInfo">DOI 10.6028/nist.sp.800-90ar1</span>, <time datetime="2015-06" class="refDate">June 2015</time>, <span>&lt;<a href="https://doi.org/10.6028/nist.sp.800-90ar1">https://doi.org/10.6028/nist.sp.800-90ar1</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4949">[RFC4949]</dt>
+        <dd>
+<span class="refAuthor">Shirey, R.</span>, <span class="refTitle">"Internet Security Glossary, Version 2"</span>, <span class="seriesInfo">FYI 36</span>, <span class="seriesInfo">RFC 4949</span>, <span class="seriesInfo">DOI 10.17487/RFC4949</span>, <time datetime="2007-08" class="refDate">August 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4949">https://www.rfc-editor.org/info/rfc4949</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8747">[RFC8747]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Seitz, L.</span>, <span class="refAuthor">Selander, G.</span>, <span class="refAuthor">Erdtman, S.</span>, and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"Proof-of-Possession Key Semantics for CBOR Web Tokens (CWTs)"</span>, <span class="seriesInfo">RFC 8747</span>, <span class="seriesInfo">DOI 10.17487/RFC8747</span>, <time datetime="2020-03" class="refDate">March 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8747">https://www.rfc-editor.org/info/rfc8747</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9053">[RFC9053]</dt>
+        <dd>
+<span class="refAuthor">Schaad, J.</span>, <span class="refTitle">"CBOR Object Signing and Encryption (COSE): Initial Algorithms"</span>, <span class="seriesInfo">RFC 9053</span>, <span class="seriesInfo">DOI 10.17487/RFC9053</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9053">https://www.rfc-editor.org/info/rfc9053</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9334">[RFC9334]</dt>
+        <dd>
+<span class="refAuthor">Birkholz, H.</span>, <span class="refAuthor">Thaler, D.</span>, <span class="refAuthor">Richardson, M.</span>, <span class="refAuthor">Smith, N.</span>, and <span class="refAuthor">W. Pan</span>, <span class="refTitle">"Remote ATtestation procedureS (RATS) Architecture"</span>, <span class="seriesInfo">RFC 9334</span>, <span class="seriesInfo">DOI 10.17487/RFC9334</span>, <time datetime="2023-01" class="refDate">January 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9334">https://www.rfc-editor.org/info/rfc9334</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9397">[RFC9397]</dt>
+        <dd>
+<span class="refAuthor">Pei, M.</span>, <span class="refAuthor">Tschofenig, H.</span>, <span class="refAuthor">Thaler, D.</span>, and <span class="refAuthor">D. Wheeler</span>, <span class="refTitle">"Trusted Execution Environment Provisioning (TEEP) Architecture"</span>, <span class="seriesInfo">RFC 9397</span>, <span class="seriesInfo">DOI 10.17487/RFC9397</span>, <time datetime="2023-07" class="refDate">July 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9397">https://www.rfc-editor.org/info/rfc9397</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9711">[RFC9711]</dt>
+        <dd>
+<span class="refAuthor">Lundblade, L.</span>, <span class="refAuthor">Mandyam, G.</span>, <span class="refAuthor">O'Donoghue, J.</span>, and <span class="refAuthor">C. Wallace</span>, <span class="refTitle">"The Entity Attestation Token (EAT)"</span>, <span class="seriesInfo">RFC 9711</span>, <span class="seriesInfo">DOI 10.17487/RFC9711</span>, <time datetime="2025-04" class="refDate">April 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9711">https://www.rfc-editor.org/info/rfc9711</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="STD96">[STD96]</dt>
+        <dd>
+<div class="refInstance">Internet Standard 96, <span>&lt;<a href="https://www.rfc-editor.org/info/std96">https://www.rfc-editor.org/info/std96</a>&gt;</span>.<br><span>At the time of writing, this STD comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC9052">
+            <span class="refAuthor">Schaad, J.</span>, <span class="refTitle">"CBOR Object Signing and Encryption (COSE): Structures and Process"</span>, <span class="seriesInfo">STD 96</span>, <span class="seriesInfo">RFC 9052</span>, <span class="seriesInfo">DOI 10.17487/RFC9052</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9052">https://www.rfc-editor.org/info/rfc9052</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9338">
+            <span class="refAuthor">Schaad, J.</span>, <span class="refTitle">"CBOR Object Signing and Encryption (COSE): Countersignatures"</span>, <span class="seriesInfo">STD 96</span>, <span class="seriesInfo">RFC 9338</span>, <span class="seriesInfo">DOI 10.17487/RFC9338</span>, <time datetime="2022-12" class="refDate">December 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9338">https://www.rfc-editor.org/info/rfc9338</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="TPM2">[TPM2]</dt>
+      <dd>
+<span class="refAuthor">Trusted Computing Group</span>, <span class="refTitle">"Trusted Platform Module 2.0 Library"</span>, <span class="refContent">Version 184</span>, <time datetime="2025-03" class="refDate">March 2025</time>, <span>&lt;<a href="https://trustedcomputinggroup.org/resource/tpm-library-specification/">https://trustedcomputinggroup.org/resource/tpm-library-specification/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="cddl">
+<section id="appendix-A">
+      <h2 id="name-cddl">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-cddl" class="section-name selfRef">CDDL</a>
+      </h2>
+<p id="appendix-A-1">The Concise Data Definition Language (CDDL), as defined in <span>[<a href="#RFC8610" class="cite xref">RFC8610</a>]</span> and
+<span>[<a href="#RFC9165" class="cite xref">RFC9165</a>]</span>, provides an easy and unambiguous way to express
+structures for protocol messages and data formats that use CBOR or
+JSON.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2"><span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> does not define CDDL for CWT Claims Sets.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3">The CDDL model in <a href="#fig-claims-set" class="auto internal xref">Figure 1</a> shows how to use CDDL
+for defining the CWT Claims Set defined in <span>[<a href="#RFC8392" class="cite xref">RFC8392</a>]</span>.
+These CDDL rules
+have been built such that they also can describe <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span> Claims sets by
+disabling feature "cbor" and enabling feature "json".<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+<span id="name-cddl-definition-for-claims-"></span><div id="fig-claims-set">
+<figure id="figure-1">
+        <div class="lang-cddl sourcecode" id="appendix-A-4.1">
+<pre>
+UCCS-Untagged = Claims-Set
+UCCS-Tagged = #6.601(UCCS-Untagged)
+
+Claims-Set = {
+ * $$Claims-Set-Claims
+ * Claim-Label .feature "extended-claims-label" =&gt; any
+}
+Claim-Label = CBOR-ONLY&lt;int&gt; / text
+string-or-uri = text
+
+$$Claims-Set-Claims //= ( iss-claim-label =&gt; string-or-uri )
+$$Claims-Set-Claims //= ( sub-claim-label =&gt; string-or-uri )
+$$Claims-Set-Claims //= ( aud-claim-label =&gt; string-or-uri )
+$$Claims-Set-Claims //= ( exp-claim-label =&gt; ~time )
+$$Claims-Set-Claims //= ( nbf-claim-label =&gt; ~time )
+$$Claims-Set-Claims //= ( iat-claim-label =&gt; ~time )
+$$Claims-Set-Claims //= ( cti-claim-label =&gt; bytes )
+
+iss-claim-label = JC&lt;"iss", 1&gt;
+sub-claim-label = JC&lt;"sub", 2&gt;
+aud-claim-label = JC&lt;"aud", 3&gt;
+exp-claim-label = JC&lt;"exp", 4&gt;
+nbf-claim-label = JC&lt;"nbf", 5&gt;
+iat-claim-label = JC&lt;"iat", 6&gt;
+cti-claim-label = CBOR-ONLY&lt;7&gt;  ; jti in JWT: different name and text
+
+JSON-ONLY&lt;J&gt; = J .feature "json"
+CBOR-ONLY&lt;C&gt; = C .feature "cbor"
+JC&lt;J,C&gt; = JSON-ONLY&lt;J&gt; / CBOR-ONLY&lt;C&gt;
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-cddl-definition-for-claims-" class="selfRef">CDDL definition for Claims-Set</a>
+        </figcaption></figure>
+</div>
+<p id="appendix-A-5">Specifications that define additional Claims should also supply
+additions to the $$Claims-Set-Claims socket, e.g.:<a href="#appendix-A-5" class="pilcrow">¶</a></p>
+<div class="lang-cddl sourcecode" id="appendix-A-6">
+<pre>
+; [RFC8747]
+$$Claims-Set-Claims //= ( 8: CWT-cnf ) ; cnf
+CWT-cnf = {
+  (1: CWT-COSE-Key) //
+  (2: CWT-Encrypted_COSE_Key) //
+  (3: CWT-kid)
+}
+
+CWT-COSE-Key = COSE_Key
+CWT-Encrypted_COSE_Key = COSE_Encrypt / COSE_Encrypt0
+CWT-kid = bytes
+
+;;; Insert the required CDDL from RFC 9052 to complete these
+;;; definitions.  This can be done manually or automated by a
+;;; tool that implements an import directive such as:
+;# import rfc9052
+</pre><a href="#appendix-A-6" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A-7">The above definitions, concepts, and security considerations also define a JSON-encoded Claims-Set as encapsulated in a JWT.
+Such an unsigned Claims-Set can be referred to as a "Unprotected JWT
+Claims Set", or a "UJCS".
+The CDDL definition of <code>Claims-Set</code> in <a href="#fig-claims-set" class="auto internal xref">Figure 1</a> can be used for a UJCS:<a href="#appendix-A-7" class="pilcrow">¶</a></p>
+<div class="lang-cddl sourcecode" id="appendix-A-8">
+<pre>
+UJCS = Claims-Set
+</pre><a href="#appendix-A-8" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example">
+<section id="appendix-B">
+      <h2 id="name-example">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-example" class="section-name selfRef">Example</a>
+      </h2>
+<p id="appendix-B-1">This appendix is informative.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">The example CWT Claims Set from <span><a href="https://rfc-editor.org/rfc/rfc8392#appendix-A.1" class="relref">Appendix A.1</a> of [<a href="#RFC8392" class="cite xref">RFC8392</a>]</span> can be turned into
+a UCCS by enclosing it with a tag number 601:<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+<div class="lang-cbor-diag sourcecode" id="appendix-B-3">
+<pre>
+ 601(
+   {
+     / iss / 1: "coap://as.example.com",
+     / sub / 2: "erikw",
+     / aud / 3: "coap://light.example.com",
+     / exp / 4: 1444064944,
+     / nbf / 5: 1443944944,
+     / iat / 6: 1443944944,
+     / cti / 7: h'0b71'
+   }
+ )
+</pre><a href="#appendix-B-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="eat">
+<section id="appendix-C">
+      <h2 id="name-eat">
+<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-eat" class="section-name selfRef">EAT</a>
+      </h2>
+<p id="appendix-C-1">The following CDDL adds UCCS-format and UJCS-format tokens to EAT using its predefined extension points (see Section <span><a href="https://rfc-editor.org/rfc/rfc9711#section-4.2.18" class="relref">4.2.18</a> (<a href="https://rfc-editor.org/rfc/rfc9711#section-4.2.18" class="relref">submods</a>)</span> of <span>[<a href="#RFC9711" class="cite xref">RFC9711</a>]</span>).<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+<div class="lang-cddl sourcecode" id="appendix-C-2">
+<pre>
+$EAT-CBOR-Tagged-Token /= UCCS-Tagged
+$EAT-CBOR-Untagged-Token /= UCCS-Untagged
+
+$JSON-Selector /= [type: "UJCS", nested-token: UJCS]
+</pre><a href="#appendix-C-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="appendix-D">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-D-1"><span class="contact-name">Laurence Lundblade</span> suggested some improvements to the CDDL.
+<span class="contact-name">Carl Wallace</span> provided a very useful review.<a href="#appendix-D-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-E">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Henk Birkholz</span></div>
+<div dir="auto" class="left"><span class="org">Fraunhofer SIT</span></div>
+<div dir="auto" class="left"><span class="street-address">Rheinstrasse 75</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">64295</span> <span class="locality">Darmstadt</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:henk.birkholz@ietf.contact" class="email">henk.birkholz@ietf.contact</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jeremy O'Donoghue</span></div>
+<div dir="auto" class="left"><span class="org">Qualcomm Technologies Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">279 Farnborough Road</span></div>
+<div dir="auto" class="left"><span class="locality">Farnborough</span></div>
+<div dir="auto" class="left"><span class="postal-code">GU14 7LS</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jodonogh@qti.qualcomm.com" class="email">jodonogh@qti.qualcomm.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Nancy Cam-Winget</span></div>
+<div dir="auto" class="left"><span class="org">Cisco Systems</span></div>
+<div dir="auto" class="left"><span class="street-address">3550 Cisco Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Jose</span>, <span class="region">CA</span> <span class="postal-code">95134</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ncamwing@cisco.com" class="email">ncamwing@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Carsten Bormann</span></div>
+<div dir="auto" class="left"><span class="org">Universität Bremen TZI</span></div>
+<div dir="auto" class="left"><span class="street-address">Postfach 330440</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">D-28359</span> <span class="locality">Bremen</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+49-421-218-63921" class="tel">+49-421-218-63921</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:cabo@tzi.org" class="email">cabo@tzi.org</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
