@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9780: Bidirectional Forwarding Detection (BFD) for Multipoint Networks over Point-to-Multipoint MPLS Label Switched Paths (LSPs)</title>
+<meta content="Greg Mirsky" name="author">
+<meta content="Gyan Mishra" name="author">
+<meta content="Donald Eastlake 3rd" name="author">
+<meta content="
+       
+   This document describes procedures for using Bidirectional Forwarding
+   Detection (BFD) for multipoint networks to detect data plane failures
+   in point-to-multipoint MPLS
+   Label Switched Paths (LSPs) and Segment Routing (SR) point-to-multipoint policies
+   with an SR over MPLS (SR-MPLS) data plane.
+       
+       
+   Furthermore, this document updates RFC 8562 by
+   recommending the use of an IPv6 address from the Dummy IPv6 Prefix address block 100:0:0:1::/64
+   and discouraging the use of an IPv4 loopback address mapped
+   to IPv6.
+       
+       
+   In addition, this document describes the applicability of LSP Ping (as an in-band
+ solution) and the control plane (as an out-of-band solution) to bootstrap
+ a BFD session.
+   The document also describes the behavior of the active tail for head
+   notification.
+       
+    " name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="BFD" name="keyword">
+<meta content="Multipoint LSP" name="keyword">
+<meta content="9780" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9780.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-mpls-p2mp-bfd-11" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9780" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9780</td>
+<td class="center">Multipoint BFD over P2MP MPLS LSP</td>
+<td class="right">May 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Mirsky, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9780" class="eref">9780</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc8562" class="eref">8562</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-05" class="published">May 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">G. Mirsky</div>
+<div class="org">Ericsson</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Mishra</div>
+<div class="org">Verizon Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Eastlake 3rd</div>
+<div class="org">Independent</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9780</h1>
+<h1 id="title">Bidirectional Forwarding Detection (BFD) for Multipoint Networks over Point-to-Multipoint MPLS Label Switched Paths (LSPs)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+   This document describes procedures for using Bidirectional Forwarding
+   Detection (BFD) for multipoint networks to detect data plane failures
+   in point-to-multipoint MPLS
+   Label Switched Paths (LSPs) and Segment Routing (SR) point-to-multipoint policies
+   with an SR over MPLS (SR-MPLS) data plane.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">
+   Furthermore, this document updates RFC 8562 by
+   recommending the use of an IPv6 address from the Dummy IPv6 Prefix address block 100:0:0:1::/64
+   and discouraging the use of an IPv4 loopback address mapped
+   to IPv6.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+<p id="section-abstract-3">
+   In addition, this document describes the applicability of LSP Ping (as an in-band
+ solution) and the control plane (as an out-of-band solution) to bootstrap
+ a BFD session.
+   The document also describes the behavior of the active tail for head
+   notification.<a href="#section-abstract-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9780">https://www.rfc-editor.org/info/rfc9780</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-used-in-this-do" class="internal xref">Conventions Used in This Document</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1" class="keepWithNext"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-multipoint-bfd-encapsulatio" class="internal xref">Multipoint BFD Encapsulation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-ip-encapsulation-of-multipo" class="internal xref">IP Encapsulation of Multipoint BFD</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-non-ip-encapsulation-of-mul" class="internal xref">Non-IP Encapsulation of Multipoint BFD</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-bootstrapping-multipoint-bf" class="internal xref">Bootstrapping Multipoint BFD</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-lsp-ping" class="internal xref">LSP Ping</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-control-plane" class="internal xref">Control Plane</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-operation-of-multipoint-bfd" class="internal xref">Operation of Multipoint BFD with Active Tail over P2MP MPLS LSP</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-ipv6-special-purpose-addres" class="internal xref">IPv6 Special-Purpose Address</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-mpls-generalized-associated" class="internal xref">MPLS Generalized Associated Channel (G-ACh) Type</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro-section">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">
+      <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> defines a method of using Bidirectional Forwarding Detection (BFD) <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>
+      to monitor and detect failures between the sender
+   (head) and one or more receivers (tails) in multipoint or multicast
+   networks.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+   <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> added two BFD session types: MultipointHead and
+   MultipointTail. Throughout this document, MultipointHead and
+   MultipointTail refer to the value to which the bfd.SessionType is set on a
+   BFD endpoint.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">
+      This document describes procedures for using such
+   modes of the BFD protocol to detect data plane failures in point-to-multipoint (P2MP) MPLS Label Switched
+   Paths (LSPs) and Segment Routing (SR) point-to-multipoint policies
+   with an SR over MPLS (SR-MPLS) data plane.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">
+  The document also describes the applicability of LSP Ping (an in-band solution) and
+  out-of-band solutions to bootstrap a BFD session in this environment.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">
+ Historically, an address in the IPv6-mapped IPv4 loopback address block
+ ::ffff:127.0.0.1/128 was mandated, although functionally, an
+ IPv6 address from that address block is not analogous to its IPv4
+ counterpart.
+   Furthermore,
+   using the loopback address as the destination address, even for an inner IP encapsulation of a tunneled packet,
+   violates <span><a href="https://rfc-editor.org/rfc/rfc4291#section-2.5.3" class="relref">Section 2.5.3</a> of [<a href="#RFC4291" class="cite xref">RFC4291</a>]</span>. Hence, IANA has allocated
+   100:0:0:1::/64 as a new Dummy IPv6 Prefix (<a href="#iana-ipv6-addr-alloc-sec" class="auto internal xref">Section 7.1</a>)
+   for destination IPv6 addresses used for IP/UDP encapsulation of management, control, and OAM (Operations, Administration, and Maintenance) packets.
+  A source-only IPv6 dummy address is used as the destination to generate an exception and a reply message to the request message received.
+   This document starts the transition to using the IPv6 addresses from the Dummy IPv6 Prefix address block 100:0:0:1::/64 as the IPv6 destination address
+   in the IP/UDP encapsulation of active OAM over the MPLS data plane.
+   Thus, this document updates <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> by recommending the use of an IPv6 address from the
+   Dummy IPv6 Prefix address block 100:0:0:1::/64 (<a href="#iana-ipv6-addr-alloc-sec" class="auto internal xref">Section 7.1</a>) while
+   acknowledging that an address from the ::ffff:127.0.0.1/128 address block might be used by existing implementations. This document
+   discourages the use of an address in the IPv6-mapped IPv4 loopback address block.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">
+   This document also describes the behavior of the active tail for head notification.<a href="#section-1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-2">
+      <h2 id="name-conventions-used-in-this-do">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-used-in-this-do" class="section-name selfRef">Conventions Used in This Document</a>
+      </h2>
+<section id="section-2.1">
+        <h3 id="name-terminology">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-2.1-1">
+          <dt id="section-2.1-1.1">ACH:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.2">Associated Channel Header<a href="#section-2.1-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.3">BFD:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.4">Bidirectional Forwarding Detection<a href="#section-2.1-1.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.5">GAL:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.6">G-ACh Label<a href="#section-2.1-1.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.7">G-ACh:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.8">Generic Associated Channel<a href="#section-2.1-1.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.9">LSP:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.10">Label Switched Path<a href="#section-2.1-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.11">LSR:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.12">Label Switching Router<a href="#section-2.1-1.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.13">MPLS:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.14">Multiprotocol Label Switching<a href="#section-2.1-1.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.15">P2MP:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.16">Point-to-Multipoint<a href="#section-2.1-1.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.17">PW:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.18">Pseudowire (PW)<a href="#section-2.1-1.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.19">SR:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.20">Segment Routing<a href="#section-2.1-1.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.21">SR-MPLS:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.22">SR over MPLS<a href="#section-2.1-1.22" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-2.2">
+        <h3 id="name-requirements-language">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are
+    to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span>
+          <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals,
+    as shown here.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<div id="encaps-section">
+<section id="section-3">
+      <h2 id="name-multipoint-bfd-encapsulatio">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-multipoint-bfd-encapsulatio" class="section-name selfRef">Multipoint BFD Encapsulation</a>
+      </h2>
+<p id="section-3-1">
+      <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> uses BFD in Demand mode 
+      from the very start of a point-to-multipoint (P2MP) BFD session. Because the
+      head doesn't receive any BFD Control packets from a tail, the head of the P2MP BFD
+      session transmits all BFD Control packets with the value of the Your Discriminator field set to zero. As a result, a tail cannot demultiplex
+      BFD sessions using Your Discriminator, as defined in <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>.
+      To demultiplex BFD sessions, <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> requires that
+      the tail use the source IP address, My Discriminator, and the identity of the multipoint tree
+      from which the BFD Control packet was received.
+      If the BFD Control packet is encapsulated in IP/UDP, then the source IP address
+      <span class="bcp14">MUST</span> be used to demultiplex the received BFD Control packet as described in <span><a href="https://rfc-editor.org/rfc/rfc8562#section-5.7" class="relref">Section 5.7</a> of [<a href="#RFC8562" class="cite xref">RFC8562</a>]</span>.
+      The non-IP encapsulation case is described in <a href="#non-ip-encaps-section" class="auto internal xref">Section 3.2</a>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="ip-encaps-section">
+<section id="section-3.1">
+        <h3 id="name-ip-encapsulation-of-multipo">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-ip-encapsulation-of-multipo" class="section-name selfRef">IP Encapsulation of Multipoint BFD</a>
+        </h3>
+<p id="section-3.1-1">
+        <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> defines IP/UDP encapsulation for multipoint BFD 
+        over P2MP MPLS LSP. This document updates <span><a href="https://rfc-editor.org/rfc/rfc8562#section-5.8" class="relref">Section 5.8</a> of [<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> regarding the selection of
+        the IPv6 destination address as follows:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1">The sender of an MPLS echo request <span class="bcp14">SHOULD</span> use an address from
+      the Dummy IPv6 Prefix address block 100:0:0:1::/64 (see <a href="#iana-ipv6-addr-alloc-sec" class="auto internal xref">Section 7.1</a>).<a href="#section-3.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.2">The sender of an MPLS echo request <span class="bcp14">MAY</span> select the IPv6 destination  address from the ::ffff:7f00/104 address block.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.1-3"><span><a href="https://rfc-editor.org/rfc/rfc6790#section-1.2" class="relref">Section 1.2</a> of [<a href="#RFC6790" class="cite xref">RFC6790</a>]</span>
+      lists several advantages of generating the entropy value by an ingress
+      Label Switching Router (LSR) compared to when a transit LSR infers
+      entropy using the information in the MPLS label stack or payload.  
+      This specification further clarifies the following if multiple alternative paths
+      for the given P2MP LSP Forwarding Equivalence Class (FEC) exist:<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-4.1">The MultipointHead
+          <span class="bcp14">SHOULD</span> use the Entropy Label <span>[<a href="#RFC6790" class="cite xref">RFC6790</a>]</span> used for LSP Ping <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> to exercise those particular alternative
+          paths; or<a href="#section-3.1-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-4.2">The MultipointHead <span class="bcp14">MAY</span> use the UDP port
+          number to possibly exercise those particular alternate paths.<a href="#section-3.1-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="non-ip-encaps-section">
+<section id="section-3.2">
+        <h3 id="name-non-ip-encapsulation-of-mul">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-non-ip-encapsulation-of-mul" class="section-name selfRef">Non-IP Encapsulation of Multipoint BFD</a>
+        </h3>
+<p id="section-3.2-1">
+          In some environments, the overhead of extra IP/UDP encapsulations may be
+   considered burdensome, which makes the use of more compact Generic Associated Channel (G-ACh) <span>[<a href="#RFC5586" class="cite xref">RFC5586</a>]</span>
+   encapsulation attractive. Also, the validation of the IP/UDP encapsulation of a BFD Control packet in a P2MP BFD session
+   may fail because of a problem related to neither the MPLS label stack nor BFD. Avoiding unnecessary encapsulation
+   of P2MP BFD over an MPLS LSP improves the accuracy of the correlation of the detected failure and defect in MPLS LSP.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">
+     Non-IP encapsulation for multipoint BFD over P2MP MPLS LSP (shown in <a href="#non-ip-p2mp-bfd-pic" class="auto internal xref">Figure 1</a>)
+     <span class="bcp14">MUST</span> use the G-ACh Label (GAL) <span>[<a href="#RFC5586" class="cite xref">RFC5586</a>]</span> at the bottom of the label
+        stack followed by an Associated Channel Header (ACH). If a BFD Control packet in PW-ACH encapsulation (without IP/UDP Headers) is to be used in ACH,
+        an implementation would not be able to verify the identity of the MultipointHead and, as a result, will not properly demultiplex BFD packets. Hence,
+        a new channel type value is needed. The Channel Type field in ACH <span class="bcp14">MUST</span> be set to
+        Multipoint BFD Session (0x0013) (see <a href="#iana-ach-sec" class="auto internal xref">Section 7.2</a>). To provide the identity of the MultipointHead for the particular
+        multipoint BFD session, a Source Address TLV, as defined in <span><a href="https://rfc-editor.org/rfc/rfc7212#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC7212" class="cite xref">RFC7212</a>]</span>,
+        <span class="bcp14">MUST</span> immediately follow a BFD Control packet. The use of other TLVs is outside the scope of this document.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<span id="name-non-ip-encapsulation-for-mu"></span><div id="non-ip-p2mp-bfd-pic">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-3.2-3.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|               LSP Label               |  TC |S|       TTL     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                  GAL                  |  TC |1|       TTL     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|0 0 0 1|Version|     Flags     |      Channel Type = 0x0013    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+~                        BFD Control Packet                     ~
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Type=0    |    Reserved   |            Length             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|           Reserved            |         Address Family        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+~                            Address                            ~
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-non-ip-encapsulation-for-mu" class="selfRef">Non-IP Encapsulation for Multipoint BFD over a Multicast MPLS LSP</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.2-4">The fields in <a href="#non-ip-p2mp-bfd-pic" class="auto internal xref">Figure 1</a> are interpreted as follows:<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-5.1">The top three four-octet words are defined in <span>[<a href="#RFC5586" class="cite xref">RFC5586</a>]</span>.<a href="#section-3.2-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-5.2">The BFD Control Packet field is defined in <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>.<a href="#section-3.2-5.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-5.3">All the remaining fields are defined in <span><a href="https://rfc-editor.org/rfc/rfc7212#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC7212" class="cite xref">RFC7212</a>]</span>.<a href="#section-3.2-5.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="bootstrapping-section">
+<section id="section-4">
+      <h2 id="name-bootstrapping-multipoint-bf">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-bootstrapping-multipoint-bf" class="section-name selfRef">Bootstrapping Multipoint BFD</a>
+      </h2>
+<div id="lsp-section">
+<section id="section-4.1">
+        <h3 id="name-lsp-ping">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-lsp-ping" class="section-name selfRef">LSP Ping</a>
+        </h3>
+<p id="section-4.1-1">
+        LSP Ping is the part of the on-demand OAM toolset used to detect and localize defects in the data plane and
+        verify the control plane against the data plane by ensuring that the LSP is mapped to the same FEC
+        at both egress and ingress endpoints.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">
+      LSP Ping, as defined in <span>[<a href="#RFC6425" class="cite xref">RFC6425</a>]</span>, <span class="bcp14">MAY</span> be used to bootstrap MultipointTail. If LSP Ping is used,
+        it <span class="bcp14">MUST</span> include the Target FEC Stack TLV <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> and the BFD Discriminator TLV <span>[<a href="#RFC5884" class="cite xref">RFC5884</a>]</span>. For the case of P2MP MPLS LSP, the Target FEC Stack TLV
+        <span class="bcp14">MUST</span> use sub-TLVs defined in <span><a href="https://rfc-editor.org/rfc/rfc6425#section-3.1" class="relref">Section 3.1</a> of [<a href="#RFC6425" class="cite xref">RFC6425</a>]</span>. For the case of P2MP SR policy with an SR-MPLS data plane, 
+        an implementation of this specification <span class="bcp14">MUST</span> follow the procedures defined in <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span>. Setting the value 
+        of the Reply Mode field to "Do not reply" <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> for the  LSP Ping to bootstrap the MultipointTail of the P2MP BFD session is <span class="bcp14">RECOMMENDED</span>.
+        Indeed, because BFD over a multipoint network uses BFD Demand mode, the MPLS echo reply from a tail has no useful information to convey to the head,
+        unlike in the case of BFD over a P2P MPLS LSP <span>[<a href="#RFC5884" class="cite xref">RFC5884</a>]</span>.
+        A MultipointTail that receives an LSP Ping that includes the BFD Discriminator TLV <span class="bcp14">MUST</span> do the following:<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-3.1">validate the LSP Ping;<a href="#section-4.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.2">associate the received BFD Discriminator value with the P2MP LSP;<a href="#section-4.1-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.3">create a P2MP BFD session and set bfd.SessionType =
+      MultipointTail as described in <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span>; and<a href="#section-4.1-3.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.4">use the source IP address of the LSP Ping, the value
+      of BFD Discriminator from the BFD Discriminator TLV, and the identity of the P2MP LSP
+       to properly demultiplex BFD sessions.<a href="#section-4.1-3.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.1-4">
+        Besides bootstrapping a BFD session over a P2MP LSP, LSP Ping <span class="bcp14">SHOULD</span> be used to verify the control plane
+        against the data plane periodically by checking that the P2MP LSP is mapped  to the same FEC at the
+        MultipointHead and all active MultipointTails. The rate of generation of these LSP Ping echo request
+   messages <span class="bcp14">SHOULD</span> be significantly less than the rate of generation of
+   the BFD Control packets because LSP Ping requires more processing to validate
+   the consistency between the data plane and the control plane. An implementation <span class="bcp14">MAY</span> provide configuration
+   options to control the rate of generation of the periodic LSP Ping echo request messages.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="control-plane-section">
+<section id="section-4.2">
+        <h3 id="name-control-plane">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-control-plane" class="section-name selfRef">Control Plane</a>
+        </h3>
+<p id="section-4.2-1">
+           The BFD Discriminator attribute <span class="bcp14">MAY</span> be used to bootstrap a multipoint
+   BFD session on a tail, following the format and procedures given in
+   <span><a href="https://rfc-editor.org/rfc/rfc9026#section-3.1.6" class="relref">Section 3.1.6</a> of [<a href="#RFC9026" class="cite xref">RFC9026</a>]</span>.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="operation-sec">
+<section id="section-5">
+      <h2 id="name-operation-of-multipoint-bfd">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-operation-of-multipoint-bfd" class="section-name selfRef">Operation of Multipoint BFD with Active Tail over P2MP MPLS LSP</a>
+      </h2>
+<p id="section-5-1">
+<span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> defines how BFD Demand mode can be used in multipoint networks.
+When applied in MPLS, the procedures specified in <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span> allow an egress LSR to detect a failure in the part of the P2MP MPLS LSP
+from the ingress LSR to that egress LSR. The ingress LSR is not aware of the state of the P2MP LSP.  <span>[<a href="#RFC8563" class="cite xref">RFC8563</a>]</span>, using mechanisms defined in <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span>,
+defines the behavior of an active tail. An active tail might notify the head of the detected failure and respond to a poll sequence initiated by the head.
+The first method, referred to as "Head Notification without Polling", is mentioned in <span><a href="https://rfc-editor.org/rfc/rfc8563#section-5.2.1" class="relref">Section 5.2.1</a> of [<a href="#RFC8563" class="cite xref">RFC8563</a>]</span>) and
+is the simplest of the methods described in <span>[<a href="#RFC8563" class="cite xref">RFC8563</a>]</span>.
+The use of this method in BFD over P2MP MPLS LSP is discussed in this document.
+Analysis of other methods for a head to learn of the state of the P2MP MPLS LSP is outside the scope of this document.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">
+As specified in <span>[<a href="#RFC8563" class="cite xref">RFC8563</a>]</span>, BFD variables <span class="bcp14">MUST</span> be as follows for the active tail mode:<a href="#section-5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1">
+          <p id="section-5-3.1.1">On an ingress LSR:<a href="#section-5-3.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1.2.1">bfd.SessionType is MultipointHead.<a href="#section-5-3.1.2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-5-3.1.2.2">bfd.RequiredMinRxInterval is nonzero, allowing egress LSRs to send BFD Control packets.<a href="#section-5-3.1.2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-5-3.2">
+          <p id="section-5-3.2.1">On an egress LSR:<a href="#section-5-3.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.2.2.1">bfd.SessionType is MultipointTail.<a href="#section-5-3.2.2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-5-3.2.2.2">bfd.SilentTail is set to zero.<a href="#section-5-3.2.2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+      </ul>
+<p id="section-5-4">
+ <span><a href="https://rfc-editor.org/rfc/rfc8563#section-5.2.1" class="relref">Section 5.2.1</a> of [<a href="#RFC8563" class="cite xref">RFC8563</a>]</span> notes that "the tail sends unsolicited BFD packets in response
+to the detection of a multipoint path failure" but does not provide specifics about the information in the packets or the frequency of transmissions.
+The procedure for an active tail with unsolicited notifications for P2MP MPLS LSP is defined below.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">Upon detecting the failure of the P2MP MPLS LSP, an egress LSR sends a BFD Control packet with the following settings:<a href="#section-5-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-6.1">The Poll (P) bit is set.<a href="#section-5-6.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-6.2">The Status (Sta) field is set to the Down value.<a href="#section-5-6.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-6.3">The Diagnostic (Diag) field is set to the Control Detection Time Expired value.<a href="#section-5-6.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-5-6.4">The value of the Your Discriminator field is set to the value the egress LSR has been using to demultiplex that BFD multipoint session.<a href="#section-5-6.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-5-7">
+The BFD Control packet <span class="bcp14">MAY</span> be encapsulated in IP/UDP with the destination IP address of the ingress LSR
+and the UDP destination port number set to 4784 per <span>[<a href="#RFC5883" class="cite xref">RFC5883</a>]</span>. If non-IP encapsulation is 
+used, then a BFD Control packet is encapsulated using PW-ACH encapsulation (without IP/UDP Headers)
+with Channel Type 0x0007 <span>[<a href="#RFC5885" class="cite xref">RFC5885</a>]</span>.<a href="#section-5-7" class="pilcrow">¶</a></p>
+<p id="section-5-8">
+The BFD Control packets are transmitted at the rate of one per
+    second until either 1) the egress LSA receives a control packet from the ingress LSR
+    that is valid for this BFD session and has the Final (F) bit set or 2) the
+    defect condition clears.
+  However, to improve the likelihood of notifying the ingress LSR of the failure of the P2MP MPLS LSP,
+  the egress LSR <span class="bcp14">SHOULD</span> initially transmit three BFD Control packets (as defined above) in short succession.
+  The actual transmission of the periodic BFD Control packet <span class="bcp14">MUST</span> be jittered by up to 25% within one-second intervals.
+  Thus, the interval <span class="bcp14">MUST</span> be reduced by a random value of 0 to 25%, to reduce the possibility of congestion on the ingress LSR's
+  data and control planes.<a href="#section-5-8" class="pilcrow">¶</a></p>
+<p id="section-5-9">
+As described above, an ingress LSR that has received the BFD Control packet
+sends the unicast IP/UDP encapsulated BFD Control packet with the Final (F) bit set
+to the egress LSR. In some scenarios (e.g., when a P2MP LSP is broken close to its root and the number of egress LSRs is significantly large),
+the root might receive a large number of notifications. The notifications from leaves to the root will not use resources
+allocated for the monitored multicast flow and, as a result,
+will not congest that particular flow, although they may negatively affect other flows.
+However, the control plane of the ingress LSR might be congested by the BFD Control packets transmitted by egress LSRs and the process of generating
+unicast BFD Control packets, as noted above. To mitigate that, a BFD implementation that supports this specification is <span class="bcp14">RECOMMENDED</span> to use a rate limiter
+of received BFD Control packets passed to the ingress LSR's control plane for processing.<a href="#section-5-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Security">
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">
+      This document does not introduce new security considerations but inherits all security considerations
+      from <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>, <span>[<a href="#RFC5884" class="cite xref">RFC5884</a>]</span>, <span>[<a href="#RFC7726" class="cite xref">RFC7726</a>]</span>,
+      <span>[<a href="#RFC8562" class="cite xref">RFC8562</a>]</span>, <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>, and <span>[<a href="#RFC6425" class="cite xref">RFC6425</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">
+      Also, BFD for P2MP MPLS LSPs <span class="bcp14">MUST</span> follow the requirements listed in <span><a href="https://rfc-editor.org/rfc/rfc4687#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC4687" class="cite xref">RFC4687</a>]</span> to avoid congestion
+      in the control plane or the data plane caused by the rate of generating BFD Control packets. An operator <span class="bcp14">SHOULD</span>
+      consider the amount of extra traffic generated by P2MP BFD when selecting the interval at which the
+      MultipointHead will transmit BFD Control packets. The operator <span class="bcp14">MAY</span> consider the size of the packet the MultipointHead transmits
+      periodically as using IP/UDP encapsulation, which adds up to 28 octets (more than 50% 
+      of the BFD Control packet length) compared to G-ACh encapsulation.<a href="#section-6-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-sec">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="iana-ipv6-addr-alloc-sec">
+<section id="section-7.1">
+        <h3 id="name-ipv6-special-purpose-addres">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-ipv6-special-purpose-addres" class="section-name selfRef">IPv6 Special-Purpose Address</a>
+        </h3>
+<p id="section-7.1-1">
+      IANA has allocated the following in the "IANA
+   IPv6 Special-Purpose Address Registry" <span>[<a href="#IANA-IPv6-REG" class="cite xref">IANA-IPv6-REG</a>]</span>:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-7.1-2">
+          <dt id="section-7.1-2.1">Address Block:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.2">100:0:0:1::/64<a href="#section-7.1-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.3">Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.4">Dummy IPv6 Prefix<a href="#section-7.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.5">RFC:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.6">RFC 9780<a href="#section-7.1-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.7">Allocation Date:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.8">2025-04<a href="#section-7.1-2.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.9">Termination Date:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.10">N/A<a href="#section-7.1-2.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.11">Source:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.12">True<a href="#section-7.1-2.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.13">Destination:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.14">False<a href="#section-7.1-2.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.15">Forwardable:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.16">False<a href="#section-7.1-2.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.17">Globally Reachable:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.18">False<a href="#section-7.1-2.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-2.19">Reserved-by-Protocol:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-2.20">False<a href="#section-7.1-2.20" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="iana-ach-sec">
+<section id="section-7.2">
+        <h3 id="name-mpls-generalized-associated">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-mpls-generalized-associated" class="section-name selfRef">MPLS Generalized Associated Channel (G-ACh) Type</a>
+        </h3>
+<p id="section-7.2-1">
+    IANA has allocated the following value in the "MPLS Generalized Associated Channel (G-ACh) Types" registry <span>[<a href="#IANA-G-ACh-TYPES" class="cite xref">IANA-G-ACh-TYPES</a>]</span>.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<span id="name-multipoint-bfd-session-g-ac"></span><div id="p2mp-ach-table">
+<table class="center" id="table-1">
+          <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-multipoint-bfd-session-g-ac" class="selfRef">Multipoint BFD Session G-ACh Type</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-center" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">0x0013</td>
+              <td class="text-center" rowspan="1" colspan="1">Multipoint BFD Session</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9780</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5586">[RFC5586]</dt>
+        <dd>
+<span class="refAuthor">Bocci, M., Ed.</span>, <span class="refAuthor">Vigoureux, M., Ed.</span>, and <span class="refAuthor">S. Bryant, Ed.</span>, <span class="refTitle">"MPLS Generic Associated Channel"</span>, <span class="seriesInfo">RFC 5586</span>, <span class="seriesInfo">DOI 10.17487/RFC5586</span>, <time datetime="2009-06" class="refDate">June 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5586">https://www.rfc-editor.org/info/rfc5586</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5880">[RFC5880]</dt>
+        <dd>
+<span class="refAuthor">Katz, D.</span> and <span class="refAuthor">D. Ward</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD)"</span>, <span class="seriesInfo">RFC 5880</span>, <span class="seriesInfo">DOI 10.17487/RFC5880</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5880">https://www.rfc-editor.org/info/rfc5880</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5883">[RFC5883]</dt>
+        <dd>
+<span class="refAuthor">Katz, D.</span> and <span class="refAuthor">D. Ward</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD) for Multihop Paths"</span>, <span class="seriesInfo">RFC 5883</span>, <span class="seriesInfo">DOI 10.17487/RFC5883</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5883">https://www.rfc-editor.org/info/rfc5883</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5884">[RFC5884]</dt>
+        <dd>
+<span class="refAuthor">Aggarwal, R.</span>, <span class="refAuthor">Kompella, K.</span>, <span class="refAuthor">Nadeau, T.</span>, and <span class="refAuthor">G. Swallow</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD) for MPLS Label Switched Paths (LSPs)"</span>, <span class="seriesInfo">RFC 5884</span>, <span class="seriesInfo">DOI 10.17487/RFC5884</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5884">https://www.rfc-editor.org/info/rfc5884</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5885">[RFC5885]</dt>
+        <dd>
+<span class="refAuthor">Nadeau, T., Ed.</span> and <span class="refAuthor">C. Pignataro, Ed.</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD) for the Pseudowire Virtual Circuit Connectivity Verification (VCCV)"</span>, <span class="seriesInfo">RFC 5885</span>, <span class="seriesInfo">DOI 10.17487/RFC5885</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5885">https://www.rfc-editor.org/info/rfc5885</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6425">[RFC6425]</dt>
+        <dd>
+<span class="refAuthor">Saxena, S., Ed.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Ali, Z.</span>, <span class="refAuthor">Farrel, A.</span>, <span class="refAuthor">Yasukawa, S.</span>, and <span class="refAuthor">T. Nadeau</span>, <span class="refTitle">"Detecting Data-Plane Failures in Point-to-Multipoint MPLS - Extensions to LSP Ping"</span>, <span class="seriesInfo">RFC 6425</span>, <span class="seriesInfo">DOI 10.17487/RFC6425</span>, <time datetime="2011-11" class="refDate">November 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6425">https://www.rfc-editor.org/info/rfc6425</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6790">[RFC6790]</dt>
+        <dd>
+<span class="refAuthor">Kompella, K.</span>, <span class="refAuthor">Drake, J.</span>, <span class="refAuthor">Amante, S.</span>, <span class="refAuthor">Henderickx, W.</span>, and <span class="refAuthor">L. Yong</span>, <span class="refTitle">"The Use of Entropy Labels in MPLS Forwarding"</span>, <span class="seriesInfo">RFC 6790</span>, <span class="seriesInfo">DOI 10.17487/RFC6790</span>, <time datetime="2012-11" class="refDate">November 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6790">https://www.rfc-editor.org/info/rfc6790</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7212">[RFC7212]</dt>
+        <dd>
+<span class="refAuthor">Frost, D.</span>, <span class="refAuthor">Bryant, S.</span>, and <span class="refAuthor">M. Bocci</span>, <span class="refTitle">"MPLS Generic Associated Channel (G-ACh) Advertisement Protocol"</span>, <span class="seriesInfo">RFC 7212</span>, <span class="seriesInfo">DOI 10.17487/RFC7212</span>, <time datetime="2014-06" class="refDate">June 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7212">https://www.rfc-editor.org/info/rfc7212</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7726">[RFC7726]</dt>
+        <dd>
+<span class="refAuthor">Govindan, V.</span>, <span class="refAuthor">Rajaraman, K.</span>, <span class="refAuthor">Mirsky, G.</span>, <span class="refAuthor">Akiya, N.</span>, and <span class="refAuthor">S. Aldrin</span>, <span class="refTitle">"Clarifying Procedures for Establishing BFD Sessions for MPLS Label Switched Paths (LSPs)"</span>, <span class="seriesInfo">RFC 7726</span>, <span class="seriesInfo">DOI 10.17487/RFC7726</span>, <time datetime="2016-01" class="refDate">January 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7726">https://www.rfc-editor.org/info/rfc7726</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8029">[RFC8029]</dt>
+        <dd>
+<span class="refAuthor">Kompella, K.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, <span class="refAuthor">Kumar, N.</span>, <span class="refAuthor">Aldrin, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"Detecting Multiprotocol Label Switched (MPLS) Data-Plane Failures"</span>, <span class="seriesInfo">RFC 8029</span>, <span class="seriesInfo">DOI 10.17487/RFC8029</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8029">https://www.rfc-editor.org/info/rfc8029</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8287">[RFC8287]</dt>
+        <dd>
+<span class="refAuthor">Kumar, N., Ed.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Akiya, N.</span>, <span class="refAuthor">Kini, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"Label Switched Path (LSP) Ping/Traceroute for Segment Routing (SR) IGP-Prefix and IGP-Adjacency Segment Identifiers (SIDs) with MPLS Data Planes"</span>, <span class="seriesInfo">RFC 8287</span>, <span class="seriesInfo">DOI 10.17487/RFC8287</span>, <time datetime="2017-12" class="refDate">December 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8287">https://www.rfc-editor.org/info/rfc8287</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8562">[RFC8562]</dt>
+        <dd>
+<span class="refAuthor">Katz, D.</span>, <span class="refAuthor">Ward, D.</span>, <span class="refAuthor">Pallagatti, S., Ed.</span>, and <span class="refAuthor">G. Mirsky, Ed.</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD) for Multipoint Networks"</span>, <span class="seriesInfo">RFC 8562</span>, <span class="seriesInfo">DOI 10.17487/RFC8562</span>, <time datetime="2019-04" class="refDate">April 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8562">https://www.rfc-editor.org/info/rfc8562</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8563">[RFC8563]</dt>
+        <dd>
+<span class="refAuthor">Katz, D.</span>, <span class="refAuthor">Ward, D.</span>, <span class="refAuthor">Pallagatti, S., Ed.</span>, and <span class="refAuthor">G. Mirsky, Ed.</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD) Multipoint Active Tails"</span>, <span class="seriesInfo">RFC 8563</span>, <span class="seriesInfo">DOI 10.17487/RFC8563</span>, <time datetime="2019-04" class="refDate">April 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8563">https://www.rfc-editor.org/info/rfc8563</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9026">[RFC9026]</dt>
+      <dd>
+<span class="refAuthor">Morin, T., Ed.</span>, <span class="refAuthor">Kebler, R., Ed.</span>, and <span class="refAuthor">G. Mirsky, Ed.</span>, <span class="refTitle">"Multicast VPN Fast Upstream Failover"</span>, <span class="seriesInfo">RFC 9026</span>, <span class="seriesInfo">DOI 10.17487/RFC9026</span>, <time datetime="2021-04" class="refDate">April 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9026">https://www.rfc-editor.org/info/rfc9026</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="IANA-G-ACh-TYPES">[IANA-G-ACh-TYPES]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"MPLS Generalized Associated Channel (G-ACh) Types"</span>, <span>&lt;<a href="https://www.iana.org/assignments/g-ach-parameters">https://www.iana.org/assignments/g-ach-parameters</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IANA-IPv6-REG">[IANA-IPv6-REG]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"IANA IPv6 Special-Purpose Address Registry"</span>, <span>&lt;<a href="https://www.iana.org/assignments/iana-ipv6-special-registry">https://www.iana.org/assignments/iana-ipv6-special-registry</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4291">[RFC4291]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span> and <span class="refAuthor">S. Deering</span>, <span class="refTitle">"IP Version 6 Addressing Architecture"</span>, <span class="seriesInfo">RFC 4291</span>, <span class="seriesInfo">DOI 10.17487/RFC4291</span>, <time datetime="2006-02" class="refDate">February 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4291">https://www.rfc-editor.org/info/rfc4291</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4687">[RFC4687]</dt>
+      <dd>
+<span class="refAuthor">Yasukawa, S.</span>, <span class="refAuthor">Farrel, A.</span>, <span class="refAuthor">King, D.</span>, and <span class="refAuthor">T. Nadeau</span>, <span class="refTitle">"Operations and Management (OAM) Requirements for Point-to-Multipoint MPLS Networks"</span>, <span class="seriesInfo">RFC 4687</span>, <span class="seriesInfo">DOI 10.17487/RFC4687</span>, <time datetime="2006-09" class="refDate">September 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4687">https://www.rfc-editor.org/info/rfc4687</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="Acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors sincerely appreciate the comments received from <span class="contact-name">Andrew Malis</span>, <span class="contact-name">Italo Busi</span>, and
+      <span class="contact-name">Shraddha Hegde</span>. The authors also appreciate the
+      thought-stimulating questions from <span class="contact-name">Carlos       Pignataro</span>.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Greg Mirsky</span></div>
+<div dir="auto" class="left"><span class="org">Ericsson</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gregimirsky@gmail.com" class="email">gregimirsky@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gyan Mishra</span></div>
+<div dir="auto" class="left"><span class="org">Verizon Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gyan.s.mishra@verizon.com" class="email">gyan.s.mishra@verizon.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Donald Eastlake 3rd</span></div>
+<div dir="auto" class="left"><span class="org">Independent</span></div>
+<div dir="auto" class="left"><span class="street-address">2386 Panoramic Circle</span></div>
+<div dir="auto" class="left">
+<span class="locality">Apopka</span>, <span class="region">FL</span> <span class="postal-code">32703</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:d3e3e3@gmail.com" class="email">d3e3e3@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
