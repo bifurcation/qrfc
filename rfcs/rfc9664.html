@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9664: An EDNS(0) Option to Negotiate Leases on DNS Updates</title>
+<meta content="Stuart Cheshire" name="author">
+<meta content="Ted Lemon" name="author">
+<meta content="
+       This document describes an EDNS(0) option that can be used between DNS
+      Update Requesters and authoritative DNS servers to include a lifetime (lease duration) in a DNS
+      Update or DNS Update Response, allowing a server to garbage collect stale Resource Records
+      that have been added by DNS Updates if they are not renewed. 
+    " name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="DNS Update" name="keyword">
+<meta content="9664" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9664.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-dnssd-update-lease-latest" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9664" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9664</td>
+<td class="center">DNS Update Lease</td>
+<td class="right">June 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Cheshire &amp; Lemon</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9664" class="eref">9664</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-06" class="published">June 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Cheshire</div>
+<div class="org">Apple Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Lemon</div>
+<div class="org">Apple Inc.</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9664</h1>
+<h1 id="title">An EDNS(0) Option to Negotiate Leases on DNS Updates</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document describes an EDNS(0) option that can be used between DNS
+      Update Requesters and authoritative DNS servers to include a lifetime (lease duration) in a DNS
+      Update or DNS Update Response, allowing a server to garbage collect stale Resource Records
+      that have been added by DNS Updates if they are not renewed.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9664">https://www.rfc-editor.org/info/rfc9664</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-terminology" class="internal xref">Conventions and Terminology Used in This Document</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-mechanisms" class="internal xref">Mechanisms</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-lease-update-request-and-re" class="internal xref">Lease Update Request and Response Format</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-types-of-lease-update-reque" class="internal xref">Types of Lease Update Requests</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-requester-behavior" class="internal xref">Requester Behavior</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-server-behavior" class="internal xref">Server Behavior</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-refresh-requests" class="internal xref">Refresh Requests</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-refresh-request-format" class="internal xref">Refresh Request Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-requester-behavior-2" class="internal xref">Requester Behavior</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1">
+                    <p id="section-toc.1-1.5.2.2.2.1.1"><a href="#section-5.2.1" class="auto internal xref">5.2.1</a>.  <a href="#name-coalescing-refresh-requests" class="internal xref">Coalescing Refresh Requests</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-server-behavior-2" class="internal xref">Server Behavior</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-retransmission-strategy" class="internal xref">Retransmission Strategy</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-garbage-collection" class="internal xref">Garbage Collection</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Dynamic Update in the Domain Name System (DNS Update) <span>[<a href="#RFC2136" class="cite xref">RFC2136</a>]</span> allows for a mapping from a persistent hostname to an
+      IP address that changes over time. This capability is particularly
+      beneficial to mobile hosts, whose IP addresses may frequently change
+      with location. However, the mobile nature of such hosts often means that
+      Resource Records (RRs) added using DNS Update are not properly
+      deleted. For instance, consider a mobile user who publishes address RRs
+      via DNS Update. If this user moves their laptop out of range of the
+      Wi-Fi access point, the address RR containing stale information may
+      remain on the authoritative DNS server indefinitely.  Thus, an extension
+      to DNS Update is required to tell the server to automatically delete RRs
+      after a period of time if they are not refreshed.<a href="#section-1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-conventions-and-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-terminology" class="section-name selfRef">Conventions and Terminology Used in This Document</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span>
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<section id="section-2.1">
+        <h3 id="name-terminology">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-2.1-1">
+          <dt id="section-2.1-1.1">DNS-SD:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.2">DNS-based Service Discovery <span>[<a href="#RFC6763" class="cite xref">RFC6763</a>]</span><a href="#section-2.1-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.3">EDNS(0):</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.4">Extension Mechanisms for DNS <span>[<a href="#RFC6891" class="cite xref">RFC6891</a>]</span><a href="#section-2.1-1.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.5">Update Lease option:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.6">Update Lease EDNS(0) option<a href="#section-2.1-1.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.7">Lease:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.8">An agreement by an authoritative DNS server to continue to publish a record from the time of registration
+   until the lease duration has elapsed and then stop publishing it<a href="#section-2.1-1.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.9">Lease Duration:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.10">The time between the start and end of a lease<a href="#section-2.1-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.11">Lease Update Request:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.12">DNS Update Request containing an Update Lease option<a href="#section-2.1-1.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.13">Lease Update Response:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.14">DNS Update Response containing an Update Lease option<a href="#section-2.1-1.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.15">RR:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.16">Resource Record<a href="#section-2.1-1.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.17">Registration Request:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.18">A Lease Update Request that is constructed with the purpose of adding new
+   information that is not thought to already be present on the authoritative DNS server<a href="#section-2.1-1.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.19">Registration:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.20">The result of a successful Registration Request<a href="#section-2.1-1.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.21">Refresh Request:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.22">A Lease Update Request that extends the lease duration on an existing Registration<a href="#section-2.1-1.22" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.1-1.23">Refresh:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-1.24">The result of a successful Refresh Request<a href="#section-2.1-1.24" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="section-3">
+      <h2 id="name-mechanisms">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-mechanisms" class="section-name selfRef">Mechanisms</a>
+      </h2>
+<p id="section-3-1">The Update Lease option is included in a standard DNS Update Request <span>[<a href="#RFC2136" class="cite xref">RFC2136</a>]</span> within an EDNS(0) OPT pseudo-RR <span>[<a href="#RFC6891" class="cite xref">RFC6891</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+</section>
+<div id="update">
+<section id="section-4">
+      <h2 id="name-lease-update-request-and-re">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-lease-update-request-and-re" class="section-name selfRef">Lease Update Request and Response Format</a>
+      </h2>
+<p id="section-4-1">
+      Lease Update Requests and Responses are formatted as standard DNS Update
+      messages <span>[<a href="#RFC2136" class="cite xref">RFC2136</a>]</span>. Such messages <span class="bcp14">MUST</span>
+      include the EDNS(0) OPT RR <span>[<a href="#RFC6891" class="cite xref">RFC6891</a>]</span>.  This OPT RR
+      <span class="bcp14">MUST</span> include an Update Lease EDNS(0) Option as shown
+      below:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="lease_opt">
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Field Name</th>
+            <th class="text-left" rowspan="1" colspan="1">Field Type</th>
+            <th class="text-left" rowspan="1" colspan="1">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">OPTION-CODE</td>
+            <td class="text-left" rowspan="1" colspan="1">u_int16_t</td>
+            <td class="text-left" rowspan="1" colspan="1">UPDATE-LEASE (2)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">OPTION-LENGTH</td>
+            <td class="text-left" rowspan="1" colspan="1">u_int16_t</td>
+            <td class="text-left" rowspan="1" colspan="1">4 (LEASE) or 8 (LEASE + KEY-LEASE)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">LEASE</td>
+            <td class="text-left" rowspan="1" colspan="1">u_int32_t</td>
+            <td class="text-left" rowspan="1" colspan="1">desired lease duration (Lease Update Request) or granted lease duration (Lease Update response), in seconds</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">KEY-LEASE</td>
+            <td class="text-left" rowspan="1" colspan="1">u_int32_t</td>
+            <td class="text-left" rowspan="1" colspan="1">optional desired (or granted) lease duration for KEY RRs, in seconds</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<p id="section-4-3">Lease Update Requests contain, in the LEASE field of the OPT RDATA, an
+      unsigned 32-bit integer indicating the lease duration in seconds, desired
+      by the Requester, represented in network (big-endian) byte order.
+      In Lease Update Responses, this field contains the actual
+      lease duration granted by the authoritative DNS server. The lease durations granted by the
+      server may be less than, greater than, or equal to the value
+      requested by the Requester.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">There are two variants of the Update Lease option:
+      The 4-byte variant and the 8-byte variant.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">In the 4-byte variant, the LEASE indicated in the
+      Update Lease option applies to all RRs in the Update section.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">In the 8-byte variant, the Update Lease communicates two lease durations.
+      The LEASE indicated in the Update Lease option applies to all RRs in the
+      Update section <em>except</em> for KEY RRs.  The KEY-LEASE indicated in the Update Lease
+      option applies to KEY RRs in the Update section.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">More information about how the two variants are used is given in
+      <a href="#server-behavior" class="auto internal xref">Section 4.3</a>.<a href="#section-4-7" class="pilcrow">¶</a></p>
+<p id="section-4-8">
+ KEY RRs are given a special lease duration because these RRs are used
+ in the DNS-SD Service Registration Protocol <span>[<a href="#RFC9665" class="cite xref">RFC9665</a>]</span> to reserve
+ a name (or names) when the service is not present.<a href="#section-4-8" class="pilcrow">¶</a></p>
+<p id="section-4-9">In the case of a KEY RR and some other RR, obviously the KEY lease duration applies to
+      the KEY RR, and the lease duration applies to the other RR. If more than one RR that is not
+      a KEY RR is added by the Lease Update Request, the lease duration (not the KEY lease duration) is applied to all such
+      RRs. RRs that are removed are permanently removed.<a href="#section-4-9" class="pilcrow">¶</a></p>
+<div id="update-refresh">
+<section id="section-4.1">
+        <h3 id="name-types-of-lease-update-reque">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-types-of-lease-update-reque" class="section-name selfRef">Types of Lease Update Requests</a>
+        </h3>
+<p id="section-4.1-1">This document describes two types of Lease Update Requests: Registrations and
+ Refreshes. A Registration Request is a Lease Update Request that is intended to
+ add information not already present on the authoritative DNS server. A Refresh Request is
+ intended simply to renew the lease on a previous Registration without
+ changing anything. Registrations and Refreshes are both Lease Update Requests, so the term
+ "Lease Update Request" is used to specify behavior that is the same for both
+ types of DNS Updates.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">In some cases, it may be necessary to add new information without
+ removing old information.  For the purpose of this document, such
+ Lease Update Requests are Registrations, although in effect, they
+ may also refresh whatever information is unchanged from a previous
+ registration.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="requester">
+<section id="section-4.2">
+        <h3 id="name-requester-behavior">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-requester-behavior" class="section-name selfRef">Requester Behavior</a>
+        </h3>
+<p id="section-4.2-1">DNS Update Requesters <span class="bcp14">MUST</span> send an Update Lease
+ option with any DNS Update that updates RRs that are not intended to be present
+ indefinitely. The Update Lease option <span class="bcp14">SHOULD</span> specify a
+ lease duration that is no shorter than 1800 seconds (30
+ minutes). Requesters <span class="bcp14">MAY</span> specify a shorter lease duration if
+ they anticipate that the RRs being updated will change more frequently than
+ every 30 minutes.  Requesters that expect the updated RRs to be
+ relatively static <span class="bcp14">SHOULD</span> request appropriately longer
+ lease durations.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">If the DNS Response received by the Requester does not include an
+ Update Lease option, this is an indication that the authoritative DNS server does
+ not support the Update Lease option. In this case, the Requester
+ <span class="bcp14">SHOULD</span> continue sending Refresh Requests (see below) as
+ if the server had returned an identical Update Lease option in its
+ Response.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">If the DNS Response does include an Update Lease option, the
+ Requester <span class="bcp14">MUST</span> use the durations returned in this
+ option when determining when to send Refresh Requests. This is true
+ both if the durations returned by the server are shorter and if they
+ are longer.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">When sending a Registration Request, the Requester <span class="bcp14">MUST</span>
+ delay the initial transmission by a random amount of time across the
+ range of 0-3000 milliseconds, with a granularity of no more than 10
+ milliseconds. This prevents synchronization of multiple devices of the
+ same type at a site upon recovery from a power failure. This
+ requirement applies only to the initial Registration Request on startup; since
+ Refresh Requests include a random factor as well, any synchronization that
+ occurs after such an event should quickly randomize.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<aside id="section-4.2-5">
+          <p id="section-4.2-5.1">The 10 ms granularity is a scheduling requirement intended to
+   result in an even spread of Requests so that every Request doesn't come an exact number
+   of seconds after startup. This requirement should not be construed as requiring anything
+   of the link layer on which the packet is transmitted: the link layer may well impose its
+   own constraints on the timing at which a message is sent, and this document does not
+   claim to override such constraints.<a href="#section-4.2-5.1" class="pilcrow">¶</a></p>
+</aside>
+<aside id="section-4.2-6">
+          <p id="section-4.2-6.1">The use of a 3000 ms (3-second) random delay as opposed to some
+   other random delay is to allow for enough time to meaningfully spread the load when
+   many devices renew at once, without delaying so long that the delay in discovery of
+   devices becomes obvious to an end user. A 3-second random delay means that if there are,
+   for example, 100 devices, and the random number generator spread is even, we would have
+   one renewal every 30 ms.  In practice, on relatively constrained devices acting as Service Registration Protocol (SRP)
+   servers, we are seeing the processing time for an SRP registration taking on the order
+   of 7 ms, so this seems reasonable.<a href="#section-4.2-6.1" class="pilcrow">¶</a></p>
+</aside>
+</section>
+</div>
+<div id="server-behavior">
+<section id="section-4.3">
+        <h3 id="name-server-behavior">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-server-behavior" class="section-name selfRef">Server Behavior</a>
+        </h3>
+<p id="section-4.3-1">Authoritative DNS servers implementing the Update Lease option
+ <span class="bcp14">MUST</span> include an Update Lease option in response to any
+ successful DNS Update (RCODE=0) that includes an Update Lease option.
+ Servers <span class="bcp14">MAY</span> return lease durations different from those
+ specified by the Requester,
+ granting longer leases to reduce network traffic due to Refreshes
+ or shorter leases to reduce the lifetime of stale data.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">Although both the 4-byte and 8-byte variants are valid on
+        both requesters and servers, older (pre-standard) requesters and servers may exist
+        that support only the 4-byte variant. Therefore, requesters and servers
+        that (as required by this specification) support both variants
+        must account for the possibility that the peer with which they are communicating
+        may be an older implementation that supports only the 4-byte variant.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">A server that receives an 8-byte variant from a requester
+ <span class="bcp14">MUST</span> respond with an 8-byte variant giving the granted lease times.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-4">A server that receives a 4-byte variant from a requester
+ <span class="bcp14">MUST</span> treat the 4-byte variant as
+ specifying both the lease duration and the KEY lease duration
+ and <span class="bcp14">MUST</span> respond with a 4-byte variant.
+ In this case, the key and the other RRs expire at the same time.<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<p id="section-4.3-5">A requester that receives a 4-byte variant from a server when it sent
+ an 8-byte variant in its request <span class="bcp14">MUST</span> treat the 4-byte variant as
+ specifying both the lease duration and the KEY lease duration.<a href="#section-4.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="refresh">
+<section id="section-5">
+      <h2 id="name-refresh-requests">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-refresh-requests" class="section-name selfRef">Refresh Requests</a>
+      </h2>
+<p id="section-5-1">A Refresh Request is a DNS Update Request that is sent to the server after an initial
+      DNS Update has been sent in order to prevent the update's RRs from being garbage
+      collected.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<section id="section-5.1">
+        <h3 id="name-refresh-request-format">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-refresh-request-format" class="section-name selfRef">Refresh Request Format</a>
+        </h3>
+<p id="section-5.1-1">Refresh Requests and their corresponding responses are formatted
+        like Update Lease Requests and Update Lease Responses (see <a href="#update" class="auto internal xref">Section 4</a>). The Refresh Request is
+        constructed with the assumption that the previous Registration or
+        Refresh is still in effect. In the case that the RRs added in a
+        previous update were for some reason garbage collected (e.g., because
+        of a server reboot that resulted in loss of state), the Refresh
+        Request will result in those RRs being added again.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">The Refresh Request <span class="bcp14">SHOULD NOT</span> include any DNS Update
+ prerequisites that will fail if the Requester's previous Registration
+ or Refresh is still in effect. It also <span class="bcp14">SHOULD NOT</span>
+ include prerequisites that would fail if the RRs affected by the
+ previous Registration or Refresh are no longer present; that is, the
+ Refresh Request should also work as a Registration Request.  There may be cases where
+ this is not possible; in which case, the response from the server can
+ be used to determine how to proceed when the Refresh Request fails.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">A Lease Update Request that changes the authoritative DNS server
+ state resulting from a previous Refresh or Registration is a
+ Registration Request, not a Refresh Request.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">In a Refresh Request, the Update Lease option contains the desired
+ new lease duration, and in the corresponding response, the Update
+ Lease option contains the actual granted lease. The lease duration
+ provided in LEASE in the Update Lease option applies to all RRs in the
+ Update section of the Refresh Request, except that when the 8-byte
+ Update Lease variant is sent, the duration specified in KEY-LEASE
+ applies to any KEY RRs included in the Update section.<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.2">
+        <h3 id="name-requester-behavior-2">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-requester-behavior-2" class="section-name selfRef">Requester Behavior</a>
+        </h3>
+<p id="section-5.2-1">A Requester that intends for its RRs from a previous Registration or Refresh to remain active <span class="bcp14">MUST</span>
+ send a Refresh Request before the lease expires; otherwise, the RRs
+ will be removed by the server.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">In order to prevent Registrations expiring, Requesters
+ <span class="bcp14">MUST</span> refresh them. When
+ a Lease Update Request succeeds, the requester computes a time limit that is 80%
+ of the lease duration plus a random offset between 0% and 5% of the lease
+ duration. The random offset is to prevent refreshes from being
+ synchronized. When this time limit has expired, the requester
+ <span class="bcp14">MUST</span> send a Refresh Request if the data in the initial
+ Registration should continue to be advertised.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">For Refresh Requests, the server is expected to return an Update
+ Lease option, if supported, just as with the initial Registration Request. As
+ with the Registration Request, the Requester <span class="bcp14">MUST</span> use the
+ durations returned by the server in the Lease Update Response when determining when to send the
+ next Refresh Request.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">When sending Refresh Requests, the Requester <span class="bcp14">MUST</span>
+ include an Update Lease option, as it did in the initial Registration
+ Request. The Update Lease option <span class="bcp14">MAY</span> either specify the
+ same durations as in the initial Registration Request or use the
+ values returned by the server in the previous Lease Update Response or
+ other desired values as appropriate.  As with responses to
+ Registration Requests, the Requester <span class="bcp14">MUST</span> use the lease
+ durations returned by the server in the response when determining when
+ to send the next Refresh Request.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2-5">If the Requester sends a Refresh Request message and
+ does not receive a response from the authoritative DNS server,
+ then the Requester should implement a reasonable retry strategy
+ to attempt to refresh the record registrations before they expire.
+ Given that 15% - 20% of the lease lifetime still remains,
+ these retransmissions do not need to be overly aggressive.
+ For example, the Requester could retry nine more times,
+ spaced uniformly at equal intervals from the time of the first
+ failed Refresh attempt until the expiration time of the records.
+ After the expiration time of the records, the Refresh Request
+ effectively turns into a new Registration Request, and further
+ retransmissions after this proceed
+ as described in <a href="#retransmission" class="auto internal xref">Section 6</a>.<a href="#section-5.2-5" class="pilcrow">¶</a></p>
+<section id="section-5.2.1">
+          <h4 id="name-coalescing-refresh-requests">
+<a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-coalescing-refresh-requests" class="section-name selfRef">Coalescing Refresh Requests</a>
+          </h4>
+<p id="section-5.2.1-1">If the Requester has performed multiple Registrations with a single server for different RRs,
+          the Requester <span class="bcp14">MAY</span> send a Refresh Request containing RRs from all such Registrations to that server in a single
+          Refresh Request. This effectively places all RRs for a Requester on the same expiration
+          schedule, reducing network traffic due to Refreshes.<a href="#section-5.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.2.1-2">In doing so, the Requester includes in the Refresh Request all existing RRs previously successfully registered on
+   the server, including those not yet close to expiration, so long as at least one
+   RR updated in the Refresh Request has elapsed at least 75% of its original lease duration. If the
+   Requester uses UDP, the Requester <span class="bcp14">MUST NOT</span> coalesce Refresh Requests if doing so would
+   cause truncation of the Request; in this case, the Requester either sends multiple
+   Requests or uses TCP to send the complete Refresh Request at once.<a href="#section-5.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.2.1-3">Requesters <span class="bcp14">SHOULD NOT</span> send a Refresh Request when all of the RRs in the
+   Refresh Request would have more than 50% of their lease duration remaining before expiry. However,
+   there may be cases where the Requester needs to send an early Refresh Request, and it <span class="bcp14">MAY</span> do
+   so. For example, a power-constrained (sleepy) device may need to send a Refresh Request when the radio
+   is powered so as to avoid having to power it up later.<a href="#section-5.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.2.1-4">Another case where this may be needed is when the lease duration registered with the
+   server is no longer appropriate and the Requester wishes to negotiate a different
+   lease duration. However, in this case, if the server does not honor the requested
+   lease duration in its response, the Requester <span class="bcp14">MUST NOT</span> retry this negotiation.<a href="#section-5.2.1-4" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-5.3">
+        <h3 id="name-server-behavior-2">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-server-behavior-2" class="section-name selfRef">Server Behavior</a>
+        </h3>
+<p id="section-5.3-1">Upon receiving a valid Refresh Request, the server <span class="bcp14">MUST</span> send an acknowledgment. This
+        acknowledgment is a Lease Update Response as described in <a href="#update" class="auto internal xref">Section 4</a> and contains the new lease duration of the Registration
+        being Refreshed.  The server <span class="bcp14">MUST NOT</span> increment the serial number of a zone
+        as the result of a Refresh Request if the operation does not result in any change to the zone contents.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">However, the server's state may not match what the requester expects.  In this case, a
+ Refresh Request may actually appear to be a Registration Request, from the server's perspective. If the
+ Refresh Request changes the contents of the zone, the server <span class="bcp14">MUST</span> update the zone serial
+ number.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="retransmission">
+<section id="section-6">
+      <h2 id="name-retransmission-strategy">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-retransmission-strategy" class="section-name selfRef">Retransmission Strategy</a>
+      </h2>
+<p id="section-6-1">The DNS protocol, including DNS updates, can operate over UDP or TCP. For communication using UDP, reliable
+      transmission must be guaranteed by retransmitting when a DNS UDP message is not acknowledged in a
+      reasonable amount of time.
+      Section <a href="https://rfc-editor.org/rfc/rfc1035#section-4.2.1" class="relref">4.2.1</a>
+      of the DNS specification <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span>
+      provides some guidance on this topic, as does
+      Section <a href="https://rfc-editor.org/rfc/rfc1536#section-1" class="relref">1</a>
+      of the IETF's guide to common DNS implementation errors <span>[<a href="#RFC1536" class="cite xref">RFC1536</a>]</span>.
+      Section <a href="https://rfc-editor.org/rfc/rfc8085#section-3.1.3" class="relref">3.1.3</a>
+      of the UDP Usage Guidelines <span>[<a href="#RFC8085" class="cite xref">RFC8085</a>]</span>
+      also provides useful guidance that is particularly relevant to DNS.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-7">
+      <h2 id="name-garbage-collection">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-garbage-collection" class="section-name selfRef">Garbage Collection</a>
+      </h2>
+<p id="section-7-1">If the lease duration of an RR elapses without being refreshed, the authoritative DNS server
+      <span class="bcp14">MUST NOT</span> return that RR in answers to queries. The server <span class="bcp14">MAY</span> delete that RR
+      from its database. The lease durations returned by the server to the Requester are used
+      in determining when the lease on an RR has expired.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">For all RRs other than a KEY RR included in a Lease Update Request, the
+      lease duration is the LEASE value in the Update Lease option. For KEY RRs, if the
+      optional KEY-LEASE value was included, this duration is used rather than the duration
+      specified in the LEASE. If the KEY-LEASE was not specified, the duration specified in the LEASE is
+      used for all RRs in the Lease Update Request.<a href="#section-7-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">Section <a href="https://rfc-editor.org/rfc/rfc2136#section-8" class="relref">8</a> of
+      the DNS Update specification <span>[<a href="#RFC2136" class="cite xref">RFC2136</a>]</span> describes problems that can occur
+      around DNS updates.  Servers implementing this specification should follow these recommendations.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Several additional issues can arise when relying on the Update Lease option.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">First, a
+      too-long lease duration is not much different from no lease duration: the RRs associated with
+      such a Registration will effectively never be cleaned up. Servers implementing Update Lease
+      should have a default upper bound on the maximum acceptable value both for the LEASE and
+      KEY-LEASE values sent by the requester.
+      Default values for these limits of 24 hours and 7 days, respectively,
+      are <span class="bcp14">RECOMMENDED</span>.
+      Servers <span class="bcp14">MAY</span> provide a way for the operator to change this upper limit.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">The second issue is that a too-short lease can result in increased server load as
+      Requesters rapidly renew such Registrations. A delay in renewing could result in the registered RRs being
+      removed prematurely.  Servers implementing Update Lease <span class="bcp14">MUST</span> have a default minimum lease
+      duration that avoids this issue.  A minimum of 30 seconds for both the LEASE
+      and KEY-LEASE durations is <span class="bcp14">RECOMMENDED</span>.
+      However, in most cases, much longer lease durations (for example, an hour)
+      <span class="bcp14">SHOULD</span> be used.
+      Servers <span class="bcp14">MAY</span> provide a way for the operator to change this lower limit.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">There may be some cost associated with renewing leases. A malicious
+      (or buggy) requester could renew at a high rate in order to overload the
+      server more than it would be overloaded by query traffic. This risk is
+      present for an authoritative server handling normal (no-lease) DNS Updates as well.
+      Servers should follow established
+      industry best practices to guard against flooding attacks,
+      both for malicious flooding of DNS messages over UDP
+      and for similar flooding attacks using TCP
+      <span>[<a href="#SYN" class="cite xref">SYN</a>]</span> <span>[<a href="#RFC4953" class="cite xref">RFC4953</a>]</span>.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<p id="section-8-6">Some authentication strategy should be used when accepting DNS
+      updates.  Shared secret <span>[<a href="#RFC8945" class="cite xref">RFC8945</a>]</span> or public key signing
+      (e.g., SIG(0) <span>[<a href="#RFC2931" class="cite xref">RFC2931</a>]</span>) should be required. Keys should
+      have limited authority: compromise of a key should not result in
+      compromise of the entire contents of one or more zones managed by the
+      server. Key management strategy is out of scope for this document.
+      Service Registration Protocol <span>[<a href="#RFC9665" class="cite xref">RFC9665</a>]</span>
+      uses DNS Update Leases with "First Come, First Served Naming" rather
+      than an explicit trust establishment process to confer update
+      permission to a set of RRs.<a href="#section-8-6" class="pilcrow">¶</a></p>
+</section>
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">IANA has updated the "DNS EDNS0 Option Codes (OPT)" registry <span>[<a href="#EDNS0Reg" class="cite xref">EDNS0Reg</a>]</span> as regards value 2 as follows:<a href="#section-9-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-9-2">
+        <dt id="section-9-2.1">Value:</dt>
+        <dd style="margin-left: 1.5em" id="section-9-2.2">2<a href="#section-9-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-9-2.3">Name:</dt>
+        <dd style="margin-left: 1.5em" id="section-9-2.4">Update Lease<a href="#section-9-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-9-2.5">Status:</dt>
+        <dd style="margin-left: 1.5em" id="section-9-2.6">Standard<a href="#section-9-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-9-2.7">Reference:</dt>
+        <dd style="margin-left: 1.5em" id="section-9-2.8">RFC 9664<a href="#section-9-2.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1035">[RFC1035]</dt>
+        <dd>
+<span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - implementation and specification"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1035</span>, <span class="seriesInfo">DOI 10.17487/RFC1035</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1035">https://www.rfc-editor.org/info/rfc1035</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2136">[RFC2136]</dt>
+        <dd>
+<span class="refAuthor">Vixie, P., Ed.</span>, <span class="refAuthor">Thomson, S.</span>, <span class="refAuthor">Rekhter, Y.</span>, and <span class="refAuthor">J. Bound</span>, <span class="refTitle">"Dynamic Updates in the Domain Name System (DNS UPDATE)"</span>, <span class="seriesInfo">RFC 2136</span>, <span class="seriesInfo">DOI 10.17487/RFC2136</span>, <time datetime="1997-04" class="refDate">April 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2136">https://www.rfc-editor.org/info/rfc2136</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6891">[RFC6891]</dt>
+        <dd>
+<span class="refAuthor">Damas, J.</span>, <span class="refAuthor">Graff, M.</span>, and <span class="refAuthor">P. Vixie</span>, <span class="refTitle">"Extension Mechanisms for DNS (EDNS(0))"</span>, <span class="seriesInfo">STD 75</span>, <span class="seriesInfo">RFC 6891</span>, <span class="seriesInfo">DOI 10.17487/RFC6891</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6891">https://www.rfc-editor.org/info/rfc6891</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1536">[RFC1536]</dt>
+        <dd>
+<span class="refAuthor">Kumar, A.</span>, <span class="refAuthor">Postel, J.</span>, <span class="refAuthor">Neuman, C.</span>, <span class="refAuthor">Danzig, P.</span>, and <span class="refAuthor">S. Miller</span>, <span class="refTitle">"Common DNS Implementation Errors and Suggested Fixes"</span>, <span class="seriesInfo">RFC 1536</span>, <span class="seriesInfo">DOI 10.17487/RFC1536</span>, <time datetime="1993-10" class="refDate">October 1993</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1536">https://www.rfc-editor.org/info/rfc1536</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2931">[RFC2931]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refTitle">"DNS Request and Transaction Signatures ( SIG(0)s )"</span>, <span class="seriesInfo">RFC 2931</span>, <span class="seriesInfo">DOI 10.17487/RFC2931</span>, <time datetime="2000-09" class="refDate">September 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2931">https://www.rfc-editor.org/info/rfc2931</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4953">[RFC4953]</dt>
+        <dd>
+<span class="refAuthor">Touch, J.</span>, <span class="refTitle">"Defending TCP Against Spoofing Attacks"</span>, <span class="seriesInfo">RFC 4953</span>, <span class="seriesInfo">DOI 10.17487/RFC4953</span>, <time datetime="2007-07" class="refDate">July 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4953">https://www.rfc-editor.org/info/rfc4953</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6763">[RFC6763]</dt>
+        <dd>
+<span class="refAuthor">Cheshire, S.</span> and <span class="refAuthor">M. Krochmal</span>, <span class="refTitle">"DNS-Based Service Discovery"</span>, <span class="seriesInfo">RFC 6763</span>, <span class="seriesInfo">DOI 10.17487/RFC6763</span>, <time datetime="2013-02" class="refDate">February 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6763">https://www.rfc-editor.org/info/rfc6763</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8085">[RFC8085]</dt>
+        <dd>
+<span class="refAuthor">Eggert, L.</span>, <span class="refAuthor">Fairhurst, G.</span>, and <span class="refAuthor">G. Shepherd</span>, <span class="refTitle">"UDP Usage Guidelines"</span>, <span class="seriesInfo">BCP 145</span>, <span class="seriesInfo">RFC 8085</span>, <span class="seriesInfo">DOI 10.17487/RFC8085</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8085">https://www.rfc-editor.org/info/rfc8085</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8945">[RFC8945]</dt>
+        <dd>
+<span class="refAuthor">Dupont, F.</span>, <span class="refAuthor">Morris, S.</span>, <span class="refAuthor">Vixie, P.</span>, <span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Gudmundsson, O.</span>, and <span class="refAuthor">B. Wellington</span>, <span class="refTitle">"Secret Key Transaction Authentication for DNS (TSIG)"</span>, <span class="seriesInfo">STD 93</span>, <span class="seriesInfo">RFC 8945</span>, <span class="seriesInfo">DOI 10.17487/RFC8945</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8945">https://www.rfc-editor.org/info/rfc8945</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9665">[RFC9665]</dt>
+        <dd>
+<span class="refAuthor">Lemon, T.</span> and <span class="refAuthor">S. Cheshire</span>, <span class="refTitle">"Service Registration Protocol for DNS-Based Service Discovery"</span>, <span class="seriesInfo">RFC 9665</span>, <span class="seriesInfo">DOI 10.17487/RFC9665</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9665">https://www.rfc-editor.org/info/rfc9665</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="EDNS0Reg">[EDNS0Reg]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"DNS EDNS0 Option Codes (OPT)"</span>, <span>&lt;<a href="https://www.iana.org/assignments/dns-parameters">https://www.iana.org/assignments/dns-parameters</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SYN">[SYN]</dt>
+      <dd>
+<span class="refAuthor">Eddy, W.</span>, <span class="refTitle">"Defenses Against TCP SYN Flooding Attacks"</span>, <span class="refContent">The Internet Protocol Journal</span>, <span class="refContent">Cisco Systems</span>, <span class="refContent">Volume 9</span>, <span class="refContent">Number 4</span>, <time datetime="2006-12" class="refDate">December 2006</time>, <span>&lt;<a href="https://www.cisco.com/web/about/ac123/ac147/archived_issues/ipj_9-4/ipj_9-4.pdf">https://www.cisco.com/web/about/ac123/ac147/archived_issues/ipj_9-4/ipj_9-4.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">Thanks to <span class="contact-name">Marc Krochmal</span> and <span class="contact-name">Kiren Sekar</span> for their work in 2006 on the precursor to this
+      document.  Thanks also to <span class="contact-name">Roger Pantos</span> and
+      <span class="contact-name">Chris Sharp</span> for their contributions. Thanks to
+      <span class="contact-name">Chris Box</span>, <span class="contact-name">Esko Dijk</span>,
+      <span class="contact-name">Jonathan Hui</span>, <span class="contact-name">Peter van       Dijk</span>, <span class="contact-name">Abtin Keshvarzian</span>, <span class="contact-name">Nathan Dyck</span>, <span class="contact-name">Steve Hanna</span>, <span class="contact-name">Gabriel Montenegro</span>, <span class="contact-name">Kangping Dong</span>,
+      and <span class="contact-name">Tim Wicinski</span> for their working group reviews
+      of this document.  Thanks to <span class="contact-name">David Dong</span>, <span class="contact-name">Olafur Gudmundsson</span>, <span class="contact-name">Brian Trammel</span>,
+      and <span class="contact-name">Shivan Sahib</span> for their directorate reviews and
+      IANA reviews.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Stuart Cheshire</span></div>
+<div dir="auto" class="left"><span class="org">Apple Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">One Apple Park Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">Cupertino</span>, <span class="region">CA</span> <span class="postal-code">95014</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+1%20408%20974%203207" class="tel">+1 408 974 3207</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:cheshire@apple.com" class="email">cheshire@apple.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ted Lemon</span></div>
+<div dir="auto" class="left"><span class="org">Apple Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">P.O. Box 958</span></div>
+<div dir="auto" class="left">
+<span class="locality">Brattleboro</span>, <span class="region">VT</span> <span class="postal-code">05302</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mellon@fugue.com" class="email">mellon@fugue.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
