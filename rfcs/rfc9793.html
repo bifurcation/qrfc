@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9793: BGP Extensions for Bit Index Explicit Replication (BIER)</title>
+<meta content="Xiaohu Xu" name="author">
+<meta content="Mach(Guoyi) Chen" name="author">
+<meta content="Keyur Patel" name="author">
+<meta content="IJsbrand Wijnands" name="author">
+<meta content="Tony Przygienda" name="author">
+<meta content="Zhaohui Zhang" name="author">
+<meta content="
+       Bit Index Explicit Replication (BIER) is a multicast forwarding
+      architecture that doesn't require an explicit tree-building protocol
+      and doesn't require intermediate routers to maintain per-tree multicast
+      states. Some BIER-specific information and states, which are only in
+      proportion to the number of BIER routers but not per-tree, do need to be advertised,
+      calculated, and maintained. This document describes BGP extensions for
+      advertising the BIER information and methods for calculating BIER states
+   based on the advertisements. 
+    " name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="9793" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9793.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-bier-idr-extensions-19" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9793" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9793</td>
+<td class="center">BGP Extensions for BIER</td>
+<td class="right">June 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Xu, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9793" class="eref">9793</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-06" class="published">June 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">X. Xu</div>
+<div class="org">China Mobile</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Chen</div>
+<div class="org">Huawei</div>
+</div>
+<div class="author">
+      <div class="author-name">K. Patel</div>
+<div class="org">Arrcus, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">IJ. Wijnands</div>
+<div class="org">Individual</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Przygienda</div>
+<div class="org">Juniper</div>
+</div>
+<div class="author">
+      <div class="author-name">Z. Zhang, <span class="editor">Ed.</span>
+</div>
+<div class="org">Juniper</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9793</h1>
+<h1 id="title">BGP Extensions for Bit Index Explicit Replication (BIER)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Bit Index Explicit Replication (BIER) is a multicast forwarding
+      architecture that doesn't require an explicit tree-building protocol
+      and doesn't require intermediate routers to maintain per-tree multicast
+      states. Some BIER-specific information and states, which are only in
+      proportion to the number of BIER routers but not per-tree, do need to be advertised,
+      calculated, and maintained. This document describes BGP extensions for
+      advertising the BIER information and methods for calculating BIER states
+   based on the advertisements.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9793">https://www.rfc-editor.org/info/rfc9793</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-bier-path-attribute" class="internal xref">BIER Path Attribute</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-bier-mpls-encapsulation-sub" class="internal xref">BIER MPLS Encapsulation Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-bier-non-mpls-encapsulation" class="internal xref">BIER Non-MPLS Encapsulation Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-bier-nexthop-sub-tlv" class="internal xref">BIER Nexthop Sub-TLV</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-originating-propagating-upd" class="internal xref">Originating/Propagating/Updating the BIER Attribute</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-bift-calculation-with-bgp-s" class="internal xref">BIFT Calculation with BGP Signaling</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-example-of-bier-nexthop-usa" class="internal xref">Example of BIER Nexthop Usage and Handling</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Bit Index Explicit Replication (BIER) <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span> is a multicast
+      forwarding architecture that doesn't require an explicit tree-building
+      protocol and doesn't require intermediate routers to maintain per-tree
+      multicast states. It supports both direct and tunneled BIER forwarding.
+   This document describes BGP extensions for advertising the BIER
+   information and methods for calculating BIER states based on the
+   advertisements. More
+      specifically, in this document, we define a new optional
+      transitive BGP attribute, referred to as the "BIER attribute", to convey
+      the BIER-specific information such as Bit-Forwarding Router Identifier
+      (BFR-ID), BitStringLength (BSL), and so on. The signaling is to be
+   used in a single Administrative Domain (AD), and <a href="#op" class="auto internal xref">Section 7</a> specifies
+   procedures to prevent the BIER attribute from "leaking out" of the domain.<a href="#section-1-1" class="pilcrow">¶</a></p>
+</section>
+<div id="Abbreviations_Terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">This document makes use of the terminology defined in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> and <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>. Some terms are listed below for
+      convenience.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-2">
+        <dt id="section-2-2.1">BIER:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">Bit Indexed Explicit Replication<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">BFR:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">Bit-Forwarding Router<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">BFR-ID:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">BFR Identifier<a href="#section-2-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">BSL:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">BitStringLength<a href="#section-2-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.9">BIFT:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.10">Bit Index Forwarding Table<a href="#section-2-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.11">BIFT-id:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.12">Bit Index Forwarding Table Identifier<a href="#section-2-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.13">BFER:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.14">Bit-Forwarding Egress Router<a href="#section-2-2.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.15">BFR-prefix:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.16">Each BFR is assigned a single "BFR-prefix" for each
+ sub-domain to which it belongs. It is recommended that the BFR-prefix
+ be a loopback address of the BFR.<a href="#section-2-2.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.17">NLRI:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.18">Network Layer Reachability Information <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span><a href="#section-2-2.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.19">AFI:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.20">Address Family Identifier <span>[<a href="#RFC4760" class="cite xref">RFC4760</a>]</span><a href="#section-2-2.20" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.21">SAFI:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.22">Subsequent Address Family Identifier <span>[<a href="#RFC4760" class="cite xref">RFC4760</a>]</span><a href="#section-2-2.22" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<section id="section-2.1">
+        <h3 id="name-requirements-language">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="attr">
+<section id="section-3">
+      <h2 id="name-bier-path-attribute">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-bier-path-attribute" class="section-name selfRef">BIER Path Attribute</a>
+      </h2>
+<p id="section-3-1">This specification defines an optional, transitive BGP path attribute,
+      referred to as the "BIER attribute". This attribute can be attached to a
+      BGP UPDATE message by the originator for NLRIs of AFI 1 or 2 and
+   SAFI 1, 2, or 4 to indicate the BIER-specific information of a
+   particular BFR identified by the /32 (for IPv4) or /128 (for IPv6)
+   host address prefix contained in the NLRI. The attachment of the BIER
+   attribute to non-host address prefixes is not defined by this document.
+   It may be specified in the future, for example, by
+   <span>[<a href="#I-D.ietf-bier-prefix-redistribute" class="cite xref">BIER-Prefix-Redistribute</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">
+   If the BIER path attribute is present, the NLRI is referred to as a
+      "BFR-prefix". Use of the attribute with other AFIs/SAFIs is outside the
+   scope of this document.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">
+   The BIER path attribute is an optional, transitive BGP path attribute
+   with type code 41 and of variable length. The attribute value portion
+   carries BIER TLVs, which are encoded as follows:<a href="#section-3-3" class="pilcrow">¶</a></p>
+<div class="alignCenter art-text artwork" id="section-3-4">
+<pre>
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |              Type             |             Length            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  ~                        Value (variable)                       ~
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-3-4" class="pilcrow">¶</a>
+</div>
+<p id="section-3-5">
+The Length field defines the length of the value portion in octets (thus, a TLV with no value portion would have a length of zero). The TLV is not padded to 4-octet alignment. Unknown and unsupported types <span class="bcp14">MUST</span> be preserved and propagated within the BIER attribute. The presence of unknown or unexpected TLVs <span class="bcp14">MUST NOT</span> result in the NLRI or the BIER attribute being considered malformed.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">
+   When creating a BIER attribute, a BFR <span class="bcp14">MUST</span> include one
+      BIER TLV for every sub-domain that the prefix belongs to. The
+      attribute type code for the BIER attribute is 41. The value field of
+      the BIER attribute contains one or more BIER TLVs as shown below:<a href="#section-3-6" class="pilcrow">¶</a></p>
+<div class="alignCenter art-text artwork" id="section-3-7">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Type = 1            |            Length             |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Sub-domain   |            BFR-ID             |   Reserved    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   ~                                                               ~
+   |                           Sub-TLVs                            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+..........................
+</pre><a href="#section-3-7" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-3-8">
+        <dt id="section-3-8.1">Type:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-8.2">1<a href="#section-3-8.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-8.3">Length:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-8.4">2 octets encoding the length in octets of the
+        Value part.<a href="#section-3-8.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-8.5">Sub-domain:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-8.6">A
+        1-octet field encoding the sub-domain ID corresponding to the
+        BFR-ID (see <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>).<a href="#section-3-8.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-8.7">BFR-ID:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-8.8">A
+        2-octet field encoding the BFR-ID (see <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>).<a href="#section-3-8.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-8.9">Reserved:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-8.10">
+          <span class="bcp14">SHOULD</span> be set to 0 on
+        transmission and <span class="bcp14">MUST</span> be ignored on reception.<a href="#section-3-8.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-8.11">Sub-TLVs:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-8.12">Contains one or more sub-TLVs.<a href="#section-3-8.12" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-9">The BIER TLV <span class="bcp14">MAY</span> appear multiple times in the BIER path attribute, one for each sub-domain. There <span class="bcp14">MUST</span> be no more than
+        one BIER TLV with the same Sub-domain value; if there is, the
+        entire BIER path attribute <span class="bcp14">MUST</span> be ignored.<a href="#section-3-9" class="pilcrow">¶</a></p>
+<p id="section-3-10">A BIER TLV may have sub-TLVs, which may have their own sub-TLVs.
+        All those are referred to as sub-TLVs and share the same Type space,
+        regardless of the level.<a href="#section-3-10" class="pilcrow">¶</a></p>
+<section id="section-3.1">
+        <h3 id="name-bier-mpls-encapsulation-sub">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-bier-mpls-encapsulation-sub" class="section-name selfRef">BIER MPLS Encapsulation Sub-TLV</a>
+        </h3>
+<p id="section-3.1-1">The BIER MPLS Encapsulation sub-TLV has the following format.
+   It <span class="bcp14">MAY</span> appear multiple times in the BIER TLV.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">
+   The BIER MPLS Encapsulation sub-TLV has the following format:<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<div class="alignCenter art-text artwork" id="section-3.1-3">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Type = 2            |             Length            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |     Max SI    |BS Len |             Label                     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   ~                        sub-TLVs                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-3.1-3" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-3.1-4">
+          <dt id="section-3.1-4.1">Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-4.2">2<a href="#section-3.1-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-4.3">Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-4.4">2 octets encoding the length in octets of the Value
+          part. The value is 4 or other (depending on sub-TLVs).<a href="#section-3.1-4.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-4.5">Max SI:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-4.6">A 1-octet field encoding the Maximum Set
+   Identifier (see <span><a href="https://rfc-editor.org/rfc/rfc8279#section-1" class="relref">Section 1</a> of [<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>) used in the encapsulation for this BIER
+   sub-domain for this BitString length.<a href="#section-3.1-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-4.7">BS Len:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-4.8">BitString Length. A 4-bit field encoding the
+   supported BitString length associated with this BFR-prefix.  The
+   values allowed in this field are specified in <span><a href="https://rfc-editor.org/rfc/rfc8296#section-2" class="relref">Section 2</a> of [<a href="#RFC8296" class="cite xref">RFC8296</a>]</span>.<a href="#section-3.1-4.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-4.9">Label:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-4.10">A 20-bit value representing the first label in the label range.<a href="#section-3.1-4.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.1-5"> The "label range" is the set of labels beginning with the Label
+        and ending with (Label + (Max SI)).  A unique label range is allocated
+        for each BitString length and sub-domain-id.  These labels are used
+        for BIER forwarding, as described in <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span> and <span>[<a href="#RFC8296" class="cite xref">RFC8296</a>]</span>.<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+<p id="section-3.1-6"> The size of the label range is determined by the number of SIs
+        (<span><a href="https://rfc-editor.org/rfc/rfc8279#section-1" class="relref">Section 1</a> of [<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>) that are used
+        in the network.  Each SI maps to a single label in the label range:
+        the first label is for SI=0, the second label is for SI=1, etc.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+<p id="section-3.1-7">
+
+   If the label associated with the Maximum SI exceeds the
+   20-bit range, the BIER MPLS Encapsulation sub-TLV containing the
+   error <span class="bcp14">MUST</span> be ignored.<a href="#section-3.1-7" class="pilcrow">¶</a></p>
+<p id="section-3.1-8">
+
+   If the same BitString length is repeated in multiple BIER MPLS Encapsulation sub-TLVs inside the same BIER TLV, all BIER MPLS Encapsulation sub-TLVs in the BIER TLV <span class="bcp14">MUST</span> be ignored.<a href="#section-3.1-8" class="pilcrow">¶</a></p>
+<p id="section-3.1-9">
+
+   Label ranges within all BIER MPLS Encapsulation sub-TLVs advertised
+   by the same BFR <span class="bcp14">MUST NOT</span> overlap.  If an overlap is detected, all
+   BIER MPLS Encapsulation sub-TLVs advertised by the BFR <span class="bcp14">MUST</span> be ignored.<a href="#section-3.1-9" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3.2">
+        <h3 id="name-bier-non-mpls-encapsulation">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-bier-non-mpls-encapsulation" class="section-name selfRef">BIER Non-MPLS Encapsulation Sub-TLV</a>
+        </h3>
+<p id="section-3.2-1">The BIER non-MPLS Encapsulation sub-TLV is used for non-MPLS encapsulation and has the following format. It <span class="bcp14">MAY</span> appear multiple times within a
+   single BIER TLV.  If the same BitString length is repeated in
+   multiple BIER non-MPLS Encapsulation sub-TLVs inside the same BIER
+   TLV, the BIER TLV <span class="bcp14">MUST</span> be ignored.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<div class="alignCenter art-text artwork" id="section-3.2-2">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Type = 3            |             Length            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |     Max SI    |BS Len |                  BIFT-id              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   ~                        sub-TLVs                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-3.2-2" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-3.2-3">
+          <dt id="section-3.2-3.1">Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.2">3<a href="#section-3.2-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.3">Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.4">2 octets encoding the length in octets of the Value
+          part. The value is 4 or other (depending on sub-TLVs).<a href="#section-3.2-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.5">Max SI:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.6">A 1-octet field encoding the Maximum Set
+   Identifier (<span><a href="https://rfc-editor.org/rfc/rfc8279#section-1" class="relref">Section 1</a> of [<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>)
+   used in the encapsulation for this BIER sub-domain for this BitString
+   length. The first BIFT-id is for SI=0, the second BIFT-id is for
+   SI=1, etc. If the BIFT-id associated with the Maximum SI
+   exceeds the 20-bit range, the sub-TLV <span class="bcp14">MUST</span> be
+   ignored.<a href="#section-3.2-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.7">BS Len:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.8">BitString Length. A 4-bit field encoding the
+   BitString length (as per <span>[<a href="#RFC8296" class="cite xref">RFC8296</a>]</span>)
+   supported for the encapsulation.<a href="#section-3.2-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.9">BIFT-id:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.10">A 20-bit field representing the first BIFT-id
+   in the BIFT-id range.<a href="#section-3.2-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.2-4">
+   The "BIFT-id range" is the set of 20-bit values beginning with the
+   BIFT-id and ending with (BIFT-id + (Max SI)).  These BIFT-ids are
+   used for BIER forwarding, as described in <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span> and <span>[<a href="#RFC8296" class="cite xref">RFC8296</a>]</span>.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5">
+   The size of the BIFT-id range is determined by the number of SIs
+   (<span><a href="https://rfc-editor.org/rfc/rfc8279#section-1" class="relref">Section 1</a> of [<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>) that are used in the network.  Each SI maps
+   to a single BIFT-id in the BIFT-id range: the first BIFT-id is for
+   SI=0, the second BIFT-id is for SI=1, etc.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<p id="section-3.2-6">
+
+   If the BIFT-id associated with the Maximum SI exceeds
+   the 20-bit range, the BIER non-MPLS Encapsulation sub-TLV
+   containing the error <span class="bcp14">MUST</span> be ignored.<a href="#section-3.2-6" class="pilcrow">¶</a></p>
+<p id="section-3.2-7">
+
+   BIFT-id ranges within all the BIER non-MPLS Encapsulation sub-TLVs
+   advertised by the same BFR <span class="bcp14">MUST NOT</span> overlap.  If an overlap is
+   detected, all the BIER non-MPLS Encapsulation sub-TLVs advertised
+   by the BFR <span class="bcp14">MUST</span> be ignored. However, the
+   BIFT-id ranges may overlap across different encapsulation types and
+   that is allowed.  As an example, the BIFT-id value in the non-MPLS Encapsulation sub-TLV may overlap with the Label value in the
+   Label range in the BIER MPLS Encapsulation sub-TLV.<a href="#section-3.2-7" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3.3">
+        <h3 id="name-bier-nexthop-sub-tlv">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-bier-nexthop-sub-tlv" class="section-name selfRef">BIER Nexthop Sub-TLV</a>
+        </h3>
+<p id="section-3.3-1">The BIER Nexthop sub-TLV <span class="bcp14">MAY</span> be included, and it <span class="bcp14">MUST NOT</span> be included
+   more than once in each of the MPLS or non-MPLS
+        Encapsulation sub-TLVs or in the top-level BIER TLV. It is used
+ when calculating BIFT entries, as described in <a href="#bift" class="auto internal xref">Section 5</a>
+ and illustrated in <a href="#biernh" class="auto internal xref">Section 6</a>.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<div class="alignCenter art-text artwork" id="section-3.3-2">
+<pre>
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |            Type = 4           |             Length            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                            Nexthop                            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre><a href="#section-3.3-2" class="pilcrow">¶</a>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-3.3-3">
+          <dt id="section-3.3-3.1">Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.2">4<a href="#section-3.3-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.3">Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.4">2 octets. The value is 4 if the Nexthop is an
+          IPv4 address and 16 if the Nexthop is an IPv6 address.<a href="#section-3.3-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.5">Nexthop:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.6">4 or 16 octets of an IPv4/IPv6 address.<a href="#section-3.3-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</section>
+</div>
+<section id="section-4">
+      <h2 id="name-originating-propagating-upd">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-originating-propagating-upd" class="section-name selfRef">Originating/Propagating/Updating the BIER Attribute</a>
+      </h2>
+<p id="section-4-1">A Bit-Forwarding Egress Router (BFER) <span class="bcp14">MUST</span> attach a BIER attribute
+        to its own /32 (for IPv4) or /128 (for IPv6)
+ host BFR-prefix NLRI. The BIER attribute <span class="bcp14">MUST</span> include one
+        BIER TLV for each BIER sub-domain that it supports. Each BIER TLV
+        <span class="bcp14">MUST</span> include an MPLS and/or non-MPLS Encapsulation sub-TLV and <span class="bcp14">MAY</span>
+        include a BIER Nexthop sub-TLV with the Nexthop set to the
+        BIER prefix. If the BIER Nexthop sub-TLV is not included, the BIER prefix
+        will be used by receiving BFRs as the BIER next hop when calculating BIFT.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">When a BFR receives an update with the BIER path attribute, the
+        attribute is parsed with the following validations:<a href="#section-4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-3.1">
+          <p id="section-4-3.1.1">Syntactic checking based on the Length field of TLVs and sub-TLVs:<a href="#section-4-3.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-3.1.2.1">The total length of BIER TLVs (including the Type and Length
+            fields) <span class="bcp14">MUST</span> be equal to the BIER path attribute
+            length.<a href="#section-4-3.1.2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4-3.1.2.2">The total length of sub-TLVs (including the Type and Length
+            fields) of a TLV <span class="bcp14">MUST</span> be equal to the length of the
+            TLV.<a href="#section-4-3.1.2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-4-3.2">Semantic checking as per <a href="#attr" class="auto internal xref">Section 3</a>.<a href="#section-4-3.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-4">
+   If the syntactic checking fails, the attribute is considered 
+   malformed and the "attribute discard" action <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>
+   for the BIER attribute <span class="bcp14">MUST</span> be taken. If the semantic checking passes,
+   BIFT  entries are calculated as described in <a href="#bift" class="auto internal xref">Section 5</a>.  Otherwise
+   (i.e., if semantic checking fails), some or all BIER TLVs are ignored, per the rules
+   given in <a href="#attr" class="auto internal xref">Section 3</a>, and if the remaining data permits,
+   BIFT entries are calculated per <a href="#bift" class="auto internal xref">Section 5</a>.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">When a BFR re-advertises a BGP NLRI with a BIER attribute, for the
+ sub-domains that this BFR supports, in the corresponding BIER TLV, it
+        <span class="bcp14">SHOULD</span> set/update the BIER Nexthop sub-TLV to use its own BIER prefix;
+        in which case, it <span class="bcp14">MUST</span> replace the MPLS or non-MPLS Encapsulation sub-TLV
+        with its own, i.e., as if the BFR is attaching the
+        encapsulation sub-TLV for its own BIER prefix. If it does not
+        update the BIER Nexthop sub-TLVs, it <span class="bcp14">MUST NOT</span> update the MPLS or
+        non-MPLS Encapsulation sub-TLV. If it does not support a sub-domain,
+ it <span class="bcp14">MUST NOT</span> update the corresponding BIER TLV.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">It's possible that the BFR supports some but not all
+ BitStringLengths (BSLs)
+        in the received MPLS or non-MPLS Encapsulation sub-TLVs.
+        After setting/updating the BIER Nexthop sub-TLV in the top BIER TLV
+        to itself, for the BSLs that it does support, the BFR <span class="bcp14">MUST</span> remove
+        the BIER Nexthop sub-TLV (if present) in the corresponding Encapsulation
+        sub-TLVs. For the BSLs that it does not support:<a href="#section-4-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-7.1">
+          <p id="section-4-7.1.1">If a BIER Nexthop sub-TLV is included in the Encapsulation sub-TLV,
+   it <span class="bcp14">MUST NOT</span> be updated.<a href="#section-4-7.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-7.2">
+          <p id="section-4-7.2.1">Otherwise, if a BIER Nexthop sub-TLV is included in the received
+   BIER TLV, its original value (before changed for supported BSLs by
+   this BFR) <span class="bcp14">MUST</span> be copied into the Encapsulation sub-TLV.<a href="#section-4-7.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-7.3">
+          <p id="section-4-7.3.1">Otherwise, a BIER Nexthop sub-TLV <span class="bcp14">MUST</span> be added to the
+   Encapsulation sub-TLV with its value set to the BFR-prefix.<a href="#section-4-7.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-4-8">
+   All impacted Length fields (e.g.,
+        the Encapsulation sub-TLV Length and the top-level BIER TLV Length) <span class="bcp14">MUST</span>
+        be updated accordingly.<a href="#section-4-8" class="pilcrow">¶</a></p>
+<p id="section-4-9">Since the BIER attribute is an optional, transitive BGP path
+      attribute, a non-BFR BGP speaker could still re-advertise the received
+      route with a BIER attribute.<a href="#section-4-9" class="pilcrow">¶</a></p>
+<p id="section-4-10">Two different BFR-prefixes <span class="bcp14">MUST NOT</span> have the same non-zero BFR-ID
+   in the same sub-domain. If a duplication is detected, the receiving
+   BFR <span class="bcp14">MUST NOT</span> use the BFR-prefixes with the same BFR-ID for BIFT
+   calculation for the sub-domain and an error <span class="bcp14">SHOULD</span> be logged.<a href="#section-4-10" class="pilcrow">¶</a></p>
+</section>
+<div id="bift">
+<section id="section-5">
+      <h2 id="name-bift-calculation-with-bgp-s">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-bift-calculation-with-bgp-s" class="section-name selfRef">BIFT Calculation with BGP Signaling</a>
+      </h2>
+<p id="section-5-1">As pointed out in <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>, BIFTs are derived from
+   the unicast FIB by adding BIER-specific information.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">For each sub-domain, a BFR calculates the corresponding BIFTs
+      by going through the BIER prefixes whose BIER attribute includes
+      a BIER TLV for the sub-domain.
+      For a non-zero BFR-id in the BIER TLV,
+      a BIFT entry is created or updated. The entry's BFR Neighbor
+      (BFR-NBR) <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span> is the Nexthop in the BIER
+      Nexthop sub-TLV in the corresponding Encapsulation sub-TLV or
+      in the top-level BIER TLV if the Encapsulation sub-TLV does not
+      have a BIER Nexthop sub-TLV. If there is no BIER Nexthop sub-TLV at all,
+      the entry's BFR-NBR is the BIER prefix itself. The BIER label
+      or BIFT-id for the entry is derived from the label range in the
+      MPLS Encapsulation sub-TLV or from the BIFT-id range in the
+      non-MPLS Encapsulation sub-TLV.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">BIER traffic is sent to the BFR-NBR either directly (BIER header
+      directly follows a Layer 2 header) if the BFR-NBR is directly
+      connected or via a tunnel. Notice that, if a non-BFR
+      BGP speaker re-advertises a BIER prefix (in this case, it cannot update
+      the BIER attribute since it is not capable), or if a BFR BGP speaker
+      re-advertises a BIER prefix without updating the BIER Nexthop
+      sub-TLV, the BFR receiving the prefix will tunnel BIER traffic --  
+      the BGP speaker re-advertising the BIER prefix will not see the
+      BIER traffic for the BIER prefix.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">How the tunnel is set up and chosen is outside the scope of this
+   document. It can be any kind of tunnel, e.g., MPLS Label Switched Path
+   or IP/GRE, as long as the tunnel header can indicate that the payload
+   is BIER.<a href="#section-5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="biernh">
+<section id="section-6">
+      <h2 id="name-example-of-bier-nexthop-usa">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-example-of-bier-nexthop-usa" class="section-name selfRef">Example of BIER Nexthop Usage and Handling</a>
+      </h2>
+<p id="section-6-1">Consider a simple topology as follows:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6-2">
+<pre>
+                                      ----- BFER1
+                                     /
+           BFR1 --- non-BFR --- BFR2 ------ BFER2
+                                     \
+                                      ----- BFER3
+</pre><a href="#section-6-2" class="pilcrow">¶</a>
+</div>
+<p id="section-6-3">The BFER1/2/3 each advertises a route for its loopback address with a
+      BIER path attribute, listing one BIER TLV for each sub-domain that it is
+      in, with a non-zero BFR-ID and an MPLS Encapsulation sub-TLV.  A BIER
+      Nexthop sub-TLV is not included in the one from BFER1 but is included in
+      the ones from BFER2/3. The BIER Nexthop sub-TLV encodes the BFR-prefix
+      of BFER2 and BFER3, respectively.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">When BFR2 receives the route, it calculates its BIFT entries.
+   Because the route from BFER1 does not include a BIER Nexthop, BFR2
+   uses BFR1's BFR-prefix as the next hop.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">When BFR2 re-advertises the routes to the non-BFR, it adds
+   a BIER Nexthop sub-TLV to the BFER1 route and updates the BIER Nexthop
+   sub-TLV in the BFER2/3 routes, all encoding BFR2's own address.
+   It also updates the MPLS Encapsulation sub-TLV to encode its own labels.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<p id="section-6-6">When the non-BFR receives the routes, since it does not support BIER,
+   no BIER-specific action is taken and the routes are re-advertised to
+   BFR1 with the BIER path attribute unchanged.<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-6-7">When BFR1 receives the routes, it calculates the BIFT entries,
+   using BFR2's address encoded in the BIER Nexthop sub-TLV as the
+   next hop. Because BFR2 is not directly connected, a tunnel must be used.<a href="#section-6-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="op">
+<section id="section-7">
+      <h2 id="name-operational-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<p id="section-7-1">In this document, it is assumed that the BIER domain
+   <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span> is aligned with
+      an Administrative Domain (AD), which may be composed of multiple
+   Autonomous Systems. Use of the BIER attribute in other
+      scenarios is outside the scope of this document.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">BFR-prefixes are typically loopback addresses on the BFRs. They
+   are distributed throughout the AD, but they do not need to be
+   distributed outside the AD for the BIER's purposes. This is analogous
+   to the Provider Edge router's loopback addresses that are distributed
+   inside the AD, but they do not need to be distributed outside the AD.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">If prefixes are distributed outside of the AD with the BIER
+   attribute attached and the neighboring AD also deploying BIER,
+   then the two BIER domains, which should be independent of each other,
+   may be incorrectly joined together and most likely have conflicting
+   configurations, causing security risks and operational troubles.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">To prevent that, a boundary router of the AD that supports the BIER
+   attribute <span class="bcp14">MUST</span>
+      support a policy based on an External BGP (EBGP) session/group that indicates whether the
+      attribute is allowed; by default, it is NOT allowed.
+   If it is not allowed, the BIER
+      attribute <span class="bcp14">MUST NOT</span> be sent to any EBGP peer of the session/group.
+      If a BIER attribute is received from the peer, it <span class="bcp14">MUST</span> be treated
+      exactly as if it were an unrecognized non-transitive attribute.
+   That is, it <span class="bcp14">MUST</span> be quietly ignored and not passed along to other
+   BGP peers.<a href="#section-7-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="IANA">
+<section id="section-8">
+      <h2 id="name-iana-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-8-1">IANA has assigned codepoint 41 to the BIER attribute in the "BGP Path
+      Attributes" registry
+      <span>&lt;<a href="https://www.iana.org/assignments/bgp-parameters">https://www.iana.org/assignments/bgp-parameters</a>&gt;</span> as follows:<a href="#section-8-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Value</th>
+            <th class="text-left" rowspan="1" colspan="1">Code</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">41</td>
+            <td class="text-left" rowspan="1" colspan="1">BIER</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9793</td>
+          </tr>
+        </tbody>
+      </table>
+<p id="section-8-3">IANA has created the "BGP BIER TLV and Sub-TLV Types" registry within the "Border Gateway Protocol (BGP) Parameters" registry group.  The type field for the
+      registry consists of 2 octets, with possible values from 0 to 65535
+      (the value 0 is reserved). The allocation policy for this field is
+      First Come First Served <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">The five initial values have been allocated as follows:<a href="#section-8-4" class="pilcrow">¶</a></p>
+<table class="center" id="table-2">
+        <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Value</th>
+            <th class="text-left" rowspan="1" colspan="1">Name</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9793</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">BIER TLV</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9793</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">2</td>
+            <td class="text-left" rowspan="1" colspan="1">MPLS Encapsulation sub-TLV</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9793</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">3</td>
+            <td class="text-left" rowspan="1" colspan="1">non-MPLS Encapsulation sub-TLV</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9793</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">4</td>
+            <td class="text-left" rowspan="1" colspan="1">BIER Nexthop sub-TLV</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9793</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">5-65535</td>
+            <td class="text-left" rowspan="1" colspan="2">Unassigned</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<div id="Security">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-9-1">This document introduces no new security considerations beyond those
+      already discussed in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span>, <span>[<a href="#RFC8279" class="cite xref">RFC8279</a>]</span>, and the operational considerations
+      (<a href="#op" class="auto internal xref">Section 7</a>) of this document.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4271">[RFC4271]</dt>
+        <dd>
+<span class="refAuthor">Rekhter, Y., Ed.</span>, <span class="refAuthor">Li, T., Ed.</span>, and <span class="refAuthor">S. Hares, Ed.</span>, <span class="refTitle">"A Border Gateway Protocol 4 (BGP-4)"</span>, <span class="seriesInfo">RFC 4271</span>, <span class="seriesInfo">DOI 10.17487/RFC4271</span>, <time datetime="2006-01" class="refDate">January 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4271">https://www.rfc-editor.org/info/rfc4271</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8279">[RFC8279]</dt>
+        <dd>
+<span class="refAuthor">Wijnands, IJ., Ed.</span>, <span class="refAuthor">Rosen, E., Ed.</span>, <span class="refAuthor">Dolganow, A.</span>, <span class="refAuthor">Przygienda, T.</span>, and <span class="refAuthor">S. Aldrin</span>, <span class="refTitle">"Multicast Using Bit Index Explicit Replication (BIER)"</span>, <span class="seriesInfo">RFC 8279</span>, <span class="seriesInfo">DOI 10.17487/RFC8279</span>, <time datetime="2017-11" class="refDate">November 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8279">https://www.rfc-editor.org/info/rfc8279</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8296">[RFC8296]</dt>
+      <dd>
+<span class="refAuthor">Wijnands, IJ., Ed.</span>, <span class="refAuthor">Rosen, E., Ed.</span>, <span class="refAuthor">Dolganow, A.</span>, <span class="refAuthor">Tantsura, J.</span>, <span class="refAuthor">Aldrin, S.</span>, and <span class="refAuthor">I. Meilik</span>, <span class="refTitle">"Encapsulation for Bit Index Explicit Replication (BIER) in MPLS and Non-MPLS Networks"</span>, <span class="seriesInfo">RFC 8296</span>, <span class="seriesInfo">DOI 10.17487/RFC8296</span>, <time datetime="2018-01" class="refDate">January 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8296">https://www.rfc-editor.org/info/rfc8296</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-bier-prefix-redistribute">[BIER-Prefix-Redistribute]</dt>
+        <dd>
+<span class="refAuthor">Zhang, Z.</span>, <span class="refAuthor">Wu, B.</span>, <span class="refAuthor">Zhang, Z. J.</span>, <span class="refAuthor">Wijnands, I.</span>, <span class="refAuthor">Liu, Y.</span>, and <span class="refAuthor">H. Bidgoli</span>, <span class="refTitle">"BIER Prefix Redistribute"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-bier-prefix-redistribute-08</span>, <time datetime="2025-02-23" class="refDate">23 February 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-bier-prefix-redistribute-08">https://datatracker.ietf.org/doc/html/draft-ietf-bier-prefix-redistribute-08</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4760">[RFC4760]</dt>
+        <dd>
+<span class="refAuthor">Bates, T.</span>, <span class="refAuthor">Chandra, R.</span>, <span class="refAuthor">Katz, D.</span>, and <span class="refAuthor">Y. Rekhter</span>, <span class="refTitle">"Multiprotocol Extensions for BGP-4"</span>, <span class="seriesInfo">RFC 4760</span>, <span class="seriesInfo">DOI 10.17487/RFC4760</span>, <time datetime="2007-01" class="refDate">January 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4760">https://www.rfc-editor.org/info/rfc4760</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7606">[RFC7606]</dt>
+        <dd>
+<span class="refAuthor">Chen, E., Ed.</span>, <span class="refAuthor">Scudder, J., Ed.</span>, <span class="refAuthor">Mohapatra, P.</span>, and <span class="refAuthor">K. Patel</span>, <span class="refTitle">"Revised Error Handling for BGP UPDATE Messages"</span>, <span class="seriesInfo">RFC 7606</span>, <span class="seriesInfo">DOI 10.17487/RFC7606</span>, <time datetime="2015-08" class="refDate">August 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7606">https://www.rfc-editor.org/info/rfc7606</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+      <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="Acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">Thanks to <span class="contact-name">Eric Rosen</span> and <span class="contact-name">Peter Psenak</span> for their valuable comments on this
+      document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="appendix-B">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<p id="appendix-B-1">This document has the following contributor:<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Zheng (Sandy) Zhang</span></div>
+<div dir="auto" class="left"><span class="org">ZTE</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:zhang.zheng@zte.com.cn" class="email">zhang.zheng@zte.com.cn</a>
+</div>
+</address>
+</section>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Xiaohu Xu</span></div>
+<div dir="auto" class="left"><span class="org">China Mobile</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:xuxiaohu@cmss.chinamobile.com" class="email">xuxiaohu@cmss.chinamobile.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mach(Guoyi) Chen</span></div>
+<div dir="auto" class="left"><span class="org">Huawei</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mach.chen@huawei.com" class="email">mach.chen@huawei.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Keyur Patel</span></div>
+<div dir="auto" class="left"><span class="org">Arrcus, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:keyur@arrcus.com" class="email">keyur@arrcus.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">IJsbrand Wijnands</span></div>
+<div dir="auto" class="left"><span class="org">Individual</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ice@braindump.be" class="email">ice@braindump.be</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tony Przygienda</span></div>
+<div dir="auto" class="left"><span class="org">Juniper</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:prz@juniper.net" class="email">prz@juniper.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Zhaohui Zhang (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Juniper</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:zzhang@juniper.net" class="email">zzhang@juniper.net</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
