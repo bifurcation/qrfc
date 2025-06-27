@@ -1,0 +1,2500 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9785: Preference-Based EVPN Designated Forwarder (DF) Election</title>
+<meta content="Jorge Rabadan" name="author">
+<meta content="Senthil Sathappan" name="author">
+<meta content="Wen Lin" name="author">
+<meta content="John Drake" name="author">
+<meta content="Ali Sajassi" name="author">
+<meta content='
+       The Designated Forwarder (DF) in Ethernet Virtual Private Networks
+      (EVPNs) is defined as the Provider Edge (PE) router responsible for
+      sending Broadcast, Unknown Unicast, and Multicast (BUM) traffic to a
+      multihomed device/network in the case of an All-Active multihoming
+      Ethernet Segment (ES) or BUM and unicast in the case of Single-Active
+      multihoming. The Designated Forwarder is selected out of a candidate
+      list of PEs that advertise the same Ethernet Segment Identifier (ESI) to
+      the EVPN network, according to the default DF election
+      algorithm. While the default algorithm provides an efficient and
+      automated way of selecting the Designated Forwarder across different
+      Ethernet Tags in the Ethernet Segment, there are some use cases where a
+      more "deterministic" and user-controlled method is required. At the same
+      time, Network Operators require an easy way to force an on-demand
+      Designated Forwarder switchover in order to carry out some maintenance
+      tasks on the existing Designated Forwarder or control whether a new
+      active PE can preempt the existing Designated Forwarder PE. 
+       This document proposes use of a DF election algorithm that
+      meets the requirements of determinism and operation control. This
+      document updates RFC 8584 by modifying the definition of the DF Election
+      Extended Community.  
+    ' name="description">
+<meta content="xml2rfc 3.29.0" name="generator">
+<meta content="9785" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.29.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9785.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-bess-evpn-pref-df-13" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9785" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9785</td>
+<td class="center">Preference-Based EVPN DF Election</td>
+<td class="right">June 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Rabadan, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9785" class="eref">9785</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc8584" class="eref">8584</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-06" class="published">June 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">J. Rabadan, <span class="editor">Ed.</span>
+</div>
+<div class="org">Nokia</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Sathappan</div>
+<div class="org">Nokia</div>
+</div>
+<div class="author">
+      <div class="author-name">W. Lin</div>
+<div class="org">Juniper Networks</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Drake</div>
+<div class="org">Independent</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Sajassi</div>
+<div class="org">Cisco Systems</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9785</h1>
+<h1 id="title">Preference-Based EVPN Designated Forwarder (DF) Election</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">The Designated Forwarder (DF) in Ethernet Virtual Private Networks
+      (EVPNs) is defined as the Provider Edge (PE) router responsible for
+      sending Broadcast, Unknown Unicast, and Multicast (BUM) traffic to a
+      multihomed device/network in the case of an All-Active multihoming
+      Ethernet Segment (ES) or BUM and unicast in the case of Single-Active
+      multihoming. The Designated Forwarder is selected out of a candidate
+      list of PEs that advertise the same Ethernet Segment Identifier (ESI) to
+      the EVPN network, according to the default DF election
+      algorithm. While the default algorithm provides an efficient and
+      automated way of selecting the Designated Forwarder across different
+      Ethernet Tags in the Ethernet Segment, there are some use cases where a
+      more "deterministic" and user-controlled method is required. At the same
+      time, Network Operators require an easy way to force an on-demand
+      Designated Forwarder switchover in order to carry out some maintenance
+      tasks on the existing Designated Forwarder or control whether a new
+      active PE can preempt the existing Designated Forwarder PE.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document proposes use of a DF election algorithm that
+      meets the requirements of determinism and operation control. This
+      document updates RFC 8584 by modifying the definition of the DF Election
+      Extended Community.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9785">https://www.rfc-editor.org/info/rfc9785</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-problem-statement" class="internal xref">Problem Statement</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-solution-requirements" class="internal xref">Solution Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-solution-overview" class="internal xref">Solution Overview</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-requirements-language-and-t" class="internal xref">Requirements Language and Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-evpn-bgp-attribute-extensio" class="internal xref">EVPN BGP Attribute Extensions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-solution-description" class="internal xref">Solution Description</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-use-of-the-highest-preferen" class="internal xref">Use of the Highest-Preference and Lowest-Preference Algorithm</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-use-of-the-highest-preferenc" class="internal xref">Use of the Highest-Preference or Lowest-Preference Algorithm in Ethernet Segments</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-the-non-revertive-capabilit" class="internal xref">The Non-Revertive Capability</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="sect-1">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<div id="sect-1.1">
+<section id="section-1.1">
+        <h3 id="name-problem-statement">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-problem-statement" class="section-name selfRef">Problem Statement</a>
+        </h3>
+<p id="section-1.1-1"><span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> defines the Designated Forwarder (DF) in
+        EVPN networks as the PE responsible for sending Broadcast, Unknown
+        Unicast, and Multicast (BUM) traffic to a multihomed device/network in
+        the case of an All-Active multihoming Ethernet Segment or BUM and
+        unicast traffic to a multihomed device or network in the case of
+        Single-Active multihoming. The Designated Forwarder is selected out
+        of a candidate list of PEs that advertise the Ethernet Segment
+        Identifier (ESI) to the EVPN network and according to the DF election algorithm or to DF Alg as per <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">While the default DF algorithm or the Highest Random Weight (HRW) algorithm <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span> provide an efficient and automated way of selecting
+        the Designated Forwarder across different Ethernet Tags in the
+        Ethernet Segment, there are some use cases where a more
+        user-controlled method is required. At the same time, Network
+        Operators require an easy way to force an on-demand  Designated Forwarder switchover in order to carry out some maintenance tasks on
+        the existing Designated Forwarder or control whether a new active PE
+        can preempt the existing Designated Forwarder PE.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-1.2">
+<section id="section-1.2">
+        <h3 id="name-solution-requirements">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-solution-requirements" class="section-name selfRef">Solution Requirements</a>
+        </h3>
+<p id="section-1.2-1">The procedures described in this document meet the following
+        requirements:<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-1.2-2">
+<li id="section-1.2-2.1">
+            <p id="section-1.2-2.1.1">The solution provides an administrative preference option so
+            that the user can control in what order the candidate PEs may
+            become the Designated Forwarder, assuming they are all operationally
+            ready to take over as the Designated Forwarder. The operator can
+            determine whether the Highest-Preference or Lowest-Preference PE
+            among the PEs in the Ethernet Segment will be elected as
+            the Designated Forwarder, based on the DF algorithms described in this
+            document.<a href="#section-1.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-2.2">
+            <p id="section-1.2-2.2.1">The extensions described in this document work for Ethernet Segments <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> and virtual Ethernet
+            Segments as defined in <span>[<a href="#RFC9784" class="cite xref">RFC9784</a>]</span>.<a href="#section-1.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-2.3">
+            <p id="section-1.2-2.3.1">The user may force a PE to preempt the existing Designated
+            Forwarder for a given Ethernet Tag without reconfiguring all the
+            PEs in the Ethernet Segment, by simply modifying the existing
+            administrative preference in that PE.<a href="#section-1.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-2.4">
+<div id="DP-capability">
+            <p id="section-1.2-2.4.1">The solution allows an option to NOT preempt the current
+            Designated Forwarder (the "Don't Preempt" Capability), even if the
+            former Designated Forwarder PE comes back up after a failure. This
+            is also known as "non-revertive" behavior, as opposed to the DF election procedures <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> that
+            are always revertive (because the winner PE of the default
+            DF election algorithm always takes over as the
+            operational Designated Forwarder).<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
+</div>
+          </li>
+<li id="section-1.2-2.5">
+            <p id="section-1.2-2.5.1">The procedures described in this document support Single-Active
+            and All-Active multihoming Ethernet Segments.<a href="#section-1.2-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="sect-1.3">
+<section id="section-1.3">
+        <h3 id="name-solution-overview">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-solution-overview" class="section-name selfRef">Solution Overview</a>
+        </h3>
+<p id="section-1.3-1">To provide a solution that satisfies the above requirements, we
+        introduce two new DF algorithms that can be advertised in the DF
+        Election Extended Community (<a href="#sect-3" class="auto internal xref">Section 3</a>). Carried with the
+        new DF Election Extended Community variants is a DF election
+        preference advertised for each PE that influences which PE will
+        become the DF (<a href="#sect-4.1" class="auto internal xref">Section 4.1</a>). The advertised DF election
+        preference can dynamically vary from the administratively configured
+        preference to provide non-revertive behavior (<a href="#sect-4.3" class="auto internal xref">Section 4.3</a>). In <a href="#sect-4.2" class="auto internal xref">Section 4.2</a>, an optional solution is discussed for use in Ethernet Segments that supports large numbers of Ethernet Tags and therefore needs to balance load among
+        multiple DFs.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-2">
+<section id="section-2">
+      <h2 id="name-requirements-language-and-t">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-requirements-language-and-t" class="section-name selfRef">Requirements Language and Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-2">
+        <dt id="section-2-2.1">AC:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">Attachment Circuit. An AC has an Ethernet Tag
+        associated to it.<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">CE:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">Customer Equipment router<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">DF:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">Designated Forwarder<a href="#section-2-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">DF Alg:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">Refers to the DF election
+        algorithm, which is sometimes shortened to "Alg" in this document.<a href="#section-2-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.9">DP:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.10">Refers to the "Don't Preempt" Capability in the
+        DF Election Extended Community.<a href="#section-2-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.11">ENNI:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.12">External Network-Network Interface<a href="#section-2-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.13">ES and vES:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.14">Ethernet Segment and virtual Ethernet Segment.<a href="#section-2-2.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.15">Ethernet A-D per EVI route:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.16">Refers to Route Type 1 or Auto-Discovery per
+        EVPN Instance route <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.<a href="#section-2-2.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.17">EVC:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.18">Ethernet Virtual Circuit<a href="#section-2-2.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.19">EVI:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.20">EVPN Instance<a href="#section-2-2.20" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.21">Ethernet Tag:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.22">Used to represent a broadcast domain that is
+        configured on a given Ethernet Segment for the purpose of DF election. Note that any of the following may be used to
+        represent a broadcast domain: VLAN IDs (VIDs) (including Q-in-Q tags), configured
+        IDs, VXLAN Network Identifiers (VNIs), normalized VIDs, Service
+        Instance Identifiers (I-SIDs), etc., as long as the representation of the
+        broadcast domains is configured consistently across the multihomed
+        PEs attached to that Ethernet Segment. The Ethernet Tag value
+        <span class="bcp14">MUST NOT</span> be zero.<a href="#section-2-2.22" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.23">HRW:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.24">Highest Random Weight, as per <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>.<a href="#section-2-2.24" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.25">OAM:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.26">Operations, Administration, and Maintenance.<a href="#section-2-2.26" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-3">
+<section id="section-3">
+      <h2 id="name-evpn-bgp-attribute-extensio">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-evpn-bgp-attribute-extensio" class="section-name selfRef">EVPN BGP Attribute Extensions</a>
+      </h2>
+<p id="section-3-1">This solution reuses and extends the DF Election
+      Extended Community defined in <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span> that is
+      advertised along with the Ethernet Segment route. It does so by
+      replacing the last two reserved octets of the DF Election Extended
+      Community when the DF algorithm is set to Highest-Preference or
+      Lowest-Preference. This document also defines a new capability referred
+      to as the "Don't Preempt" Capability, which <span class="bcp14">MAY</span> be used with
+      Highest-Preference or Lowest-Preference Algorithms. The format of the
+      DF Election Extended Community used in this document is as
+      follows:<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span id="name-df-election-extended-commun"></span><div id="df-election-extended-community">
+<figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-3-2.1">
+<pre>
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| Type=0x06     | Sub-Type(0x06)| RSV |  DF Alg |    Bitmap     ~
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+~     Bitmap    |   Reserved    |   DF Preference (2 octets)    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-df-election-extended-commun" class="selfRef">DF Election Extended Community</a>
+        </figcaption></figure>
+</div>
+<p id="section-3-3">Where the above fields are defined as follows:<a href="#section-3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-4.1">
+          <p id="section-3-4.1.1">The DF algorithm can have the following values:<a href="#section-3-4.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-4.1.2.1">Alg 0 - Default DF election algorithm, i.e.,
+            the modulus-based algorithm as per <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.<a href="#section-3-4.1.2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-3-4.1.2.2">Alg 1 - HRW algorithm as per <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>.<a href="#section-3-4.1.2.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-3-4.1.2.3">Alg 2 - Highest-Preference Algorithm (<a href="#sect-4.1" class="auto internal xref">Section 4.1</a>).<a href="#section-3-4.1.2.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-3-4.1.2.4">Alg 3 - Lowest-Preference Algorithm (<a href="#sect-4.1" class="auto internal xref">Section 4.1</a>).<a href="#section-3-4.1.2.4" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-3-4.2">
+          <p id="section-3-4.2.1">Bitmap (2 octets) encodes "capabilities" <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>, whereas this document defines the "Don't Preempt"
+        Capability, which is used to indicate if a PE supports a non-revertive
+        behavior:<a href="#section-3-4.2.1" class="pilcrow">¶</a></p>
+<span id="name-bitmap-field-in-the-df-elec"></span><div id="bitmap-field-in-the-df-election-extended-community">
+<figure id="figure-2">
+            <div class="alignLeft art-text artwork" id="section-3-4.2.2.1">
+<pre>
+                       1 1 1 1 1 1
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |D|A|                           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-bitmap-field-in-the-df-elec" class="selfRef">Bitmap Field in the DF Election Extended Community</a>
+            </figcaption></figure>
+</div>
+<ul class="normal">
+<li class="normal" id="section-3-4.2.3.1">Bit 0 (corresponds to Bit 24 of the DF
+            Election Extended Community, and it is defined by this document):
+            The D bit, or "Don't Preempt" Capability, determines if the
+            PE advertising the Ethernet Segment route requests the remote PEs
+            in the Ethernet Segment to not preempt it as the Designated
+            Forwarder. The default value is DP=0, which is compatible with the
+            'preempt' or 'revertive' behavior in the default DF algorithm
+            <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>. The "Don't Preempt" Capability is
+            supported by the Highest-Preference or Lowest-Preference
+            Algorithms. The procedures of the "Don't Preempt" Capability for
+            other DF algorithms are out of the scope of this document. The
+            procedures of the "Don't Preempt" Capability for the
+            Highest-Preference and Lowest-Preference Algorithms are
+            described in <a href="#sect-4.1" class="auto internal xref">Section 4.1</a>.<a href="#section-3-4.2.3.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-3-4.2.3.2">Bit 1: AC-Influenced DF (AC-DF) election is
+            described in <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>. When set
+            to 1, it indicates the desire to use AC-DF with the rest of the PEs
+     in the Ethernet
+            Segment. The AC-DF capability bit <span class="bcp14">MAY</span> be set along
+            with the "Don't Preempt" Capability and Highest-Preference or
+            Lowest-Preference Algorithms.<a href="#section-3-4.2.3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-3-4.3">Designated Forwarder (DF) Preference:
+        Defines a 2-octet value that indicates the PE preference to become the
+        Designated Forwarder in the Ethernet Segment, as described in <a href="#sect-4.1" class="auto internal xref">Section 4.1</a>. The allowed values are within
+        the range 0-65535, and the default value <span class="bcp14">MUST</span> be
+        32767. This value is the midpoint in the allowed Preference range of
+        values, which gives the operator the flexibility of choosing a
+        significant number of values, above or below the default Preference. A
+        numerically higher or lower value of this field is more preferred for
+        DF election depending on the DF algorithm being
+        used, as explained in <a href="#sect-4.1" class="auto internal xref">Section 4.1</a>. The
+        Designated Forwarder Preference field is specific to 
+        Highest-Preference and Lowest-Preference Algorithms, and this document does not
+        define any meaning for other algorithms. If the DF algorithm is
+        different from Highest-Preference or Lowest-Preference, these 2
+        octets can be encoded differently.<a href="#section-3-4.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-4.4">RSV and Reserved fields (from bit 16 to bit 18, and from bit 40 to
+        47): When the DF algorithm is set to Highest-Preference or
+        Lowest-Preference, the values are set to zero when
+        advertising the Ethernet Segment route, and they are ignored when
+        receiving the Ethernet Segment route.<a href="#section-3-4.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="sect-4">
+<section id="section-4">
+      <h2 id="name-solution-description">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-solution-description" class="section-name selfRef">Solution Description</a>
+      </h2>
+<p id="section-4-1"><a href="#es-and-deterministic-df-election" class="auto internal xref">Figure 3</a> illustrates an
+      example that will be used in the description of the solution.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<span id="name-preference-based-df-electio"></span><div id="es-and-deterministic-df-election">
+<figure id="figure-3">
+        <div class="alignLeft art-text artwork" id="section-4-2.1">
+<pre>
+              EVPN Network
+         +-------------------+
+         |                +-------+  ENNI    Aggregation
+         |   &lt;---ESI1,500 |  PE1  |   /\  +----Network---+
+         | &lt;-----ESI2,100 |       |===||===              |
+         |                |       |===||== \      vES1   |  +----+
+     +-----+              |       |   \/  |\----------------+CE1 |
+CE3--+ PE4 |              +-------+       | \   ------------+    |
+     +-----+                 |            |  \ /         |  +----+
+         |                   |            |   X          |
+         |   &lt;---ESI1,255  +-----+============ \         |
+         | &lt;-----ESI2,200  | PE2 |==========    \ vES2   | +----+
+         |                 +-----+        | \    ----------+CE2 |
+         |                   |            |  --------------+    |
+         |                 +-----+   ----------------------+    |
+         | &lt;-----ESI2,300  | PE3 +--/     |              | +----+
+         |                 +-----+        +--------------+
+         --------------------+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-preference-based-df-electio" class="selfRef">Preference-Based DF Election</a>
+        </figcaption></figure>
+</div>
+<p id="section-4-3"><a href="#es-and-deterministic-df-election" class="auto internal xref">Figure 3</a> shows three PEs
+      that are connecting EVCs coming from the Aggregation Network to their
+      EVIs in the EVPN network. CE1 is connected to vES1, which spans PE1 and
+      PE2, and CE2 is connected to vES2, which is attached to PE1, PE2, and
+      PE3.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">If the algorithm chosen for vES1 and vES2 is the
+      Highest-Preference or Lowest-Preference Algorithm, the PEs may become the Designated
+      Forwarder irrespective of their IP address and based on the
+      administrative preference value. The following sections provide some
+      examples of the procedures and how they are applied in the use case of
+      <a href="#es-and-deterministic-df-election" class="auto internal xref">Figure 3</a>.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<div id="sect-4.1">
+<section id="section-4.1">
+        <h3 id="name-use-of-the-highest-preferen">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-use-of-the-highest-preferen" class="section-name selfRef">Use of the Highest-Preference and Lowest-Preference Algorithm</a>
+        </h3>
+<p id="section-4.1-1">Assuming the operator wants to control -- in a flexible way -- what
+        PE becomes the Designated Forwarder for a given virtual Ethernet
+        Segment and the order in which the PEs become a Designated Forwarder in
+        case of multiple failures, the Highest-Preference or Lowest-Preference
+        Algorithms can be used. Per the example in <a href="#es-and-deterministic-df-election" class="auto internal xref">Figure 3</a>, these
+ algorithms are used
+        as follows:<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-4.1-2">
+          <li id="section-4.1-2.1">
+            <p id="section-4.1-2.1.1">vES1 and vES2 are now configurable with three optional
+   parameters that are signaled in the DF Election
+   Extended Community. These parameters are the Preference,
+   Preemption (or "Don't Preempt" Capability) option, and DF algorithm. We will
+   represent these parameters as (Pref, DP, Alg).  For instance, vES1
+   (Pref, DP, Alg) is configured as:<a href="#section-4.1-2.1.1" class="pilcrow">¶</a></p>
+<ul class="compact ulEmpty">
+<li class="compact ulEmpty" id="section-4.1-2.1.2.1">(500, 0, Highest-Preference) in PE1,<a href="#section-4.1-2.1.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="compact ulEmpty" id="section-4.1-2.1.2.2">(255, 0, Highest-Preference) in PE2.<a href="#section-4.1-2.1.2.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+<p id="section-4.1-2.1.3">vES2 is configured as:<a href="#section-4.1-2.1.3" class="pilcrow">¶</a></p>
+<ul class="compact ulEmpty">
+<li class="compact ulEmpty" id="section-4.1-2.1.4.1">(100, 0, Highest-Preference) in PE1,<a href="#section-4.1-2.1.4.1" class="pilcrow">¶</a>
+</li>
+              <li class="compact ulEmpty" id="section-4.1-2.1.4.2">(200, 0, Highest-Preference) in PE2, and<a href="#section-4.1-2.1.4.2" class="pilcrow">¶</a>
+</li>
+              <li class="compact ulEmpty" id="section-4.1-2.1.4.3">(300, 0, Highest-Preference) in PE3.<a href="#section-4.1-2.1.4.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li id="section-4.1-2.2">
+            <p id="section-4.1-2.2.1">The PEs advertise an Ethernet Segment route for each virtual
+            Ethernet Segment, including the three parameters indicated in (a)
+            above, in the DF Election Extended Community
+            (encoded as described in <a href="#sect-3" class="auto internal xref">Section 3</a>).<a href="#section-4.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-2.3">
+            <p id="section-4.1-2.3.1">According to <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>, each PE will run the
+            DF election algorithm upon expiration of the DF
+            Wait timer. Each PE runs the Highest-Preference or
+            Lowest-Preference Algorithm for each Ethernet Segment as
+            follows:<a href="#section-4.1-2.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-2.3.2.1">
+                <p id="section-4.1-2.3.2.1.1">The PE will check the DF algorithm value in each Ethernet
+                Segment route, and assuming all the Ethernet Segment routes
+                (including the local route) are consistent in this DF
+                algorithm (that is, all are configured for Highest-Preference
+                or Lowest-Preference, but not a mix), the PE runs the
+                procedure in this section. Otherwise, the procedure falls back
+                to the default DF algorithm <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.
+                The Highest-Preference and Lowest-Preference Algorithms are
+                different algorithms; therefore, if two PEs configured for
+                Highest-Preference and Lowest-Preference, respectively, are
+                attached to the same Ethernet Segment, the operational
+                DF election algorithm will fall back to the
+                default DF algorithm.<a href="#section-4.1-2.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.1-2.3.2.2">
+                <p id="section-4.1-2.3.2.2.1">If all the PEs attached to the Ethernet Segment advertise
+                the Highest-Preference Algorithm, each PE builds a list of
+                candidate PEs, ordered by preference value from the
+                numerically highest value to lowest value. For example, PE1 builds a
+                list of candidate PEs for vES1 ordered by the Preference, from
+                high to low: &lt;PE1, PE2&gt; (since PE1's preference is more
+                preferred than PE2's). Hence, PE1 becomes the Designated
+                Forwarder for vES1. In the same way, PE3 becomes the
+                Designated Forwarder for vES2.<a href="#section-4.1-2.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.1-2.3.2.3">
+                <p id="section-4.1-2.3.2.3.1">If all the PEs attached to the Ethernet Segment advertise
+                the Lowest-Preference Algorithm, then the candidate list is
+                ordered from the numerically lowest preference value to the
+                highest preference value. For example, PE1's ordered list for vES1 is
+                &lt;PE2, PE1&gt;. Hence, PE2 becomes the Designated Forwarder
+                for vES1. In the same way, PE1 becomes the Designated
+                Forwarder for vES2.<a href="#section-4.1-2.3.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li id="section-4.1-2.4">
+            <p id="section-4.1-2.4.1">Assuming some maintenance tasks had to be executed on a PE, the
+            operator may want to make sure the PE is not the Designated
+            Forwarder for the Ethernet Segment so that the impact on the
+            service is minimized. For example, if PE3 is going on maintenance and the
+            DF algorithm is Highest-Preference, the operator could change
+            vES2's Preference on PE3 from 300 to, e.g., 50 (hence, the Ethernet
+            Segment route from PE3 is updated with the new preference value),
+            so that PE2 is forced to take over as Designated Forwarder for
+            vES2 (irrespective of the "Don't Preempt" Capability). Once the maintenance
+            task on PE3 is over, the operator could decide to leave the latest
+            configured preference value or configure the initial preference
+            value back. A similar procedure can be used for the
+            Lowest-Preference Algorithm too. For example, suppose the algorithm for vES2 is
+            Lowest-Preference, and PE1 (the DF) goes on maintenance mode. The
+            operator could change vES2's Preference on PE1 from 100 to, e.g.,
+            250, so that PE2 is forced to take over as the Designated Forwarder
+            for vES2.<a href="#section-4.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-2.5">
+            <p id="section-4.1-2.5.1">In case of equal Preference in two or more PEs in the Ethernet
+            Segment, the "Don't Preempt" Capability and the numerically lowest IP address of the
+            candidate PE(s) are used as tiebreakers. The procedures for the
+            use of the "Don't Preempt" Capability are specified in <a href="#sect-4.3" class="auto internal xref">Section 4.3</a>. If
+            more than one PE is advertising itself as the preferred Designated
+            Forwarder, an implementation <span class="bcp14">MUST</span> first select the PE advertising
+            the "Don't Preempt" Capability set, and then select the PE with the lowest IP address
+            (if the "Don't Preempt" Capability selection does not yield a unique candidate). The
+            PE's IP address is the address used in the candidate list, and it
+            is derived from the Originating Router's IP address of the
+            Ethernet Segment route. In case PEs use the Originating Router's
+            IP address of different families, an IPv4 address is always
+            considered numerically lower than an IPv6 address. Some examples
+            of using the "Don't Preempt" Capability and IP address tiebreakers follow:<a href="#section-4.1-2.5.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-2.5.2.1">
+                <p id="section-4.1-2.5.2.1.1">If vES1 parameters were (500, 0, Highest-Preference) in PE1
+                and (500, 1, Highest-Preference) in PE2, PE2 would be elected
+                due to the "Don't Preempt" Capability. The same example applies if PE1 and PE2
+                advertise the Lowest-Preference Algorithm instead.<a href="#section-4.1-2.5.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.1-2.5.2.2">
+                <p id="section-4.1-2.5.2.2.1">If vES1 parameters were (500, 0, Highest-Preference) in PE1
+                and (500, 0, Highest-Preference) in PE2, PE1 would be elected,
+                if PE1's IP address is lower than PE2's. Or PE2 would be
+                elected if PE2's IP address is lower than PE1's. The same
+                example applies if PE1 and PE2 advertise the Lowest-Preference
+                Algorithm instead.<a href="#section-4.1-2.5.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li id="section-4.1-2.6">
+            <p id="section-4.1-2.6.1">The Preference is an administrative option that <span class="bcp14">MUST</span> be
+            configured on a per-Ethernet-Segment basis, and it is normally
+            configured from the management plane. The preference value <span class="bcp14">MAY</span>
+            also be dynamically changed based on the use of local policies
+            that react to events on the PE. The following examples illustrate
+            the use of local policy to change the preference value in a
+            dynamic way.<a href="#section-4.1-2.6.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-2.6.2.1">
+                <p id="section-4.1-2.6.2.1.1">On PE1, if the DF algorithm is Highest-Preference,
+                ES1's preference value can be lowered from 500 to 100 in case
+                the bandwidth on the ENNI port is decreased by 50% (that could
+                happen if, e.g., the 2-port Link Aggregation Group between PE1
+                and the Aggregation Network loses one port).<a href="#section-4.1-2.6.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.1-2.6.2.2">
+                <p id="section-4.1-2.6.2.2.1">Local policy <span class="bcp14">MAY</span> also trigger dynamic Preference changes
+                based on the PE's bandwidth availability in the core, specific
+                ports going operationally down, etc.<a href="#section-4.1-2.6.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.1-2.6.2.3">
+                <p id="section-4.1-2.6.2.3.1">The definition of the actual local policies is out of scope
+                of this document.<a href="#section-4.1-2.6.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+        </ol>
+<p id="section-4.1-3">Highest-Preference and Lowest-Preference Algorithms <span class="bcp14">MAY</span> be used
+        along with the AC-DF capability. Assuming all the PEs in the Ethernet
+        Segment are configured consistently with the Highest-Preference or
+        Lowest-Preference Algorithm and AC-DF capability, a given PE in the
+        Ethernet Segment is not considered as a candidate for DF election until its corresponding Ethernet A-D per ES and
+        Ethernet A-D per EVI routes are received, as described in <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">Highest-Preference and Lowest-Preference Algorithms can be
+        used in different virtual Ethernet Segments on the same PE. For
+        instance, PE1 and PE2 can use Highest-Preference for vES1 and PE1, and PE2
+        and PE3 can use Lowest-Preference for vES2. The use of one DF algorithm over
+        the other is the operator's choice. The existence of both provides
+        flexibility and full control to the operator.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1-5">The procedures in this document can be used in an Ethernet Segment as defined in <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> or a virtual Ethernet Segment per <span>[<a href="#RFC9784" class="cite xref">RFC9784</a>]</span> and
+        also in EVPN networks as described in <span>[<a href="#RFC8214" class="cite xref">RFC8214</a>]</span>, <span>[<a href="#RFC7623" class="cite xref">RFC7623</a>]</span>, or <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span>.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-4.2">
+<section id="section-4.2">
+        <h3 id="name-use-of-the-highest-preferenc">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-use-of-the-highest-preferenc" class="section-name selfRef">Use of the Highest-Preference or Lowest-Preference Algorithm in Ethernet Segments</a>
+        </h3>
+<p id="section-4.2-1">While the Highest-Preference or Lowest-Preference Algorithm
+        described in <a href="#sect-4.1" class="auto internal xref">Section 4.1</a> is typically used in virtual
+        Ethernet Segment scenarios where there is normally an individual
+        Ethernet Tag per virtual Ethernet Segment, the existing definition of an Ethernet Segment <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> allows
+        potentially up to thousands of Ethernet Tags on the same Ethernet
+        Segment. If this is the case, and if the Highest-Preference or
+        Lowest-Preference Algorithm is configured in all the PEs of the
+        Ethernet Segment, the same PE will be the elected Designated Forwarder
+        for all the Ethernet Tags of the Ethernet Segment. A potential way to
+        achieve a more granular load balancing is described below.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The Ethernet Segment is configured with an administrative
+        preference value and an administrative DF algorithm, i.e.,
+        Highest-Preference or Lowest-Preference Algorithm. However, the
+        administrative DF algorithm (which is used to signal the DF algorithm
+        for the Ethernet Segment) <span class="bcp14">MAY</span> be overridden to a different operational
+        DF algorithm for a range of Ethernet Tags. With this option, the PE
+        builds a list of candidate PEs ordered by Preference; however, the
+        Designated Forwarder for a given Ethernet Tag will be determined by
+        the locally overridden DF algorithm.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">For instance:<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2-4.1">
+            <p id="section-4.2-4.1.1">Assuming ES3 is defined in PE1 and PE2, PE1 may be configured
+            as (500, 0, Highest-Preference) and PE2 as (100, 0, Highest-Preference) for ES3.
+           Both PEs will advertise the Ethernet
+            Segment routes for ES3 with the indicated parameters in the DF
+            Election Extended Community.<a href="#section-4.2-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.2-4.2">
+            <p id="section-4.2-4.2.1">In addition, assuming there are VLAN-based service interfaces and that
+            the PEs are attached to all Ethernet Tags in the range 1-4000,
+            both PE1 and PE2 may be configured with (Ethernet
+            Tag-range, Lowest-Preference), e.g., (2001-4000, Lowest-Preference).<a href="#section-4.2-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.2-4.3">
+            <p id="section-4.2-4.3.1">This will result in PE1 being the Designated Forwarder for Ethernet
+            Tags 1-2000 (since they use the default Highest-Preference
+            Algorithm) and PE2 being the Designated Forwarder for Ethernet Tags
+            2001-4000, due to the local policy overriding the
+            Highest-Preference Algorithm.<a href="#section-4.2-4.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.2-5">While the above logic provides a perfect load-balancing
+        distribution of Ethernet Tags per Designated Forwarder when there are
+        only two PEs, for Ethernet Segments attached to three or more PEs,
+        there would be only two Designated Forwarder PEs for all the Ethernet
+        Tags. Any other logic that provides a fair distribution of the
+        Designated Forwarder function among the three or more PEs is valid, as
+        long as that logic is consistent in all the PEs in the Ethernet
+        Segment. It is important to note that, when a local policy overrides
+        the Highest-Preference or Lowest-Preference signaled by all the PEs in
+        the Ethernet Segment, this local policy <span class="bcp14">MUST</span> be consistent in all the
+        PEs of the Ethernet Segment. If the local policy is inconsistent for a
+        given Ethernet Tag in the Ethernet Segment, packet drops or packet
+        duplication may occur on that Ethernet Tag. For all these reasons, the
+        use of virtual Ethernet Segments is <span class="bcp14">RECOMMENDED</span> for cases where more
+        than two PEs per Ethernet Segment exist and a good load-balancing
+        distribution per Ethernet Tag of the Designated Forwarder function is
+        desired.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-4.3">
+<section id="section-4.3">
+        <h3 id="name-the-non-revertive-capabilit">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-the-non-revertive-capabilit" class="section-name selfRef">The Non-Revertive Capability</a>
+        </h3>
+<p id="section-4.3-1">As discussed in <a href="#DP-capability" class="internal xref">item d</a> of <a href="#sect-1.2" class="auto internal xref">Section 1.2</a>, a capability to NOT
+        preempt the existing Designated Forwarder (for all the Ethernet Tags
+        in the Ethernet Segment) is required and therefore added to the
+        DF Election Extended Community. This option allows a
+        non-revertive behavior in the DF election.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">Note that when a given PE in an Ethernet Segment is taken down for
+        maintenance operations, before bringing it back, the Preference may be
+        changed in order to provide a non-revertive behavior. The "Don't Preempt" Capability and
+        the mechanism explained in this section will be used for those cases
+        when a former Designated Forwarder comes back up without any
+        controlled maintenance operation, and the non-revertive option is
+        desired in order to avoid service impact.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">In <a href="#es-and-deterministic-df-election" class="auto internal xref">Figure 3</a>, we assume
+        that based on the Highest-Preference Algorithm, PE3 is the Designated
+        Forwarder for ESI2.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-4">If PE3 has a link, EVC, or node failure, PE2 would take over as the
+        Designated Forwarder. If/when PE3 comes back up again, PE3 will take
+        over, causing some unnecessary packet loss in the Ethernet
+        Segment.<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<p id="section-4.3-5">The following procedure avoids preemption upon failure recovery
+        (see <a href="#es-and-deterministic-df-election" class="auto internal xref">Figure 3</a>).
+        The procedure supports a non-revertive mode that can be used along
+        with:<a href="#section-4.3-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-6.1">
+            <p id="section-4.3-6.1.1">Highest-Preference Algorithm<a href="#section-4.3-6.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.3-6.2">
+            <p id="section-4.3-6.2.1">Lowest-Preference Algorithm<a href="#section-4.3-6.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.3-6.3">
+            <p id="section-4.3-6.3.1">Highest-Preference or Lowest-Preference Algorithm, where a
+            local policy overrides the Highest-/Lowest-Preference tiebreaker
+            for a range of Ethernet Tags (<a href="#sect-4.2" class="auto internal xref">Section 4.2</a>)<a href="#section-4.3-6.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.3-7">The procedure is described, assuming the Highest-Preference
+        Algorithm in the Ethernet Segment, where local policy overrides the
+        tiebreaker for a given Ethernet Tag. The other cases above are a
+        subset of this one, and the differences are explained.<a href="#section-4.3-7" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.3-8">
+<li id="section-4.3-8.1">
+            <p id="section-4.3-8.1.1">A "Don't Preempt" Capability is defined on a
+            per-PE / per-Ethernet-Segment basis, as described in <a href="#sect-3" class="auto internal xref">Section 3</a>. If "Don't Preempt" is disabled (default
+            behavior), the PE sets DP to zero and advertises it in an Ethernet
+            Segment route. If "Don't Preempt" is enabled, the Ethernet Segment
+            route from the PE indicates the desire of not being preempted by
+            the other PEs in the Ethernet Segment. All the PEs in an Ethernet
+            Segment should be consistent in their configuration of the "Don't Preempt"
+            Capability; however, this document does not enforce the
+            consistency across all the PEs. In case of inconsistency in the
+            support of the "Don't Preempt" Capability in the PEs of the same Ethernet
+            Segment, non-revertive behavior is not guaranteed. However, PEs
+            supporting this capability still attempt this procedure.<a href="#section-4.3-8.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-8.2">
+            <p id="section-4.3-8.2.1">Assuming we want to avoid 'preemption' in all the PEs in the
+            Ethernet Segment, the three PEs are configured with the "Don't
+            Preempt" Capability. In this example, we assume ESI2 is configured
+            as 'DP=enabled' in the three PEs.<a href="#section-4.3-8.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-8.3">
+            <p id="section-4.3-8.3.1">We also assume vES2 is attached to Ethernet Tag-1 and Ethernet
+            Tag-2.
+     vES2 uses Highest-Preference as the DF algorithm, and a local
+            policy is configured in the three PEs to use Lowest-Preference for
+            Ethernet Tag-2. When vES2 is enabled in the three PEs, the PEs
+            will exchange the Ethernet Segment routes and select PE3 as
+            the Designated Forwarder for Ethernet Tag-1 (due to the
+            Highest-Preference) and PE1 as the Designated Forwarder for Ethernet
+            Tag-2 (due to the Lowest-Preference).<a href="#section-4.3-8.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-8.4">
+            <p id="section-4.3-8.4.1">If PE3's vES2 goes down (due to an EVC failure (as detected by OAM protocols),
+            a port failure, or a node failure), PE2 will become the Designated
+            Forwarder for Ethernet Tag-1. No changes will occur for Ethernet
+            Tag-2.<a href="#section-4.3-8.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.3-8.5">
+            <p id="section-4.3-8.5.1">When PE3's vES2 comes back up, PE3 will start a boot-timer (if
+            booting up) or hold-timer (if the port or EVC recovers). That
+            timer will allow some time for PE3 to receive the Ethernet Segment
+            routes from PE1 and PE2. This timer is applied between the INIT
+            and the DF_WAIT states in the DF election Finite
+            State Machine described in <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>. PE3 will
+            then:<a href="#section-4.3-8.5.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-8.5.2.1">
+                <p id="section-4.3-8.5.2.1.1">Select a "reference-PE" among the Ethernet Segment routes
+                in the virtual Ethernet Segment. If the Ethernet Segment uses
+                the Highest-Preference Algorithm, select a "Highest-PE". If it
+                uses the Lowest-Preference Algorithm, select a "Lowest-PE". If
+                a local policy is in use, to override the
+                Highest-/Lowest-Preference for a range of Ethernet Tags (as
+                discussed in <a href="#sect-4.2" class="auto internal xref">Section 4.2</a>), it is necessary to
+                select both a Highest-PE and a Lowest-PE. They are selected as
+                follows:<a href="#section-4.3-8.5.2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-8.5.2.1.2.1">
+                    <p id="section-4.3-8.5.2.1.2.1.1">The Highest-PE is the PE with higher Preference, using
+                    the "Don't Preempt" Capability first (with DP=1 being better) and, after that,
+                    the lower PE-IP address as tiebreakers.<a href="#section-4.3-8.5.2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.3-8.5.2.1.2.2">
+                    <p id="section-4.3-8.5.2.1.2.2.1">The Lowest-PE is the PE with lower Preference, using
+                    the "Don't Preempt" Capability first (with DP=1 being better) and, after that,
+                    the lower PE-IP address as tiebreakers.<a href="#section-4.3-8.5.2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.3-8.5.2.1.2.3">
+                    <p id="section-4.3-8.5.2.1.2.3.1">In our example, the Highest-Preference Algorithm is
+                    used, with a local policy to override it to use
+                    Lowest-Preference for a range of Ethernet Tags. Therefore,
+                    PE3 selects a Highest-PE and a Lowest-PE. PE3 will select
+                    PE2 as the Highest-PE over PE1, because when comparing
+                    (Pref, DP, PE-IP), (200, 1, PE2-IP) wins over (100, 1, PE1-IP).
+                    PE3 will select PE1 as the Lowest-PE over PE2, because
+                    (100, 1, PE1-IP) wins over (200, 1, PE2-IP). Note that if
+                    there were only one remote PE in the Ethernet Segment,
+                    the Lowest and Highest PE would be the same PE.<a href="#section-4.3-8.5.2.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+</li>
+              <li class="normal" id="section-4.3-8.5.2.2">
+                <p id="section-4.3-8.5.2.2.1">Check its own administrative Pref and compare it with the
+                one of the Highest-PE and Lowest-PE that have the "Don't Preempt"
+                Capability set in their Ethernet Segment routes. Depending on
+                this comparison, PE3 sends the Ethernet Segment route with a
+                (Pref, DP) that may be different from its administrative
+                (Pref, DP):<a href="#section-4.3-8.5.2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-8.5.2.2.2.1">
+                    <p id="section-4.3-8.5.2.2.2.1.1">If PE3's Pref value is higher than or equal to the
+                    Highest-PE's, PE3 will send the Ethernet Segment route
+                    with an 'in-use' operational Pref equal to the
+                    Highest-PE's and DP=0.<a href="#section-4.3-8.5.2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.3-8.5.2.2.2.2">
+                    <p id="section-4.3-8.5.2.2.2.2.1">If PE3's Pref value is lower than or equal to the
+                    Lowest-PE's, PE3 will send the Ethernet Segment route with
+                    an 'in-use' operational Preference equal to the
+                    Lowest-PE's and DP=0.<a href="#section-4.3-8.5.2.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.3-8.5.2.2.2.3">
+                    <p id="section-4.3-8.5.2.2.2.3.1">If PE3's Pref value is not higher than or equal to the
+                    Highest-PE's and is not lower than or equal to the
+                    Lowest-PE's, PE3 will send the Ethernet Segment route with
+                    its administrative (Pref, DP)=(300, 1).<a href="#section-4.3-8.5.2.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.3-8.5.2.2.2.4">
+                    <p id="section-4.3-8.5.2.2.2.4.1">In this example, PE3's administrative Pref=300 is
+                    higher than the Highest-PE with DP=1, that is, PE2
+                    (Pref=200). Hence, PE3 will inherit PE2's preference and
+                    send the Ethernet Segment route with an operational
+                    'in-use' (Pref, DP)=(200, 0).<a href="#section-4.3-8.5.2.2.2.4.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+</li>
+              <li class="normal" id="section-4.3-8.5.2.3">
+                <p id="section-4.3-8.5.2.3.1">Send its "Don't Preempt" Capability set to
+                zero, as long as the advertised Pref is the 'in-use'
+                operational Pref (as opposed to the 'administrative'
+                Pref).<a href="#section-4.3-8.5.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.3-8.5.2.4">
+                <p id="section-4.3-8.5.2.4.1">Not trigger any Designated Forwarder changes for Ethernet Tag-1. This Ethernet Segment route update sent by PE3, with
+                (200, 0, PE3-IP), will not cause any Designated Forwarder
+                switchover for any Ethernet Tag. This is because the
+                 "Don't Preempt" Capability will be used as a tiebreaker in the DF election. That is, if a PE has two candidate PEs
+                with the same Pref, it will pick the one with DP=1. There are
+                no Designated Forwarder changes for Ethernet Tag-2 either.<a href="#section-4.3-8.5.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li id="section-4.3-8.6">
+            <p id="section-4.3-8.6.1">For any subsequent received update/withdraw in the Ethernet
+            Segment, the PEs will go through the process described in (5) to
+            select the Highest-PEs and Lowest-PEs, now considering themselves as
+            candidates. For instance, if PE2 fails upon receiving PE2's
+            Ethernet Segment route withdrawal, PE3 and PE1 will go through the
+            selection of the new Highest-PEs and Lowest-PEs (considering their own
+            active Ethernet Segment route), and then they will run the
+            DF election.<a href="#section-4.3-8.6.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-8.6.2.1">
+                <p id="section-4.3-8.6.2.1.1">If a PE selects itself as the new Highest-PE or Lowest-PE and it
+                was not before, the PE will then compare its operational
+                'in-use' Pref with its administrative Pref. If different, the
+                PE will send an Ethernet Segment route update with its
+                administrative Pref and DP values. In the example, PE3 will be
+                the new Highest-PE; therefore, it will send an Ethernet Segment
+                route update with (Pref, DP)=(300, 1).<a href="#section-4.3-8.6.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.3-8.6.2.2">
+                <p id="section-4.3-8.6.2.2.1">After running the DF election, PE3 will
+                become the new Designated Forwarder for Ethernet Tag-1. No
+                changes will occur for Ethernet Tag-2.<a href="#section-4.3-8.6.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+        </ol>
+<p id="section-4.3-9">Note that, irrespective of the "Don't Preempt" Capability, when a PE or Ethernet
+        Segment comes back and the PE advertises a DF
+        election algorithm different from the one configured in the rest of
+        the PEs in the Ethernet Segment, all the PEs in the Ethernet Segment
+        <span class="bcp14">MUST</span> fall back to the default DF algorithm <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.<a href="#section-4.3-9" class="pilcrow">¶</a></p>
+<p id="section-4.3-10">This document does not modify the use of the P and B bits in the
+        Ethernet A-D per EVI routes <span>[<a href="#RFC8214" class="cite xref">RFC8214</a>]</span> advertised by the
+        PEs in the Ethernet Segment after running the DF
+        election, irrespective of the revertive or non-revertive behavior in
+        the PE.<a href="#section-4.3-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-5">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">This document describes a DF election algorithm
+      that provides absolute control (by configuration) over what PE is the
+      Designated Forwarder for a given Ethernet Tag. While this control is
+      desired in many situations, a malicious user that gets access to the
+      configuration of a PE in the Ethernet Segment may change the behavior of
+      the network. In other DF algorithms such as HRW, the DF election is more automated and cannot be determined by
+      configuration.
+      If the DF algorithm is Highest-Preference or Lowest-Preference, an attacker may change the configuration of the preference
+      value on a PE and Ethernet Segment to impact the traffic going through
+      that PE and Ethernet Segment.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">The non-revertive capability described in this document may be seen
+      as a security improvement over the regular EVPN revertive DF election: an intentional link (or node) "flapping" on a PE
+      will only cause service disruption once, when the PE goes to
+      Non-Designated Forwarder state. However, an attacker who gets access to
+      the configuration of a PE in the Ethernet Segment will be able to
+      disable the non-revertive behavior, by advertising a conflicting DF
+      election algorithm and thereby forcing fallback to the default DF
+      algorithm.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">The document also describes how a local policy can override the
+      Highest-Preference or Lowest-Preference Algorithms for a range of
+      Ethernet Tags in the Ethernet Segment. If the local policy is not
+      consistent across all PEs in the Ethernet Segment and there is an
+      Ethernet Tag that ends up with an inconsistent use of Highest-Preference
+      or Lowest-Preference in different PEs, packet drop or packet duplication
+      may occur for that Ethernet Tag.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">Finally, the two DF election algorithms specified
+      in this document (Highest-Preference and Lowest-Preference) do not
+      change the way the PEs share their Ethernet Segment information,
+      compared to the algorithms in <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> and <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>. Therefore, the security considerations in <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span> and <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span> apply to this document
+      as well.<a href="#section-5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-6">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">Per this document, IANA has:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-2.1">
+          <p id="section-6-2.1.1">Allocated two new values in the "DF Alg" registry created
+          by <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span>, as follows:<a href="#section-6-2.1.1" class="pilcrow">¶</a></p>
+<table class="left" id="table-1">
+            <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Alg</th>
+                <th class="text-left" rowspan="1" colspan="1">Name</th>
+                <th class="text-left" rowspan="1" colspan="1">Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">2</td>
+                <td class="text-left" rowspan="1" colspan="1">Highest-Preference Algorithm</td>
+                <td class="text-left" rowspan="1" colspan="1">RFC 9785</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">3</td>
+                <td class="text-left" rowspan="1" colspan="1">Lowest-Preference Algorithm</td>
+                <td class="text-left" rowspan="1" colspan="1">RFC 9785</td>
+              </tr>
+            </tbody>
+          </table>
+</li>
+        <li class="normal" id="section-6-2.2">
+          <p id="section-6-2.2.1">Allocated a new value in the "DF Election Capabilities"
+          registry created by <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span> for the 2-octet Bitmap
+          field in the DF Election Extended Community (under the "Border 
+          Gateway Protocol (BGP) Extended Communities" registry group), as follows:<a href="#section-6-2.2.1" class="pilcrow">¶</a></p>
+<table class="left" id="table-2">
+            <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Bit</th>
+                <th class="text-left" rowspan="1" colspan="1">Name</th>
+                <th class="text-left" rowspan="1" colspan="1">Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">0</td>
+                <td class="text-left" rowspan="1" colspan="1">D (Don't Preempt) Capability</td>
+                <td class="text-left" rowspan="1" colspan="1">RFC 9785</td>
+              </tr>
+            </tbody>
+          </table>
+</li>
+        <li class="normal" id="section-6-2.3">
+          <p id="section-6-2.3.1">Listed this document as an additional reference for the DF Election Extended Community field in the "EVPN Extended Community Sub-Types" registry, as follows:<a href="#section-6-2.3.1" class="pilcrow">¶</a></p>
+<table class="left" id="table-3">
+            <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Sub-Type Value</th>
+                <th class="text-left" rowspan="1" colspan="1">Name</th>
+                <th class="text-left" rowspan="1" colspan="1">Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">0x06</td>
+                <td class="text-left" rowspan="1" colspan="1">DF Election Extended Community</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <span>[<a href="#RFC8584" class="cite xref">RFC8584</a>]</span> and RFC 9785</td>
+              </tr>
+            </tbody>
+          </table>
+</li>
+      </ul>
+</section>
+</div>
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7432">[RFC7432]</dt>
+        <dd>
+<span class="refAuthor">Sajassi, A., Ed.</span>, <span class="refAuthor">Aggarwal, R.</span>, <span class="refAuthor">Bitar, N.</span>, <span class="refAuthor">Isaac, A.</span>, <span class="refAuthor">Uttaro, J.</span>, <span class="refAuthor">Drake, J.</span>, and <span class="refAuthor">W. Henderickx</span>, <span class="refTitle">"BGP MPLS-Based Ethernet VPN"</span>, <span class="seriesInfo">RFC 7432</span>, <span class="seriesInfo">DOI 10.17487/RFC7432</span>, <time datetime="2015-02" class="refDate">February 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7432">https://www.rfc-editor.org/info/rfc7432</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8584">[RFC8584]</dt>
+        <dd>
+<span class="refAuthor">Rabadan, J., Ed.</span>, <span class="refAuthor">Mohanty, S., Ed.</span>, <span class="refAuthor">Sajassi, A.</span>, <span class="refAuthor">Drake, J.</span>, <span class="refAuthor">Nagaraj, K.</span>, and <span class="refAuthor">S. Sathappan</span>, <span class="refTitle">"Framework for Ethernet VPN Designated Forwarder Election Extensibility"</span>, <span class="seriesInfo">RFC 8584</span>, <span class="seriesInfo">DOI 10.17487/RFC8584</span>, <time datetime="2019-04" class="refDate">April 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8584">https://www.rfc-editor.org/info/rfc8584</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9784">[RFC9784]</dt>
+      <dd>
+<span class="refAuthor">Sajassi, A.</span>, <span class="refAuthor">Brissette, P.</span>, <span class="refAuthor">Schell, R.</span>, <span class="refAuthor">Drake, J.</span>, and <span class="refAuthor">J. Rabadan</span>, <span class="refTitle">"Virtual Ethernet Segments for EVPN and Provider Backbone Bridge EVPN"</span>, <span class="seriesInfo">RFC 9784</span>, <span class="seriesInfo">DOI 10.17487/9784</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9784">https://www.rfc-editor.org/info/rfc9784</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC7623">[RFC7623]</dt>
+        <dd>
+<span class="refAuthor">Sajassi, A., Ed.</span>, <span class="refAuthor">Salam, S.</span>, <span class="refAuthor">Bitar, N.</span>, <span class="refAuthor">Isaac, A.</span>, and <span class="refAuthor">W. Henderickx</span>, <span class="refTitle">"Provider Backbone Bridging Combined with Ethernet VPN (PBB-EVPN)"</span>, <span class="seriesInfo">RFC 7623</span>, <span class="seriesInfo">DOI 10.17487/RFC7623</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7623">https://www.rfc-editor.org/info/rfc7623</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8214">[RFC8214]</dt>
+        <dd>
+<span class="refAuthor">Boutros, S.</span>, <span class="refAuthor">Sajassi, A.</span>, <span class="refAuthor">Salam, S.</span>, <span class="refAuthor">Drake, J.</span>, and <span class="refAuthor">J. Rabadan</span>, <span class="refTitle">"Virtual Private Wire Service Support in Ethernet VPN"</span>, <span class="seriesInfo">RFC 8214</span>, <span class="seriesInfo">DOI 10.17487/RFC8214</span>, <time datetime="2017-08" class="refDate">August 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8214">https://www.rfc-editor.org/info/rfc8214</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8365">[RFC8365]</dt>
+      <dd>
+<span class="refAuthor">Sajassi, A., Ed.</span>, <span class="refAuthor">Drake, J., Ed.</span>, <span class="refAuthor">Bitar, N.</span>, <span class="refAuthor">Shekhar, R.</span>, <span class="refAuthor">Uttaro, J.</span>, and <span class="refAuthor">W. Henderickx</span>, <span class="refTitle">"A Network Virtualization Overlay Solution Using Ethernet VPN (EVPN)"</span>, <span class="seriesInfo">RFC 8365</span>, <span class="seriesInfo">DOI 10.17487/RFC8365</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8365">https://www.rfc-editor.org/info/rfc8365</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="sect-7">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors would like to thank <span class="contact-name">Kishore       Tiruveedhula</span> and <span class="contact-name">Sasha Vainshtein</span> for their
+      reviews and comments. Also, thank you to <span class="contact-name">Luc André       Burdet</span> and <span class="contact-name">Stephane Litkowski</span> for their
+      thorough reviews and suggestions for a new
+      Lowest-Preference Algorithm.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8">
+<section id="appendix-B">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<p id="appendix-B-1">In addition to the authors listed, the following individuals also
+      contributed to this document:<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tony Przygienda</span></div>
+<div dir="auto" class="left"><span class="org">Juniper</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Satya Mohanty</span></div>
+<div dir="auto" class="left"><span class="org">Cisco</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Kiran Nagaraj</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Vinod Prabhu</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Selvakumar Sivaraj</span></div>
+<div dir="auto" class="left"><span class="org">Juniper</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Sami Boutros</span></div>
+<div dir="auto" class="left"><span class="org">VMWare</span></div>
+</address>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jorge Rabadan (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+<div dir="auto" class="left"><span class="street-address">520 Almanor Avenue</span></div>
+<div dir="auto" class="left">
+<span class="locality">Sunnyvale</span>, <span class="region">CA</span> <span class="postal-code">94085</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jorge.rabadan@nokia.com" class="email">jorge.rabadan@nokia.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Senthil Sathappan</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:senthil.sathappan@nokia.com" class="email">senthil.sathappan@nokia.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Wen Lin</span></div>
+<div dir="auto" class="left"><span class="org">Juniper Networks</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:wlin@juniper.net" class="email">wlin@juniper.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">John Drake</span></div>
+<div dir="auto" class="left"><span class="org">Independent</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:je_drake@yahoo.com" class="email">je_drake@yahoo.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ali Sajassi</span></div>
+<div dir="auto" class="left"><span class="org">Cisco Systems</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:sajassi@cisco.com" class="email">sajassi@cisco.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
