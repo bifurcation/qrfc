@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="en" class="BCP RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9813: Operational Considerations for Using TLS Pre-Shared Keys (TLS-PSKs) with RADIUS</title>
+<meta content="Alan DeKok" name="author">
+<meta content="
+       This document provides implementation and operational considerations
+      for using TLS Pre-Shared Keys (TLS-PSKs) with RADIUS/TLS (RFC 6614) and RADIUS/DTLS (RFC 7360).
+      The purpose of the document is to help smooth the operational transition
+      from the use of RADIUS/UDP to RADIUS/TLS. 
+    " name="description">
+<meta content="xml2rfc 3.29.0" name="generator">
+<meta content="example" name="keyword">
+<meta content="9813" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.29.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9813.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-radext-tls-psk-12" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9813" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9813</td>
+<td class="center">RADIUS and TLS-PSK</td>
+<td class="right">July 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">DeKok</td>
+<td class="center">Best Current Practice</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9813" class="eref">9813</a></dd>
+<dt class="label-bcp">BCP:</dt>
+<dd class="bcp">243</dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Best Current Practice</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-07" class="published">July 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">A. DeKok</div>
+<div class="org">InkBridge Networks</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9813</h1>
+<h1 id="title">Operational Considerations for Using TLS Pre-Shared Keys (TLS-PSKs) with RADIUS</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document provides implementation and operational considerations
+      for using TLS Pre-Shared Keys (TLS-PSKs) with RADIUS/TLS (RFC 6614) and RADIUS/DTLS (RFC 7360).
+      The purpose of the document is to help smooth the operational transition
+      from the use of RADIUS/UDP to RADIUS/TLS.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This memo documents an Internet Best Current Practice.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further information
+            on BCPs is available in Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9813">https://www.rfc-editor.org/info/rfc9813</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-justification-of-psk" class="internal xref">Justification of PSK</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-general-discussion-of-psks-" class="internal xref">General Discussion of PSKs and PSK Identities</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-guidance-for-psks" class="internal xref">Guidance for PSKs</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-psk-requirements" class="internal xref">PSK Requirements</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-usability-guidance" class="internal xref">Usability Guidance</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.3">
+                    <p id="section-toc.1-1.4.2.1.2.3.1"><a href="#section-4.1.3" class="auto internal xref">4.1.3</a>.  <a href="#name-interaction-between-psks-an" class="internal xref">Interaction Between PSKs and RADIUS Shared Secrets</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-psk-identities" class="internal xref">PSK Identities</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-security-of-psk-identities" class="internal xref">Security of PSK Identities</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-psk-and-psk-identity-sharin" class="internal xref">PSK and PSK Identity Sharing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-psk-lifetimes" class="internal xref">PSK Lifetimes</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-guidance-for-radius-clients" class="internal xref">Guidance for RADIUS Clients</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-psk-identities-2" class="internal xref">PSK Identities</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-psk-identity-requirements" class="internal xref">PSK Identity Requirements</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-usability-guidance-2" class="internal xref">Usability Guidance</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-guidance-for-radius-servers" class="internal xref">Guidance for RADIUS Servers</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-current-practices" class="internal xref">Current Practices</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-practices-for-tls-psk" class="internal xref">Practices for TLS-PSK</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.1">
+                    <p id="section-toc.1-1.6.2.2.2.1.1"><a href="#section-6.2.1" class="auto internal xref">6.2.1</a>.  <a href="#name-ip-filtering" class="internal xref">IP Filtering</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.2">
+                    <p id="section-toc.1-1.6.2.2.2.2.1"><a href="#section-6.2.2" class="auto internal xref">6.2.2</a>.  <a href="#name-psk-authentication" class="internal xref">PSK Authentication</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.3">
+                    <p id="section-toc.1-1.6.2.2.2.3.1"><a href="#section-6.2.3" class="auto internal xref">6.2.3</a>.  <a href="#name-resumption" class="internal xref">Resumption</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.4">
+                    <p id="section-toc.1-1.6.2.2.2.4.1"><a href="#section-6.2.4" class="auto internal xref">6.2.4</a>.  <a href="#name-interaction-with-other-tls-" class="internal xref">Interaction with Other TLS Authentication Methods</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The previous specifications "Transport Layer Security (TLS)
+      Encryption for RADIUS" <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and "Datagram Transport
+      Layer Security (DTLS) as a Transport Layer for RADIUS" <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span> defined how (D)TLS can be used as a transport
+      protocol for RADIUS.  However, those documents do not provide guidance
+      for using TLS Pre-Shared Keys (TLS-PSKs) with RADIUS.  This document provides that missing
+      guidance, and gives implementation and operational considerations.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">To clearly distinguish the various secrets and keys, this document
+      uses "shared secret" to mean "RADIUS shared secret", and "Pre-Shared Key
+      (PSK)" to mean "secret keys that are used with TLS-PSK".<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The purpose of the document is to help smooth the operational
+      transition from the use of the insecure RADIUS/UDP to the use of the
+      much more secure RADIUS/TLS.  While using PSKs is often less preferable
+      to using public or private keys, the operational model of PSKs follows
+      the legacy RADIUS "shared secret" model.  As such, it can be easier for
+      implementers and operators to transition to TLS when that transition is
+      offered as a series of small changes.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">TLS-PSK is intended to be used in networks where the
+      addresses of clients and servers are known, as with RADIUS/UDP.  This
+      situation is similar to the use case of RADIUS/UDP with shared secrets.
+      TLS-PSK is not suitable for situations where clients dynamically
+      discover servers, as there is no way for the client to dynamically
+      determine which PSK should be used with a new server (or vice versa).
+      In contrast, dynamic discovery <span>[<a href="#RFC7585" class="cite xref">RFC7585</a>]</span> allows for
+      a client or server to authenticate a previously unknown server or client,
+      as the parties can be issued a certificate by a known Certification
+      Authority (CA).<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">TLS-PSKs have the same issue of symmetric information between client
+      and server: both parties know the secret key.  A client could, in
+      theory, pretend to be a server.  In contrast, certificates are
+      asymmetric, where it is impossible for the parties to assume the other's
+      identity.  Further discussion of this topic is contained in <a href="#sharing" class="auto internal xref">Section 4.3</a>.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">Unless it is explicitly called out that a recommendation applies to
+      TLS or DTLS alone, each recommendation applies to both TLS and
+      DTLS.<a href="#section-1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-2-2">
+        <dt id="section-2-2.1">External PSK</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">A PSK (along with a related PSK Identity)
+          that is administratively configured.  That is, one that is
+          external to TLS and is not created by the TLS subsystem.<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">Resumption PSK</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">A PSK (along with a related PSK Identity)
+          that is created by the TLS subsystem and/or application, for use
+          with resumption.<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="justification-of-psk">
+<section id="section-3">
+      <h2 id="name-justification-of-psk">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-justification-of-psk" class="section-name selfRef">Justification of PSK</a>
+      </h2>
+<p id="section-3-1">TLS deployments usually rely on certificates in most common
+      uses. However, we recognize that it may be difficult to fully upgrade
+      client implementations to allow for certificates to be used with
+      RADIUS/TLS and RADIUS/DTLS.  These upgrades involve not only
+      implementing TLS, but can also require significant changes to
+      administration interfaces and application programming interfaces (APIs)
+      in order to fully support certificates.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">For example, unlike shared secrets, certificates expire.  This
+      expiration means that a working system using TLS can suddenly stop
+      working.  Managing this expiration can require additional notification
+      APIs on RADIUS clients and servers that were previously not required
+      when shared secrets were used.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">Certificates also require the use of certification authorities (CAs)
+      and chains of certificates.  RADIUS implementations using TLS therefore
+      have to track not just a small shared secret, but also potentially many
+      large certificates.  The use of TLS-PSK can therefore provide a simpler
+      upgrade path for implementations to transition from RADIUS shared
+      secrets to TLS.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">In terms of ongoing maintenance, it is generally simpler to maintain
+      servers than clients.  For one, there are many fewer servers than
+      clients.  Servers are also typically less resource constrained, and
+      often run on general-purpose operating systems, where maintenance can be
+      automated using widely available tools.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">In contrast, clients are often numerous, resource constrained, and
+      likely to be closed or proprietary systems with limited interfaces.  As
+      a result, it can be difficult to update these clients when a root CA
+      expires.  The use of TLS-PSK in such an environment may therefore offer
+      management efficiencies.<a href="#section-3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="general-discussion-of-psks-and-psk-identities">
+<section id="section-4">
+      <h2 id="name-general-discussion-of-psks-">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-general-discussion-of-psks-" class="section-name selfRef">General Discussion of PSKs and PSK Identities</a>
+      </h2>
+<p id="section-4-1">Before we define any RADIUS-specific use of PSKs, we must first
+      review the current standards for PSKs, and give general advice on PSKs
+      and PSK Identities.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">The requirements in this section apply to both client and server
+      implementations that use TLS-PSK.  Client-specific and server-specific
+      issues are discussed in more detail later in this document.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<div id="guidance-for-psks">
+<section id="section-4.1">
+        <h3 id="name-guidance-for-psks">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-guidance-for-psks" class="section-name selfRef">Guidance for PSKs</a>
+        </h3>
+<p id="section-4.1-1">We first give requirements for creating and managing PSKs, followed
+        by usability guidance, and then a discussion of RADIUS shared secrets
+        and their interaction with PSKs.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<div id="psk-requirements">
+<section id="section-4.1.1">
+          <h4 id="name-psk-requirements">
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-psk-requirements" class="section-name selfRef">PSK Requirements</a>
+          </h4>
+<p id="section-4.1.1-1">Reuse of a PSK in multiple versions of TLS (e.g., TLS 1.2 and TLS
+          1.3) is considered unsafe (see <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#appendix-E.7" class="relref">Appendix E.7</a></span>).  Where TLS 1.3 binds the PSK to a particular
+          key derivation function (KDF), TLS 1.2 does not.  This binding means that
+          it is possible to use the same PSK in different hashes, leading to
+          the potential for attacking the PSK by comparing the hash outputs.
+          While there are no known insecurities, these uses are not known to
+          be secure, and should therefore be avoided.  For this reason, an
+          implementation <span class="bcp14">MUST NOT</span> use the same PSK for TLS 1.3
+          and for earlier versions of TLS. The exact manner in which this
+          requirement is enforced is implementation-specific. One possibility
+          is to have two different PSKs. Another possibility is to forbid the
+          use of TLS versions less than TLS 1.3<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-2"><span>[<a href="#RFC9258" class="cite xref">RFC9258</a>]</span> adds a KDF to the import interface of
+          (D)TLS 1.3, which binds the externally provided PSK to the protocol
+          version.  That process is preferred to any trust-on-first-use (TOFU) mechanism.  In
+          particular, that document:<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
+<blockquote id="section-4.1.1-3">
+            <p id="section-4.1.1-3.1">... describes a mechanism for importing PSKs derived from
+              external PSKs by including the target KDF, (D)TLS protocol
+              version, and an optional context string to ensure
+              uniqueness. This process yields a set of candidate PSKs, each of
+              which are bound to a target KDF and protocol, that are separate
+              from those used in (D)TLS 1.2 and prior versions. This expands
+              what would normally have been a single PSK and identity into a
+              set of PSKs and identities.<a href="#section-4.1.1-3.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-4.1.1-4">An implementation <span class="bcp14">MUST NOT</span> use the same PSK for
+          TLS 1.3 and for earlier versions of TLS.  This requirement prevents
+          reuse of a PSK with multiple TLS versions, which prevents the
+          attacks discussed in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#appendix-E.7" class="relref">Appendix E.7</a></span>.  The exact manner in which this requirement is
+          enforced is implementation-specific.  One possibility is to have two
+          different PSKs.  Another possibility is to forbid the use of TLS
+          versions less than TLS 1.3.<a href="#section-4.1.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-5">Implementations <span class="bcp14">MUST</span> follow the directions of
+          <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-6" class="relref">Section 6</a></span> for the
+          use of external PSKs in TLS.  That document provides extremely
+          useful guidance on generating and using PSKs.<a href="#section-4.1.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-6">Implementations <span class="bcp14">MUST</span> support PSKs of at least 32
+          octets in length, and <span class="bcp14">SHOULD</span> support PSKs of 64
+          octets or more.  As the PSKs are generally hashed before being used
+          in TLS, the useful entropy of a PSK is limited by the size of the
+          hash output.  This output may be 256, 384, or 512 bits in length.
+          Nevertheless, it is good practice for implementations to allow entry
+          of PSKs of more than 64 octets, as the PSK may be in a form other
+          than bare binary data.  Implementations that limit the PSK to a
+          maximum of 64 octets are likely to use PSKs that have much less
+          than 512 bits of entropy.  That is, a PSK with high entropy may be
+          expanded via some construct (e.g., base32 as seen in <a href="#usability-guidance" class="auto internal xref">Section 4.1.2</a>)
+          in order to make it easier for people to interact with.  Where 512
+          bits of entropy are input to an encoding construct, the output may
+          be larger than 64 octets.<a href="#section-4.1.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-7">Implementations <span class="bcp14">MUST</span> require that PSKs be at least
+          16 octets in length.  That is, short PSKs <span class="bcp14">MUST NOT</span> be
+          permitted to be used, and PSKs <span class="bcp14">MUST</span> be random.  The
+          strength of the PSK is not determined by the length of the PSK, but
+          instead by the number of bits of entropy that it contains.  People
+          are not good at creating data with high entropy, so a source of
+          cryptographically secure random numbers <span class="bcp14">MUST</span> be
+          used.<a href="#section-4.1.1-7" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-8">Where user passwords are generally intended to be remembered and
+          entered by people on a regular basis, PSKs are intended to be
+          entered once, and then automatically saved in a system
+          configuration.  As such, due to the limited entropy of passwords,
+          they are not acceptable for use with TLS-PSK, and would only be
+          acceptable for use with a password-authenticated key exchange (PAKE)
+          TLS method <span>[<a href="#RFC8492" class="cite xref">RFC8492</a>]</span>.  Implementations
+          <span class="bcp14">MUST</span> therefore support entry and storage of PSKs as
+          undistinguished octets.<a href="#section-4.1.1-8" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-9">We also incorporate by reference the requirements of <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>], <a href="https://rfc-editor.org/rfc/rfc7360#section-10.2" class="relref">Section 10.2</a></span> when using
+          PSKs.<a href="#section-4.1.1-9" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-10">It may be tempting for servers to implement a TOFU policy with
+          respect to clients.  Such behavior is <span class="bcp14">NOT RECOMMENDED</span>.  When servers receive a connection from an
+          unknown client, they <span class="bcp14">SHOULD</span> log the PSK Identity,
+          source IP address, and any other information that may be relevant.
+          An administrator can then later look at the logs and determine the
+          appropriate action to take.<a href="#section-4.1.1-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="usability-guidance">
+<section id="section-4.1.2">
+          <h4 id="name-usability-guidance">
+<a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-usability-guidance" class="section-name selfRef">Usability Guidance</a>
+          </h4>
+<p id="section-4.1.2-1">PSKs in their purest form are opaque tokens, represented as
+          an undistinguished series of octets.  Where PSKs are expected to be
+          managed automatically by scripted methods, this format is
+          acceptable.  However, in some cases it is necessary for
+          administrators to share PSKs, in which case human-readable formats
+          may be useful.  Implementations <span class="bcp14">SHOULD</span> support
+          entering PSKs as both binary data and via a human-readable form
+          such as hex encoding.<a href="#section-4.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-2">Implementations <span class="bcp14">SHOULD</span> use a human-readable form
+          of PSKs for interfaces that are intended to be used by people, and
+          <span class="bcp14">SHOULD</span> allow for binary data to be entered via an
+          application programming interface (API).  Implementations
+          <span class="bcp14">SHOULD</span> also allow for PSKs to be displayed in the hex
+          encoding mentioned above, so that administrators can manually verify
+          that a particular PSK is being used.<a href="#section-4.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-3">When using PSKs, administrators <span class="bcp14">SHOULD</span> use PSKs of
+          at least 24 octets that are generated using a source of cryptographically
+          secure random numbers.  Implementers needing a secure random number
+          generator should see <span>[<a href="#RFC8937" class="cite xref">RFC8937</a>]</span> for further
+          guidance.  PSKs are not passwords, and administrators should not try
+          to manually create PSKs.<a href="#section-4.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-4">In order to guide implementers and administrators, we give
+          example commands below that generate random PSKs from a locally
+          secure source.  While some commands may not work on some systems, one
+          of the commands should succeed.  The intent here is to document a
+          concise and simple example of creating PSKs that are both secure
+          and human-manageable.  This document does not mandate that the
+          PSKs follow this format or any other format.<a href="#section-4.1.2-4" class="pilcrow">¶</a></p>
+<div class="lang-shell sourcecode" id="section-4.1.2-5">
+<pre>
+openssl rand -base64 16
+
+dd if=/dev/urandom bs=1 count=16 | base64
+
+dd if=/dev/urandom bs=1 count=16 | base32
+
+dd if=/dev/urandom bs=1 count=16 | (hexdump -ve '/1 "%02x"' &amp;&amp; echo)
+</pre><a href="#section-4.1.2-5" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1.2-6">Only one of the above commands should be run; there is no need to
+          run all of them.  Each command reads 128 bits (16 octets) of random
+          data from a secure source, and encodes it as printable and readable
+          ASCII.  This form of PSK will be accepted by any implementation
+          that supports at least 32 octets for PSKs.  Larger PSKs can be
+          generated by changing the "16" number to a larger value.  The above
+          derivation assumes that the random source returns one bit of entropy
+          for every bit of randomness that is returned.  Sources failing that
+          assumption are <span class="bcp14">NOT RECOMMENDED</span>.<a href="#section-4.1.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="interaction-between-psks-and-radius-shared-secrets">
+<section id="section-4.1.3">
+          <h4 id="name-interaction-between-psks-an">
+<a href="#section-4.1.3" class="section-number selfRef">4.1.3. </a><a href="#name-interaction-between-psks-an" class="section-name selfRef">Interaction Between PSKs and RADIUS Shared Secrets</a>
+          </h4>
+<p id="section-4.1.3-1">Any shared secret used for RADIUS/UDP or RADIUS/TLS <span class="bcp14">MUST NOT</span> be used for TLS-PSK.<a href="#section-4.1.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-2">It is <span class="bcp14">RECOMMENDED</span> that RADIUS clients and servers
+          track all used shared secrets and PSKs, and then verify that the
+          following requirements all hold true:<a href="#section-4.1.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1.3-3.1">
+              <p id="section-4.1.3-3.1.1">no shared secret is used for more than one RADIUS client<a href="#section-4.1.3-3.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.1.3-3.2">
+              <p id="section-4.1.3-3.2.1">no PSK is used for more than one RADIUS client<a href="#section-4.1.3-3.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.1.3-3.3">
+              <p id="section-4.1.3-3.3.1">no shared secret is used as a PSK<a href="#section-4.1.3-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4.1.3-4">Note that the shared secret of "radsec" given in <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> can be used across multiple clients, as that
+          value is mandated by the specification.  The intention here is to
+          recommend best practices for administrators who enter site-local
+          shared secrets.<a href="#section-4.1.3-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-5">There may be use cases for using one shared secret across
+          multiple RADIUS clients.  There may similarly be use cases for
+          sharing a PSK across multiple RADIUS clients.  Details of the
+          possible attacks on reused PSKs are given in <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-4.1" class="relref">Section 4.1</a></span>.<a href="#section-4.1.3-5" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-6">There are no known use cases for using a PSK as a shared secret,
+          or vice versa.<a href="#section-4.1.3-6" class="pilcrow">¶</a></p>
+<p id="section-4.1.3-7">Implementations <span class="bcp14">MUST</span> reject configuration attempts
+          that try to use the same value for the PSK and shared secret.  To
+          prevent administrative errors, implementations should not have
+          interfaces that confuse PSKs and shared secrets or that allow
+          both PSKs and shared secrets to be entered at the same time.  There
+          is too much of a temptation for administrators to enter the same
+          value in both fields, which would violate the limitations given
+          above.  Similarly, using a "shared secret" field as a way for
+          administrators to enter PSKs is bad practice.  The PSK entry fields
+          need to be labeled as being related to PSKs, and not to shared
+          secrets.<a href="#section-4.1.3-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="psk-identities">
+<section id="section-4.2">
+        <h3 id="name-psk-identities">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-psk-identities" class="section-name selfRef">PSK Identities</a>
+        </h3>
+<p id="section-4.2-1"><span>[<a href="#RFC4279" class="cite xref">RFC4279</a>], <a href="https://rfc-editor.org/rfc/rfc4279#section-5.1" class="relref">Section 5.1</a></span>
+        requires that PSK Identities be encoded in UTF-8 format.  However,
+        <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.11" class="relref">Section 4.2.11</a></span>
+        describes the "Pre-Shared Key Extension" and defines the ticket as an
+        opaque string: "opaque identity&lt;1..2<sup>16</sup>-1&gt;;".  This PSK is then
+        used in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.6.1" class="relref">Section 4.6.1</a></span>
+        for resumption.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">These definitions appear to be in conflict.  This conflict is
+        addressed in <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-6.1.1" class="relref">Section 6.1.1</a></span>, which discusses requirements for encoding and
+        comparison of PSK Identities.  Systems <span class="bcp14">MUST</span> follow the
+        directions of <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-6.1.1" class="relref">Section 6.1.1</a></span> when using or comparing PSK Identities for
+        RADIUS/TLS.  Implementations <span class="bcp14">MUST</span> follow the
+        recommendations of <span>[<a href="#RFC8265" class="cite xref">RFC8265</a>]</span> for handling PSK Identity
+        strings.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">In general, implementers should allow for external PSK Identities
+        to follow <span>[<a href="#RFC4279" class="cite xref">RFC4279</a>]</span> and be UTF-8, while PSK Identities
+        provisioned as part of resumption are automatically provisioned, and
+        therefore follow <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">Note that the PSK Identity is sent in the clear, and is therefore
+        visible to attackers.  Where privacy is desired, the PSK Identity
+        could be either an opaque token generated cryptographically, or
+        perhaps in the form of a Network Access Identifier (NAI) <span>[<a href="#RFC7542" class="cite xref">RFC7542</a>]</span>, where the "user" portion is an opaque token.  For
+        example, an NAI could be "68092112@example.com".  If the attacker
+        already knows that the client is associated with "example.com", then
+        using that domain name in the PSK Identity offers no additional
+        information.  In contrast, the "user" portion needs to be both unique
+        to the client and private, so using an opaque token is a more
+        secure approach.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2-5">Implementations <span class="bcp14">MUST</span> support PSK Identities of 128
+        octets, and <span class="bcp14">SHOULD</span> support longer PSK Identities.  We
+        note that while TLS provides for PSK Identities of up to 2<sup>16</sup>-1 octets
+        in length, there are few practical uses for extremely long PSK
+        Identities.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.2-6">It is up to administrators and implementations as to how they
+        differentiate external PSK Identities from session resumption PSK
+        Identities used in TLS 1.3 session tickets.  While <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-6.1.2" class="relref">Section 6.1.2</a></span> suggests the
+        identities should be unique, it offers no concrete steps for how this
+        differentiation may be done.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.2-7">One approach could be to have externally provisioned PSK Identities
+        contain an NAI such as what is described above, while session resumption PSK
+        Identities contain large blobs of opaque, encrypted, and authenticated
+        text.  It should then be relatively straightforward to differentiate
+        the two types of identities.  One is UTF-8, the other is not.  One is
+        unauthenticated, the other is authenticated.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
+<p id="section-4.2-8">Servers <span class="bcp14">MUST</span> assign and/or track session resumption
+        PSK Identities in a way that facilities the ability to distinguish
+        those identities from externally configured PSK Identities, and that
+        enables them to both find and validate the session resumption PSK.
+        See <a href="#resumption" class="auto internal xref">Section 6.2.3</a> below for more discussion of issues around
+        resumption.<a href="#section-4.2-8" class="pilcrow">¶</a></p>
+<p id="section-4.2-9">A sample validation flow for TLS-PSK Identities could be performed
+        via the following steps:<a href="#section-4.2-9" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2-10">
+          <li id="section-4.2-10.1">PSK Identities provided via an administration interface are
+          enforced to be only UTF-8 on both client and server.<a href="#section-4.2-10.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.2-10.2">The client treats session tickets received from the server as
+          opaque blobs.<a href="#section-4.2-10.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.2-10.3">When the server issues session tickets for resumption, the
+          server ensures that they are not valid UTF-8.<a href="#section-4.2-10.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.2-10.4">One way to do this is to use stateless resumption with a forced
+          non-UTF-8 key_name per <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.6.1" class="relref">Section 4.6.1</a></span>, such as by setting one octet to 0x00.<a href="#section-4.2-10.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.2-10.5">
+            <p id="section-4.2-10.5.1">When receiving TLS, the server receives a Client-Hello containing
+     a PSK, and checks if the identity is valid UTF-8:<a href="#section-4.2-10.5.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-4.2-10.5.2">
+              <dt>5.1.</dt>
+<dd id="section-4.2-10.5.2.1">
+                <p id="section-4.2-10.5.2.1.1">If yes, it searches for a preconfigured client that matches that identity.<a href="#section-4.2-10.5.2.1.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-4.2-10.5.2.1.2">
+                  <dt>5.1.1.</dt>
+<dd id="section-4.2-10.5.2.1.2.1">If the identity is found, it authenticates the client via PSK.<a href="#section-4.2-10.5.2.1.2.1" class="pilcrow">¶</a>
+</dd>
+                  <dd class="break"></dd>
+<dt>5.1.2.</dt>
+<dd id="section-4.2-10.5.2.1.2.2">Else, the identity is invalid, and the server closes the connection.<a href="#section-4.2-10.5.2.1.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+</dl>
+</dd>
+              <dd class="break"></dd>
+<dt>5.2.</dt>
+<dd id="section-4.2-10.5.2.2">
+                <p id="section-4.2-10.5.2.2.1">If not, try resumption, which is usually handled by a TLS library.<a href="#section-4.2-10.5.2.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-4.2-10.5.2.2.2">
+                  <dt>5.2.1.</dt>
+<dd id="section-4.2-10.5.2.2.2.1">If the TLS library verifies the session ticket, then resumption has happened, and the connection is established.<a href="#section-4.2-10.5.2.2.2.1" class="pilcrow">¶</a>
+</dd>
+                  <dd class="break"></dd>
+<dt>5.2.2.</dt>
+<dd id="section-4.2-10.5.2.2.2.2">Else, the server ignores the session ticket, and performs a normal TLS handshake with a certificate.<a href="#section-4.2-10.5.2.2.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</li>
+        </ol>
+<p id="section-4.2-11">This validation flow is only suggested.  Other validation methods are possible.<a href="#section-4.2-11" class="pilcrow">¶</a></p>
+<div id="security-of-psk-identities">
+<section id="section-4.2.1">
+          <h4 id="name-security-of-psk-identities">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-security-of-psk-identities" class="section-name selfRef">Security of PSK Identities</a>
+          </h4>
+<p id="section-4.2.1-1">We note that the PSK Identity is a field created by the
+          connecting client.  Since the client is untrusted until both the
+          identity and PSK have been verified, both of those fields
+          <span class="bcp14">MUST</span> be treated as untrusted.  That is, a well-formed
+          PSK Identity is likely to be in UTF-8 format, due to the
+          requirements of <span>[<a href="#RFC4279" class="cite xref">RFC4279</a>], <a href="https://rfc-editor.org/rfc/rfc4279#section-5.1" class="relref">Section 5.1</a></span>.  However, implementations <span class="bcp14">MUST</span>
+          support managing PSK Identities as a set of undistinguished
+          octets.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">It is not safe to use a raw PSK Identity to look up a
+          corresponding PSK.  The PSK may come from an untrusted source and
+          may contain invalid or malicious data.  For example, the identity
+          may:<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.1-3.1">have an incorrect UTF-8 format,<a href="#section-4.2.1-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.1-3.2">contain data that forms an injection attack for SQL, the
+     Lightweight Directory Access Protocol (LDAP), Representational
+     State Transfer (REST), or shell meta characters, or<a href="#section-4.2.1-3.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.1-3.3">contain embedded NUL octets that are incompatible with APIs
+     that expect NUL terminated strings.<a href="#section-4.2.1-3.3" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.2.1-4">The identity may also be up to 65535 octets long.<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-5">As such, implementations <span class="bcp14">MUST</span> validate the
+          identity prior to it being used as a lookup key.  When the identity
+          is passed to an external API (e.g., database lookup),
+          implementations <span class="bcp14">MUST</span> either escape any characters in
+          the identity that are invalid for that API, or else reject the
+          identity entirely.  The exact form of any escaping depends on the
+          API, and we cannot document all possible methods here.  However, a
+          few basic validation rules are suggested, as outlined below.  Any
+          identity that is rejected by these validation rules
+          <span class="bcp14">MUST</span> cause the server to close the TLS
+          connection.<a href="#section-4.2.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-6">The suggested validation rules for identities used outside of resumption are as follows:<a href="#section-4.2.1-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.1-7.1">
+              <p id="section-4.2.1-7.1.1">Identities <span class="bcp14">MUST</span> be checked to see if they have
+              been provisioned as a resumption PSK.  If so, then the session
+              can be resumed, subject to any policies around resumption.<a href="#section-4.2.1-7.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.2.1-7.2">
+              <p id="section-4.2.1-7.2.1">Identities longer than a fixed maximum <span class="bcp14">SHOULD</span>
+              be rejected.  The limit is implementation dependent, but
+              <span class="bcp14">SHOULD NOT</span> be less than 128, and <span class="bcp14">SHOULD NOT</span> be more than 1024.  There is no purpose to allowing
+              extremely long identities, and allowing them does little more
+              than complicate implementations.<a href="#section-4.2.1-7.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.2.1-7.3">
+              <p id="section-4.2.1-7.3.1">Identities configured by administrators <span class="bcp14">SHOULD</span>
+              be in UTF-8 format, and <span class="bcp14">SHOULD</span> be in the NAI
+              format from <span>[<a href="#RFC7542" class="cite xref">RFC7542</a>]</span>.  While <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.11" class="relref">Section 4.2.11</a></span>
+              defines the PSK Identity as "opaque identity&lt;1..2<sup>16</sup>-1&gt;",
+              it is useful for administrators to manage human-readable
+              identities in a recognizable format.<a href="#section-4.2.1-7.3.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-7.3.2">This suggestion makes it easier to distinguish TLS-PSK
+       Identities from TLS 1.3 resumption identities.  It also allows
+       implementations to more easily filter out unexpected or bad
+       identities, and then to close inappropriate TLS connections.<a href="#section-4.2.1-7.3.2" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4.2.1-8">It is <span class="bcp14">RECOMMENDED</span> that implementations extend
+          these rules with any additional validation that is found to be
+          useful.  For example, implementations and/or deployments could both
+          generate PSK Identities in a particular format for passing to client
+          systems, and then also verify that any received identity matches
+          that format.  For example, a site could generate PSK Identities
+          that are composed of characters in the local language.  The site
+          could then reject identities that contain characters from other
+          languages, even if those characters are valid UTF-8.<a href="#section-4.2.1-8" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-9">The purpose of these rules is to help administrators and
+          implementers more easily manage systems using TLS-PSK, while also
+          minimizing complexity and protecting from potential attackers'
+          traffic.  The rules follow a principle of "discard bad traffic
+          quickly", which helps to improve system stability and
+          performance.<a href="#section-4.2.1-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sharing">
+<section id="section-4.3">
+        <h3 id="name-psk-and-psk-identity-sharin">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-psk-and-psk-identity-sharin" class="section-name selfRef">PSK and PSK Identity Sharing</a>
+        </h3>
+<p id="section-4.3-1">While administrators may desire to share PSKs and/or PSK Identities
+        across multiple systems, such usage is <span class="bcp14">NOT RECOMMENDED</span>.
+        Details of the possible attacks on reused PSKs are given in <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-4.1" class="relref">Section 4.1</a></span>.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">Implementations <span class="bcp14">MUST</span> support the ability to
+        configure a unique PSK and PSK Identity for each possible
+        client-server relationship.  This configuration allows administrators
+        desiring security to use unique PSKs for each such relationship.  This
+        configuration is also compatible with the practice of administrators
+        who wish to reuse PSKs and PSK Identities where local policies
+        permit.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">Implementations <span class="bcp14">SHOULD</span> warn administrators if the
+        same PSK Identity and/or PSK is used for multiple client-server
+        relationships.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="psk-lifetimes">
+<section id="section-4.4">
+        <h3 id="name-psk-lifetimes">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-psk-lifetimes" class="section-name selfRef">PSK Lifetimes</a>
+        </h3>
+<p id="section-4.4-1">Unfortunately, <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>]</span> offers no guidance on PSK
+        lifetimes other than to note in Section <a href="https://rfc-editor.org/rfc/rfc9257#section-4.2" class="relref">4.2</a> that:<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<blockquote id="section-4.4-2">
+          <p id="section-4.4-2.1">Forward security may be achieved by using a PSK-DH mode or by
+            using PSKs with short lifetimes.<a href="#section-4.4-2.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-4.4-3">It is <span class="bcp14">RECOMMENDED</span> that PSKs be rotated regularly.
+        We offer no additional guidance on how often this process should
+        occur.  Changing PSKs has a non-zero cost.  It is therefore up to
+        administrators to determine how best to balance the cost of changing
+        the PSK against the cost of a potential PSK compromise.<a href="#section-4.4-3" class="pilcrow">¶</a></p>
+<p id="section-4.4-4">TLS-PSK <span class="bcp14">MUST</span> use modes such as PSK-DH or ECDHE_PSK
+        <span>[<a href="#RFC5489" class="cite xref">RFC5489</a>]</span> that provide forward secrecy.  Failure to
+        use such modes would mean that compromise of a PSK would allow an
+        attacker to decrypt all sessions that had used that PSK.<a href="#section-4.4-4" class="pilcrow">¶</a></p>
+<p id="section-4.4-5">As the PSKs are looked up by identity, the PSK Identity
+        <span class="bcp14">MUST</span> also be changed when the PSK changes.<a href="#section-4.4-5" class="pilcrow">¶</a></p>
+<p id="section-4.4-6">Servers <span class="bcp14">SHOULD</span> track when a connection was last
+        received for a particular PSK Identity, and <span class="bcp14">SHOULD</span>
+        automatically invalidate credentials when a client has not connected
+        for an extended period of time.  This process helps to mitigate the
+        issue of credentials being leaked when a device is stolen or
+        discarded.<a href="#section-4.4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="guidance-for-radius-clients">
+<section id="section-5">
+      <h2 id="name-guidance-for-radius-clients">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-guidance-for-radius-clients" class="section-name selfRef">Guidance for RADIUS Clients</a>
+      </h2>
+<p id="section-5-1">Client implementations <span class="bcp14">MUST</span> allow the use of a
+      Pre-Shared Key (PSK) for RADIUS/TLS. The client implementation can then
+      provide a user interface flag that is "TLS yes / no", and also provide
+      fields that ask for the PSK Identity and PSK itself.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">For TLS 1.3, implementations <span class="bcp14">MUST</span> support the "psk_dhe_ke" PSK Exchange Mode as discussed in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.9" class="relref">Section 4.2.9</a></span> and in <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-6" class="relref">Section 6</a></span>.  Implementations <span class="bcp14">MUST</span> implement the
+      recommended cipher suites in <span>[<a href="#RFC9325" class="cite xref">RFC9325</a>], <a href="https://rfc-editor.org/rfc/rfc9325#section-4.2" class="relref">Section 4.2</a></span> for TLS 1.2 and in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-9.1" class="relref">Section 9.1</a></span> for TLS 1.3.  In
+      order to future-proof these recommendations, we give the following
+      recommendations.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1">
+          <p id="section-5-3.1.1">Implementations <span class="bcp14">SHOULD</span> use the "Recommended"
+   cipher suites listed in the IANA "TLS Cipher Suites" registry:<a href="#section-5-3.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1.2.1">
+              <p id="section-5-3.1.2.1.1">For TLS 1.3, use the "psk_dhe_ke" PSK key exchange mode.<a href="#section-5-3.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.1.2.2">
+              <p id="section-5-3.1.2.2.1">For TLS 1.2 and earlier, use cipher suites that require ephemeral keying.<a href="#section-5-3.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+      </ul>
+<p id="section-5-4">If a client initiated a connection using a PSK with TLS 1.3 by
+      including the PSK extension, it <span class="bcp14">MUST</span> close the
+      connection if the server did not also select the PSK to
+      continue the handshake.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<div id="psk-identities-1">
+<section id="section-5.1">
+        <h3 id="name-psk-identities-2">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-psk-identities-2" class="section-name selfRef">PSK Identities</a>
+        </h3>
+<p id="section-5.1-1">This section offers advice on both requirements for PSK Identities and on usability.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div id="psk-identity-requirements">
+<section id="section-5.1.1">
+          <h4 id="name-psk-identity-requirements">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-psk-identity-requirements" class="section-name selfRef">PSK Identity Requirements</a>
+          </h4>
+<p id="section-5.1.1-1"><span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> is silent on the subject of PSK
+          Identities, which is an issue that we correct here.  Guidance is
+          required on the use of PSK Identities, as the need to manage
+          identities associated with PSKs is a new requirement for both Network Access Server (NAS)
+          management interfaces and RADIUS
+          servers.<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-2">RADIUS systems implementing TLS-PSK <span class="bcp14">MUST</span> support
+          identities as per <span>[<a href="#RFC4279" class="cite xref">RFC4279</a>], <a href="https://rfc-editor.org/rfc/rfc4279#section-5.3" class="relref">Section 5.3</a></span> and <span class="bcp14">MUST</span> enable configuring
+          TLS-PSK Identities in management interfaces as per <span>[<a href="#RFC4279" class="cite xref">RFC4279</a>], <a href="https://rfc-editor.org/rfc/rfc4279#section-5.4" class="relref">Section 5.4</a></span>.<a href="#section-5.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-3">The historic methods of signing RADIUS packets have not yet been
+          broken, but they are believed to be much less secure than modern
+          TLS.  Therefore, when a RADIUS shared secret is used to sign
+          RADIUS/UDP or RADIUS/TCP packets, that shared secret <span class="bcp14">MUST NOT</span> be used with TLS-PSK.  If the secrets were to be reused,
+          then an attack on historic RADIUS cryptography could be trivially
+          leveraged to decrypt TLS-PSK sessions.<a href="#section-5.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-4">With TLS-PSK, RADIUS/TLS clients <span class="bcp14">MUST</span> permit the
+          configuration of a RADIUS server IP address or host name, because
+          dynamic server lookups <span>[<a href="#RFC7585" class="cite xref">RFC7585</a>]</span> can only be used if
+          servers use certificates.<a href="#section-5.1.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="usability-guidance-1">
+<section id="section-5.1.2">
+          <h4 id="name-usability-guidance-2">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-usability-guidance-2" class="section-name selfRef">Usability Guidance</a>
+          </h4>
+<p id="section-5.1.2-1">In order to prevent confusion between shared secrets and
+          TLS-PSKs, management interfaces and APIs need to label PSK fields as
+          "PSK" or "TLS-PSK", rather than as "shared secret".<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="guidance-for-radius-servers">
+<section id="section-6">
+      <h2 id="name-guidance-for-radius-servers">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-guidance-for-radius-servers" class="section-name selfRef">Guidance for RADIUS Servers</a>
+      </h2>
+<p id="section-6-1">In order to support clients with TLS-PSK, server implementations
+      <span class="bcp14">MUST</span> allow the use of a PSK (TLS-PSK) for
+      RADIUS/TLS.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">Systems that act as both client and server at the same time
+      <span class="bcp14">MUST NOT</span> share or reuse PSK Identities between incoming
+      and outgoing connections.  Doing so would open up the systems to attack,
+      as discussed in <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-4.1" class="relref">Section 4.1</a></span>.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">For TLS 1.3, implementations <span class="bcp14">MUST</span> support the "psk_dhe_ke"
+      PSK Exchange Mode as discussed in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.9" class="relref">Section 4.2.9</a></span> and in <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>], <a href="https://rfc-editor.org/rfc/rfc9257#section-6" class="relref">Section 6</a></span>.  Implementations
+      <span class="bcp14">MUST</span> implement the recommended cipher suites in <span>[<a href="#RFC9325" class="cite xref">RFC9325</a>], <a href="https://rfc-editor.org/rfc/rfc9325#section-4.2" class="relref">Section 4.2</a></span> for TLS 1.2 and
+      in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-9.1" class="relref">Section 9.1</a></span> for TLS
+      1.3.  In order to future-proof these recommendations, we give the
+      following recommendations.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-4.1">
+          <p id="section-6-4.1.1">Implementations <span class="bcp14">SHOULD</span> use the "Recommended"
+          cipher suites listed in the IANA "TLS Cipher Suites" registry:<a href="#section-6-4.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-4.1.2.1">
+              <p id="section-6-4.1.2.1.1">For TLS 1.3, use the "psk_dhe_ke" PSK key exchange mode.<a href="#section-6-4.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-6-4.1.2.2">
+              <p id="section-6-4.1.2.2.1">For TLS 1.2 and earlier, use cipher suites that require ephemeral keying.<a href="#section-6-4.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+      </ul>
+<p id="section-6-5">The following section(s) describe guidance for RADIUS server
+      implementations and deployments.  We first give an overview of current
+      practices, and then extend and/or replace those practices for
+      TLS-PSK.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<div id="current-practices">
+<section id="section-6.1">
+        <h3 id="name-current-practices">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-current-practices" class="section-name selfRef">Current Practices</a>
+        </h3>
+<p id="section-6.1-1">RADIUS identifies clients by source IP address (see <span>[<a href="#RFC2865" class="cite xref">RFC2865</a>]</span> and <span>[<a href="#RFC6613" class="cite xref">RFC6613</a>]</span>) or by client
+        certificate (see <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and <span>[<a href="#RFC7585" class="cite xref">RFC7585</a>]</span>).
+        Neither of these approaches work for TLS-PSK.  This section describes
+        current practices and mandates behavior for servers that use
+        TLS-PSK.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2">A RADIUS/UDP server is typically configured with a set of
+        information per client, which includes at least the source IP address
+        and shared secret.  When the server receives a RADIUS/UDP packet, it
+        looks up the source IP address, finds a client definition, and
+        therefore the shared secret.  The packet is then authenticated (or
+        not) using that shared secret.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.1-3">That is, the IP address is treated as the client's identity, and the
+        shared secret is used to prove the client's authenticity and shared
+        trust.  The set of clients forms a logical database "client table"
+        with the IP address as the key.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.1-4">A server may be configured with additional site-local policies
+        associated with that client.  For example, a client may be marked up
+        as being a Wi-Fi Access Point, a VPN concentrator, etc.  Different
+        clients may be permitted to send different kinds of requests, where
+        some may send Accounting-Request packets, and other clients may not
+        send accounting packets.<a href="#section-6.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="practices-for-tls-psk">
+<section id="section-6.2">
+        <h3 id="name-practices-for-tls-psk">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-practices-for-tls-psk" class="section-name selfRef">Practices for TLS-PSK</a>
+        </h3>
+<p id="section-6.2-1">We define practices for TLS-PSK by analogy with the RADIUS/UDP
+        use case and by extending the additional policies associated with the
+        client.  The PSK Identity replaces the source IP address as the client
+        identifier.  The PSK replaces the shared secret as proof of client
+        authenticity and shared trust.  However, systems implementing
+        RADIUS/TLS <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and RADIUS/DTLS <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span> <span class="bcp14">MUST</span> still use the shared secret as
+        discussed in those specifications.  Any PSK is only used by the TLS
+        layer and has no effect on the RADIUS data that is being
+        transported.  That is, the RADIUS data transported in a TLS tunnel is
+        the same no matter if client authentication is done via PSK or by
+        client certificates.  The encoding of the RADIUS data is entirely
+        unaffected by the use (or not) of PSKs and client certificates.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2">In order to securely support dynamic source IP addresses for
+        clients, we also require that servers limit clients based on a network
+        range.  The alternative would be to suggest that RADIUS servers allow
+        any source IP address to connect and try TLS-PSK, which could be a
+        security risk.  When RADIUS servers do no source IP address filtering,
+        it is easier for attackers to send malicious traffic to the server.
+        An issue with a TLS library or even a TCP/IP stack could permit the
+        attacker to gain unwarranted access.  In contrast, when IP address
+        filtering is done, attackers generally must first gain access to a
+        secure network before attacking the RADIUS server.<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+<p id="section-6.2-3">Even where dynamic discovery <span>[<a href="#RFC7585" class="cite xref">RFC7585</a>]</span> is not used,
+        the use of TLS-PSK across unrelated organizations requires that those
+        organizations share PSKs.  Such sharing makes it easier for a client
+        to impersonate a server, and vice versa.  In contrast, when
+        certificates are used, such impersonations are impossible. It is
+        therefore <span class="bcp14">NOT RECOMMENDED</span> to use TLS-PSK across
+        organizational boundaries.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<p id="section-6.2-4">When TLS-PSK is used in an environment where both client and server
+        are part of the same organization, then impersonations only affect
+        that organization.  As TLS offers significant advantages over
+        RADIUS/UDP, it is <span class="bcp14">RECOMMENDED</span> that organizations use
+        RADIUS/TLS with TLS-PSK to replace RADIUS/UDP for all systems managed
+        within the same organization.  While such systems are generally
+        located inside of private networks, there are no known security issues
+        with using TLS-PSK for RADIUS/TLS connections across the public
+        Internet.<a href="#section-6.2-4" class="pilcrow">¶</a></p>
+<p id="section-6.2-5">If a client system is compromised, its complete configuration is
+        exposed to the attacker.  Exposing a client certificate means that the
+        attacker can pretend to be the client.  In contrast, exposing a PSK
+        means that the attacker cannot only pretend to be the client, but can
+        also pretend to be the server.<a href="#section-6.2-5" class="pilcrow">¶</a></p>
+<p id="section-6.2-6">The main benefit of TLS-PSK, therefore, is that its operational
+        processes are similar to that used for managing RADIUS/UDP, while
+        gaining the increased security of TLS.  However, it is still
+        beneficial for servers to perform IP address filtering, in order to
+        further limit their exposure to attacks.<a href="#section-6.2-6" class="pilcrow">¶</a></p>
+<div id="ip-filtering">
+<section id="section-6.2.1">
+          <h4 id="name-ip-filtering">
+<a href="#section-6.2.1" class="section-number selfRef">6.2.1. </a><a href="#name-ip-filtering" class="section-name selfRef">IP Filtering</a>
+          </h4>
+<p id="section-6.2.1-1">A server supporting this specification <span class="bcp14">MUST</span>
+          perform IP address filtering on incoming connections.  There are few
+          reasons for a server to have a default configuration that allows
+          connections from any source IP address.<a href="#section-6.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-2">A TLS-PSK server <span class="bcp14">MUST</span> be configurable with a set
+          of "allowed" network ranges from which clients are permitted to
+          connect.  Any connection from outside of the allowed range(s)
+          <span class="bcp14">MUST</span> be rejected before any PSK Identity is checked.
+          It is <span class="bcp14">RECOMMENDED</span> that servers support IP address
+          filtering even when TLS-PSK is not used.<a href="#section-6.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-3">The "allowed" network ranges could be implemented as a global
+          list, or one or more network ranges could be tied to a client or
+          clients.  The intent here is to allow connections to be filtered by
+          source IP address and to allow clients to be limited to a subset of
+          network addresses.  The exact method and representation of that
+          filtering is up to an implementation.<a href="#section-6.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-4">Conceptually, the set of IP addresses and ranges, along with
+          permitted clients and their credentials, form a logical "client
+          table" that the server uses to both filter and authenticate
+          clients.  The client table should contain information such as
+          allowed network ranges, PSK Identity and associated PSK, credentials
+          for another TLS authentication method, or flags that indicate that
+          the server should require a client certificate.<a href="#section-6.2.1-4" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-5">Once a server receives a connection, it checks the source IP
+          address against the list of all allowed IP addresses or ranges in
+          the client table.  If none match, the connection <span class="bcp14">MUST</span>
+          be rejected.  That is, the connection <span class="bcp14">MUST</span> be from an
+          authorized source IP address.<a href="#section-6.2.1-5" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-6">Once a connection has been established, the server <span class="bcp14">MUST NOT</span> process any application data inside of the TLS tunnel
+          until the client has been authenticated.  Instead, the server
+          normally receives a TLS-PSK Identity from the client.  The server
+          then uses this identity to look up the client in the client table.
+          If there is no matching client, the server <span class="bcp14">MUST</span> close
+          the connection.  The server then also checks if this client
+          definition allows this particular source IP address.  If the source
+          IP address is not allowed, the server <span class="bcp14">MUST</span> close the
+          connection.<a href="#section-6.2.1-6" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-7">Where the server does not receive TLS-PSK from the client, it
+          proceeds with another authentication method such as client
+          certificates.  Such requirements are discussed elsewhere, most
+          notably in <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>.<a href="#section-6.2.1-7" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-8">An implementation may perform two independent IP address lookups:
+          first to check if the connection is allowed at all, and second to
+          check if the connection is authorized for this particular client.
+          One or both checks may be used by a particular implementation.  The
+          two sets of IP addresses can overlap, and implementations
+          <span class="bcp14">SHOULD</span> support that capability.<a href="#section-6.2.1-8" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-9">Depending on the implementation, one or more clients may share a
+          list of allowed network ranges.  Alternately, the allowed network
+          ranges for two clients can overlap only partially, or not at all.
+          All of these possibilities <span class="bcp14">MUST</span> be supported by the
+          server implementation.<a href="#section-6.2.1-9" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-10">For example, a RADIUS server could be configured to accept
+          connections from a source network of 192.0.2.0/24 or 2001:DB8::/32.
+          The server could therefore discard any TLS connection request that
+          comes from a source IP address outside of that network.  In that
+          case, there is no need to examine the PSK Identity or to find the
+          client definition.  Instead, the IP source filtering policy would
+          deny the connection before any TLS communication had been
+          performed.<a href="#section-6.2.1-10" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-11">As some clients may have dynamic IP addresses, it is possible for
+          one PSK Identity to appear at different source IP addresses over
+          time.  In addition, as there may be many clients behind one NAT
+          gateway, there may be multiple RADIUS clients using one public IP
+          address.  RADIUS servers <span class="bcp14">MUST</span> support multiple PSK
+          Identifiers at one source IP address.<a href="#section-6.2.1-11" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-12">That is, a server needs to support multiple different clients
+          within one network range, multiple clients behind a NAT, and one
+          client having different IP addresses over time.  All of those
+          use cases are common and necessary.<a href="#section-6.2.1-12" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-13">The following section describes these requirements in more detail.<a href="#section-6.2.1-13" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="psk-authentication">
+<section id="section-6.2.2">
+          <h4 id="name-psk-authentication">
+<a href="#section-6.2.2" class="section-number selfRef">6.2.2. </a><a href="#name-psk-authentication" class="section-name selfRef">PSK Authentication</a>
+          </h4>
+<p id="section-6.2.2-1">Once the source IP address has been verified to be allowed for
+          this particular client, the server authenticates the TLS connection
+          via the PSK taken from the client definition.  If the PSK is
+          verified, the server then accepts the connection and proceeds with
+          RADIUS/TLS as per <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span>.<a href="#section-6.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-2">If the PSK is not verified, then the server <span class="bcp14">MUST</span>
+          close the connection.  While TLS provides for fallback to other
+          authentication methods such as client certificates, there is no
+          reason for a client to be configured simultaneously with multiple
+          authentication methods.<a href="#section-6.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-3">A client <span class="bcp14">MUST</span> use only one authentication method
+          for TLS.  An authentication method is either TLS-PSK, client
+          certificates, or some other method supported by TLS.<a href="#section-6.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-4">That is, client configuration is relatively simple: use a
+          particular set of credentials to authenticate to a particular
+          server.  While clients may support multiple servers and fail-over or
+          load-balancing, that configuration is generally orthogonal to the
+          choice of which credentials to use.<a href="#section-6.2.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="resumption">
+<section id="section-6.2.3">
+          <h4 id="name-resumption">
+<a href="#section-6.2.3" class="section-number selfRef">6.2.3. </a><a href="#name-resumption" class="section-name selfRef">Resumption</a>
+          </h4>
+<p id="section-6.2.3-1">It is <span class="bcp14">NOT RECOMMENDED</span> that servers enable
+          resumption for sessions that use TLS-PSK.  There are few practical
+          benefits to supporting resumption and many complexities.<a href="#section-6.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-2">However, some systems will need to support both TLS-PSK and
+          other TLS-based authentication methods such as certificates, while
+          also supporting session resumption.  It is therefore vital for
+          servers to be able to distinguish the use case of TLS-PSK with
+          preconfigured identities from TLS-PSK that is being used for
+          resumptions.<a href="#section-6.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-3">The above discussion of PSK Identities is complicated by the use
+          of PSKs for resumption in TLS 1.3.  A server that receives a PSK
+          Identity via TLS typically cannot query the TLS layer to see if this
+          identity is for a resumed session (which is possibly for another TLS
+          authentication method), or is instead a static pre-provisioned
+          identity.  This confusion complicates server implementations.<a href="#section-6.2.3-3" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-4">One way for a server to tell the difference between the two kinds
+          of identities is via construction.  Identities used for resumption
+          can be constructed via a fixed format, such as what is recommended by <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>], <a href="https://rfc-editor.org/rfc/rfc8446#section-4.6.1" class="relref">Section 4.6.1</a></span>.  A static
+          pre-provisioned identity could be in the format of an NAI, as given in
+          <span>[<a href="#RFC7542" class="cite xref">RFC7542</a>]</span>.  An implementation could therefore examine
+          the incoming identity and determine from the identity alone what
+          kind of authentication was being performed.<a href="#section-6.2.3-4" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-5">An alternative way for a server to distinguish the two kinds of
+          identities is to maintain two tables.  One table would contain
+          static identities, as the logical client table described above.
+          Another table could be the table of identities handed out for
+          resumption.  The server would then look up any PSK Identity in one
+          table, and if it is not found, query the other one.  Either an identity would be
+          found in a table, in which case it can be authenticated, or the
+          identity would not be found in either table, in which case it is
+          unknown, and the server <span class="bcp14">MUST</span> close the
+          connection.<a href="#section-6.2.3-5" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-6">As suggested in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, TLS-PSK peers
+          <span class="bcp14">MUST NOT</span> store resumption PSKs or tickets (and
+          associated cached data) for longer than 604800 seconds (7 days),
+          regardless of the PSK or ticket lifetime.<a href="#section-6.2.3-6" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-7">Since resumption in TLS 1.3 uses PSK Identities and keys, it is
+          <span class="bcp14">NOT RECOMMENDED</span> to permit resumption of sessions when
+          TLS-PSK is used.  The use of resumption offers additional complexity
+          with minimal additional benefits.<a href="#section-6.2.3-7" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-8">Where resumption is allowed with TLS-PSK, systems
+          <span class="bcp14">MUST</span> cache data during the initial full handshake
+          sufficiently enough to allow authorization decisions to be made during
+          resumption. If the cached data cannot be retrieved securely,
+          resumption <span class="bcp14">MUST NOT</span> be done.  Instead, the system
+          <span class="bcp14">MUST</span> perform a full handshake.<a href="#section-6.2.3-8" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-9">The data that needs to be cached is typically information such
+          as the original PSK Identity, along with any policies associated
+          with that identity.<a href="#section-6.2.3-9" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-10">Information from the original TLS exchange (e.g., the original
+          PSK Identity) as well as related information (e.g., source IP
+          addresses) may change between the initial full handshake and
+          resumption. This change creates a "time-of-check time-of-use"
+          (TOCTOU) security vulnerability. A malicious or compromised client
+          could supply one set of data during the initial authentication and
+          a different set of data during resumption, potentially allowing them
+          to obtain access that they should not have.<a href="#section-6.2.3-10" class="pilcrow">¶</a></p>
+<p id="section-6.2.3-11">If any authorization or policy decisions were made with
+          information that has changed between the initial full handshake and
+          resumption, and if changes may lead to a different decision, such
+          decisions <span class="bcp14">MUST</span> be reevaluated.  Systems
+          <span class="bcp14">MUST</span> also reevaluate authorization and policy
+          decisions during resumption, based on the information given in the
+          new connection.  Servers <span class="bcp14">MAY</span> refuse to perform
+          resumption where the information supplied during resumption does not
+          match the information supplied during the original authentication.
+          If a safe decision is not possible, servers <span class="bcp14">MUST</span>
+          instead continue with a full handshake.<a href="#section-6.2.3-11" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="interaction-with-other-tls-authentication-methods">
+<section id="section-6.2.4">
+          <h4 id="name-interaction-with-other-tls-">
+<a href="#section-6.2.4" class="section-number selfRef">6.2.4. </a><a href="#name-interaction-with-other-tls-" class="section-name selfRef">Interaction with Other TLS Authentication Methods</a>
+          </h4>
+<p id="section-6.2.4-1">When a server supports both TLS-PSK and client certificates, it
+          <span class="bcp14">MUST</span> be able to accept authenticated connections from
+          clients that may use either type of credentials, perhaps even from
+          the same source IP address and at the same time.  That is, servers
+          are required to both authenticate the client and also to filter
+          clients by source IP address.  These checks both have to match in
+          order for a client to be accepted.<a href="#section-6.2.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-7">
+      <h2 id="name-privacy-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<p id="section-7-1">We make no changes to <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">The primary focus of this document is addressing security considerations for RADIUS.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Previous specifications discuss security considerations for TLS-PSK
+      in detail.  We refer the reader to <span><a href="https://rfc-editor.org/rfc/rfc8446#appendix-E.7" class="relref">Appendix E.7</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>]</span>, and
+      <span>[<a href="#RFC9258" class="cite xref">RFC9258</a>]</span>.  Those documents are newer than <span>[<a href="#RFC6614" class="cite xref">RFC6614</a>]</span> and <span>[<a href="#RFC7360" class="cite xref">RFC7360</a>]</span>, and therefore raise
+      issues that were not considered during the initial design of RADIUS/TLS
+      and RADIUS/DTLS.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">Using TLS-PSK across the wider Internet for RADIUS can have different
+      security considerations than for other protocols.  For example, if
+      TLS-PSK was for client/server communication with HTTPS, then having a
+      PSK be exposed or broken could affect one user's traffic.  In contrast,
+      RADIUS contains credentials and personally identifiable information
+      (PII) for many users.  As a result, an attacker being able to see inside
+      of a TLS-PSK connection for RADIUS would result in substantial amounts
+      of PII being leaked, possibly including passwords.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">When modes providing forward secrecy are used (e.g., ECDHE_PSK as seen in <span>[<a href="#RFC5489" class="cite xref">RFC5489</a>]</span> and <span>[<a href="#RFC8442" class="cite xref">RFC8442</a>]</span>), such attacks are
+      limited to future sessions, and historical sessions are still
+      secure.<a href="#section-8-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">This document has no IANA actions.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2865">[RFC2865]</dt>
+        <dd>
+<span class="refAuthor">Rigney, C.</span>, <span class="refAuthor">Willens, S.</span>, <span class="refAuthor">Rubens, A.</span>, and <span class="refAuthor">W. Simpson</span>, <span class="refTitle">"Remote Authentication Dial In User Service (RADIUS)"</span>, <span class="seriesInfo">RFC 2865</span>, <span class="seriesInfo">DOI 10.17487/RFC2865</span>, <time datetime="2000-06" class="refDate">June 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2865">https://www.rfc-editor.org/info/rfc2865</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4279">[RFC4279]</dt>
+        <dd>
+<span class="refAuthor">Eronen, P., Ed.</span> and <span class="refAuthor">H. Tschofenig, Ed.</span>, <span class="refTitle">"Pre-Shared Key Ciphersuites for Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 4279</span>, <span class="seriesInfo">DOI 10.17487/RFC4279</span>, <time datetime="2005-12" class="refDate">December 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4279">https://www.rfc-editor.org/info/rfc4279</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6614">[RFC6614]</dt>
+        <dd>
+<span class="refAuthor">Winter, S.</span>, <span class="refAuthor">McCauley, M.</span>, <span class="refAuthor">Venaas, S.</span>, and <span class="refAuthor">K. Wierenga</span>, <span class="refTitle">"Transport Layer Security (TLS) Encryption for RADIUS"</span>, <span class="seriesInfo">RFC 6614</span>, <span class="seriesInfo">DOI 10.17487/RFC6614</span>, <time datetime="2012-05" class="refDate">May 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6614">https://www.rfc-editor.org/info/rfc6614</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7360">[RFC7360]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"Datagram Transport Layer Security (DTLS) as a Transport Layer for RADIUS"</span>, <span class="seriesInfo">RFC 7360</span>, <span class="seriesInfo">DOI 10.17487/RFC7360</span>, <time datetime="2014-09" class="refDate">September 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7360">https://www.rfc-editor.org/info/rfc7360</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8265">[RFC8265]</dt>
+        <dd>
+<span class="refAuthor">Saint-Andre, P.</span> and <span class="refAuthor">A. Melnikov</span>, <span class="refTitle">"Preparation, Enforcement, and Comparison of Internationalized Strings Representing Usernames and Passwords"</span>, <span class="seriesInfo">RFC 8265</span>, <span class="seriesInfo">DOI 10.17487/RFC8265</span>, <time datetime="2017-10" class="refDate">October 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8265">https://www.rfc-editor.org/info/rfc8265</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9257">[RFC9257]</dt>
+        <dd>
+<span class="refAuthor">Housley, R.</span>, <span class="refAuthor">Hoyland, J.</span>, <span class="refAuthor">Sethi, M.</span>, and <span class="refAuthor">C. A. Wood</span>, <span class="refTitle">"Guidance for External Pre-Shared Key (PSK) Usage in TLS"</span>, <span class="seriesInfo">RFC 9257</span>, <span class="seriesInfo">DOI 10.17487/RFC9257</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9257">https://www.rfc-editor.org/info/rfc9257</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9325">[RFC9325]</dt>
+      <dd>
+<span class="refAuthor">Sheffer, Y.</span>, <span class="refAuthor">Saint-Andre, P.</span>, and <span class="refAuthor">T. Fossati</span>, <span class="refTitle">"Recommendations for Secure Use of Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)"</span>, <span class="seriesInfo">BCP 195</span>, <span class="seriesInfo">RFC 9325</span>, <span class="seriesInfo">DOI 10.17487/RFC9325</span>, <time datetime="2022-11" class="refDate">November 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9325">https://www.rfc-editor.org/info/rfc9325</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC5489">[RFC5489]</dt>
+        <dd>
+<span class="refAuthor">Badra, M.</span> and <span class="refAuthor">I. Hajjeh</span>, <span class="refTitle">"ECDHE_PSK Cipher Suites for Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 5489</span>, <span class="seriesInfo">DOI 10.17487/RFC5489</span>, <time datetime="2009-03" class="refDate">March 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5489">https://www.rfc-editor.org/info/rfc5489</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6613">[RFC6613]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"RADIUS over TCP"</span>, <span class="seriesInfo">RFC 6613</span>, <span class="seriesInfo">DOI 10.17487/RFC6613</span>, <time datetime="2012-05" class="refDate">May 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6613">https://www.rfc-editor.org/info/rfc6613</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7542">[RFC7542]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"The Network Access Identifier"</span>, <span class="seriesInfo">RFC 7542</span>, <span class="seriesInfo">DOI 10.17487/RFC7542</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7542">https://www.rfc-editor.org/info/rfc7542</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7585">[RFC7585]</dt>
+        <dd>
+<span class="refAuthor">Winter, S.</span> and <span class="refAuthor">M. McCauley</span>, <span class="refTitle">"Dynamic Peer Discovery for RADIUS/TLS and RADIUS/DTLS Based on the Network Access Identifier (NAI)"</span>, <span class="seriesInfo">RFC 7585</span>, <span class="seriesInfo">DOI 10.17487/RFC7585</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7585">https://www.rfc-editor.org/info/rfc7585</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8442">[RFC8442]</dt>
+        <dd>
+<span class="refAuthor">Mattsson, J.</span> and <span class="refAuthor">D. Migault</span>, <span class="refTitle">"ECDHE_PSK with AES-GCM and AES-CCM Cipher Suites for TLS 1.2 and DTLS 1.2"</span>, <span class="seriesInfo">RFC 8442</span>, <span class="seriesInfo">DOI 10.17487/RFC8442</span>, <time datetime="2018-09" class="refDate">September 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8442">https://www.rfc-editor.org/info/rfc8442</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8492">[RFC8492]</dt>
+        <dd>
+<span class="refAuthor">Harkins, D., Ed.</span>, <span class="refTitle">"Secure Password Ciphersuites for Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 8492</span>, <span class="seriesInfo">DOI 10.17487/RFC8492</span>, <time datetime="2019-02" class="refDate">February 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8492">https://www.rfc-editor.org/info/rfc8492</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8937">[RFC8937]</dt>
+        <dd>
+<span class="refAuthor">Cremers, C.</span>, <span class="refAuthor">Garratt, L.</span>, <span class="refAuthor">Smyshlyaev, S.</span>, <span class="refAuthor">Sullivan, N.</span>, and <span class="refAuthor">C. Wood</span>, <span class="refTitle">"Randomness Improvements for Security Protocols"</span>, <span class="seriesInfo">RFC 8937</span>, <span class="seriesInfo">DOI 10.17487/RFC8937</span>, <time datetime="2020-10" class="refDate">October 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8937">https://www.rfc-editor.org/info/rfc8937</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9258">[RFC9258]</dt>
+      <dd>
+<span class="refAuthor">Benjamin, D.</span> and <span class="refAuthor">C. A. Wood</span>, <span class="refTitle">"Importing External Pre-Shared Keys (PSKs) for TLS 1.3"</span>, <span class="seriesInfo">RFC 9258</span>, <span class="seriesInfo">DOI 10.17487/RFC9258</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9258">https://www.rfc-editor.org/info/rfc9258</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">Thanks to the many reviewers in the RADEXT Working Group for positive
+      feedback.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Alan DeKok</span></div>
+<div dir="auto" class="left"><span class="org">InkBridge Networks</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:alan.dekok@inkbridge.io" class="email">alan.dekok@inkbridge.io</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
