@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9811: Internet X.509 Public Key Infrastructure -- HTTP Transfer for the Certificate Management Protocol (CMP)</title>
+<meta content="Hendrik Brockhaus" name="author">
+<meta content="David von Oheimb" name="author">
+<meta content="Mike Ounsworth" name="author">
+<meta content="John Gray" name="author">
+<meta content="
+       This document describes how to layer the Certificate Management Protocol
+(CMP) over HTTP. 
+       It includes the updates to RFC 6712 specified in Section 3 of RFC 9480; these
+updates introduce CMP URIs using a well-known prefix. It obsoletes
+RFC 6712; and, together with RFC 9810, it also obsoletes
+RFC 9480. 
+    " name="description">
+<meta content="xml2rfc 3.30.0" name="generator">
+<meta content="CMP" name="keyword">
+<meta content="HTTP" name="keyword">
+<meta content="Certificate management" name="keyword">
+<meta content="PKI" name="keyword">
+<meta content="9811" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9811.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-lamps-rfc6712bis-10" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9811" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9811</td>
+<td class="center">HTTP Transfer for CMP</td>
+<td class="right">July 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Brockhaus, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9811" class="eref">9811</a></dd>
+<dt class="label-obsoletes">Obsoletes:</dt>
+<dd class="obsoletes">
+<a href="https://www.rfc-editor.org/rfc/rfc6712" class="eref">6712</a>, <a href="https://www.rfc-editor.org/rfc/rfc9480" class="eref">9480</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-07" class="published">July 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">H. Brockhaus</div>
+<div class="org">Siemens</div>
+</div>
+<div class="author">
+      <div class="author-name">D. von Oheimb</div>
+<div class="org">Siemens</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Ounsworth</div>
+<div class="org">Entrust</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Gray</div>
+<div class="org">Entrust</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9811</h1>
+<h1 id="title">Internet X.509 Public Key Infrastructure -- HTTP Transfer for the Certificate Management Protocol (CMP)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document describes how to layer the Certificate Management Protocol
+(CMP) over HTTP.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">It includes the updates to RFC 6712 specified in Section 3 of RFC 9480; these
+updates introduce CMP URIs using a well-known prefix. It obsoletes
+RFC 6712; and, together with RFC 9810, it also obsoletes
+RFC 9480.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9811">https://www.rfc-editor.org/info/rfc9811</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-changes-made-by-rfc-9480" class="internal xref">Changes Made by RFC 9480</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-changes-made-by-this-docume" class="internal xref">Changes Made by This Document</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-used-in-this-do" class="internal xref">Conventions Used in This Document</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-http-based-protocol" class="internal xref">HTTP-Based Protocol</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-general-form" class="internal xref">General Form</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-media-type" class="internal xref">Media Type</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-communication-workflow" class="internal xref">Communication Workflow</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-http-request-uri" class="internal xref">HTTP Request-URI</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-pushing-of-announcements" class="internal xref">Pushing of Announcements</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-implementation-consideratio" class="internal xref">Implementation Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="sect-1">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The Certificate Management Protocol (CMP) <span>[<a href="#RFC9810" class="cite xref">RFC9810</a>]</span> requires a well-defined
+transfer mechanism to enable End Entities (EEs), Registration
+Authorities (RAs), and Certification Authorities (CAs) to pass
+PKIMessage structures between them.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The first version of the CMP specification <span>[<a href="#RFC2510" class="cite xref">RFC2510</a>]</span> included a brief
+description of a simple transfer protocol layer on top of TCP.  Its
+features were simple transfer-level error handling and a mechanism to
+poll for outstanding PKI messages.  Additionally, it was mentioned
+that PKI messages could also be conveyed using file-, email-, and
+HTTP-based transfer, but those were not specified in detail.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">Since the second version of the CMP specification <span>[<a href="#RFC4210" class="cite xref">RFC4210</a>]</span> incorporated
+its own polling mechanism, the need for a transfer protocol
+providing this functionality vanished.  The remaining features CMP
+requires from its transfer protocols are connection and error
+handling.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">CMP can benefit from utilizing reliable transport, as it requires connection and error handling
+from the transfer protocol. All these features are covered by HTTP.  Additionally,
+delayed delivery of CMP response messages may be handled at transfer level,
+regardless of the message contents.  Since <span>[<a href="#RFC9480" class="cite xref">RFC9480</a>]</span> extends the polling
+mechanism specified in the second version of <span><a href="#RFC4210" class="internal xref">CMP</a> [<a href="#RFC4210" class="cite xref">RFC4210</a>]</span> to cover
+all types of PKI management transactions, delays detected at application
+level may also be handled within CMP, using pollReq and pollRep messages.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">The usage of HTTP (e.g., HTTP/1.1 as specified in <span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> and <span>[<a href="#RFC9112" class="cite xref">RFC9112</a>]</span>) for transferring CMP messages exclusively uses the POST
+method for requests, effectively tunneling CMP over HTTP. While this is
+generally considered bad practice (see <span><a href="#BCP56" class="internal xref">RFC 9205</a> [<a href="#BCP56" class="cite xref">BCP56</a>]</span> for best current
+practice on building protocols with HTTP) and should not be emulated, there
+are good reasons to do so for transferring CMP.  HTTP is used
+as it is generally easy to implement and it is able to traverse
+network borders utilizing ubiquitous proxies.  Most importantly, HTTP
+is already commonly used in existing CMP implementations.  Other HTTP
+request methods, such as GET, are not used because PKI management
+operations can only be triggered using CMP's PKI messages, which need
+to be transferred using a POST request.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">With its status codes, HTTP provides needed error reporting
+capabilities.  General problems on the server side, as well as those
+directly caused by the respective request, can be reported to the
+client.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">As CMP implements a transaction identification (transactionID), identifying transactions spanning
+over more than just a single request/response pair, the statelessness
+of HTTP is not blocking its usage as the transfer protocol for CMP
+messages.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<div id="sect-1.1">
+<section id="section-1.1">
+        <h3 id="name-changes-made-by-rfc-9480">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-changes-made-by-rfc-9480" class="section-name selfRef">Changes Made by RFC 9480</a>
+        </h3>
+<p id="section-1.1-1"><span><a href="#RFC9480" class="internal xref">CMP Updates</a> [<a href="#RFC9480" class="cite xref">RFC9480</a>]</span> updated <span><a href="https://rfc-editor.org/rfc/rfc6712#section-3.6" class="relref">Section 3.6</a> of [<a href="#RFC6712" class="cite xref">RFC6712</a>]</span>, supporting the PKI
+management operations specified in the <span><a href="#RFC9483" class="internal xref">Lightweight CMP Profile</a> [<a href="#RFC9483" class="cite xref">RFC9483</a>]</span>, in the following areas:<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1.1-2.1">
+            <p id="section-1.1-2.1.1">Introduced the HTTP URI path prefix '/.well-known/cmp'.<a href="#section-1.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.1-2.2">
+            <p id="section-1.1-2.2.1">Added options for extending the URI structure with further segments and
+defined a new protocol registry group to that aim.<a href="#section-1.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="sect-1.2">
+<section id="section-1.2">
+        <h3 id="name-changes-made-by-this-docume">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-changes-made-by-this-docume" class="section-name selfRef">Changes Made by This Document</a>
+        </h3>
+<p id="section-1.2-1">This document obsoletes <span>[<a href="#RFC6712" class="cite xref">RFC6712</a>]</span>.
+It includes the changes specified in <span><a href="https://rfc-editor.org/rfc/rfc9480#section-3" class="relref">Section 3</a> of [<a href="#RFC9480" class="cite xref">RFC9480</a>]</span>, as
+described in <a href="#sect-1.1" class="auto internal xref">Section 1.1</a> of this document. Additionally, it adds the following changes:<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1.2-2.1">
+            <p id="section-1.2-2.1.1">Removed the requirement to support HTTP/1.0 <span>[<a href="#RFC1945" class="cite xref">RFC1945</a>]</span> in accordance with Section <a href="https://rfc-editor.org/rfc/rfc9205#section-4.1" class="relref">4.1</a> of RFC 9205 <span>[<a href="#BCP56" class="cite xref">BCP56</a>]</span>.<a href="#section-1.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.2-2.2">
+            <p id="section-1.2-2.2.1">Implementations <span class="bcp14">MUST</span> forward CMP messages when an HTTP error status code occurs; see  <a href="#sect-3.1" class="auto internal xref">Section 3.1</a>.<a href="#section-1.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.2-2.3">
+            <p id="section-1.2-2.3.1">Removed <span><a href="https://rfc-editor.org/rfc/rfc6712#section-3.8" class="relref">Section 3.8</a> of [<a href="#RFC6712" class="cite xref">RFC6712</a>]</span> as it contains information redundant with current HTTP specification.<a href="#section-1.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-2">
+<section id="section-2">
+      <h2 id="name-conventions-used-in-this-do">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-used-in-this-do" class="section-name selfRef">Conventions Used in This Document</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3">
+<section id="section-3">
+      <h2 id="name-http-based-protocol">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-http-based-protocol" class="section-name selfRef">HTTP-Based Protocol</a>
+      </h2>
+<p id="section-3-1">For direct interaction between two entities, where a reliable
+transport protocol like TCP <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span> is available, HTTP <span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> <span class="bcp14">SHOULD</span> be
+utilized for conveying CMP messages. This specification requires
+using the POST method (<a href="#sect-3.1" class="auto internal xref">Section 3.1</a>) and the "Content-Type" header
+field (<a href="#sect-3.2" class="auto internal xref">Section 3.2</a>), which are available since HTTP/1.0 <span>[<a href="#RFC1945" class="cite xref">RFC1945</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Note: In some situations, CMP requires multiple request/response
+pairs to perform a PKI management operation. Their affiliation
+with a PKI management operation is indicated by a
+transaction identifier in the CMP message header (see transactionID
+described in <span><a href="https://rfc-editor.org/rfc/rfc9810#section-5.1.1" class="relref">Section 5.1.1</a> of [<a href="#RFC9810" class="cite xref">RFC9810</a>]</span>).
+For details on how to transfer multiple requests, see Section
+<a href="https://rfc-editor.org/rfc/rfc9205#section-4.11" class="relref">4.11</a> of RFC 9205 <span>[<a href="#BCP56" class="cite xref">BCP56</a>]</span>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<div id="sect-3.1">
+<section id="section-3.1">
+        <h3 id="name-general-form">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-general-form" class="section-name selfRef">General Form</a>
+        </h3>
+<p id="section-3.1-1">A DER-encoded <span>[<a href="#ITU.X690.2021" class="cite xref">ITU.X690.2021</a>]</span> PKIMessage (<span><a href="https://rfc-editor.org/rfc/rfc9810#section-5.1" class="relref">Section 5.1</a> of [<a href="#RFC9810" class="cite xref">RFC9810</a>]</span>) <span class="bcp14">MUST</span> be sent as the
+content of an HTTP POST request.  If this HTTP request is
+successful, the server returns the CMP response in the content of the
+HTTP response.  The HTTP response status code in this case <span class="bcp14">MUST</span> be
+200 (OK); other Successful 2xx status codes <span class="bcp14">MUST NOT</span> be used for this purpose.
+HTTP responses to pushed CMP announcement messages described in <a href="#sect-3.5" class="auto internal xref">Section 3.5</a>
+utilize the status codes 201 and 202 to identify whether the received
+information was processed.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">While Redirection 3xx status codes <span class="bcp14">MAY</span> be supported by
+implementations, clients should only be enabled to automatically
+follow them after careful consideration of possible security
+implications.  As described in <a href="#sect-5" class="auto internal xref">Section 5</a>, the 301 (Moved Permanently) status code
+could be misused for permanent denial of service.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">All applicable Client Error 4xx or Server Error 5xx status codes
+<span class="bcp14">MAY</span> be used to inform the client about errors. Whenever
+a client receives an HTTP response with a status code in the 2xx,
+4xx, or 5xx ranges, it <span class="bcp14">MUST</span> support handling response message
+content containing a CMP response PKIMessage.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3.2">
+<section id="section-3.2">
+        <h3 id="name-media-type">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-media-type" class="section-name selfRef">Media Type</a>
+        </h3>
+<p id="section-3.2-1">The Internet media type "application/pkixcmp" <span class="bcp14">MUST</span> be set in the HTTP
+"Content-Type" header field when conveying a PKIMessage.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3.3">
+<section id="section-3.3">
+        <h3 id="name-communication-workflow">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-communication-workflow" class="section-name selfRef">Communication Workflow</a>
+        </h3>
+<p id="section-3.3-1">In CMP, most communication is initiated by the EEs where every CMP
+request triggers a CMP response message from the CA or RA.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">The CMP announcement messages described in <a href="#sect-3.5" class="auto internal xref">Section 3.5</a> are an
+exception.  Their creation may be triggered by certain events or done
+on a regular basis by a CA.  The recipient of the announcement only
+replies with an HTTP status code acknowledging the receipt or
+indicating an error, but not with a CMP response.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.3-3">If the receipt of an HTTP request is not confirmed by receiving an
+HTTP response, it <span class="bcp14">MUST</span> be assumed that the transferred CMP message
+was not successfully delivered to its destination.<a href="#section-3.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3.4">
+<section id="section-3.4">
+        <h3 id="name-http-request-uri">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-http-request-uri" class="section-name selfRef">HTTP Request-URI</a>
+        </h3>
+<p id="section-3.4-1">Each CMP server on a PKI management entity supporting HTTP or HTTPS transfer
+<span class="bcp14">MUST</span> support the use of the path prefix '/.well-known/' as defined in
+<span>[<a href="#RFC8615" class="cite xref">RFC8615</a>]</span> and the registered name 'cmp' to ease interworking
+in a multi-vendor environment.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">CMP clients have to be configured with sufficient information to form
+the CMP server URI.  This is at least the authority portion of the URI, e.g.,
+'www.example.com:80', or the full operation path segment of the PKI management
+entity. Additionally, path segments <span class="bcp14">MAY</span> be added after the registered
+application name as part of the full operation path to provide further distinction.
+The path segment 'p' followed by an arbitraryLabel &lt;name&gt; could, for example,
+support the differentiation of specific CAs or certificate profiles. Further
+path segments, e.g., as specified in the Lightweight CMP Profile <span>[<a href="#RFC9483" class="cite xref">RFC9483</a>]</span>,
+could indicate PKI management operations using an operationLabel &lt;operation&gt;.
+The following list shows examples of valid full CMP URIs:<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-3.1">http://www.example.com/.well-known/cmp<a href="#section-3.4-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.4-3.2">http://www.example.com/.well-known/cmp/&lt;operation&gt;<a href="#section-3.4-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.4-3.3">http://www.example.com/.well-known/cmp/p/&lt;name&gt;<a href="#section-3.4-3.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.4-3.4">http://www.example.com/.well-known/cmp/p/&lt;name&gt;/&lt;operation&gt;<a href="#section-3.4-3.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.4-4">Note that https can also be used instead of http; see <span><a href="#sect-5" class="internal xref">item 5 in the Security Considerations</a> (<a href="#sect-5" class="auto internal xref">Section 5</a>)</span>.<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3.5">
+<section id="section-3.5">
+        <h3 id="name-pushing-of-announcements">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-pushing-of-announcements" class="section-name selfRef">Pushing of Announcements</a>
+        </h3>
+<p id="section-3.5-1">A CMP server may create event-triggered announcements or generate
+them on a regular basis.  It <span class="bcp14">MAY</span> utilize HTTP transfer to convey them
+to a suitable recipient.  In this use case, the CMP server acts as an
+HTTP client, and the recipient needs to utilize an HTTP server.  As
+no request messages are specified for those announcements, they can
+only be pushed to the recipient.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">If an EE wants to poll for a potential CA Key Update Announcement or
+the current Certificate Revocation List (CRL), a PKI Information Request using a general message as
+described in <span><a href="https://rfc-editor.org/rfc/rfc9810#appendix-D.5" class="relref">Appendix D.5</a> of [<a href="#RFC9810" class="cite xref">RFC9810</a>]</span> can be used.<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+<p id="section-3.5-3">When pushing announcement messages, PKIMessage structures <span class="bcp14">MUST</span> be sent as
+the content of an HTTP POST request.<a href="#section-3.5-3" class="pilcrow">¶</a></p>
+<p id="section-3.5-4">Suitable recipients for CMP announcements might, for example, be
+repositories storing the announced information, such as directory
+services.  Those services listen for incoming messages, utilizing the
+same HTTP Request-URI scheme as defined in <a href="#sect-3.4" class="auto internal xref">Section 3.4</a>.<a href="#section-3.5-4" class="pilcrow">¶</a></p>
+<p id="section-3.5-5">The following types of PKIMessage are announcements that may be pushed by a
+CA.  The prefixed numbers reflect ASN.1 tags of the PKIBody structure (<span><a href="https://rfc-editor.org/rfc/rfc9810#section-5.1.2" class="relref">Section 5.1.2</a> of [<a href="#RFC9810" class="cite xref">RFC9810</a>]</span>).<a href="#section-3.5-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.5-6">
+<pre>
+   [15] CA Key Update Announcement
+   [16] Certificate Announcement
+   [17] Revocation Announcement
+   [18] CRL Announcement
+</pre><a href="#section-3.5-6" class="pilcrow">¶</a>
+</div>
+<p id="section-3.5-7">CMP announcement messages do not require any CMP response.  However,
+the recipient <span class="bcp14">MUST</span> acknowledge receipt with an HTTP response having
+an appropriate status code and empty content.  When not receiving
+such a response, it <span class="bcp14">MUST</span> be assumed that the delivery was not
+successful.  If applicable, the sending side <span class="bcp14">MAY</span> try sending the
+announcement again after waiting for an appropriate time span.<a href="#section-3.5-7" class="pilcrow">¶</a></p>
+<p id="section-3.5-8">If the announced issue was successfully stored in a database or was
+already present, the answer <span class="bcp14">MUST</span> be an HTTP response with a 201 (Created)
+status code and empty content.<a href="#section-3.5-8" class="pilcrow">¶</a></p>
+<p id="section-3.5-9">In case the announced information was only accepted for further
+processing, the status code of the returned HTTP response <span class="bcp14">MAY</span> also be
+202 (Accepted).  After an appropriate delay, the sender may then try
+to send the announcement again and may repeat this until it receives
+a confirmation that it has been successfully processed.  The
+appropriate duration of the delay and the option to increase it
+between consecutive attempts should be carefully considered.<a href="#section-3.5-9" class="pilcrow">¶</a></p>
+<p id="section-3.5-10">A receiver <span class="bcp14">MUST</span> answer with a suitable 4xx or 5xx error code
+when a problem occurs.<a href="#section-3.5-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-4">
+<section id="section-4">
+      <h2 id="name-implementation-consideratio">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-implementation-consideratio" class="section-name selfRef">Implementation Considerations</a>
+      </h2>
+<p id="section-4-1">Implementers should be aware that other implementations might exist that
+use a different approach for transferring CMP over HTTP.
+Further, implementations based on earlier documents that led to
+<span>[<a href="#RFC6712" class="cite xref">RFC6712</a>]</span> might use an unregistered "application/pkixcmp-poll" media type.
+Conforming implementations <span class="bcp14">MAY</span> handle this type like "application/pkixcmp".<a href="#section-4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-5">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">All security considerations in HTTP <span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> apply.
+The following items need to be considered by implementers and users:<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5-2">
+<li id="section-5-2.1">
+          <p id="section-5-2.1.1">There is the risk for denial-of-service attacks through resource
+  consumption by opening many connections to an HTTP server. Therefore,
+  idle connections should be terminated after an appropriate timeout; this
+  may also depend on the available free resources.<a href="#section-5-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-5-2.2">
+          <p id="section-5-2.2.1">Without being encapsulated in effective security protocols, such
+  as Transport Layer Security (TLS) <span>[<a href="#RFC5246" class="cite xref">RFC5246</a>]</span> <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, or
+  without using HTTP digest <span>[<a href="#RFC9530" class="cite xref">RFC9530</a>]</span>, there is no
+  integrity protection at the HTTP level.  Therefore,
+  information from the HTTP should not be used to change
+  state of the transaction, regardless of whether any mechanism was
+  used to ensure the authenticity or integrity of HTTP messages
+  (e.g., TLS or HTTP digests).<a href="#section-5-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-5-2.3">
+          <p id="section-5-2.3.1">Client users should be aware that storing the target location of
+  an HTTP response with the 301 (Moved Permanently) status code
+  could be exploited by a meddler-in-the-middle attacker trying to
+  block them permanently from contacting the correct server.<a href="#section-5-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-5-2.4">
+          <p id="section-5-2.4.1">If no measures to authenticate and protect the HTTP responses to
+  pushed announcement messages are in place, their information
+  regarding the announcement's processing state may not be trusted.
+  In that case, the overall design of the PKI system must not
+  depend on the announcements being reliably received and processed
+  by their destination.<a href="#section-5-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-5-2.5">
+          <p id="section-5-2.5.1">CMP provides inbuilt integrity protection and authentication.
+  The information communicated unencrypted in CMP messages does not
+  contain sensitive information endangering the security of the PKI
+  when intercepted.  However, it might be possible for an
+  eavesdropper to utilize the available information to gather
+  confidential personal, technical, or business-critical information.
+  The protection of the confidentiality of CMP messages together with
+  an initial authentication of the RA/CA before the first CMP message
+  is transmitted ensures the privacy of the EE requesting
+  certificates. Therefore, users of the HTTP transfer for CMP messages
+  should consider using HTTP over TLS according to <span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> or using virtual
+  private networks created, for example, by utilizing Internet
+  Protocol Security according to <span>[<a href="#RFC7296" class="cite xref">RFC7296</a>]</span>.<a href="#section-5-2.5.1" class="pilcrow">¶</a></p>
+</li>
+      </ol>
+</section>
+</div>
+<div id="sect-6">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">IANA has made the following updates:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-2.1">the reference for "application/pkixcmp" in the "Media Types" registry <span>&lt;<a href="https://www.iana.org/assignments/media-types">https://www.iana.org/assignments/media-types</a>&gt;</span> refers to this document, instead of <span>[<a href="#RFC2510" class="cite xref">RFC2510</a>]</span>.<a href="#section-6-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-2.2">the reference for "application/pkixcmp" in the "CoAP Content-Formats" registry <span>&lt;<a href="https://www.iana.org/assignments/core-parameters">https://www.iana.org/assignments/core-parameters</a>&gt;</span> refers to this document, instead of <span>[<a href="#RFC4210" class="cite xref">RFC4210</a>]</span>.<a href="#section-6-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-2.3">the reference for "cmp" in the "Well-Known URIs" registry <span>&lt;<a href="https://www.iana.org/assignments/well-known-uris/">https://www.iana.org/assignments/well-known-uris/</a>&gt;</span> 
+refers to this document instead of <span>[<a href="#RFC4210" class="cite xref">RFC4210</a>]</span>.<a href="#section-6-2.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-2.4">the reference for "p" in the "CMP Well-Known URI Path Segments" registry <span>&lt;<a href="https://www.iana.org/assignments/cmp">https://www.iana.org/assignments/cmp</a>&gt;</span> refers to this document instead of <span>[<a href="#RFC9480" class="cite xref">RFC9480</a>]</span>.<a href="#section-6-2.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-6-3">No further action by IANA is necessary for this document or any anticipated
+updates.<a href="#section-6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="ITU.X690.2021">[ITU.X690.2021]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information Technology - ASN.1 encoding rules: Specification of Basic Encoding Rules (BER), Canonical Encoding Rules (CER) and Distinguished Encoding Rules (DER)"</span>, <span class="seriesInfo">ITU-T Recommendation X.690</span>, <time datetime="2021" class="refDate">2021</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-X.690-202102-I/en">https://www.itu.int/rec/T-REC-X.690-202102-I/en</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1945">[RFC1945]</dt>
+        <dd>
+<span class="refAuthor">Berners-Lee, T.</span>, <span class="refAuthor">Fielding, R.</span>, and <span class="refAuthor">H. Frystyk</span>, <span class="refTitle">"Hypertext Transfer Protocol -- HTTP/1.0"</span>, <span class="seriesInfo">RFC 1945</span>, <span class="seriesInfo">DOI 10.17487/RFC1945</span>, <time datetime="1996-05" class="refDate">May 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1945">https://www.rfc-editor.org/info/rfc1945</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8615">[RFC8615]</dt>
+        <dd>
+<span class="refAuthor">Nottingham, M.</span>, <span class="refTitle">"Well-Known Uniform Resource Identifiers (URIs)"</span>, <span class="seriesInfo">RFC 8615</span>, <span class="seriesInfo">DOI 10.17487/RFC8615</span>, <time datetime="2019-05" class="refDate">May 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8615">https://www.rfc-editor.org/info/rfc8615</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9110">[RFC9110]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="seriesInfo">STD 97</span>, <span class="seriesInfo">RFC 9110</span>, <span class="seriesInfo">DOI 10.17487/RFC9110</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9110">https://www.rfc-editor.org/info/rfc9110</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9112">[RFC9112]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP/1.1"</span>, <span class="seriesInfo">STD 99</span>, <span class="seriesInfo">RFC 9112</span>, <span class="seriesInfo">DOI 10.17487/RFC9112</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9112">https://www.rfc-editor.org/info/rfc9112</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9810">[RFC9810]</dt>
+      <dd>
+<span class="refAuthor">Brockhaus, H.</span>, <span class="refAuthor">von Oheimb, D.</span>, <span class="refAuthor">Ounsworth, M.</span>, and <span class="refAuthor">J. Gray</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure -- Certificate Management Protocol (CMP)"</span>, <span class="seriesInfo">RFC 9810</span>, <span class="seriesInfo">DOI 10.17487/RFC9810</span>, <time datetime="2025-07" class="refDate">July 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9810">https://www.rfc-editor.org/info/rfc9810</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="BCP56">[BCP56]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 56, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp56">https://www.rfc-editor.org/info/bcp56</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC9205">
+            <span class="refAuthor">Nottingham, M.</span>, <span class="refTitle">"Building Protocols with HTTP"</span>, <span class="seriesInfo">BCP 56</span>, <span class="seriesInfo">RFC 9205</span>, <span class="seriesInfo">DOI 10.17487/RFC9205</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9205">https://www.rfc-editor.org/info/rfc9205</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="RFC2510">[RFC2510]</dt>
+        <dd>
+<span class="refAuthor">Adams, C.</span> and <span class="refAuthor">S. Farrell</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate Management Protocols"</span>, <span class="seriesInfo">RFC 2510</span>, <span class="seriesInfo">DOI 10.17487/RFC2510</span>, <time datetime="1999-03" class="refDate">March 1999</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2510">https://www.rfc-editor.org/info/rfc2510</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4210">[RFC4210]</dt>
+        <dd>
+<span class="refAuthor">Adams, C.</span>, <span class="refAuthor">Farrell, S.</span>, <span class="refAuthor">Kause, T.</span>, and <span class="refAuthor">T. Mononen</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate Management Protocol (CMP)"</span>, <span class="seriesInfo">RFC 4210</span>, <span class="seriesInfo">DOI 10.17487/RFC4210</span>, <time datetime="2005-09" class="refDate">September 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4210">https://www.rfc-editor.org/info/rfc4210</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5246">[RFC5246]</dt>
+        <dd>
+<span class="refAuthor">Dierks, T.</span> and <span class="refAuthor">E. Rescorla</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.2"</span>, <span class="seriesInfo">RFC 5246</span>, <span class="seriesInfo">DOI 10.17487/RFC5246</span>, <time datetime="2008-08" class="refDate">August 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5246">https://www.rfc-editor.org/info/rfc5246</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6712">[RFC6712]</dt>
+        <dd>
+<span class="refAuthor">Kause, T.</span> and <span class="refAuthor">M. Peylo</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure -- HTTP Transfer for the Certificate Management Protocol (CMP)"</span>, <span class="seriesInfo">RFC 6712</span>, <span class="seriesInfo">DOI 10.17487/RFC6712</span>, <time datetime="2012-09" class="refDate">September 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6712">https://www.rfc-editor.org/info/rfc6712</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7296">[RFC7296]</dt>
+        <dd>
+<span class="refAuthor">Kaufman, C.</span>, <span class="refAuthor">Hoffman, P.</span>, <span class="refAuthor">Nir, Y.</span>, <span class="refAuthor">Eronen, P.</span>, and <span class="refAuthor">T. Kivinen</span>, <span class="refTitle">"Internet Key Exchange Protocol Version 2 (IKEv2)"</span>, <span class="seriesInfo">STD 79</span>, <span class="seriesInfo">RFC 7296</span>, <span class="seriesInfo">DOI 10.17487/RFC7296</span>, <time datetime="2014-10" class="refDate">October 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7296">https://www.rfc-editor.org/info/rfc7296</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9293">[RFC9293]</dt>
+        <dd>
+<span class="refAuthor">Eddy, W., Ed.</span>, <span class="refTitle">"Transmission Control Protocol (TCP)"</span>, <span class="seriesInfo">STD 7</span>, <span class="seriesInfo">RFC 9293</span>, <span class="seriesInfo">DOI 10.17487/RFC9293</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9293">https://www.rfc-editor.org/info/rfc9293</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9480">[RFC9480]</dt>
+        <dd>
+<span class="refAuthor">Brockhaus, H.</span>, <span class="refAuthor">von Oheimb, D.</span>, and <span class="refAuthor">J. Gray</span>, <span class="refTitle">"Certificate Management Protocol (CMP) Updates"</span>, <span class="seriesInfo">RFC 9480</span>, <span class="seriesInfo">DOI 10.17487/RFC9480</span>, <time datetime="2023-11" class="refDate">November 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9480">https://www.rfc-editor.org/info/rfc9480</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9483">[RFC9483]</dt>
+        <dd>
+<span class="refAuthor">Brockhaus, H.</span>, <span class="refAuthor">von Oheimb, D.</span>, and <span class="refAuthor">S. Fries</span>, <span class="refTitle">"Lightweight Certificate Management Protocol (CMP) Profile"</span>, <span class="seriesInfo">RFC 9483</span>, <span class="seriesInfo">DOI 10.17487/RFC9483</span>, <time datetime="2023-11" class="refDate">November 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9483">https://www.rfc-editor.org/info/rfc9483</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9530">[RFC9530]</dt>
+      <dd>
+<span class="refAuthor">Polli, R.</span> and <span class="refAuthor">L. Pardue</span>, <span class="refTitle">"Digest Fields"</span>, <span class="seriesInfo">RFC 9530</span>, <span class="seriesInfo">DOI 10.17487/RFC9530</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9530">https://www.rfc-editor.org/info/rfc9530</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-7">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors wish to thank <span class="contact-name">Tomi Kause</span> and <span class="contact-name">Martin Peylo</span>, the
+original authors of <span>[<a href="#RFC6712" class="cite xref">RFC6712</a>]</span>, for their work.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">We also thank all reviewers for their valuable feedback.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Hendrik Brockhaus</span></div>
+<div dir="auto" class="left"><span class="org">Siemens</span></div>
+<div dir="auto" class="left"><span class="street-address">Werner-von-Siemens-Strasse 1</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">80333</span> <span class="locality">Munich</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:hendrik.brockhaus@siemens.com" class="email">hendrik.brockhaus@siemens.com</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://www.siemens.com" class="url">https://www.siemens.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">David von Oheimb</span></div>
+<div dir="auto" class="left"><span class="org">Siemens</span></div>
+<div dir="auto" class="left"><span class="street-address">Werner-von-Siemens-Strasse 1</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">80333</span> <span class="locality">Munich</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:david.von.oheimb@siemens.com" class="email">david.von.oheimb@siemens.com</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://www.siemens.com" class="url">https://www.siemens.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mike Ounsworth</span></div>
+<div dir="auto" class="left"><span class="org">Entrust</span></div>
+<div dir="auto" class="left"><span class="street-address">1187 Park Place</span></div>
+<div dir="auto" class="left">
+<span class="locality">Minneapolis</span>, <span class="region">MN</span> <span class="postal-code">55379</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mike.ounsworth@entrust.com" class="email">mike.ounsworth@entrust.com</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://www.entrust.com" class="url">https://www.entrust.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">John Gray</span></div>
+<div dir="auto" class="left"><span class="org">Entrust</span></div>
+<div dir="auto" class="left"><span class="street-address">1187 Park Place</span></div>
+<div dir="auto" class="left">
+<span class="locality">Minneapolis</span>, <span class="region">MN</span> <span class="postal-code">55379</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:john.gray@entrust.com" class="email">john.gray@entrust.com</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://www.entrust.com" class="url">https://www.entrust.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
