@@ -1,0 +1,3584 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9828: RTP Payload Format for JPEG 2000 Streaming with Sub-Codestream Latency</title>
+<meta content="Pierre-Anthony Lemieux" name="author">
+<meta content="David Scott Taubman" name="author">
+<meta content="
+       This document defines the RTP payload format for the streaming of a video signal encoded
+      as a sequence of JPEG 2000 codestreams. The format allows sub-codestream
+      latency, such that the first RTP packet for a given image can be emitted
+      before the entire image is available to or encoded by the sender. 
+    " name="description">
+<meta content="xml2rfc 3.30.1" name="generator">
+<meta content="JPEG 2000" name="keyword">
+<meta content="J2K" name="keyword">
+<meta content="HTJ2K" name="keyword">
+<meta content="low latency" name="keyword">
+<meta content="scalable" name="keyword">
+<meta content="streaming" name="keyword">
+<meta content="9828" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.1
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9828.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-avtcore-rtp-j2k-scl-08" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9828" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9828</td>
+<td class="center">JPEG 2000 Streaming with Sub-Codestream </td>
+<td class="right">August 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Lemieux &amp; Taubman</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9828" class="eref">9828</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-08" class="published">August 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">P.-A. Lemieux, <span class="editor">Ed.</span>
+</div>
+<div class="org">Sandflow Consulting LLC</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Taubman</div>
+<div class="org">University of New South Wales</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9828</h1>
+<h1 id="title">RTP Payload Format for JPEG 2000 Streaming with Sub-Codestream Latency</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines the RTP payload format for the streaming of a video signal encoded
+      as a sequence of JPEG 2000 codestreams. The format allows sub-codestream
+      latency, such that the first RTP packet for a given image can be emitted
+      before the entire image is available to or encoded by the sender.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9828">https://www.rfc-editor.org/info/rfc9828</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-media-format-description" class="internal xref">Media Format Description</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-video-signal-description" class="internal xref">Video Signal Description</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-payload-format" class="internal xref">Payload Format</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-general" class="internal xref">General</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-rtp-fixed-header-usage" class="internal xref">RTP Fixed Header Usage</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-main-packet-payload-header" class="internal xref">Main Packet Payload Header</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-body-packet-payload-header" class="internal xref">Body Packet Payload Header</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-jpeg-2000-codestream" class="internal xref">JPEG 2000 Codestream</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-sender" class="internal xref">Sender</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-main-packet" class="internal xref">Main Packet</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-rtp-packet-filtering" class="internal xref">RTP Packet Filtering</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-resync-point" class="internal xref">Resync Point</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
+                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-ptstamp-field" class="internal xref">PTSTAMP Field</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.5">
+                <p id="section-toc.1-1.7.2.5.1"><a href="#section-7.5" class="auto internal xref">7.5</a>.  <a href="#name-res-field" class="internal xref">RES Field</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6">
+                <p id="section-toc.1-1.7.2.6.1"><a href="#section-7.6" class="auto internal xref">7.6</a>.  <a href="#name-extra-information" class="internal xref">Extra Information</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.7">
+                <p id="section-toc.1-1.7.2.7.1"><a href="#section-7.7" class="auto internal xref">7.7</a>.  <a href="#name-unassigned-values" class="internal xref">Unassigned Values</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.8">
+                <p id="section-toc.1-1.7.2.8.1"><a href="#section-7.8" class="auto internal xref">7.8</a>.  <a href="#name-extension-values" class="internal xref">Extension Values</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.9">
+                <p id="section-toc.1-1.7.2.9.1"><a href="#section-7.9" class="auto internal xref">7.9</a>.  <a href="#name-code-block-caching" class="internal xref">Code-Block Caching</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-receiver" class="internal xref">Receiver</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-ptstamp" class="internal xref">PTSTAMP</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-qual" class="internal xref">QUAL</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-res" class="internal xref">RES</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4">
+                <p id="section-toc.1-1.8.2.4.1"><a href="#section-8.4" class="auto internal xref">8.4</a>.  <a href="#name-extra-information-2" class="internal xref">Extra Information</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.5">
+                <p id="section-toc.1-1.8.2.5.1"><a href="#section-8.5" class="auto internal xref">8.5</a>.  <a href="#name-unassigned-values-2" class="internal xref">Unassigned Values</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6">
+                <p id="section-toc.1-1.8.2.6.1"><a href="#section-8.6" class="auto internal xref">8.6</a>.  <a href="#name-extension-values-2" class="internal xref">Extension Values</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7">
+                <p id="section-toc.1-1.8.2.7.1"><a href="#section-8.7" class="auto internal xref">8.7</a>.  <a href="#name-code-block-caching-2" class="internal xref">Code-Block Caching</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-media-type" class="internal xref">Media Type</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-general-2" class="internal xref">General</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-definition" class="internal xref">Definition</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-mapping-to-the-session-desc" class="internal xref">Mapping to the Session Description Protocol (SDP)</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-congestion-control" class="internal xref">Congestion Control</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.1">
+                <p id="section-toc.1-1.14.2.1.1"><a href="#section-14.1" class="auto internal xref">14.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.2">
+                <p id="section-toc.1-1.14.2.2.1"><a href="#section-14.2" class="auto internal xref">14.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-pixel-formats" class="internal xref">Pixel Formats</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-signal-formats" class="internal xref">Signal Formats</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17">
+            <p id="section-toc.1-1.17.1"><a href="#appendix-C" class="auto internal xref">Appendix C</a>.  <a href="#name-sample-formats" class="internal xref">Sample Formats</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18">
+            <p id="section-toc.1-1.18.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The Real-time Transport Protocol (RTP), which is specified in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>, provides end-to-end network transport functions for
+      transmitting real-time data but does not define the characteristics of
+      the data itself (the payload), which varies across applications and is
+      defined in companion RTP payload format documents.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This RTP payload format specifies the streaming of a video signal
+      encoded as a sequence of JPEG 2000 codestreams (see <a href="#sec-media-description" class="auto internal xref">Section 3</a> for a primer on the structure of JPEG
+      2000 codestreams). JPEG 2000 is a flexible image codec that supports
+      resolution and quality scalability, lossy-to-lossless coding,
+      non-iterative optimal rate control, and high dynamic range, multi-channel,
+      and subsampled images. These features have made it a mainstay in
+      high-performance applications, including medical, geospatial, archival,
+      cinema, studio post-production, and TV production.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">In addition to supporting a variety of frame-scanning techniques
+      (progressive, interlaced, and progressive segmented frame) and image
+      characteristics, the payload format supports real-time image transmission
+      (live streaming), where image content is encoded, transmitted, and decoded
+      continuously as it is being produced, with minimal latency. Target
+      applications include real-time TV production over IP <span>[<a href="#OV2110-0" class="cite xref">OV2110-0</a>]</span>, remote presence, surveillance, etc.
+      Specifically:<a href="#section-1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-4.1">The payload format allows sub-codestream latency such that the first
+        RTP packet of a given codestream can be emitted before the entire
+        codestream is available. Specifically, the payload format does not rely
+        on the JPEG 2000 PLM (Packet length, main header) and PLT (Packet length, tile-part header) marker segments for recovery after RTP
+        packet loss since these markers can only be written after the codestream
+        is complete and are thus incompatible with sub-codestream latency.
+        Instead, the payload format includes payload header fields
+        (<code>ORDH</code>, <code>ORDB</code>, <code>POS</code>, and <code>PID</code>) that
+        indicate whether the RTP packet contains a resynchronization (resync)
+        point and how a recipient can restart codestream processing from that
+        resync point. This contrasts with <span>[<a href="#RFC5371" class="cite xref">RFC5371</a>]</span>, which also
+        specifies an RTP payload format for JPEG 2000 but relies on codestream
+        structures that cannot be emitted until the entire codestream is
+        available.<a href="#section-1-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-4.2">As in <span>[<a href="#RFC4175" class="cite xref">RFC4175</a>]</span>, the payload format defines an
+        extended sequence number, which extends the standard (16-bit) sequence
+        number of the RTP Fixed Header by storing additional (high-order) bits
+        in the payload header (<code>ESEQ</code> field). This enables the payload
+        format to accommodate high data rates without ambiguity, since the
+        standard sequence number will roll over very quickly for high data rates
+        likely to be encountered in this application. For example, the standard
+        sequence number will roll over in 0.5 seconds with a 1 Gbps video stream
+        with RTP packet sizes of at least 1000 octets, which can be a problem
+        for detecting loss and out-of-order RTP packets, particularly in
+        instances where the round-trip time is greater than the rollover period
+        (0.5 seconds in this example).<a href="#section-1-4.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-4.3">The payload header optionally contains a temporal offset
+        (<code>PTSTAMP</code>) relative to the first RTP packet with the same value
+        of RTP <code>timestamp</code> field (<a href="#def-timestamp" class="auto internal xref">Section 5.2</a>). The
+        higher resolution of <code>PTSTAMP</code> compared to the <code>timestamp</code>
+        allows receivers to recover the sender's clock more rapidly.<a href="#section-1-4.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-5">In addition to support for sub-codestream latency and high-precision
+      sender clock recovery, the payload format improves on <span>[<a href="#RFC5371" class="cite xref">RFC5371</a>]</span> by supporting:<a href="#section-1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-6.1">code-block caching for screen content (see <a href="#sec-send-block-caching" class="auto internal xref">Section 7.9</a>);<a href="#section-1-6.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.2">progressive segmented frame (PsF) video support (see <a href="#sec-signal-fmts" class="auto internal xref">Appendix B</a>); and<a href="#section-1-6.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.3">explicit colorspace signaling (see <a href="#def-S" class="auto internal xref">Section 5.3</a>).<a href="#section-1-6.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-7">Finally, the payload format also makes use of the unique scalability
+      features of JPEG 2000 to allow an intermediate system or recipient to
+      discard resolution levels and/or quality layers merely by inspecting RTP
+      packet headers (<code>QUAL</code> and <code>RES</code> fields), without having to
+      parse the underlying codestream (see <a href="#sec-filtering" class="auto internal xref">Section 7.2</a>).<a href="#section-1-7" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-requirements-language">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">In case of conflict between the contents of a figure and the prose, the
+      prose takes precedence.<a href="#section-2-2" class="pilcrow">¶</a></p>
+</section>
+<div id="sec-media-description">
+<section id="section-3">
+      <h2 id="name-media-format-description">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-media-format-description" class="section-name selfRef">Media Format Description</a>
+      </h2>
+<p id="section-3-1">The following summarizes the structure of the JPEG 2000 codestream,
+      which is specified in detail in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">NOTE: As described in <a href="#sec-codestream" class="auto internal xref">Section 6</a>, a JPEG 2000
+      codestream allows capabilities defined in any part of the JPEG 2000 family
+      of standards, including those specified in <span>[<a href="#JPEG2000-2" class="cite xref">JPEG2000-2</a>]</span> and
+      <span>[<a href="#JPEG2000-15" class="cite xref">JPEG2000-15</a>]</span>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">JPEG 2000 represents an image as one or more components, each uniformly
+      sampled on a common rectangular reference grid. For example, an image can
+      consist of the customary Y (luma), C<sub>b</sub> (blue-difference chroma),
+      and C<sub>r</sub> (red-difference chroma) components, with the
+      C<sub>b</sub> and C<sub>r</sub> being subsampled by a factor of two
+      compared to the Y component.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">An image can be further divided into contiguous rectangular tiles that
+      are each independently coded and decoded.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">JPEG 2000 codes each image as a standalone codestream. A codestream
+      consists of (i) marker segments, which contain coding parameters and
+      metadata, and (ii) coded data.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">For convenience to the reader, the following lists both the abbreviated
+      and full names of marker segments that are mentioned in this specification
+      (several other marker segments are defined by JPEG 2000 and can be present
+      in a codestream):<a href="#section-3-6" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3-7">
+        <dt id="section-3-7.1">CAP:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.2">Extended Capabilities<a href="#section-3-7.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.3">COC:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.4">Coding style component<a href="#section-3-7.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.5">COD:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.6">Coding style default<a href="#section-3-7.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.7">COM:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.8">Comment<a href="#section-3-7.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.9">EOC:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.10">End of codestream<a href="#section-3-7.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.11">PLM:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.12">Packet length, main header<a href="#section-3-7.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.13">PLT:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.14">Packet length, tile-part header<a href="#section-3-7.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.15">SOC:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.16">Start of codestream<a href="#section-3-7.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.17">SOD:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.18">Start of data<a href="#section-3-7.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.19">SOT:</dt>
+        <dd style="margin-left: 3.5em" id="section-3-7.20">Start of tile-part<a href="#section-3-7.20" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-8">The codestream starts with an SOC marker segment and ends with an EOC
+      marker segment. The main header of the codestream consists of marker
+      segments between the SOC and first SOT marker segment and contains
+      information that applies to the codestream in its entirety. It is
+      generally impossible to decode a codestream without its main header.<a href="#section-3-8" class="pilcrow">¶</a></p>
+<p id="section-3-9">The rest of the codestream consists of additional marker segments
+      (tile-part headers) interleaved with coded image data.<a href="#section-3-9" class="pilcrow">¶</a></p>
+<p id="section-3-10">At the heart of JPEG 2000 coding is the wavelet transform, which
+      decomposes the image into successive resolution levels, with each level
+      related to the next one by a spatial factor of two, i.e., each
+      successive resolution level has half the horizontal and half the vertical
+      resolution of the previous one.<a href="#section-3-10" class="pilcrow">¶</a></p>
+<p id="section-3-11">The coded image data ultimately consists of code-blocks, each
+      containing coded samples belonging to a rectangular (spatial) region
+      within one resolution level of one component. Code-blocks are further
+      collected into precincts, which, accordingly, represent code-blocks
+      belonging to a spatial region within one resolution level of one
+      component.<a href="#section-3-11" class="pilcrow">¶</a></p>
+<p id="section-3-12">The coded image data can be arranged into several progression orders,
+      which dictates which aspect of the image appears first in the codestream
+      (in terms of byte offset). The progression orders are parameterized
+      according to:<a href="#section-3-12" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3-13">
+        <dt id="section-3-13.1">Position (P)</dt>
+        <dd style="margin-left: 1.5em" id="section-3-13.2">The first lines of the image come before the last lines of the
+        image.<a href="#section-3-13.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-13.3">Component (C)</dt>
+        <dd style="margin-left: 1.5em" id="section-3-13.4">The first component of the image comes before the last component of
+        the image.<a href="#section-3-13.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-13.5">Resolution Level (R)</dt>
+        <dd style="margin-left: 1.5em" id="section-3-13.6">The information needed to reconstruct the lower spatial resolutions
+        of the image come before the information needed to reconstruct the
+        higher spatial resolutions of the image.<a href="#section-3-13.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-13.7">Quality Layer (L)</dt>
+        <dd style="margin-left: 1.5em" id="section-3-13.8">The information needed to reconstruct the most significant bits of
+        each sample come before the information needed to reconstruct the
+        least significant bit of each sample.<a href="#section-3-13.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-14">For example, in the PRCL progression order, the information needed to
+      reconstruct the first lines of the image come before that needed to
+      reconstruct the last lines of the image, and within a collection of lines,
+      the information needed to reconstruct the lower spatial resolutions of the
+      image come before the information needed to reconstruct the higher spatial
+      resolutions. This progression order is particularly useful for subframe
+      latency operations.<a href="#section-3-14" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-4">
+      <h2 id="name-video-signal-description">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-video-signal-description" class="section-name selfRef">Video Signal Description</a>
+      </h2>
+<p id="section-4-1">This RTP payload format supports three distinct techniques for scanning video frames:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1">Progressive frame<a href="#section-4-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.2">Interlaced frame, where each frame consists of two fields. Field 1
+        occurs earlier in time than Field 2. The height in lines of each field
+        is half the height of the image.<a href="#section-4-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.3">Progressive segmented frame (PsF), where each frame consists of two
+        segments. Segment 1 contains the odd lines (1, 3, 5, 7, ...) of a frame,
+        and Segment 2 contains the even lines (2, 4, 6, 8, ...) of the same
+        frame, where lines from the top of the frame to the bottom of the frame
+        are numbered sequentially starting at 1.<a href="#section-4-2.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-3">All frames are scanned left to right, top to bottom.<a href="#section-4-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5">
+      <h2 id="name-payload-format">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-payload-format" class="section-name selfRef">Payload Format</a>
+      </h2>
+<section id="section-5.1">
+        <h3 id="name-general">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-general" class="section-name selfRef">General</a>
+        </h3>
+<span id="name-packetization-of-a-sequence"></span><div id="fig-payload-header">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-5.1-1.1">
+<pre>
+&lt;--------------- Codestream (image) --------------&gt;
+|                                                 |
+&lt;----- Extended Header -----&gt;                     |
+|                           |                     |
++-----+-//-+-----+-//-+-----+--------//-----+-----+-----+---------
+| SOC | .. | SOT | .. | SOD | ............. | EOC |  P  | SOC  ...
++-----+-//-+-----+-//-+-----+--------//-----+-----+-----+---------
+|          |                                            |
+&lt;----------&gt; Main header                                |
+|                                                       |
++------------------------------+------+--//-+-----------+---------
+|             Main             | Body | ... |    Body   | Main ...
++------------------------------+------+--//-+-----------+---------
+|                              |
+&lt;--------- RTP Packet ---------&gt;
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-packetization-of-a-sequence" class="selfRef">Packetization of a Sequence of JPEG 2000 Codestreams (Not to
+          Scale)</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.1-2">In <a href="#fig-payload-header" class="auto internal xref">Figure 1</a>, P denotes (optional) padding
+ bytes. See <a href="#sec-media-description" class="auto internal xref">Section 3</a> for expansions of
+ SOC, SOD, SOT, and EOC.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">Each RTP packet, as specified in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>, is either
+        a Main Packet or a Body Packet.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">A Main Packet consists of the following ordered sequence of
+        structures concatenated without gaps:<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-5.1">the RTP Fixed Header;<a href="#section-5.1-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.1-5.2">a Main Packet Payload Header, as specified in <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>; and<a href="#section-5.1-5.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.1-5.3">the payload, which consists of a JPEG 2000 codestream
+          fragment.<a href="#section-5.1-5.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-5.1-6">A Body Packet consists of the following ordered sequence of
+          structures concatenated without gaps:<a href="#section-5.1-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-7.1">the RTP Fixed Header;<a href="#section-5.1-7.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.1-7.2">a Body Packet Payload Header, as specified in <a href="#sec-body-packet-header" class="auto internal xref">Section 5.4</a>; and<a href="#section-5.1-7.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.1-7.3">the payload, which consists of a JPEG 2000 codestream
+          fragment.<a href="#section-5.1-7.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-5.1-8">When concatenated, the sequence of JPEG 2000 codestream fragments
+        emitted by the sender <span class="bcp14">MUST</span> be a sequence of JPEG 2000 codestreams where
+        two successive JPEG 2000 codestreams <span class="bcp14">MAY</span> be separated by one or more
+        padding bytes (see <a href="#fig-payload-header" class="auto internal xref">Figure 1</a>).<a href="#section-5.1-8" class="pilcrow">¶</a></p>
+<p id="section-5.1-9">The sender <span class="bcp14">MUST</span> set the value of each padding byte to zero.<a href="#section-5.1-9" class="pilcrow">¶</a></p>
+<p id="section-5.1-10">The receiver <span class="bcp14">MUST</span> ignore the values of the padding bytes.<a href="#section-5.1-10" class="pilcrow">¶</a></p>
+<p id="section-5.1-11">The JPEG 2000 codestreams <span class="bcp14">MUST</span> conform to <a href="#sec-codestream" class="auto internal xref">Section 6</a>.<a href="#section-5.1-11" class="pilcrow">¶</a></p>
+<p id="section-5.1-12">NOTE 1: Padding bytes can be used to achieve constant bit rate
+        transmission.<a href="#section-5.1-12" class="pilcrow">¶</a></p>
+<p id="section-5.1-13">A JPEG 2000 codestream fragment, and thus an RTP packet, does not
+        necessarily contain complete JPEG 2000 packets, as defined in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>.<a href="#section-5.1-13" class="pilcrow">¶</a></p>
+<p id="section-5.1-14">A JPEG 2000 codestream Extended Header consists of the bytes between,
+        and including, the SOC marker and the first SOD marker.<a href="#section-5.1-14" class="pilcrow">¶</a></p>
+<p id="section-5.1-15">NOTE 2: The concept of the JPEG 2000 codestream Extended Header is
+        specific to this document and is distinct from the JPEG 2000 codestream
+        main header, which is defined in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>. The
+        codestream main header consists of the bytes between, and including, the
+        SOC marker and the first SOT marker. The codestream main header is a
+        subset of the codestream Extended Header (see <a href="#fig-payload-header" class="auto internal xref">Figure 1</a>).<a href="#section-5.1-15" class="pilcrow">¶</a></p>
+<p id="section-5.1-16">The payload of a Body Packet <span class="bcp14">MUST NOT</span> contain any bytes of the JPEG
+        2000 codestream Extended Header.<a href="#section-5.1-16" class="pilcrow">¶</a></p>
+<p id="section-5.1-17">The payload of a Main Packet <span class="bcp14">MUST</span> contain at least one byte of the
+        JPEG 2000 codestream Extended Header and <span class="bcp14">MAY</span> contain bytes other than
+        those of the JPEG 2000 codestream Extended Header.<a href="#section-5.1-17" class="pilcrow">¶</a></p>
+<p id="section-5.1-18">A payload <span class="bcp14">MUST NOT</span> contain bytes from more than one JPEG 2000
+        codestream.<a href="#section-5.1-18" class="pilcrow">¶</a></p>
+</section>
+<div id="rtp-fixed-header-usage">
+<section id="section-5.2">
+        <h3 id="name-rtp-fixed-header-usage">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-rtp-fixed-header-usage" class="section-name selfRef">RTP Fixed Header Usage</a>
+        </h3>
+<p id="section-5.2-1">The following RTP header fields have a specific meaning in the
+        context of this payload format:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-5.2-2">
+          <dt id="section-5.2-2.1"><code>marker</code></dt>
+          <dd style="margin-left: 1.5em" id="section-5.2-2.2">
+            <span class="break"></span><dl class="dlParallel" id="section-5.2-2.2.1">
+              <dt id="section-5.2-2.2.1.1">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.2-2.2.1.2">The payload contains an EOC marker.<a href="#section-5.2-2.2.1.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.2-2.2.1.3">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.2-2.2.1.4">Otherwise<a href="#section-5.2-2.2.1.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-2.3">
+<div id="def-timestamp"><code>timestamp</code></div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.2-2.4">
+            <p id="section-5.2-2.4.1">The <code>timestamp</code> is the presentation time of the image to
+            which the payload belongs.<a href="#section-5.2-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.4.2">The <code>timestamp</code> clock rate is 90 kHz.<a href="#section-5.2-2.4.2" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.4.3">The <code>timestamp</code> of successive progressive frames <span class="bcp14">MUST</span>
+            advance at regular increments based on the instantaneous video frame
+            rate.<a href="#section-5.2-2.4.3" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.4.4">The <code>timestamp</code> of Field 1 of successive interlaced frames
+            <span class="bcp14">MUST</span> advance at regular increments based on the instantaneous video
+            frame rate, and the <code>Timestamp</code> of Field 2 <span class="bcp14">MUST</span> be offset
+            from the <code>timestamp</code> of Field 1 by one half of the
+            instantaneous frame period.<a href="#section-5.2-2.4.4" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.4.5">The <code>timestamp</code> of both segments of a progressive
+            segmented frame <span class="bcp14">MUST</span> be equal.<a href="#section-5.2-2.4.5" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.4.6">The <code>timestamp</code> of all RTP packets of a given image <span class="bcp14">MUST</span> be
+            equal.<a href="#section-5.2-2.4.6" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.2-2.5">
+<div id="def-seq"><code>sequence number</code></div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.2-2.6">
+            <p id="section-5.2-2.6.1">The low-order bits of the extended sequence number.<a href="#section-5.2-2.6.1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.6.2">The high-order bits of the extended sequence number are contained
+          in the <code>ESEQ</code> field, which is specified in <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>.<a href="#section-5.2-2.6.2" class="pilcrow">¶</a></p>
+<p id="section-5.2-2.6.3">The extended sequence number is calculated as follows:<a href="#section-5.2-2.6.3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.2-2.6.4">
+<pre>
+&lt;extended sequence number&gt; = &lt;ESEQ field&gt; * 65536 + &lt;sequence
+number field of the RTP Fixed Header&gt;
+</pre><a href="#section-5.2-2.6.4" class="pilcrow">¶</a>
+</div>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-main-packet-header">
+<section id="section-5.3">
+        <h3 id="name-main-packet-payload-header">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-main-packet-payload-header" class="section-name selfRef">Main Packet Payload Header</a>
+        </h3>
+<p id="section-5.3-1"><a href="#fig-main-payload-header" class="auto internal xref">Figure 2</a> specifies the structure of the
+        payload header. Fields are interpreted as unsigned binary integers in
+        network order.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<span id="name-structure-of-the-main-packe"></span><div id="fig-main-payload-header">
+<figure id="figure-2">
+          <div class="alignLeft art-text artwork" id="section-5.3-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|MH | TP  |ORDH |P|XTRAC|        PTSTAMP        |     ESEQ      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|R|S|C| RSVD  |*|    PRIMS      |    TRANS      |      MAT      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                              XTRAB                            |
+|                               ...                             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+* RANGE
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-structure-of-the-main-packe" class="selfRef">Structure of the Main Packet Payload Header</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3">
+          <dt id="section-5.3-3.1">
+<div id="def-MH">MH (Codestream Main Header Presence):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.2">
+            <p id="section-5.3-3.2.1">2 bits<a href="#section-5.3-3.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.2.2">
+              <dt id="section-5.3-3.2.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.2.2.2">The RTP packet is a Body Packet.<a href="#section-5.3-3.2.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.2.2.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.2.2.4">The RTP packet is a Main Packet, and the codestream has more
+              than one Main Packet. The next RTP packet is a Main Packet.<a href="#section-5.3-3.2.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.2.2.5">2</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.2.2.6">The RTP packet is a Main Packet, and the codestream has more
+              than one Main Packet. The next RTP packet is a Body Packet.<a href="#section-5.3-3.2.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.2.2.7">3</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.2.2.8">The RTP packet is a Main Packet, and the codestream has exactly
+              one Main Packet.<a href="#section-5.3-3.2.2.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.3">
+<div id="def-TP">TP (Image Type):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.4">
+            <p id="section-5.3-3.4.1">3 bits<a href="#section-5.3-3.4.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.4.2">Indicates the scanning structure of the image to which the
+            payload belongs.<a href="#section-5.3-3.4.2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.4.3">
+              <dt id="section-5.3-3.4.3.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.2">Progressive frame.<a href="#section-5.3-3.4.3.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.4">Field 1 of an interlaced frame, where the first line of the
+              field is the first line of the frame.<a href="#section-5.3-3.4.3.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.5">2</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.6">Field 2 of an interlaced frame, where the first line of the
+              field is the second line of the frame.<a href="#section-5.3-3.4.3.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.7">3</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.8">Field 1 of an interlaced frame, where the first line of the
+              field is the second line of the frame.<a href="#section-5.3-3.4.3.8" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.9">4</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.10">Field 2 of an interlaced frame, where the first line of the
+              field is the first line of the frame.<a href="#section-5.3-3.4.3.10" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.11">5</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.12">Segment 1 of a progressive segmented frame, where the
+              first line of the image is the first line of the frame.<a href="#section-5.3-3.4.3.12" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.13">6</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.14">Segment 2 of a progressive segmented frame, where the
+              first line of the image is the second line of the frame.<a href="#section-5.3-3.4.3.14" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.4.3.15">7</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.4.3.16">Extension value. See Sections <a href="#sec-receiver-ext" class="auto internal xref">8.6</a> and
+              <a href="#sec-sender-ext" class="auto internal xref">7.8</a>.<a href="#section-5.3-3.4.3.16" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.5">
+<div id="def-ORDH">ORDH (Progression Order Flag, Main Packet):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.6">
+            <p id="section-5.3-3.6.1">3 bits<a href="#section-5.3-3.6.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.6.2">Specifies the progression order used by the codestream and
+              whether resync points are signaled. See <a href="#sec-media-description" class="auto internal xref">Section 3</a> for details about progression orders.<a href="#section-5.3-3.6.2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.6.3">
+              <dt id="section-5.3-3.6.3.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.2">Resync points are not necessarily signaled. The progression
+                order can vary over the codestream.<a href="#section-5.3-3.6.3.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.4">The progression order is LRCP for the entire codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.5">2</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.6">The progression order is RLCP for the entire codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.7">3</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.8">The progression order is RPCL for the entire codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.8" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.9">4</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.10">The progression order is PCRL for the entire codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.10" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.11">5</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.12">The progression order is CPRL for the entire codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.12" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.13">6</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.14">The progression order is PRCL for the entire codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.14" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.6.3.15">7</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.6.3.16">The progression order can vary over the codestream. The
+                first resync point is specified in every Body Packet that
+                contains one or more resync points.<a href="#section-5.3-3.6.3.16" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+<p id="section-5.3-3.6.4"><code>ORDH</code> <span class="bcp14">MUST</span> be 0 if the codestream consists of more than
+              one tile.<a href="#section-5.3-3.6.4" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.6.5">NOTE 1: Only <code>ORDH</code> = 4 and <code>ORDH</code> = 6 allow
+              sub-codestream latency streaming.<a href="#section-5.3-3.6.5" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.6.6">NOTE 2: Progression order PRCL is defined in <span>[<a href="#JPEG2000-2" class="cite xref">JPEG2000-2</a>]</span>. The other progression orders are specified
+              in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>.<a href="#section-5.3-3.6.6" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.7">
+<div id="def-P">P (Precision Timestamp Presence):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.8">
+            <p id="section-5.3-3.8.1">1 bit<a href="#section-5.3-3.8.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.8.2">
+              <dt id="section-5.3-3.8.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.8.2.2">
+                <code>PTSTAMP</code> is not used.<a href="#section-5.3-3.8.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.8.2.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.8.2.4">
+                <code>PTSTAMP</code> is used.<a href="#section-5.3-3.8.2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.9">
+<div id="def-XTRAC">XTRAC (Extension Payload Length):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.10">
+            <p id="section-5.3-3.10.1">3 bits<a href="#section-5.3-3.10.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.10.2">Length, in multiples of 4 bytes, of the <code>XTRAB</code> field.<a href="#section-5.3-3.10.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.11">
+<div id="def-PTSTAMP">PTSTAMP (Precision Timestamp):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.12">
+            <p id="section-5.3-3.12.1">12 bits<a href="#section-5.3-3.12.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.12.2">PTSTAMP = (<code>timestamp</code> + <code>TOFF</code>) mod 4096, if
+            <code>P</code> = 1 in the Main Packet of this codestream.<a href="#section-5.3-3.12.2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.12.3"><code>TOFF</code> is the transmission time of this RTP packet, in the
+            timebase of the <code>timestamp</code> clock and relative to the first
+            RTP packet with the same <code>timestamp</code> value.<a href="#section-5.3-3.12.3" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.12.4"><code>TOFF</code> = 0 in the first RTP packet with the same
+            <code>timestamp</code> value.<a href="#section-5.3-3.12.4" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.12.5"><code>PTSTAMP</code> = 0, if <code>P</code> = 0 in the Main Packet of this
+            codestream.<a href="#section-5.3-3.12.5" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.12.6">NOTE 3: As described in Sections <a href="#sec-sender-ptstamp" class="auto internal xref">7.4</a> and
+            <a href="#sec-recv-ptstamp" class="auto internal xref">8.1</a>, <code>PTSTAMP</code> is intended to
+            improve clock recovery at the receiver and only applies when the
+            transmission time of two consecutive RTP packets with identical
+            <code>timestamp</code> fields differ by no more than 45 ms
+           (which is 4095/90,000). <span>[<a href="#RFC5450" class="cite xref">RFC5450</a>]</span> addresses the general
+            case when an RTP packet is transmitted at a time other than its
+            nominal transmission time.<a href="#section-5.3-3.12.6" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.13">
+<div id="def-ESEQ">ESEQ (Extended Sequence Number High-Order Bits):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.14">
+            <p id="section-5.3-3.14.1">8 bits<a href="#section-5.3-3.14.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.14.2">The high-order bits of the extended sequence number.<a href="#section-5.3-3.14.2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.14.3">NOTE 4: The low-order bits of the extended sequence number are
+            stored in the <code>sequence number</code> field of the RTP Fixed
+            Header.<a href="#section-5.3-3.14.3" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.14.4"><a href="#rtp-fixed-header-usage" class="auto internal xref">Section 5.2</a> specifies the formula to compute the
+            extended sequence number.<a href="#section-5.3-3.14.4" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.15">
+<div id="def-R">R (Codestream Main Header Reuse):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.16">
+            <p id="section-5.3-3.16.1">1 bit<a href="#section-5.3-3.16.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.16.2">Determines whether Main Packet and codestream main header
+            information can be reused across codestreams.<a href="#section-5.3-3.16.2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.16.3">
+              <dt id="section-5.3-3.16.3.1">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.16.3.2">
+                <p id="section-5.3-3.16.3.2.1">All Main Packets in this stream, as identified by the value
+                of the <code>SSRC</code> field in the RTP Fixed Header:<a href="#section-5.3-3.16.3.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.3-3.16.3.2.2.1">
+                    <span class="bcp14">MUST</span> have identical Main Packet Payload Headers, with the
+                  exception of their <code>TP</code>, <code>MH</code>, <code>ESEQ</code>, and
+                  <code>PTSTAMP</code> fields;<a href="#section-5.3-3.16.3.2.2.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-5.3-3.16.3.2.2.2">
+                    <span class="bcp14">MUST</span> contain the same codestream main header information
+                  (with the exception of the SOT and COM marker segments and any
+                  pointer marker segments); and<a href="#section-5.3-3.16.3.2.2.2" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-5.3-3.16.3.2.2.3">
+                    <span class="bcp14">MUST NOT</span> contain bytes other than Extended Header
+                  bytes.<a href="#section-5.3-3.16.3.2.2.3" class="pilcrow">¶</a>
+</li>
+                </ul>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.16.3.3">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.16.3.4">Otherwise<a href="#section-5.3-3.16.3.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.17">
+<div id="def-S">S (Parameterized Colorspace Presence):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.18">
+            <p id="section-5.3-3.18.1">1 bit<a href="#section-5.3-3.18.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.18.2">
+              <dt id="section-5.3-3.18.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.18.2.2">
+                <p id="section-5.3-3.18.2.2.1">Component colorimetry is not specified; it is left to the
+              session or the application.<a href="#section-5.3-3.18.2.2.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.18.2.2.2"><code>PRIMS</code>, <code>TRANS</code>, <code>MAT</code>, and
+              <code>RANGE</code>
+                  <span class="bcp14">MUST</span> be zero.<a href="#section-5.3-3.18.2.2.2" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.18.2.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.18.2.4">
+                <p id="section-5.3-3.18.2.4.1">Component colorimetry is specified by the <code>PRIMS</code>,
+                <code>TRANS</code>, <code>MAT</code>, and <code>RANGE</code> fields.<a href="#section-5.3-3.18.2.4.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.18.2.4.2">The codestream components <span class="bcp14">MUST</span> conform to one of the
+                combinations in <a href="#t-color-map" class="auto internal xref">Table 1</a>.<a href="#section-5.3-3.18.2.4.2" class="pilcrow">¶</a></p>
+<span id="name-mapping-of-codestream-compo"></span><div id="t-color-map">
+<table class="center" id="table-1">
+                  <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-mapping-of-codestream-compo" class="selfRef">Mapping of Codestream Components to Color
+                  Channels</a>
+                  </caption>
+<thead>
+                    <tr>
+                      <th class="text-left" rowspan="2" colspan="1">Combination Name</th>
+                      <th class="text-left" rowspan="1" colspan="4">Component Index</th>
+                    </tr>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">0</th>
+                      <th class="text-left" rowspan="1" colspan="1">1</th>
+                      <th class="text-left" rowspan="1" colspan="1">2</th>
+                      <th class="text-left" rowspan="1" colspan="1">3</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">Y</th>
+                      <td class="text-left" rowspan="1" colspan="1">Y</td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                    </tr>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">YA</th>
+                      <td class="text-left" rowspan="1" colspan="1">Y</td>
+                      <td class="text-left" rowspan="1" colspan="1">A</td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                    </tr>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">RGB</th>
+                      <td class="text-left" rowspan="1" colspan="1">R</td>
+                      <td class="text-left" rowspan="1" colspan="1">G</td>
+                      <td class="text-left" rowspan="1" colspan="1">B</td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                    </tr>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">RGBA</th>
+                      <td class="text-left" rowspan="1" colspan="1">R</td>
+                      <td class="text-left" rowspan="1" colspan="1">G</td>
+                      <td class="text-left" rowspan="1" colspan="1">B</td>
+                      <td class="text-left" rowspan="1" colspan="1">A</td>
+                    </tr>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">YCbCr</th>
+                      <td class="text-left" rowspan="1" colspan="1">Y</td>
+                      <td class="text-left" rowspan="1" colspan="1">C<sub>B</sub>
+</td>
+                      <td class="text-left" rowspan="1" colspan="1">C<sub>R</sub>
+</td>
+                      <td class="text-left" rowspan="1" colspan="1"></td>
+                    </tr>
+                    <tr>
+                      <th class="text-left" rowspan="1" colspan="1">YCbCrA</th>
+                      <td class="text-left" rowspan="1" colspan="1">Y</td>
+                      <td class="text-left" rowspan="1" colspan="1">C<sub>B</sub>
+</td>
+                      <td class="text-left" rowspan="1" colspan="1">C<sub>R</sub>
+</td>
+                      <td class="text-left" rowspan="1" colspan="1">A</td>
+                    </tr>
+                  </tbody>
+                </table>
+</div>
+<p id="section-5.3-3.18.2.4.4">Channel <code>A</code> is an opacity channel. The minimum
+ sample value (0) indicates a completely transparent sample,
+ and the maximum sample value (as determined by the bit depth
+ of the codestream component) indicates a completely opaque
+ sample. The opacity channel <span class="bcp14">MUST</span> map to a
+ component with unsigned samples.<a href="#section-5.3-3.18.2.4.4" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.19">
+<div id="def-C">C (Code-Block Caching Usage):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.20">
+            <p id="section-5.3-3.20.1">1 bit<a href="#section-5.3-3.20.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.3-3.20.2">
+              <dt id="section-5.3-3.20.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.20.2.2">Code-block caching is not in use.<a href="#section-5.3-3.20.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.3-3.20.2.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.3-3.20.2.4">
+                <p id="section-5.3-3.20.2.4.1">Code-block caching is in use.<a href="#section-5.3-3.20.2.4.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.20.2.4.2"><code>R</code> <span class="bcp14">MUST</span> be equal to 1.<a href="#section-5.3-3.20.2.4.2" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.21">
+<div id="def-RSVD">RSVD (Reserved):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.22">
+            <p id="section-5.3-3.22.1">4 bits<a href="#section-5.3-3.22.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.22.2">Unassigned value. See Sections <a href="#sec-receiver-unassigned" class="auto internal xref">8.5</a> and
+          <a href="#sec-sender-unassigned" class="auto internal xref">7.7</a>.<a href="#section-5.3-3.22.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.23">
+<div id="def-F">RANGE (Video Full Range Usage):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.24">
+            <p id="section-5.3-3.24.1">1 bit<a href="#section-5.3-3.24.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.24.2">Value of the VideoFullRangeFlag specified in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#section-5.3-3.24.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.25">
+<div id="def-PRIMS">PRIMS (Color Primaries):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.26">
+            <p id="section-5.3-3.26.1">8 bits<a href="#section-5.3-3.26.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.26.2">One of the ColourPrimaries values specified in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#section-5.3-3.26.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.27">
+<div id="def-TRANS">TRANS (Transfer Characteristics):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.28">
+            <p id="section-5.3-3.28.1">8 bits<a href="#section-5.3-3.28.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.28.2">One of the TransferCharacteristics values specified in
+          <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#section-5.3-3.28.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.29">
+<div id="def-MAT">MAT (Color Matrix Coefficients):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.30">
+            <p id="section-5.3-3.30.1">8 bits<a href="#section-5.3-3.30.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.30.2">One of the MatrixCoefficients values specified in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#section-5.3-3.30.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.3-3.31">
+<div id="def-XTRAB">XTRAB (Extension Payload):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.3-3.32">
+            <p id="section-5.3-3.32.1">variable<a href="#section-5.3-3.32.1" class="pilcrow">¶</a></p>
+<p id="section-5.3-3.32.2">Allows the contents of the Main Packet Payload Header to be
+          extended in the future. The size of the field is determined by <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>. See also Sections <a href="#sec-receiver-xtrab" class="auto internal xref">8.4</a> and
+          <a href="#sec-sender-xtrab" class="auto internal xref">7.6</a>.<a href="#section-5.3-3.32.2" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-body-packet-header">
+<section id="section-5.4">
+        <h3 id="name-body-packet-payload-header">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-body-packet-payload-header" class="section-name selfRef">Body Packet Payload Header</a>
+        </h3>
+<p id="section-5.4-1"><a href="#fig-body-payload-header" class="auto internal xref">Figure 3</a> specifies the structure of
+        the Body Packet Payload Header. Fields are interpreted as unsigned
+        binary integers in network order.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<span id="name-structure-of-the-body-packe"></span><div id="fig-body-payload-header">
+<figure id="figure-3">
+          <div class="alignLeft art-text artwork" id="section-5.4-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|MH | TP  |RES  |*|QUAL |       PTSTAMP         |     ESEQ      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         POS           |                  PID                  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+* ORDB
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-structure-of-the-body-packe" class="selfRef">Structure of the Body Packet Payload Header</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-5.4-3">
+          <dt id="section-5.4-3.1">MH:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.4-3.2">See <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>.<a href="#section-5.4-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.3">TP:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.4-3.4">See <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>.<a href="#section-5.4-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.5">
+<div id="def-RES">RES (Resolution Levels):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.4-3.6">
+            <p id="section-5.4-3.6.1">3 bits<a href="#section-5.4-3.6.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.4-3.6.2">
+              <dt id="section-5.4-3.6.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.6.2.2">The payload can contribute to all resolution levels.<a href="#section-5.4-3.6.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.4-3.6.2.3">Otherwise</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.6.2.4">The payload contains at least one byte of one JPEG 2000 packet
+              belonging to resolution level (N<sub>L</sub> + RES - 7) but does
+              not contain any byte of any JPEG 2000 packet belonging to lower
+              resolution levels. N<sub>L</sub> is the number of decomposition
+              levels of the codestream.<a href="#section-5.4-3.6.2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.7">
+<div id="def-ORDB">ORDB (Progression Order Flag, Body Packet):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.4-3.8">
+            <p id="section-5.4-3.8.1">1
+          bit<a href="#section-5.4-3.8.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.4-3.8.2">
+              <dt id="section-5.4-3.8.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.8.2.2">No resync point is specified for the payload.<a href="#section-5.4-3.8.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.4-3.8.2.3">1</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.8.2.4">The payload contains a resync point.<a href="#section-5.4-3.8.2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+<p id="section-5.4-3.8.3"><code>ORDB</code> <span class="bcp14">MUST</span> be 0 if the codestream consists of more than
+              one tile.<a href="#section-5.4-3.8.3" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.9">
+<div id="def-QUAL">QUAL (Quality Layers):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.4-3.10">
+            <p id="section-5.4-3.10.1">3 bits<a href="#section-5.4-3.10.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.4-3.10.2">
+              <dt id="section-5.4-3.10.2.1">0</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.10.2.2">The payload can contribute to all quality layers.<a href="#section-5.4-3.10.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.4-3.10.2.3">Otherwise</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.10.2.4">The payload contributes only to quality layer index
+              <code>QUAL</code> or above.<a href="#section-5.4-3.10.2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.11">PTSTAMP:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.4-3.12">See <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>.<a href="#section-5.4-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.13">ESEQ:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.4-3.14">See <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>.<a href="#section-5.4-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.15">
+<div id="def-POS">POS (Resync Point Offset):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.4-3.16">
+            <p id="section-5.4-3.16.1">12 bits<a href="#section-5.4-3.16.1" class="pilcrow">¶</a></p>
+<p id="section-5.4-3.16.2">Byte offset from the start of the payload to the first byte of
+            the resync point belonging to the precinct identified by PID.<a href="#section-5.4-3.16.2" class="pilcrow">¶</a></p>
+<p id="section-5.4-3.16.3"><code>POS</code> <span class="bcp14">MUST</span> be 0 if <code>ORDB</code> = 0.<a href="#section-5.4-3.16.3" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.4-3.17">
+<div id="def-PID">PID (Precinct Identifier):</div>
+          </dt>
+<dd style="margin-left: 1.5em" id="section-5.4-3.18">
+            <p id="section-5.4-3.18.1">20 bits<a href="#section-5.4-3.18.1" class="pilcrow">¶</a></p>
+<p id="section-5.4-3.18.2">Unique identifier of the precinct of the resync point.<a href="#section-5.4-3.18.2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.4-3.18.3">
+<pre>PID = c + s * num_components</pre><a href="#section-5.4-3.18.3" class="pilcrow">¶</a>
+</div>
+<p id="section-5.4-3.18.4">where:<a href="#section-5.4-3.18.4" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.4-3.18.5">
+              <dt id="section-5.4-3.18.5.1">c:</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.18.5.2">Index (starting from 0) of the image
+              component to which the precinct belongs.<a href="#section-5.4-3.18.5.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.4-3.18.5.3">s:</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.18.5.4">Sequence number that identifies the precinct
+              within its tile-component.<a href="#section-5.4-3.18.5.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.4-3.18.5.5">num_components:</dt>
+              <dd style="margin-left: 1.5em" id="section-5.4-3.18.5.6">Number of components of the
+              codestream.<a href="#section-5.4-3.18.5.6" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+<p id="section-5.4-3.18.6">If <code>PID</code> is present, the payload <span class="bcp14">MUST NOT</span> contain
+            codestream bytes from more than one precinct.<a href="#section-5.4-3.18.6" class="pilcrow">¶</a></p>
+<p id="section-5.4-3.18.7"><code>PID</code> <span class="bcp14">MUST</span> be 0 if <code>ORDB</code> = 0.<a href="#section-5.4-3.18.7" class="pilcrow">¶</a></p>
+<p id="section-5.4-3.18.8">NOTE: <code>PID</code> is identical to precinct identifier I
+            specified in <span>[<a href="#JPEG2000-9" class="cite xref">JPEG2000-9</a>]</span>.<a href="#section-5.4-3.18.8" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<div id="sec-codestream">
+<section id="section-6">
+      <h2 id="name-jpeg-2000-codestream">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-jpeg-2000-codestream" class="section-name selfRef">JPEG 2000 Codestream</a>
+      </h2>
+<p id="section-6-1"> A JPEG 2000 codestream consists of the bytes between, and including,
+        the SOC and EOC markers, as defined in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The JPEG 2000 codestream <span class="bcp14">MAY</span> include capabilities beyond those
+        specified in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>, including those specified in
+        <span>[<a href="#JPEG2000-2" class="cite xref">JPEG2000-2</a>]</span> and <span>[<a href="#JPEG2000-15" class="cite xref">JPEG2000-15</a>]</span>.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">NOTE 1: The <code>Rsiz</code> parameter and <code>CAP</code> marker segments of
+        each JPEG 2000 codestream contain detailed information on the
+        capabilities necessary to decode the codestream.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">NOTE 2: The <code>caps</code> media type parameter defined in
+        <a href="#sec-media-type-def" class="auto internal xref">Section 9.2</a> allows applications to signal
+        required device capabilities.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">NOTE 3: The block coder specified in <span>[<a href="#JPEG2000-15" class="cite xref">JPEG2000-15</a>]</span>
+        improves throughput and reduces latency compared to the original
+        arithmetic block coder defined in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<p id="section-6-6">For interlaced or progressive segmented frames, the height specified
+        in the JPEG 2000 main header <span class="bcp14">MUST</span> be the height in lines of the field or
+        the segment, respectively.<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-6-7">If any decomposition level involves only horizontal decomposition,
+        then no decomposition level <span class="bcp14">MUST</span> involve only vertical decomposition;
+        conversely, if any decomposition level involves only vertical
+        decomposition, then no decomposition level <span class="bcp14">MUST</span> involve only horizontal
+        decomposition.<a href="#section-6-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-sender">
+<section id="section-7">
+      <h2 id="name-sender">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-sender" class="section-name selfRef">Sender</a>
+      </h2>
+<section id="section-7.1">
+        <h3 id="name-main-packet">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-main-packet" class="section-name selfRef">Main Packet</a>
+        </h3>
+<p id="section-7.1-1">A Main Packet <span class="bcp14">MAY</span> contain zero or more bytes of the JPEG 2000
+        codestream Extended Header.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">The sender <span class="bcp14">MUST</span> emit either a single Main Packet with <code>MH</code> =
+        3, or one or more Main Packets with <code>MH</code> = 1 followed by a
+        single Main Packet with <code>MH</code> = 2.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">The Main Packet Payload Headers fields <span class="bcp14">MUST</span> be identical in all Main
+        Packets of a given codestream, with the exception of:<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.1-4.1">
+            <code>MH</code>;<a href="#section-7.1-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.2">
+            <code>ESEQ</code>; and<a href="#section-7.1-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.3">
+            <code>PTSTAMP</code>.<a href="#section-7.1-4.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+<div id="sec-filtering">
+<section id="section-7.2">
+        <h3 id="name-rtp-packet-filtering">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-rtp-packet-filtering" class="section-name selfRef">RTP Packet Filtering</a>
+        </h3>
+<p id="section-7.2-1">An intermediate system <span class="bcp14">MAY</span> strip out RTP packets from a codestream
+        that are of no interest to a particular client, e.g., based on a
+        resolution or a spatial region of interest.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-7.3">
+        <h3 id="name-resync-point">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-resync-point" class="section-name selfRef">Resync Point</a>
+        </h3>
+<p id="section-7.3-1">A resync point is the first byte of JPEG 2000 packet header data for
+        a precinct and for which PID &lt; 2<sup>24</sup>.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<p id="section-7.3-2">NOTE 1: Resync points cannot be specified if the codestream consists of
+        more than one tile (<code>ORDB</code> and <code>ORDH</code> are both equal to
+        zero).<a href="#section-7.3-2" class="pilcrow">¶</a></p>
+<p id="section-7.3-3">NOTE 2: A resync point can be used by a receiver to process a
+        codestream even if earlier RTP packets in the codestream have been
+        corrupted, lost, or deliberately discarded by an intermediate system. As
+        a corollary, resync points can be used by an intermediate system to
+        discard RTP packets that are not relevant to a given rendering
+        resolution or region of interest. Resync points play a role similar to
+        pointer marker segments, albeit tailored for high-bandwidth, low-latency
+        streaming applications.<a href="#section-7.3-3" class="pilcrow">¶</a></p>
+</section>
+<div id="sec-sender-ptstamp">
+<section id="section-7.4">
+        <h3 id="name-ptstamp-field">
+<a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-ptstamp-field" class="section-name selfRef">PTSTAMP Field</a>
+        </h3>
+<p id="section-7.4-1">A sender <span class="bcp14">SHOULD</span> set <code>P</code> = 1, but only if it can generate
+        <code>PTSTAMP</code> accurately.<a href="#section-7.4-1" class="pilcrow">¶</a></p>
+<p id="section-7.4-2"><code>PTSTAMP</code> can be derived from the same clock that is used to
+        produce the 32-bit <code>timestamp</code> field in the RTP Fixed Header.
+        Specifically, a sender maintains, at least conceptually, a 32-bit
+        counter that is incremented by a 90 kHz clock. The counter is sampled at
+        the point in time when each RTP packet is transmitted and the 12 least significant bits of
+        the sample are stored in the <code>PTSTAMP</code> field.<a href="#section-7.4-2" class="pilcrow">¶</a></p>
+<p id="section-7.4-3">If <code>P</code> = 1, then the transmission time <code>TOFF</code> (as
+        defined in <a href="#sec-main-packet-header" class="auto internal xref">Section 5.3</a>) for two consecutive RTP
+        packets with identical <code>timestamp</code> fields <span class="bcp14">MUST NOT</span> differ by more
+        than 4095.<a href="#section-7.4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-7.5">
+        <h3 id="name-res-field">
+<a href="#section-7.5" class="section-number selfRef">7.5. </a><a href="#name-res-field" class="section-name selfRef">RES Field</a>
+        </h3>
+<p id="section-7.5-1">A sender <span class="bcp14">SHOULD</span> set <code>RES</code> &gt; 0 whenever possible.<a href="#section-7.5-1" class="pilcrow">¶</a></p>
+<p id="section-7.5-2">NOTE: While a sender can always safely set <code>RES</code> = 0, this
+        makes it more difficult to discard RTP packets based on resolution, as
+        described in <a href="#recv-RES" class="auto internal xref">Section 8.3</a>.<a href="#section-7.5-2" class="pilcrow">¶</a></p>
+</section>
+<div id="sec-sender-xtrab">
+<section id="section-7.6">
+        <h3 id="name-extra-information">
+<a href="#section-7.6" class="section-number selfRef">7.6. </a><a href="#name-extra-information" class="section-name selfRef">Extra Information</a>
+        </h3>
+<p id="section-7.6-1">The sender <span class="bcp14">MUST</span> set the value of <code>XTRAC</code> to 0.<a href="#section-7.6-1" class="pilcrow">¶</a></p>
+<p id="section-7.6-2">Future updates to this RTP payload format can permit other
+        values.<a href="#section-7.6-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-sender-unassigned">
+<section id="section-7.7">
+        <h3 id="name-unassigned-values">
+<a href="#section-7.7" class="section-number selfRef">7.7. </a><a href="#name-unassigned-values" class="section-name selfRef">Unassigned Values</a>
+        </h3>
+<p id="section-7.7-1">The sender <span class="bcp14">MUST</span> set unassigned values to 0.<a href="#section-7.7-1" class="pilcrow">¶</a></p>
+<p id="section-7.7-2">Unassigned values are available for assignment by future updates to
+        this RTP payload format. As specified in <a href="#sec-receiver-unassigned" class="auto internal xref">Section 8.5</a>, these future assigned values are
+        ignored by receivers that conform to this specification. In contrast
+        to extension values (see <a href="#sec-sender-ext" class="auto internal xref">Section 7.8</a>), this mechanism
+        allows updates to this RTP payload format that remain compatible with
+        receivers that conform to this specification.<a href="#section-7.7-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-sender-ext">
+<section id="section-7.8">
+        <h3 id="name-extension-values">
+<a href="#section-7.8" class="section-number selfRef">7.8. </a><a href="#name-extension-values" class="section-name selfRef">Extension Values</a>
+        </h3>
+<p id="section-7.8-1">A sender <span class="bcp14">MUST NOT</span> use an extension value.<a href="#section-7.8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-send-block-caching">
+<section id="section-7.9">
+        <h3 id="name-code-block-caching">
+<a href="#section-7.9" class="section-number selfRef">7.9. </a><a href="#name-code-block-caching" class="section-name selfRef">Code-Block Caching</a>
+        </h3>
+<p id="section-7.9-1">This section only applies if <code>C</code> = 1.<a href="#section-7.9-1" class="pilcrow">¶</a></p>
+<p id="section-7.9-2">A sender can improve bandwidth efficiency by only occasionally
+        transmitting code-blocks corresponding to static portions of the video
+        and otherwise transmitting empty code-blocks. When <code>C</code> = 1,
+ a receiver
+        maintains a simple cache of previously received code-blocks, which it
+        uses to replace empty code-blocks (see <a href="#sec-rcv-block-caching" class="auto internal xref">Section 8.7</a>).<a href="#section-7.9-2" class="pilcrow">¶</a></p>
+<p id="section-7.9-3">A sender alone determines which code-blocks are replaced
+        with empty code-blocks and when the replacement occurs.<a href="#section-7.9-3" class="pilcrow">¶</a></p>
+<p id="section-7.9-4">The sender cannot, however, determine with certainty the state of the
+        receiver's cache; for example, some code-blocks might have been lost in transit, the
+        sender doesn't know exactly when the receiver started processing the
+        stream, etc.<a href="#section-7.9-4" class="pilcrow">¶</a></p>
+<p id="section-7.9-5">A code-block is <em>empty</em> if:<a href="#section-7.9-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.9-6.1">it does not contribute code-bytes as specified in the parent JPEG
+          2000 packet header; or<a href="#section-7.9-6.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.9-6.2">it
+          contains an HT cleanup segment and the first two bytes of the Magsgn
+          byte-stream are between <code>0xFF80</code> and <code>0xFF8F</code> (if the code-block conforms to <span>[<a href="#JPEG2000-15" class="cite xref">JPEG2000-15</a>]</span>).<a href="#section-7.9-6.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-7.9-7">NOTE: The last condition allows the encoder to insert padding bytes
+        to achieve a constant bit rate even when a code-block does not
+        contribute code-bytes, as suggested in Annex F.4 of <span>[<a href="#JPEG2000-15" class="cite xref">JPEG2000-15</a>]</span>.<a href="#section-7.9-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-receiver">
+<section id="section-8">
+      <h2 id="name-receiver">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-receiver" class="section-name selfRef">Receiver</a>
+      </h2>
+<div id="sec-recv-ptstamp">
+<section id="section-8.1">
+        <h3 id="name-ptstamp">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-ptstamp" class="section-name selfRef">PTSTAMP</a>
+        </h3>
+<p id="section-8.1-1">Receivers can use <code>PTSTAMP</code> values to accelerate sender clock
+        recovery since <code>PTSTAMP</code> typically updates more regularly than
+        <code>timestamp</code>.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-8.2">
+        <h3 id="name-qual">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-qual" class="section-name selfRef">QUAL</a>
+        </h3>
+<p id="section-8.2-1">A receiver can discard RTP packets where <code>QUAL</code> &gt; N if it
+        is interested in reconstructing an image that only incorporates quality
+        layers N and below.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+</section>
+<div id="recv-RES">
+<section id="section-8.3">
+        <h3 id="name-res">
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-res" class="section-name selfRef">RES</a>
+        </h3>
+<p id="section-8.3-1">The JPEG 2000 coding process decomposes an image using a sequence of
+        discrete wavelet transform (DWT) stages.<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<span id="name-optional-discarding-of-body"></span><div id="t-res-ll-example">
+<table class="center" id="table-2">
+          <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-optional-discarding-of-body" class="selfRef">Optional discarding of Body Packets based on the value of the
+          <code>RES</code> field when decoding a reduced resolution image, in the
+          case where N<sub>L</sub> = 5 and all DWT stages consist of both
+          horizontal and vertical transforms. The image has nominal width and
+          height of W x H.</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Decomposition Level</th>
+              <th class="text-left" rowspan="1" colspan="1">Resolution Level</th>
+              <th class="text-left" rowspan="1" colspan="1">Sub-bands</th>
+              <th class="text-left" rowspan="1" colspan="1">Keep all Body Packets with <code>RES</code> equal to or less than
+              this value...</th>
+              <th class="text-left" rowspan="1" colspan="1">...to decode an image with at most these dimensions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1</td>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">HL1,LH1,HH1</td>
+              <td class="text-left" rowspan="1" colspan="1">7</td>
+              <td class="text-left" rowspan="1" colspan="1">W x H</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">4</td>
+              <td class="text-left" rowspan="1" colspan="1">HL2,LH2,HH2</td>
+              <td class="text-left" rowspan="1" colspan="1">6</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/2) x (H/2)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">HL3,LH3,HH3</td>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/4) x (H/4)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">4</td>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">HL4,LH4,HH4</td>
+              <td class="text-left" rowspan="1" colspan="1">4</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/8) x (H/8)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">1</td>
+              <td class="text-left" rowspan="1" colspan="1">HL5,LH5,HH5</td>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/16) x (H/16)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">0</td>
+              <td class="text-left" rowspan="1" colspan="1">LL5</td>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/32) x (H/32)</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-8.3-3"><a href="#t-res-ll-example" class="auto internal xref">Table 2</a> illustrates the case where each DWT
+        stage consists of both horizontal and vertical transforms, which is the
+        only mode supported in <span>[<a href="#JPEG2000-1" class="cite xref">JPEG2000-1</a>]</span>. The first stage
+        transforms the image into (i) the image at half-resolution (LL1
+        sub-bands) and (ii) residual high-frequency data (HH1, LH1, HL1
+        sub-bands). The second stage transforms the image at half-resolution
+        (LL1 sub-bands) into the image at quarter resolution (LL2 sub-bands) and
+        residual high-frequency data (HH2, LH2, HL2 sub-bands). This process is
+        repeated N<sub>L</sub> times, where N<sub>L</sub> is the number of
+        decomposition levels as defined in the COD and COC marker segments of
+        the codestream.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
+<p id="section-8.3-4">The decoding process reconstructs the image by reversing the coding
+        process, starting with the lowest resolution image stored in the
+        codestream (LL<sub>N<sub>L</sub></sub>).<a href="#section-8.3-4" class="pilcrow">¶</a></p>
+<p id="section-8.3-5">As a result, it is possible to reconstruct a lower resolution of the
+        image by stopping the decoding process at a selected stage. For example,
+        in order to reconstruct the image at quarter resolution (LL2), only
+        sub-bands with index greater than 2 (e.g., HL3, LH3, HH3, HL4, LH4, HH4,
+        etc.) are necessary. In other words, a receiver that wishes to
+        reconstruct an image at quarter resolution could discard all RTP packets
+        where <code>RES</code> &gt;= 6 since those RTP packets can only contribute
+        to HL1, LH1, HH1, HL2, LH2, and HH2 sub-bands.<a href="#section-8.3-5" class="pilcrow">¶</a></p>
+<p id="section-8.3-6">In the case where all DWT stages consist of both horizontal and
+        vertical transforms, the maximum decodable resolution is reduced by a
+        factor of 2<sup>7 - N</sup> if all Body Packets where <code>RES</code> &gt;
+        N are discarded.<a href="#section-8.3-6" class="pilcrow">¶</a></p>
+<span id="name-optional-discarding-of-body-"></span><div id="t-res-lx-example">
+<table class="center" id="table-3">
+          <caption>
+<a href="#table-3" class="selfRef">Table 3</a>:
+<a href="#name-optional-discarding-of-body-" class="selfRef">Optional discarding of Body Packets based on the value of the
+          <code>RES</code> field when decoding a reduced resolution image, in the
+          case where N<sub>L</sub> = 5 and some DWT stages consist of only
+          horizontal transforms. The image has nominal width and height of W x
+          H.</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Decomposition Level</th>
+              <th class="text-left" rowspan="1" colspan="1">Resolution Level</th>
+              <th class="text-left" rowspan="1" colspan="1">Sub-bands</th>
+              <th class="text-left" rowspan="1" colspan="1">Keep all Body Packets with RES equal to or less than this
+              value...</th>
+              <th class="text-left" rowspan="1" colspan="1">...to decode an image with at most these dimensions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1</td>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">HL1,LH1,HH1</td>
+              <td class="text-left" rowspan="1" colspan="1">7</td>
+              <td class="text-left" rowspan="1" colspan="1">W x H</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">4</td>
+              <td class="text-left" rowspan="1" colspan="1">HL2,LH2,HH2</td>
+              <td class="text-left" rowspan="1" colspan="1">6</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/2) x (H/2)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">HX3</td>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/4) x (H/2)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">4</td>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">HX4</td>
+              <td class="text-left" rowspan="1" colspan="1">4</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/8) x (H/2)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">1</td>
+              <td class="text-left" rowspan="1" colspan="1">HX5</td>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/16) x (H/2)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">5</td>
+              <td class="text-left" rowspan="1" colspan="1">0</td>
+              <td class="text-left" rowspan="1" colspan="1">LX5</td>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">(W/32) x (H/2)</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-8.3-8"><a href="#t-res-lx-example" class="auto internal xref">Table 3</a> illustrates the case where some DWT
+        stages consist of only horizontal transforms, as specified in Annex F of
+        <span>[<a href="#JPEG2000-2" class="cite xref">JPEG2000-2</a>]</span>.<a href="#section-8.3-8" class="pilcrow">¶</a></p>
+<p id="section-8.3-9">A receiver can therefore discard all Body Packets where <code>RES</code> is
+        greater than some threshold value if it is interested in decoding an
+        image with its resolution reduced by a factor determined by the
+        threshold value, as illustrated in Tables <a href="#t-res-ll-example" class="auto internal xref">2</a> and
+        <a href="#t-res-lx-example" class="auto internal xref">3</a>.<a href="#section-8.3-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-receiver-xtrab">
+<section id="section-8.4">
+        <h3 id="name-extra-information-2">
+<a href="#section-8.4" class="section-number selfRef">8.4. </a><a href="#name-extra-information-2" class="section-name selfRef">Extra Information</a>
+        </h3>
+<p id="section-8.4-1">The receiver <span class="bcp14">MUST</span> accept values of <code>XTRAC</code> other than 0 and <span class="bcp14">MUST</span>
+        ignore the value of <code>XTRAB</code>, whose length is given by
+        <code>XTRAC</code>.<a href="#section-8.4-1" class="pilcrow">¶</a></p>
+<p id="section-8.4-2">Future updates to this RTP payload format can specify <code>XTRAB</code>
+        contents such that this content can be ignored by receivers that conform
+        to this specification.<a href="#section-8.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-receiver-unassigned">
+<section id="section-8.5">
+        <h3 id="name-unassigned-values-2">
+<a href="#section-8.5" class="section-number selfRef">8.5. </a><a href="#name-unassigned-values-2" class="section-name selfRef">Unassigned Values</a>
+        </h3>
+<p id="section-8.5-1">The receiver <span class="bcp14">MUST</span> ignore unassigned values (see additional discussion
+        in <a href="#sec-sender-unassigned" class="auto internal xref">Section 7.7</a>).<a href="#section-8.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-receiver-ext">
+<section id="section-8.6">
+        <h3 id="name-extension-values-2">
+<a href="#section-8.6" class="section-number selfRef">8.6. </a><a href="#name-extension-values-2" class="section-name selfRef">Extension Values</a>
+        </h3>
+<p id="section-8.6-1">The receiver <span class="bcp14">MUST</span> discard an RTP packet that contains any extension
+        value.<a href="#section-8.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-rcv-block-caching">
+<section id="section-8.7">
+        <h3 id="name-code-block-caching-2">
+<a href="#section-8.7" class="section-number selfRef">8.7. </a><a href="#name-code-block-caching-2" class="section-name selfRef">Code-Block Caching</a>
+        </h3>
+<p id="section-8.7-1">This section only applies if <code>C</code> = 1.<a href="#section-8.7-1" class="pilcrow">¶</a></p>
+<p id="section-8.7-2">When <code>C</code> = 1,
+ the sender can improve bandwidth
+        efficiency by only occasionally transmitting code-blocks corresponding
+        to static portions of the video and otherwise transmitting empty
+        code-blocks (see <a href="#sec-send-block-caching" class="auto internal xref">Section 7.9</a>).<a href="#section-8.7-2" class="pilcrow">¶</a></p>
+<p id="section-8.7-3">When decoding a codestream, the following procedures apply for each
+        code-block in the codestream:<a href="#section-8.7-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.7-4.1">
+            If the code-block in the codestream is empty, the receiver <span class="bcp14">MUST</span>
+            replace it with a matching code-block from the cache, if one exists.<a href="#section-8.7-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-8.7-4.2">
+            If the code-block in the codestream is not empty, the receiver <span class="bcp14">MUST</span>
+            replace any matching code-block from the cache with the code-block
+            in the codestream.<a href="#section-8.7-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-8.7-5">Two code-blocks are <em>matching</em> if the following
+        characteristics are identical for both: spatial coordinates, resolution
+        level, component, sub-band, and value of the <code>TP</code> field of the
+        parent RTP packet.<a href="#section-8.7-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-media-type">
+<section id="section-9">
+      <h2 id="name-media-type">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-media-type" class="section-name selfRef">Media Type</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-general-2">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-general-2" class="section-name selfRef">General</a>
+        </h3>
+<p id="section-9.1-1">This RTP payload format is identified using the media type defined in
+        <a href="#sec-media-type-def" class="auto internal xref">Section 9.2</a>. This media type has been registered in accordance
+        with <span>[<a href="#RFC4855" class="cite xref">RFC4855</a>]</span> using the template in <span>[<a href="#RFC6838" class="cite xref">RFC6838</a>]</span>.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+</section>
+<div id="sec-media-type-def">
+<section id="section-9.2">
+        <h3 id="name-definition">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-definition" class="section-name selfRef">Definition</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-9.2-1">
+          <dt id="section-9.2-1.1">Type name:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.2">video<a href="#section-9.2-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.3">Subtype name:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.4">jpeg2000-scl<a href="#section-9.2-1.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.5">Required parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.6">N/A<a href="#section-9.2-1.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.7">Optional parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.8">
+            <p id="section-9.2-1.8.1"><br></p>
+<span class="break"></span><dl class="dlNewline" id="section-9.2-1.8.2">
+              <dt id="section-9.2-1.8.2.1">
+<code>pixel</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.2">
+                <p id="section-9.2-1.8.2.2.1">Specifies the pixel format used by the video sequence.<a href="#section-9.2-1.8.2.2.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.2.2">The parameter <span class="bcp14">MUST</span> be a <code>URI-reference</code> as specified in
+                <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-9.2-1.8.2.2.2" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.2.3">If the parameter is a <code>relative-ref</code> as specified in
+                <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>, then it <span class="bcp14">MUST</span> be equal to one of the
+                pixel formats specified in <a href="#t-pix-fmts" class="auto internal xref">Table 4</a>, and the
+                RTP header and payload <span class="bcp14">MUST</span> conform to the characteristics of
+                that pixel format.<a href="#section-9.2-1.8.2.2.3" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.2.4">If the parameter is not a <code>relative-ref</code>, the
+                specification of the pixel format is left to the application that
+                defined the URI.<a href="#section-9.2-1.8.2.2.4" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.2.5">If the parameter is not specified, the pixel format is
+                unspecified.<a href="#section-9.2-1.8.2.2.5" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-9.2-1.8.2.3">
+<code>sample</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.4">
+                <p id="section-9.2-1.8.2.4.1">Specifies the format of the samples in each component of the
+                codestream.<a href="#section-9.2-1.8.2.4.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.4.2">The parameter <span class="bcp14">MUST</span> be a <code>URI-reference</code> as specified in
+                <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-9.2-1.8.2.4.2" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.4.3">If the parameter is a <code>relative-ref</code> as specified in
+                <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>, then it <span class="bcp14">MUST</span> be equal to one of the
+                formats specified in <a href="#sec-sample-fmts" class="auto internal xref">Appendix C</a>, and the
+                stream <span class="bcp14">MUST</span> conform to the characteristics of that format.<a href="#section-9.2-1.8.2.4.3" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.4.4">If the parameter is not a <code>relative-ref</code>, the
+                specification of the sample format is left to the application that
+                defined the URI.<a href="#section-9.2-1.8.2.4.4" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.4.5">If the parameter is not specified, the sample format is
+                unspecified.<a href="#section-9.2-1.8.2.4.5" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-9.2-1.8.2.5">
+<code>width</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.6">
+                <p id="section-9.2-1.8.2.6.1">Maximum width in pixels of each image. Integer between 0 and
+                4,294,967,295.<a href="#section-9.2-1.8.2.6.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.6.2">The parameter <span class="bcp14">MUST</span> be a sequence of 1 or more digits.<a href="#section-9.2-1.8.2.6.2" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.6.3">If the parameter is not specified, the maximum width is
+                unspecified.<a href="#section-9.2-1.8.2.6.3" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-9.2-1.8.2.7">
+<code>height</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.8">
+                <p id="section-9.2-1.8.2.8.1">Maximum height in pixels of each image. Integer between 0 and
+                4,294,967,295.<a href="#section-9.2-1.8.2.8.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.8.2">The parameter <span class="bcp14">MUST</span> be a sequence of 1 or more digits.<a href="#section-9.2-1.8.2.8.2" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.8.3">If the parameter is not specified, the maximum height is
+                unspecified.<a href="#section-9.2-1.8.2.8.3" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-9.2-1.8.2.9">
+<code>signal</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.10">
+                <p id="section-9.2-1.8.2.10.1">Specifies the sequence of image types.<a href="#section-9.2-1.8.2.10.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.10.2">The parameter <span class="bcp14">MUST</span> be a <code>URI-reference</code> as specified
+                in <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-9.2-1.8.2.10.2" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.10.3">If the parameter is a <code>relative-ref</code> as specified in
+                <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>, then it <span class="bcp14">MUST</span> be equal to one of the
+                signal formats specified in <a href="#sec-signal-fmts" class="auto internal xref">Appendix B</a>, and
+                the image sequence <span class="bcp14">MUST</span> conform to that signal format.<a href="#section-9.2-1.8.2.10.3" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.10.4">If the parameter is not a <code>relative-ref</code>, the
+                specification of the pixel format is left to the application
+                that defined the URI.<a href="#section-9.2-1.8.2.10.4" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.10.5">If the parameter is not specified, the stream consists of an
+                arbitrary sequence of image types.<a href="#section-9.2-1.8.2.10.5" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-9.2-1.8.2.11">
+<code>caps</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.12">
+                <p id="section-9.2-1.8.2.12.1">The parameter contains a list of sets of constraints to
+                which the stream conforms, with each set of constraints
+                identified using an <code>absolute-URI</code> defined by an
+                application.<a href="#section-9.2-1.8.2.12.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.12.2">The parameter <span class="bcp14">MUST</span> conform to the <code>uri-list</code> syntax
+                expressed as follows using ABNF <span>[<a href="#RFC5234" class="cite xref">RFC5234</a>]</span>:<a href="#section-9.2-1.8.2.12.2" class="pilcrow">¶</a></p>
+<div class="lang-abnf sourcecode" id="section-9.2-1.8.2.12.3">
+<pre>
+  uri-list = absolute-URI *(";" absolute-URI)
+</pre><a href="#section-9.2-1.8.2.12.3" class="pilcrow">¶</a>
+</div>
+<p id="section-9.2-1.8.2.12.4">The application that defines the <code>absolute-URI</code> <span class="bcp14">MUST</span>
+                ensure that it does not contain any <code>";"</code> character and
+                <span class="bcp14">MUST</span> associate it with a set of constraints to which the stream
+                conforms. Such constraints can, for example, include the maximum
+                height and width of images.<a href="#section-9.2-1.8.2.12.4" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.12.5">If the parameter is not specified, constraints beyond those
+                specified in this document are unspecified.<a href="#section-9.2-1.8.2.12.5" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-9.2-1.8.2.13">
+<code>cache</code>:</dt>
+              <dd style="margin-left: 1.5em" id="section-9.2-1.8.2.14">
+                <p id="section-9.2-1.8.2.14.1">The value of the parameter <span class="bcp14">MUST</span> be either <code>false</code> or
+                <code>true</code>.<a href="#section-9.2-1.8.2.14.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.14.2">If the parameter is <code>true</code>, the field <code>C</code> <span class="bcp14">MAY</span>
+                be 0 or 1; otherwise, the field <code>C</code> <span class="bcp14">MUST</span> be 0.<a href="#section-9.2-1.8.2.14.2" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.8.2.14.3">If the parameter is not specified, then the parameter is
+                equal to <code>false</code>.<a href="#section-9.2-1.8.2.14.3" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.9">Encoding considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.10">This media type is framed and binary. See <span><a href="https://rfc-editor.org/rfc/rfc6838#section-4.8" class="relref">Section 4.8</a> of [<a href="#RFC6838" class="cite xref">RFC6838</a>]</span>.<a href="#section-9.2-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.11">Security considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.12">
+            <p id="section-9.2-1.12.1">JPEG 2000 is a flexible image format. As a result, the size of
+            the memory structures required to process JPEG 2000 images can vary
+            greatly depending on the characteristics of the image and the
+            encoding parameters. For example, the JPEG 2000 syntax allows image
+            height and width up to 2<sup>32</sup> - 1 pixels, which is also
+            captured in the syntax of the <code>height</code> and <code>width</code>
+            parameters of this media type.
+            Therefore, implementations <span class="bcp14">SHOULD</span> take
+            care when processing input that influences the size of memory
+            structures and <span class="bcp14">SHOULD</span> fail gracefully when resource constraints are
+            exceeded.<a href="#section-9.2-1.12.1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1.12.2">See also <a href="#sec-sec" class="auto internal xref">Section 13</a>.<a href="#section-9.2-1.12.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.13">Interoperability considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.14">The RTP stream is a sequence of JPEG 2000 images. An
+          implementation that conforms to the family of JPEG 2000 standards can
+          decode and attempt to display each image.<a href="#section-9.2-1.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.15">Published specification:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.16">RFC 9828<a href="#section-9.2-1.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.17">Applications that use this media type:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.18">video streaming and communication<a href="#section-9.2-1.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.19">Fragment identifier considerations:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.20">N/A<a href="#section-9.2-1.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.21">Additional information:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.22">N/A<a href="#section-9.2-1.22" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.23">Person &amp; email address to contact for further information:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.24">Pierre-Anthony Lemieux &lt;pal@sandflow.com&gt;<a href="#section-9.2-1.24" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.25">Intended usage:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.26">COMMON<a href="#section-9.2-1.26" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.27">Restrictions on Usage:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.28">This media type depends on RTP framing and hence is only defined
+          for use with RTP as specified in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>. Transport
+          within other framing protocols is not defined at the time.<a href="#section-9.2-1.28" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.29">Author:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.30">Pierre-Anthony Lemieux &lt;pal@sandflow.com&gt;<a href="#section-9.2-1.30" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-1.31">Change controller:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-1.32">IETF<a href="#section-9.2-1.32" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-sdp">
+<section id="section-10">
+      <h2 id="name-mapping-to-the-session-desc">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-mapping-to-the-session-desc" class="section-name selfRef">Mapping to the Session Description Protocol (SDP)</a>
+      </h2>
+<p id="section-10-1">The mapping of the payload format media type and its parameters to
+      SDP, as specified in <span>[<a href="#RFC8866" class="cite xref">RFC8866</a>]</span>, <span class="bcp14">MUST</span> be done according to
+      <span><a href="https://rfc-editor.org/rfc/rfc4855#section-3" class="relref">Section 3</a> of [<a href="#RFC4855" class="cite xref">RFC4855</a>]</span>.<a href="#section-10-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-congestion-control">
+<section id="section-11">
+      <h2 id="name-congestion-control">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-congestion-control" class="section-name selfRef">Congestion Control</a>
+      </h2>
+<p id="section-11-1">Since this RTP payload format can be used in a variety of applications
+      across many different contexts, there is no single congestion control
+      mechanism that will work for all. Below is a non-exhaustive list of example
+      mechanisms that can be used:<a href="#section-11-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-11-2.1">a sender can offer several alternative streams for a given video
+        signal, each with a different data rate corresponding to a different
+        compression ratio;<a href="#section-11-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-11-2.2">a sender can modulate the data rate within a stream by modulating
+        the resolution, frame rate, or compression ratio of the underlying video
+        signal; or<a href="#section-11-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-11-2.3">an intermediate system can lower the data rate of a stream by
+        discarding resolution levels and/or quality layers, as specified in
+        <a href="#sec-filtering" class="auto internal xref">Section 7.2</a>.<a href="#section-11-2.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-11-3">As suggested in <span><a href="https://rfc-editor.org/rfc/rfc3550#section-10" class="relref">Section 10</a> of [<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>, RTCP feedback can
+      be used in the data rate adaptation process.<a href="#section-11-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-iana">
+<section id="section-12">
+      <h2 id="name-iana-considerations">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-12-1">IANA has registered the media type specified in
+        <a href="#sec-media-type" class="auto internal xref">Section 9</a>.<a href="#section-12-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-sec">
+<section id="section-13">
+      <h2 id="name-security-considerations">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-13-1">RTP packets using the payload format specified in this document are
+      subject to the security considerations discussed in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span> and in any applicable RTP profile such as <span>[<a href="#RFC3551" class="cite xref">RFC3551</a>]</span>, <span>[<a href="#RFC4585" class="cite xref">RFC4585</a>]</span>, <span>[<a href="#RFC3711" class="cite xref">RFC3711</a>]</span>, and
+      <span>[<a href="#RFC5124" class="cite xref">RFC5124</a>]</span>.  However, as <span>[<a href="#RFC7202" class="cite xref">RFC7202</a>]</span> discusses,
+      it is not an RTP payload format's responsibility to discuss or mandate
+      what solutions are used to meet the basic security goals like
+      confidentiality, integrity, and source authenticity for RTP in general.
+      This responsibility lies with anyone using RTP in an application. They can
+      find guidance on available security mechanisms and important
+      considerations in <span>[<a href="#RFC7201" class="cite xref">RFC7201</a>]</span>. Applications <span class="bcp14">SHOULD</span> use one or
+      more appropriate strong security mechanisms.  The rest of this
+      section discusses the security impacting properties of the
+      payload format itself.<a href="#section-13-1" class="pilcrow">¶</a></p>
+<p id="section-13-2">This RTP payload format and its media decoder do not exhibit any
+      significant non-uniformity in the receiver-side computational complexity
+      for RTP packet processing and thus are unlikely to pose a
+      denial-of-service threat due to the receipt of pathological data. In addition, 
+      the RTP payload format does not contain any active content.<a href="#section-13-2" class="pilcrow">¶</a></p>
+<p id="section-13-3">Security considerations related to the JPEG 2000 codestream contained
+      in the payload are discussed in <span><a href="https://rfc-editor.org/rfc/rfc3745#section-3" class="relref">Section 3</a> of [<a href="#RFC3745" class="cite xref">RFC3745</a>]</span>.<a href="#section-13-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-14">
+      <h2 id="name-references">
+<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-14.1">
+        <h3 id="name-normative-references">
+<a href="#section-14.1" class="section-number selfRef">14.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="JPEG2000-1">[JPEG2000-1]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information technology - JPEG 2000 image coding system: Core coding system"</span>, <span class="seriesInfo">ITU-T Recommendation T.800</span>, <time datetime="2024-07" class="refDate">July 2024</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-T.800/">https://www.itu.int/rec/T-REC-T.800/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="JPEG2000-15">[JPEG2000-15]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information technology - JPEG 2000 image coding system: High-throughput JPEG 2000"</span>, <span class="seriesInfo">ITU-T Recommendation T.814</span>, <time datetime="2019-06" class="refDate">June 2019</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-T.814/">https://www.itu.int/rec/T-REC-T.814/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="JPEG2000-2">[JPEG2000-2]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information Technology - JPEG 2000 image coding system - Extensions"</span>, <span class="seriesInfo">ITU-T Recommendation T.801</span>, <time datetime="2023-08" class="refDate">August 2023</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-T.801">https://www.itu.int/rec/T-REC-T.801</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="JPEG2000-9">[JPEG2000-9]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information technology - JPEG 2000 image coding system: Interactivity tools, APIs and protocols"</span>, <span class="seriesInfo">ITU-T Recommendation T.808</span>, <time datetime="2022-12" class="refDate">December 2022</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-T.808">https://www.itu.int/rec/T-REC-T.808</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="REC-ITU-T-H273">[REC-ITU-T-H273]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Coding-independent code points for video signal type identification"</span>, <span class="seriesInfo">ITU-T Recommendation H.273</span>, <time datetime="2024-07" class="refDate">July 2024</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-H.273">https://www.itu.int/rec/T-REC-H.273</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3550">[RFC3550]</dt>
+        <dd>
+<span class="refAuthor">Schulzrinne, H.</span>, <span class="refAuthor">Casner, S.</span>, <span class="refAuthor">Frederick, R.</span>, and <span class="refAuthor">V. Jacobson</span>, <span class="refTitle">"RTP: A Transport Protocol for Real-Time Applications"</span>, <span class="seriesInfo">STD 64</span>, <span class="seriesInfo">RFC 3550</span>, <span class="seriesInfo">DOI 10.17487/RFC3550</span>, <time datetime="2003-07" class="refDate">July 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3550">https://www.rfc-editor.org/info/rfc3550</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3986">[RFC3986]</dt>
+        <dd>
+<span class="refAuthor">Berners-Lee, T.</span>, <span class="refAuthor">Fielding, R.</span>, and <span class="refAuthor">L. Masinter</span>, <span class="refTitle">"Uniform Resource Identifier (URI): Generic Syntax"</span>, <span class="seriesInfo">STD 66</span>, <span class="seriesInfo">RFC 3986</span>, <span class="seriesInfo">DOI 10.17487/RFC3986</span>, <time datetime="2005-01" class="refDate">January 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3986">https://www.rfc-editor.org/info/rfc3986</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4855">[RFC4855]</dt>
+        <dd>
+<span class="refAuthor">Casner, S.</span>, <span class="refTitle">"Media Type Registration of RTP Payload Formats"</span>, <span class="seriesInfo">RFC 4855</span>, <span class="seriesInfo">DOI 10.17487/RFC4855</span>, <time datetime="2007-02" class="refDate">February 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4855">https://www.rfc-editor.org/info/rfc4855</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5234">[RFC5234]</dt>
+        <dd>
+<span class="refAuthor">Crocker, D., Ed.</span> and <span class="refAuthor">P. Overell</span>, <span class="refTitle">"Augmented BNF for Syntax Specifications: ABNF"</span>, <span class="seriesInfo">STD 68</span>, <span class="seriesInfo">RFC 5234</span>, <span class="seriesInfo">DOI 10.17487/RFC5234</span>, <time datetime="2008-01" class="refDate">January 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5234">https://www.rfc-editor.org/info/rfc5234</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8866">[RFC8866]</dt>
+      <dd>
+<span class="refAuthor">Begen, A.</span>, <span class="refAuthor">Kyzivat, P.</span>, <span class="refAuthor">Perkins, C.</span>, and <span class="refAuthor">M. Handley</span>, <span class="refTitle">"SDP: Session Description Protocol"</span>, <span class="seriesInfo">RFC 8866</span>, <span class="seriesInfo">DOI 10.17487/RFC8866</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8866">https://www.rfc-editor.org/info/rfc8866</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-14.2">
+        <h3 id="name-informative-references">
+<a href="#section-14.2" class="section-number selfRef">14.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="OV2110-0">[OV2110-0]</dt>
+        <dd>
+<span class="refAuthor">SMPTE</span>, <span class="refTitle">"Professional Media Over Managed IP Networks, Roadmap for the 2110 Document Suite"</span>, <time datetime="2018-12-04" class="refDate">4 December 2018</time>, <span>&lt;<a href="https://pub.smpte.org/doc/ov2110-0/20181204-pub/">https://pub.smpte.org/doc/ov2110-0/20181204-pub/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3551">[RFC3551]</dt>
+        <dd>
+<span class="refAuthor">Schulzrinne, H.</span> and <span class="refAuthor">S. Casner</span>, <span class="refTitle">"RTP Profile for Audio and Video Conferences with Minimal Control"</span>, <span class="seriesInfo">STD 65</span>, <span class="seriesInfo">RFC 3551</span>, <span class="seriesInfo">DOI 10.17487/RFC3551</span>, <time datetime="2003-07" class="refDate">July 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3551">https://www.rfc-editor.org/info/rfc3551</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3711">[RFC3711]</dt>
+        <dd>
+<span class="refAuthor">Baugher, M.</span>, <span class="refAuthor">McGrew, D.</span>, <span class="refAuthor">Naslund, M.</span>, <span class="refAuthor">Carrara, E.</span>, and <span class="refAuthor">K. Norrman</span>, <span class="refTitle">"The Secure Real-time Transport Protocol (SRTP)"</span>, <span class="seriesInfo">RFC 3711</span>, <span class="seriesInfo">DOI 10.17487/RFC3711</span>, <time datetime="2004-03" class="refDate">March 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3711">https://www.rfc-editor.org/info/rfc3711</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3745">[RFC3745]</dt>
+        <dd>
+<span class="refAuthor">Singer, D.</span>, <span class="refAuthor">Clark, R.</span>, and <span class="refAuthor">D. Lee</span>, <span class="refTitle">"MIME Type Registrations for JPEG 2000 (ISO/IEC 15444)"</span>, <span class="seriesInfo">RFC 3745</span>, <span class="seriesInfo">DOI 10.17487/RFC3745</span>, <time datetime="2004-04" class="refDate">April 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3745">https://www.rfc-editor.org/info/rfc3745</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4175">[RFC4175]</dt>
+        <dd>
+<span class="refAuthor">Gharai, L.</span> and <span class="refAuthor">C. Perkins</span>, <span class="refTitle">"RTP Payload Format for Uncompressed Video"</span>, <span class="seriesInfo">RFC 4175</span>, <span class="seriesInfo">DOI 10.17487/RFC4175</span>, <time datetime="2005-09" class="refDate">September 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4175">https://www.rfc-editor.org/info/rfc4175</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4585">[RFC4585]</dt>
+        <dd>
+<span class="refAuthor">Ott, J.</span>, <span class="refAuthor">Wenger, S.</span>, <span class="refAuthor">Sato, N.</span>, <span class="refAuthor">Burmeister, C.</span>, and <span class="refAuthor">J. Rey</span>, <span class="refTitle">"Extended RTP Profile for Real-time Transport Control Protocol (RTCP)-Based Feedback (RTP/AVPF)"</span>, <span class="seriesInfo">RFC 4585</span>, <span class="seriesInfo">DOI 10.17487/RFC4585</span>, <time datetime="2006-07" class="refDate">July 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4585">https://www.rfc-editor.org/info/rfc4585</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5124">[RFC5124]</dt>
+        <dd>
+<span class="refAuthor">Ott, J.</span> and <span class="refAuthor">E. Carrara</span>, <span class="refTitle">"Extended Secure RTP Profile for Real-time Transport Control Protocol (RTCP)-Based Feedback (RTP/SAVPF)"</span>, <span class="seriesInfo">RFC 5124</span>, <span class="seriesInfo">DOI 10.17487/RFC5124</span>, <time datetime="2008-02" class="refDate">February 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5124">https://www.rfc-editor.org/info/rfc5124</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5371">[RFC5371]</dt>
+        <dd>
+<span class="refAuthor">Futemma, S.</span>, <span class="refAuthor">Itakura, E.</span>, and <span class="refAuthor">A. Leung</span>, <span class="refTitle">"RTP Payload Format for JPEG 2000 Video Streams"</span>, <span class="seriesInfo">RFC 5371</span>, <span class="seriesInfo">DOI 10.17487/RFC5371</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5371">https://www.rfc-editor.org/info/rfc5371</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5450">[RFC5450]</dt>
+        <dd>
+<span class="refAuthor">Singer, D.</span> and <span class="refAuthor">H. Desineni</span>, <span class="refTitle">"Transmission Time Offsets in RTP Streams"</span>, <span class="seriesInfo">RFC 5450</span>, <span class="seriesInfo">DOI 10.17487/RFC5450</span>, <time datetime="2009-03" class="refDate">March 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5450">https://www.rfc-editor.org/info/rfc5450</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6838">[RFC6838]</dt>
+        <dd>
+<span class="refAuthor">Freed, N.</span>, <span class="refAuthor">Klensin, J.</span>, and <span class="refAuthor">T. Hansen</span>, <span class="refTitle">"Media Type Specifications and Registration Procedures"</span>, <span class="seriesInfo">BCP 13</span>, <span class="seriesInfo">RFC 6838</span>, <span class="seriesInfo">DOI 10.17487/RFC6838</span>, <time datetime="2013-01" class="refDate">January 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6838">https://www.rfc-editor.org/info/rfc6838</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7201">[RFC7201]</dt>
+        <dd>
+<span class="refAuthor">Westerlund, M.</span> and <span class="refAuthor">C. Perkins</span>, <span class="refTitle">"Options for Securing RTP Sessions"</span>, <span class="seriesInfo">RFC 7201</span>, <span class="seriesInfo">DOI 10.17487/RFC7201</span>, <time datetime="2014-04" class="refDate">April 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7201">https://www.rfc-editor.org/info/rfc7201</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7202">[RFC7202]</dt>
+      <dd>
+<span class="refAuthor">Perkins, C.</span> and <span class="refAuthor">M. Westerlund</span>, <span class="refTitle">"Securing the RTP Framework: Why RTP Does Not Mandate a Single Media Security Solution"</span>, <span class="seriesInfo">RFC 7202</span>, <span class="seriesInfo">DOI 10.17487/RFC7202</span>, <time datetime="2014-04" class="refDate">April 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7202">https://www.rfc-editor.org/info/rfc7202</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="sec-pixel-fmts">
+<section id="appendix-A">
+      <h2 id="name-pixel-formats">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-pixel-formats" class="section-name selfRef">Pixel Formats</a>
+      </h2>
+<p id="appendix-A-1"><a href="#t-pix-fmts" class="auto internal xref">Table 4</a> defines pixel formats.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<span id="name-defined-pixel-formats"></span><div id="t-pix-fmts">
+<table class="center" id="table-4">
+        <caption>
+<a href="#table-4" class="selfRef">Table 4</a>:
+<a href="#name-defined-pixel-formats" class="selfRef">Defined Pixel Formats</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">NAME</th>
+            <th class="text-left" rowspan="1" colspan="1">SAMP</th>
+            <th class="text-left" rowspan="1" colspan="1">COMPS</th>
+            <th class="text-left" rowspan="1" colspan="1">TRANS</th>
+            <th class="text-left" rowspan="1" colspan="1">PRIMS</th>
+            <th class="text-left" rowspan="1" colspan="1">MAT</th>
+            <th class="text-left" rowspan="1" colspan="1">VFR</th>
+            <th class="text-left" rowspan="1" colspan="1">Mapping in <a href="#t-color-map" class="auto internal xref">Table 1</a>
+</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">rgb444sdr</td>
+            <td class="text-left" rowspan="1" colspan="1">4:4:4</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">0, 1</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">rgb444wcg</td>
+            <td class="text-left" rowspan="1" colspan="1">4:4:4</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">0, 1</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">rgb444pq</td>
+            <td class="text-left" rowspan="1" colspan="1">4:4:4</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+            <td class="text-left" rowspan="1" colspan="1">16</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">0, 1</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">rgb444hlg</td>
+            <td class="text-left" rowspan="1" colspan="1">4:4:4</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+            <td class="text-left" rowspan="1" colspan="1">18</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">0, 1</td>
+            <td class="text-left" rowspan="1" colspan="1">RGB</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ycbcr420sdr</td>
+            <td class="text-left" rowspan="1" colspan="1">4:2:0</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ycbcr422sdr</td>
+            <td class="text-left" rowspan="1" colspan="1">4:2:2</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ycbcr422wcg</td>
+            <td class="text-left" rowspan="1" colspan="1">4:2:2</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+            <td class="text-left" rowspan="1" colspan="1">1</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ycbcr422pq</td>
+            <td class="text-left" rowspan="1" colspan="1">4:2:2</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+            <td class="text-left" rowspan="1" colspan="1">16</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ycbcr422hlg</td>
+            <td class="text-left" rowspan="1" colspan="1">4:2:2</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+            <td class="text-left" rowspan="1" colspan="1">18</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">9</td>
+            <td class="text-left" rowspan="1" colspan="1">0</td>
+            <td class="text-left" rowspan="1" colspan="1">YCbCr</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<p id="appendix-A-3">Each pixel format is characterized by the following:<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="appendix-A-4">
+        <dt id="appendix-A-4.1">
+<code>NAME</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.2">Identifies the pixel format<a href="#appendix-A-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-4.3">
+<code>SAMP</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.4">
+          <p id="appendix-A-4.4.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="appendix-A-4.4.2">
+            <dt id="appendix-A-4.4.2.1">4:2:0</dt>
+            <dd style="margin-left: 4.0em" id="appendix-A-4.4.2.2">The C<sub>b</sub> and C<sub>r</sub> color channels are
+            subsampled horizontally and vertically by 1/2.<a href="#appendix-A-4.4.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="appendix-A-4.4.2.3">4:2:2</dt>
+            <dd style="margin-left: 4.0em" id="appendix-A-4.4.2.4">The C<sub>b</sub> and C<sub>r</sub> color channels are
+            subsampled horizontally by 1/2.<a href="#appendix-A-4.4.2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="appendix-A-4.4.2.5">4:4:4</dt>
+            <dd style="margin-left: 4.0em" id="appendix-A-4.4.2.6">No color channels are subsampled.<a href="#appendix-A-4.4.2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-4.5">
+<code>COMPS</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.6">
+          <p id="appendix-A-4.6.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="appendix-A-4.6.2">
+            <dt id="appendix-A-4.6.2.1">RGB:</dt>
+            <dd style="margin-left: 4.5em" id="appendix-A-4.6.2.2">Each codestream contains exactly three components, associated
+            with the R, G, and B color channels, in order.<a href="#appendix-A-4.6.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="appendix-A-4.6.2.3">YCbCr:</dt>
+            <dd style="margin-left: 4.5em" id="appendix-A-4.6.2.4">Each codestream contains exactly three components, associated
+            with the Y, C<sub>b</sub>, and C<sub>r</sub> color channels, in
+            order.<a href="#appendix-A-4.6.2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-4.7">
+<code>TRANS</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.8">
+          <p id="appendix-A-4.8.1">Identifies the transfer characteristics allowed by the pixel
+          format, as defined in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#appendix-A-4.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-4.9">
+<code>PRIMS</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.10">
+          <p id="appendix-A-4.10.1">Identifies the color primaries allowed by the pixel
+          format, as defined in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#appendix-A-4.10.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-4.11">
+<code>MAT</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.12">
+          <p id="appendix-A-4.12.1">Identifies the matrix coefficients allowed by the pixel
+          format, as defined in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#appendix-A-4.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-4.13">
+<code>VFR</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-4.14">
+          <p id="appendix-A-4.14.1">Allows values of the VideoFullRangeFlag defined in <span>[<a href="#REC-ITU-T-H273" class="cite xref">REC-ITU-T-H273</a>]</span>.<a href="#appendix-A-4.14.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-signal-fmts">
+<section id="appendix-B">
+      <h2 id="name-signal-formats">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-signal-formats" class="section-name selfRef">Signal Formats</a>
+      </h2>
+<span class="break"></span><dl class="dlParallel" id="appendix-B-1">
+        <dt id="appendix-B-1.1">
+<code>prog</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-B-1.2">The stream <span class="bcp14">MUST</span> only consist of a sequence of progressive
+        frames.<a href="#appendix-B-1.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-B-1.3">
+<code>psf</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-B-1.4">Progressive segmented frame (PsF) stream. The stream <span class="bcp14">MUST</span> only
+        consist of an alternating sequence of first segment and second
+        segment.<a href="#appendix-B-1.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-B-1.5">
+<code>tff</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-B-1.6">Interlaced stream. The stream <span class="bcp14">MUST</span> only consist of an alternating
+        sequence of first field and second field, where the first line of the
+        first field is the first line of the frame.<a href="#appendix-B-1.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-B-1.7">
+<code>bff</code>:</dt>
+        <dd style="margin-left: 1.5em" id="appendix-B-1.8">Interlaced stream. The stream <span class="bcp14">MUST</span> only consist of an alternating
+        sequence of first field and second field, where the first line of the
+        first field is the second line of the frame.<a href="#appendix-B-1.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-sample-fmts">
+<section id="appendix-C">
+      <h2 id="name-sample-formats">
+<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-sample-formats" class="section-name selfRef">Sample Formats</a>
+      </h2>
+<span class="break"></span><dl class="dlParallel" id="appendix-C-1">
+        <dt id="appendix-C-1.1"><code>8</code></dt>
+        <dd style="margin-left: 3.0em" id="appendix-C-1.2">All components consist of unsigned 8-bit integer samples.<a href="#appendix-C-1.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-C-1.3"><code>10</code></dt>
+        <dd style="margin-left: 3.0em" id="appendix-C-1.4">All components consist of unsigned 10-bit integer samples.<a href="#appendix-C-1.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-C-1.5"><code>12</code></dt>
+        <dd style="margin-left: 3.0em" id="appendix-C-1.6">All components consist of unsigned 12-bit integer samples.<a href="#appendix-C-1.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-C-1.7"><code>16</code></dt>
+        <dd style="margin-left: 3.0em" id="appendix-C-1.8">All components consist of unsigned 16-bit integer samples.<a href="#appendix-C-1.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Pierre-Anthony Lemieux (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Sandflow Consulting LLC</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Mateo</span>, <span class="region">CA</span> </div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:pal@sandflow.com" class="email">pal@sandflow.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">David Scott Taubman</span></div>
+<div dir="auto" class="left"><span class="org">University of New South Wales</span></div>
+<div dir="auto" class="left">
+<span class="locality">Sydney</span>  </div>
+<div dir="auto" class="left"><span class="country-name">Australia</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:d.taubman@unsw.edu.au" class="email">d.taubman@unsw.edu.au</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
