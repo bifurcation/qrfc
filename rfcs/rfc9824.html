@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9824: Compact Denial of Existence in DNSSEC</title>
+<meta content="Shumon Huque" name="author">
+<meta content="Christian Elmerot" name="author">
+<meta content="Olafur Gudmundsson" name="author">
+<meta content="
+       
+       This document describes a technique to generate a signed DNS response
+       on demand for a nonexistent name by claiming that the name exists
+       but doesn't have any data for the queried record type. Such responses
+       require only one minimally covering NSEC or NSEC3 record, allow online
+       signing servers to minimize signing operations and response sizes,
+       and prevent zone content disclosure.
+       
+       
+       This document updates RFCs 4034 and 4035.
+       
+    " name="description">
+<meta content="xml2rfc 3.30.2" name="generator">
+<meta content="DNS" name="keyword">
+<meta content="DNSSEC" name="keyword">
+<meta content="Denial of Existence" name="keyword">
+<meta content="Compact Denial of Existence" name="keyword">
+<meta content="Compact Answers" name="keyword">
+<meta content="Black Lies" name="keyword">
+<meta content="NXDOMAIN" name="keyword">
+<meta content="NODATA" name="keyword">
+<meta content="Empty Non-Terminal" name="keyword">
+<meta content="9824" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9824.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-dnsop-compact-denial-of-existence-07" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9824" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9824</td>
+<td class="center">Compact Denial of Existence in DNSSEC</td>
+<td class="right">September 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Huque, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9824" class="eref">9824</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc4034" class="eref">4034</a>, <a href="https://www.rfc-editor.org/rfc/rfc4035" class="eref">4035</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-09" class="published">September 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Huque</div>
+<div class="org">Salesforce</div>
+</div>
+<div class="author">
+      <div class="author-name">C. Elmerot</div>
+<div class="org">Cloudflare</div>
+</div>
+<div class="author">
+      <div class="author-name">O. Gudmundsson</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9824</h1>
+<h1 id="title">Compact Denial of Existence in DNSSEC</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+       This document describes a technique to generate a signed DNS response
+       on demand for a nonexistent name by claiming that the name exists
+       but doesn't have any data for the queried record type. Such responses
+       require only one minimally covering NSEC or NSEC3 record, allow online
+       signing servers to minimize signing operations and response sizes,
+       and prevent zone content disclosure.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">
+       This document updates RFCs 4034 and 4035.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9824">https://www.rfc-editor.org/info/rfc9824</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction-and-motivation" class="internal xref">Introduction and Motivation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-distinguishing-nonexistent-" class="internal xref">Distinguishing Nonexistent Names</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-generating-responses-with-n" class="internal xref">Generating Responses with NSEC</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-responses-for-nonexistent-n" class="internal xref">Responses for Nonexistent Names</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-responses-for-nonexistent-t" class="internal xref">Responses for Nonexistent Types</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-responses-for-wildcard-matc" class="internal xref">Responses for Wildcard Matches</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-responses-for-unsigned-refe" class="internal xref">Responses for Unsigned Referrals</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-responses-to-explicit-queri" class="internal xref">Responses to Explicit Queries for NXNAME</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-generating-responses-with-ns" class="internal xref">Generating Responses with NSEC3</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-response-code-restoration" class="internal xref">Response Code Restoration</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-signaled-response-code-rest" class="internal xref">Signaled Response Code Restoration</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-operational-implications" class="internal xref">Operational Implications</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-updates-to-rfcs" class="internal xref">Updates to RFCs</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-updates-to-rfc-4034" class="internal xref">Updates to RFC 4034</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-updates-to-rfc-4035" class="internal xref">Updates to RFC 4035</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-other-approaches" class="internal xref">Other Approaches</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-historical-implementation-n" class="internal xref">Historical Implementation Notes</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro">
+<section id="section-1">
+      <h2 id="name-introduction-and-motivation">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction-and-motivation" class="section-name selfRef">Introduction and Motivation</a>
+      </h2>
+<p id="section-1-1">
+        One of the functions of DNS Security Extensions
+        (DNSSEC) <span>[<a href="#RFC9364" class="cite xref">RFC9364</a>]</span> is
+        "authenticated denial of existence",
+        i.e., proving that a DNS name or record type does not exist.
+        Normally, this is done by means of signed NSEC or NSEC3 records.
+        In the precomputed signature model, these records chain together
+        existing names, or cryptographic hashes of them, in the zone. In
+        the online signing model, described for NSEC in <span>[<a href="#RFC4470" class="cite xref">RFC4470</a>]</span> and for NSEC3 in
+        <span><a href="https://rfc-editor.org/rfc/rfc7129#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC7129" class="cite xref">RFC7129</a>]</span>,
+        they are used to dynamically compute an epsilon
+        function around the QNAME. The Type Bit Maps field in the data
+        of the NSEC or NSEC3 record asserts which resource record (RR) types are
+        present at the name.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+        The response for a nonexistent name requires up to two signed NSEC
+        records or up to three signed NSEC3 records (and for online signers,
+        the associated cryptographic computation) to prove that (1) the
+        name did not explicitly exist in the zone and (2) it could
+        not have been synthesized by a wildcard.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">
+        This document describes an alternative technique, "Compact Denial
+        of Existence" or "Compact Answers",
+        to generate a signed DNS response on demand for a nonexistent
+        name by claiming that the name exists but has no resource record sets
+        associated with the queried type, i.e., it returns a NODATA response
+        rather than an NXDOMAIN response. A NODATA response, which has a
+        response code (RCODE) of NOERROR and an empty ANSWER section,
+        requires only one NSEC or NSEC3 record matching the QNAME.
+        This has two advantages: The DNS response size is smaller, and it
+        reduces the online cryptographic work involved in generating the
+        response.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">
+        The use of minimally covering NSEC or NSEC3 records also prevents
+        adversaries from enumerating the entire contents of DNS zones
+        by walking the NSEC chain or performing an offline dictionary
+        attack on the hashes in the NSEC3 chain.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">
+        This document assumes a reasonable level of familiarity with DNS
+        operations and protocol terms.  Much of the terminology is explained
+        in further detail in "DNS Terminology" <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span>.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<div id="reserved-words">
+<section id="section-1.1">
+        <h3 id="name-requirements-language">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="distinguish">
+<section id="section-2">
+      <h2 id="name-distinguishing-nonexistent-">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-distinguishing-nonexistent-" class="section-name selfRef">Distinguishing Nonexistent Names</a>
+      </h2>
+<p id="section-2-1">
+        This method generates NODATA responses for nonexistent names
+        that don't match a DNS wildcard. Since there are clearly no
+        record types for such names, the NSEC Type Bit Maps field in
+        the response will only contain the NSEC and RRSIG types
+        (and in the case of NSEC3, the Type Bit Maps field will be empty).
+        Tools that need to accurately identify nonexistent names in
+        responses cannot rely on this specific type bitmap because Empty
+        Non-Terminal (ENT) names (which positively exist) also have no
+        record types at the name and will return exactly the same Type
+        Bit Maps field.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">
+        This specification defines the use of NXNAME (128), a synthetic RR
+        type to signal the presence of a nonexistent name. See <a href="#iana" class="auto internal xref">Section 9</a>. The
+        mnemonic for this RR type is NXNAME, chosen to clearly
+        distinguish it from the response code mnemonic NXDOMAIN.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">
+        This RR type is added to the NSEC Type Bit Maps field for responses
+        to nonexistent names, in addition to the mandated RRSIG and
+        NSEC types. If NSEC3 is being used, this RR type is the sole
+        entry in the Type Bit Maps field. It is a "Meta-TYPE", as defined in
+        <span>[<a href="#RFC6895" class="cite xref">RFC6895</a>]</span>, and it stores no data in a DNS zone and
+        cannot be usefully queried. <a href="#response-nxname" class="auto internal xref">Section 3.5</a>
+        describes what a DNS resolver or authoritative server should
+        do if it receives an explicit query for NXNAME.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4">
+
+        No special handling of this RR type is required on the part of
+        DNS resolvers. However, resolvers may optionally implement the
+        behavior described in <a href="#signaled-rcode" class="auto internal xref">Section 5.1</a> ("Signaled Response Code Restoration")
+        to better restore NXDOMAIN visibility
+        to various applications that may remain oblivious to the new
+        NXNAME signal.<a href="#section-2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="responses">
+<section id="section-3">
+      <h2 id="name-generating-responses-with-n">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-generating-responses-with-n" class="section-name selfRef">Generating Responses with NSEC</a>
+      </h2>
+<p id="section-3-1">
+    This section describes various types of answers generated by
+    authoritative servers implementing Compact Denial of Existence
+    using NSEC. <a href="#nsec3" class="auto internal xref">Section 4</a> describes changes needed to
+    support NSEC3.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="response-nxd">
+<section id="section-3.1">
+        <h3 id="name-responses-for-nonexistent-n">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-responses-for-nonexistent-n" class="section-name selfRef">Responses for Nonexistent Names</a>
+        </h3>
+<p id="section-3.1-1">
+        When the authoritative server receives a query for a nonexistent
+        name in a zone that it serves, a NODATA response (response code
+        NOERROR, empty Answer section) is generated with a dynamically
+        constructed NSEC record with the owner name matching the
+        QNAME placed in the Authority section.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">
+        The Next Domain Name field <span class="bcp14">SHOULD</span> be set to the immediate
+        lexicographic successor of the QNAME. This is accomplished by
+        adding a leading label with a single null (zero-value) octet.
+        The Type Bit Maps field <span class="bcp14">MUST</span> only have the bits set for the
+        following RR Types: RRSIG, NSEC, and NXNAME.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">
+        For example, a request for the nonexistent name "a.example.com."
+        would result in the generation of the following NSEC record (in DNS
+        presentation format):<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<div class="sourcecode" id="section-3.1-4">
+<pre>
+a.example.com. 300 IN NSEC \000.a.example.com. RRSIG NSEC NXNAME
+</pre><a href="#section-3.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1-5">
+        The NSEC record <span class="bcp14">MUST</span> have corresponding RRSIGs generated.<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="response-nodata">
+<section id="section-3.2">
+        <h3 id="name-responses-for-nonexistent-t">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-responses-for-nonexistent-t" class="section-name selfRef">Responses for Nonexistent Types</a>
+        </h3>
+<p id="section-3.2-1">
+        When the authoritative server receives a query for a name
+        that exists but has no resource record sets associated with
+        the queried type, it generates a NODATA response with
+        a dynamically constructed signed NSEC record in the Authority
+        section. The owner name of the NSEC record matches the QNAME.
+        The Next Domain Name field is set to the immediate lexicographic
+        successor of the QNAME. The Type Bit Maps field lists the available
+        RR types at the name.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">
+        An ENT is a special subset of this category,
+        where the name has no resource record sets of any type (but
+        has descendant names that do). For a query for an ENT,
+        the NSEC Type Bit Maps field will only contain RRSIG
+        and NSEC. (Note that this is substantially different than the
+        ENT response in precomputed NSEC, where the NSEC record has the
+        same type bitmap but "covers" rather than matches the ENT and
+        has the Next Domain Name field set to the next lexicographic
+        descendant of the ENT in the zone.)<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="response-wildcard">
+<section id="section-3.3">
+        <h3 id="name-responses-for-wildcard-matc">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-responses-for-wildcard-matc" class="section-name selfRef">Responses for Wildcard Matches</a>
+        </h3>
+<p id="section-3.3-1">
+        For wildcard matches, the authoritative server will provide
+        a dynamically signed response that claims that the QNAME
+        exists explicitly. Specifically, the answer RRset will
+        have an RRSIG record demonstrating an exact match (i.e., the
+        label count in the RRSIG RDATA will be equal to the number of
+        labels in the query name minus the root label). This obviates
+        the need to include an NSEC record in the Authority section
+        of the response that shows that no closer match than the wildcard
+        was possible.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">
+        For a wildcard NODATA match (where the QNAME matches
+        a wildcard but no data for the queried type exists), a response
+        akin to a non-wildcard NODATA is returned. The Answer section
+        is empty, and the Authority section contains a single NSEC
+        record that matches the query name with a Type Bit Maps field
+        representing the list of types available at the wildcard.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="response-referral">
+<section id="section-3.4">
+        <h3 id="name-responses-for-unsigned-refe">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-responses-for-unsigned-refe" class="section-name selfRef">Responses for Unsigned Referrals</a>
+        </h3>
+<p id="section-3.4-1">
+        Per the DNSSEC protocol, a referral to an unsigned subzone
+        includes an NSEC record whose owner name matches the subzone
+        and proves the delegation is unsigned by the absence of
+        the Delegation Signer (DS) RR type bit in the Type Bit Maps field.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">
+        With Compact Denial of Existence, the Next Domain Name field
+        for this NSEC record is computed with a slightly different
+        epsilon function than the immediate lexicographic successor of
+        the owner name, as that name would then fall under the delegated
+        subzone. Instead, the Next Domain Name field is formed by appending
+        a zero octet to the first label of the owner name.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">
+        For example, a referral response for the subzone sub.example.com
+        would include an NSEC record like the following:<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+<div class="sourcecode" id="section-3.4-4">
+<pre>
+sub.example.com. 300 IN NSEC sub\000.example.com. NS RRSIG NSEC
+</pre><a href="#section-3.4-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="response-nxname">
+<section id="section-3.5">
+        <h3 id="name-responses-to-explicit-queri">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-responses-to-explicit-queri" class="section-name selfRef">Responses to Explicit Queries for NXNAME</a>
+        </h3>
+<p id="section-3.5-1">
+        NXNAME is a Meta-TYPE that <span class="bcp14">SHOULD NOT</span> appear anywhere in
+        a DNS message apart from the NSEC type bitmap of a Compact
+        Answer response for a nonexistent name. However, if a DNS
+        server implementing this specification receives an explicit
+        query for the NXNAME RR type, this section describes what the
+        response ought to be.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">
+        If an explicit query for the NXNAME RR type is received, the
+        DNS server <span class="bcp14">MUST</span> return a Format Error (response code FORMERR).
+        A resolver <span class="bcp14">MUST NOT</span> forward these queries upstream or attempt
+        iterative resolution. Many DNS server implementations already
+        return errors for all types in the range for Meta-TYPEs and QTYPEs, except
+        those types that are already defined to support queries.<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+<p id="section-3.5-3">
+        Optionally, a DNS server <span class="bcp14">MAY</span> also include the following
+         Extended DNS Error (EDE) code <span>[<a href="#RFC8914" class="cite xref">RFC8914</a>]</span> in the
+        response: 30 (Invalid Query Type). See <a href="#iana" class="auto internal xref">Section 9</a>.<a href="#section-3.5-3" class="pilcrow">¶</a></p>
+<p id="section-3.5-4">
+        Note that this EDE code is generally applicable to any
+        RR type that ought not appear in DNS queries.<a href="#section-3.5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="nsec3">
+<section id="section-4">
+      <h2 id="name-generating-responses-with-ns">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-generating-responses-with-ns" class="section-name selfRef">Generating Responses with NSEC3</a>
+      </h2>
+<p id="section-4-1">
+        NSEC3 <span>[<a href="#RFC5155" class="cite xref">RFC5155</a>]</span> uses hashed names to
+        provide zone enumeration defense. This protection is better
+        provided by minimally covering NSEC records. NSEC3's Opt-Out feature
+        also provides no specific benefit for online signing implementations
+        (minimally covering NSEC3 records provide no useful Opt-Out span).
+        Hence, there is no known advantage to implementing Compact Denial
+        of Existence with NSEC3. However, an existing implementation of
+        conventional NSEC3 online signing migrating to Compact Denial of
+        Existence may find it simpler to do so with NSEC3 rather than implementing
+        NSEC from scratch.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">
+        For NSEC3, the functional details of the protocol remain as
+        described in <a href="#responses" class="auto internal xref">Section 3</a>, with the following
+        changes.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">
+        NSEC3 records and their signatures are dynamically generated
+        instead of NSEC.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">
+        The NSEC3 parameters <span class="bcp14">SHOULD</span> be set to algorithm 1, a flags field
+        of 0, an additional hash iteration count of 0, and an empty salt.
+        In DNS presentation format, this is "1 0 0 -".<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">
+        The owner name of the NSEC3 resource record is the NSEC3 hash of
+        the relevant domain name, encoded in Base32 with Extended Hex
+        Alphabet (<span>[<a href="#RFC4648" class="cite xref">RFC4648</a>], <a href="https://rfc-editor.org/rfc/rfc4648#section-7" class="relref">Section 7</a></span>), prepended as a
+        single label to the name of the zone. The Next Hashed Owner Name
+        is the immediate name successor of the unencoded binary form of
+        the previous hash, which can be computed by adding one to the
+        binary hash value.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">
+        In responses for nonexistent names, the Type Bit Maps field will
+        contain only the NXNAME Meta-TYPE. In responses to ENT
+        names, the Type Bit Maps field will be empty.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">
+        For example, a request for the nonexistent name "a.example.com."
+        would result in the generation of the following NSEC3 record:<a href="#section-4-7" class="pilcrow">¶</a></p>
+<div class="sourcecode" id="section-4-8">
+<pre>
+H64KFA4P1ACER2EBPS9QSDK6DNP8B3JQ.example.com. IN NSEC3 1 0 0 - (
+                  H64KFA4P1ACER2EBPS9QSDK6DNP8B3JR NXNAME )
+</pre><a href="#section-4-8" class="pilcrow">¶</a>
+</div>
+<p id="section-4-9">
+        Unlike Compact Denial of Existence with NSEC, no special form of
+        the Next Hashed Owner Name field for unsigned referrals is needed. The
+        Next Hashed Owner Name field remains the NSEC3 hash of original owner
+        name plus one.<a href="#section-4-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rcode">
+<section id="section-5">
+      <h2 id="name-response-code-restoration">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-response-code-restoration" class="section-name selfRef">Response Code Restoration</a>
+      </h2>
+<p id="section-5-1">
+        For nonexistent names, implementations should try 
+        to preserve the response code value of 3 (NXDOMAIN) whenever possible.  This is
+        generally possible for non-DNSSEC-enabled queries, namely those that
+        do not set the DO bit ("DNSSEC answer OK") in the EDNS0 OPT header.  For such queries,
+        authoritative servers implementing Compact Denial of Existence could
+        return a normal NXDOMAIN response. However, there may be limited benefit to
+        doing this since most modern DNS resolvers are DNSSEC aware,
+        and per <span><a href="https://rfc-editor.org/rfc/rfc3225#section-3" class="relref">Section 3</a> of [<a href="#RFC3225" class="cite xref">RFC3225</a>]</span>,
+        DNSSEC-aware recursive servers are required to set the DO bit on
+        outbound queries, regardless of the status of the DO bit on incoming
+        requests.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">
+        A validating resolver that understands the NXNAME signal from an
+        authoritative server could modify the response code from NOERROR
+        to NXDOMAIN in responses they return to downstream queriers that
+        have not set the DO bit in their requests.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<div id="signaled-rcode">
+<section id="section-5.1">
+        <h3 id="name-signaled-response-code-rest">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-signaled-response-code-rest" class="section-name selfRef">Signaled Response Code Restoration</a>
+        </h3>
+<p id="section-5.1-1">
+          This section describes an optional but recommended scheme
+          to permit signaled restoration of the NXDOMAIN RCODE for
+          DNSSEC-enabled responses. A new EDNS0
+          <span>[<a href="#RFC6891" class="cite xref">RFC6891</a>]</span> header flag is defined
+          in the second most significant bit of the flags field in the EDNS0
+          OPT header. This flag is referred to as the
+          Compact Answers OK (CO) flag.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.1-2">
+<pre>
+          +0 (MSB)                +1 (LSB)
+   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+0: |   EXTENDED-RCODE      |       VERSION         |
+   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+2: |DO|CO|                 Z                       |
+   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+</pre><a href="#section-5.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-5.1-3">
+          When this flag is sent in a query by a resolver, it indicates
+          that the resolver will accept a NODATA response with a signed NXNAME
+          for a nonexistent name, together with the
+          response code field set to NXDOMAIN (3).<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">
+          In responses to such queries, an authoritative server implementing
+          both Compact Denial of Existence and this signaling scheme will set
+          the Compact Answers OK EDNS header flag and, for nonexistent names,
+          will additionally set the response code field to NXDOMAIN.<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<p id="section-5.1-5">
+          EDNS is a hop-by-hop signal, so resolvers will need to
+          record the presence of this flag in associated cache data
+          and respond to downstream DNSSEC-enabled queriers
+          appropriately. If the querier does not set the Compact
+          Answers OK flag, the resolver will need to reset the
+          response code back to NOERROR (0) for an NXNAME response.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="operational">
+<section id="section-6">
+      <h2 id="name-operational-implications">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-operational-implications" class="section-name selfRef">Operational Implications</a>
+      </h2>
+<p id="section-6-1">
+        For DNSSEC-enabled queries, a signed zone at an authoritative
+        server implementing Compact Answers will never return a response
+        with a response code of NXDOMAIN, unless they have implemented
+        the optional response code restoration feature described in
+        <a href="#signaled-rcode" class="auto internal xref">Section 5.1</a>. Similarly, resolvers not
+        implementing this feature will also not be able to return NXDOMAIN.
+        In the absence of this, tools that rely on accurately determining
+        nonexistent names will need to infer them from the presence of
+        the NXNAME RR type in the Type Bit Maps field of the NSEC record
+        in NODATA responses from these servers.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">
+        Address lookup functions typically invoked by applications
+        may need to do more work when dealing with implementations of
+        Compact Answers. For example, a NODATA response to the lookup
+        of a AAAA record for a nonexistent name can cause such
+        functions to issue another query at the same name for an A record,
+        whereas an NXDOMAIN response to the first query could suppress
+        additional queries for other types at that name. Address lookup
+        functions could be enhanced to issue DNSSEC-enabled queries and
+        to examine the NSEC Type Bit Maps field in responses to accurately
+        determine nonexistent names. Note that this is less of a concern
+        with
+        connection functions like Happy Eyeballs <span>[<a href="#RFC8305" class="cite xref">RFC8305</a>]</span> that typically issue back-to-back DNS queries without
+        waiting for individual responses.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">
+        Protocol optimizations that enable DNS resolvers to synthesize
+        NXDOMAIN or wildcard responses, like those described in <span>[<a href="#RFC8020" class="cite xref">RFC8020</a>]</span> and
+        <span>[<a href="#RFC8198" class="cite xref">RFC8198</a>]</span>, cannot be realized from responses
+        that use Compact Denial of Existence. In general, no online signing
+        scheme that employs minimally covering NSEC or NSEC3 records
+        (including this one) permits NXDOMAIN or wildcard
+        response synthesis in the style described in <span>[<a href="#RFC8198" class="cite xref">RFC8198</a>]</span>. Additionally, this protocol also precludes
+        NXDOMAIN synthesis for DNSSEC-enabled responses in the style described in <span>[<a href="#RFC8020" class="cite xref">RFC8020</a>]</span>.<a href="#section-6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="updates">
+<section id="section-7">
+      <h2 id="name-updates-to-rfcs">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-updates-to-rfcs" class="section-name selfRef">Updates to RFCs</a>
+      </h2>
+<div id="updates4034">
+<section id="section-7.1">
+        <h3 id="name-updates-to-rfc-4034">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-updates-to-rfc-4034" class="section-name selfRef">Updates to RFC 4034</a>
+        </h3>
+<p id="section-7.1-1"><span><a href="https://rfc-editor.org/rfc/rfc4034#section-4.1.2" class="relref">Section 4.1.2</a> of [<a href="#RFC4034" class="cite xref">RFC4034</a>]</span> 
+        ("The Type Bit Maps Field") states the following:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<blockquote id="section-7.1-2">
+          <p id="section-7.1-2.1">Bits representing pseudo-types <span class="bcp14">MUST</span> be clear, as they do not appear
+          in zone data.  If encountered, they <span class="bcp14">MUST</span> be ignored upon being read.<a href="#section-7.1-2.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-7.1-3">This paragraph is updated to the following:<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<blockquote id="section-7.1-4">
+          <p id="section-7.1-4.1">Bits representing pseudo-types <span class="bcp14">MUST</span> be clear, as
+          they do not appear in zone data.  If encountered, they
+          <span class="bcp14">MUST</span> be ignored upon being read.  There is one
+          exception to this rule for Compact Denial of Existence (RFC 9824),
+          where the NXNAME pseudo-type is allowed to appear in responses to
+          nonexistent names.<a href="#section-7.1-4.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-7.1-5">
+          Note: As a practical matter, no known resolver insists that
+          pseudo-types not be set in the NSEC Type Bit Maps field, so this
+          restriction (prior to its revision) has posed no problem for
+          the deployment of this mechanism.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="updates4035">
+<section id="section-7.2">
+        <h3 id="name-updates-to-rfc-4035">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-updates-to-rfc-4035" class="section-name selfRef">Updates to RFC 4035</a>
+        </h3>
+<p id="section-7.2-1"><span><a href="https://rfc-editor.org/rfc/rfc4035#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC4035" class="cite xref">RFC4035</a>]</span> 
+        ("Including NSEC RRs in a Zone") states the following:<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<blockquote id="section-7.2-2">
+          <p id="section-7.2-2.1">An NSEC record (and its associated RRSIG RRset) <span class="bcp14">MUST NOT</span> be the only RRset at any particular owner name.  That
+          is, the signing process <span class="bcp14">MUST NOT</span> create NSEC or RRSIG
+          RRs for owner name nodes that were not the owner name of any RRset
+          before the zone was signed.  The main reasons for this are a desire
+          for namespace consistency between signed and unsigned versions of
+          the same zone and a desire to reduce the risk of response
+          inconsistency in security oblivious recursive name servers.<a href="#section-7.2-2.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-7.2-3">
+          This paragraph is updated to the following:<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<blockquote id="section-7.2-4">
+          <p id="section-7.2-4.1">An NSEC record (and its associated RRSIG RRset) <span class="bcp14">MUST NOT</span> be the only
+          RRset at any particular owner name.  That is, the signing process
+          <span class="bcp14">MUST NOT</span> create NSEC or RRSIG RRs for owner name nodes that were not
+          the owner name of any RRset before the zone was signed.  The main
+          reasons for this are a desire for namespace consistency between
+          signed and unsigned versions of the same zone and a desire to reduce
+          the risk of response inconsistency in security oblivious recursive
+          name servers. This concern only applies to implementations of DNSSEC
+          that employ precomputed signatures. There is an exception to this
+          rule for online signing implementations of DNSSEC (e.g., minimally
+          covering NSEC and Compact Denial of Existence), where
+          dynamically generated NSEC records can be produced for owner names
+          that don't exist or are ENTs.<a href="#section-7.2-4.1" class="pilcrow">¶</a></p>
+</blockquote>
+</section>
+</div>
+</section>
+</div>
+<div id="security">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">
+        Online signing of DNS records requires authoritative servers
+        for the DNS zone to have access to the private signing keys.
+        Exposing signing keys on Internet-reachable servers makes them
+        more vulnerable to attack.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">
+        Additionally, generating signatures on demand is more
+        computationally intensive than returning precomputed
+        signatures. Although the Compact Answers scheme reduces the
+        number of online signing operations compared to previous
+        techniques like White Lies, it still may make authoritative
+        servers more vulnerable to computational denial-of-service
+        attacks than precomputed signatures. The use of signature
+        algorithms (like those based on elliptic curves) that have
+        a comparatively low cost for signing is recommended.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">
+        Some security tools rely on detection of nonexistent
+        domain names by examining the response code field of DNS
+        response messages. A NOERROR (rather than
+        NXDOMAIN) code in that field will impact such tools. Implementation of the
+        optional response code restoration scheme will help recover
+        NXDOMAIN visibility for these tools. Note that the DNS
+        header is not cryptographically protected, so the response
+        code field cannot be authenticated. Thus, inferring the status
+        of a response from signed data in the body of the DNS message
+        is actually more secure. These tools could be enhanced to
+        recognize the (signed) NXNAME signal.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">
+        Because this method does not allow for aggressive negative
+        caching among resolvers, it allows for certain types
+        of denial-of-service attacks to be more effective. This
+        includes so-called Pseudorandom Subdomain Attacks
+        <span>[<a href="#PRSD-ATTACK" class="cite xref">PRSD-ATTACK</a>]</span>, where random names
+        are queried, either directly via botnets or across a wide
+        range of public resolver services, in order to intentionally
+        generate nonexistent responses from the authoritative
+        servers for a domain. If the resolver cannot synthesize NXDOMAIN
+        responses from NSEC records, it must pass all queries on to the
+        domain's authority servers, making resource exhaustion more likely
+        at those latter servers if they do not have the capacity
+        to absorb those additional queries.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">
+        If the motivating aspects of this specification (minimizing
+        response size and computational costs) are not a concern,
+        DNSSEC deployments can opt for a different method (e.g.,
+        conventional online signing or precomputed signatures)
+        and avoid imposing the challenges of NXDOMAIN visibility.<a href="#section-8-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">
+        IANA has allocated the following in
+        the "Resource Record (RR) TYPEs" registry in the "Domain Name System (DNS) Parameters"
+        registry group, from the range for Meta-TYPEs. 
+        A lower number in this range lowers the size of the
+        Type Bit Maps field, which reduces the overall size of the DNS
+        response message.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Type</th>
+            <th class="text-left" rowspan="1" colspan="1">Value</th>
+            <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">NXNAME</td>
+            <td class="text-left" rowspan="1" colspan="1">128</td>
+            <td class="text-left" rowspan="1" colspan="1">NXDOMAIN indicator for Compact Denial of Existence</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9824</td>
+          </tr>
+        </tbody>
+      </table>
+<p id="section-9-3">
+        IANA has also allocated the following flag in the "EDNS Header Flags
+        (16 bits)" registry in the "Domain Name System (DNS) Parameters"
+        registry group. This flag is described in <a href="#signaled-rcode" class="auto internal xref">Section 5.1</a>.<a href="#section-9-3" class="pilcrow">¶</a></p>
+<div id="blah">
+<table class="center" id="table-2">
+        <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Bit</th>
+            <th class="text-left" rowspan="1" colspan="1">Flag</th>
+            <th class="text-left" rowspan="1" colspan="1">Description</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Bit 1</td>
+            <td class="text-left" rowspan="1" colspan="1">CO</td>
+            <td class="text-left" rowspan="1" colspan="1">Compact Answers OK</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9824</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<p id="section-9-5">
+        Last, IANA has allocated the following code point in the
+        "Extended DNS Error Codes" registry in the "Domain Name System
+        (DNS) Parameters" registry group. This code point is described in
+        <a href="#response-nxname" class="auto internal xref">Section 3.5</a>.<a href="#section-9-5" class="pilcrow">¶</a></p>
+<table class="center" id="table-3">
+        <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">INFO-CODE</th>
+            <th class="text-left" rowspan="1" colspan="1">Purpose</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">30</td>
+            <td class="text-left" rowspan="1" colspan="1">Invalid Query Type</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9824</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3225">[RFC3225]</dt>
+        <dd>
+<span class="refAuthor">Conrad, D.</span>, <span class="refTitle">"Indicating Resolver Support of DNSSEC"</span>, <span class="seriesInfo">RFC 3225</span>, <span class="seriesInfo">DOI 10.17487/RFC3225</span>, <time datetime="2001-12" class="refDate">December 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3225">https://www.rfc-editor.org/info/rfc3225</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4034">[RFC4034]</dt>
+        <dd>
+<span class="refAuthor">Arends, R.</span>, <span class="refAuthor">Austein, R.</span>, <span class="refAuthor">Larson, M.</span>, <span class="refAuthor">Massey, D.</span>, and <span class="refAuthor">S. Rose</span>, <span class="refTitle">"Resource Records for the DNS Security Extensions"</span>, <span class="seriesInfo">RFC 4034</span>, <span class="seriesInfo">DOI 10.17487/RFC4034</span>, <time datetime="2005-03" class="refDate">March 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4034">https://www.rfc-editor.org/info/rfc4034</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4035">[RFC4035]</dt>
+        <dd>
+<span class="refAuthor">Arends, R.</span>, <span class="refAuthor">Austein, R.</span>, <span class="refAuthor">Larson, M.</span>, <span class="refAuthor">Massey, D.</span>, and <span class="refAuthor">S. Rose</span>, <span class="refTitle">"Protocol Modifications for the DNS Security Extensions"</span>, <span class="seriesInfo">RFC 4035</span>, <span class="seriesInfo">DOI 10.17487/RFC4035</span>, <time datetime="2005-03" class="refDate">March 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4035">https://www.rfc-editor.org/info/rfc4035</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4470">[RFC4470]</dt>
+        <dd>
+<span class="refAuthor">Weiler, S.</span> and <span class="refAuthor">J. Ihren</span>, <span class="refTitle">"Minimally Covering NSEC Records and DNSSEC On-line Signing"</span>, <span class="seriesInfo">RFC 4470</span>, <span class="seriesInfo">DOI 10.17487/RFC4470</span>, <time datetime="2006-04" class="refDate">April 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4470">https://www.rfc-editor.org/info/rfc4470</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4648">[RFC4648]</dt>
+        <dd>
+<span class="refAuthor">Josefsson, S.</span>, <span class="refTitle">"The Base16, Base32, and Base64 Data Encodings"</span>, <span class="seriesInfo">RFC 4648</span>, <span class="seriesInfo">DOI 10.17487/RFC4648</span>, <time datetime="2006-10" class="refDate">October 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4648">https://www.rfc-editor.org/info/rfc4648</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5155">[RFC5155]</dt>
+        <dd>
+<span class="refAuthor">Laurie, B.</span>, <span class="refAuthor">Sisson, G.</span>, <span class="refAuthor">Arends, R.</span>, and <span class="refAuthor">D. Blacka</span>, <span class="refTitle">"DNS Security (DNSSEC) Hashed Authenticated Denial of Existence"</span>, <span class="seriesInfo">RFC 5155</span>, <span class="seriesInfo">DOI 10.17487/RFC5155</span>, <time datetime="2008-03" class="refDate">March 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5155">https://www.rfc-editor.org/info/rfc5155</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6891">[RFC6891]</dt>
+        <dd>
+<span class="refAuthor">Damas, J.</span>, <span class="refAuthor">Graff, M.</span>, and <span class="refAuthor">P. Vixie</span>, <span class="refTitle">"Extension Mechanisms for DNS (EDNS(0))"</span>, <span class="seriesInfo">STD 75</span>, <span class="seriesInfo">RFC 6891</span>, <span class="seriesInfo">DOI 10.17487/RFC6891</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6891">https://www.rfc-editor.org/info/rfc6891</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6895">[RFC6895]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refTitle">"Domain Name System (DNS) IANA Considerations"</span>, <span class="seriesInfo">BCP 42</span>, <span class="seriesInfo">RFC 6895</span>, <span class="seriesInfo">DOI 10.17487/RFC6895</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6895">https://www.rfc-editor.org/info/rfc6895</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8914">[RFC8914]</dt>
+        <dd>
+<span class="refAuthor">Kumari, W.</span>, <span class="refAuthor">Hunt, E.</span>, <span class="refAuthor">Arends, R.</span>, <span class="refAuthor">Hardaker, W.</span>, and <span class="refAuthor">D. Lawrence</span>, <span class="refTitle">"Extended DNS Errors"</span>, <span class="seriesInfo">RFC 8914</span>, <span class="seriesInfo">DOI 10.17487/RFC8914</span>, <time datetime="2020-10" class="refDate">October 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8914">https://www.rfc-editor.org/info/rfc8914</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9364">[RFC9364]</dt>
+      <dd>
+<span class="refAuthor">Hoffman, P.</span>, <span class="refTitle">"DNS Security Extensions (DNSSEC)"</span>, <span class="seriesInfo">BCP 237</span>, <span class="seriesInfo">RFC 9364</span>, <span class="seriesInfo">DOI 10.17487/RFC9364</span>, <time datetime="2023-02" class="refDate">February 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9364">https://www.rfc-editor.org/info/rfc9364</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.valsorda-dnsop-black-lies">[COMPACT]</dt>
+        <dd>
+<span class="refAuthor">Valsorda, F.</span> and <span class="refAuthor">O. Gudmundsson</span>, <span class="refTitle">"Compact DNSSEC Denial of Existence or Black Lies"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-valsorda-dnsop-black-lies-00</span>, <time datetime="2016-03-21" class="refDate">21 March 2016</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-valsorda-dnsop-black-lies-00">https://datatracker.ietf.org/doc/html/draft-valsorda-dnsop-black-lies-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.huque-dnsop-blacklies-ent">[ENT-SENTINEL]</dt>
+        <dd>
+<span class="refAuthor">Huque, S.</span>, <span class="refTitle">"Empty Non-Terminal Sentinel for Black Lies"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-huque-dnsop-blacklies-ent-01</span>, <time datetime="2021-07-27" class="refDate">27 July 2021</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-huque-dnsop-blacklies-ent-01">https://datatracker.ietf.org/doc/html/draft-huque-dnsop-blacklies-ent-01</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ogud-fake-nxdomain-type">[NXDOMAIN-TYPE]</dt>
+        <dd>
+<span class="refAuthor">Gudmundsson, O.</span> and <span class="refAuthor">F. Valsorda</span>, <span class="refTitle">"Signaling NSEC record owner name nonexistence"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ogud-fake-nxdomain-type-00</span>, <time datetime="2015-05-07" class="refDate">7 May 2015</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ogud-fake-nxdomain-type-00">https://datatracker.ietf.org/doc/html/draft-ogud-fake-nxdomain-type-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="PRSD-ATTACK">[PRSD-ATTACK]</dt>
+        <dd>
+<span class="refAuthor">Nishida, K.</span>, <span class="refTitle">"Water Torture: A Slow Drip DNS DDoS Attack on QTNet"</span>, <span>&lt;<a href="https://conference.apnic.net/data/39/dnswatertortureonqtnet_1425130417_1425507043.pptx">https://conference.apnic.net/data/39/dnswatertortureonqtnet_1425130417_1425507043.pptx</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7129">[RFC7129]</dt>
+        <dd>
+<span class="refAuthor">Gieben, R.</span> and <span class="refAuthor">W. Mekking</span>, <span class="refTitle">"Authenticated Denial of Existence in the DNS"</span>, <span class="seriesInfo">RFC 7129</span>, <span class="seriesInfo">DOI 10.17487/RFC7129</span>, <time datetime="2014-02" class="refDate">February 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7129">https://www.rfc-editor.org/info/rfc7129</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8020">[RFC8020]</dt>
+        <dd>
+<span class="refAuthor">Bortzmeyer, S.</span> and <span class="refAuthor">S. Huque</span>, <span class="refTitle">"NXDOMAIN: There Really Is Nothing Underneath"</span>, <span class="seriesInfo">RFC 8020</span>, <span class="seriesInfo">DOI 10.17487/RFC8020</span>, <time datetime="2016-11" class="refDate">November 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8020">https://www.rfc-editor.org/info/rfc8020</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8198">[RFC8198]</dt>
+        <dd>
+<span class="refAuthor">Fujiwara, K.</span>, <span class="refAuthor">Kato, A.</span>, and <span class="refAuthor">W. Kumari</span>, <span class="refTitle">"Aggressive Use of DNSSEC-Validated Cache"</span>, <span class="seriesInfo">RFC 8198</span>, <span class="seriesInfo">DOI 10.17487/RFC8198</span>, <time datetime="2017-07" class="refDate">July 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8198">https://www.rfc-editor.org/info/rfc8198</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8305">[RFC8305]</dt>
+        <dd>
+<span class="refAuthor">Schinazi, D.</span> and <span class="refAuthor">T. Pauly</span>, <span class="refTitle">"Happy Eyeballs Version 2: Better Connectivity Using Concurrency"</span>, <span class="seriesInfo">RFC 8305</span>, <span class="seriesInfo">DOI 10.17487/RFC8305</span>, <time datetime="2017-12" class="refDate">December 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8305">https://www.rfc-editor.org/info/rfc8305</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9499">[RFC9499]</dt>
+      <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">K. Fujiwara</span>, <span class="refTitle">"DNS Terminology"</span>, <span class="seriesInfo">BCP 219</span>, <span class="seriesInfo">RFC 9499</span>, <span class="seriesInfo">DOI 10.17487/RFC9499</span>, <time datetime="2024-03" class="refDate">March 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9499">https://www.rfc-editor.org/info/rfc9499</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="other-approaches">
+<section id="appendix-A">
+      <h2 id="name-other-approaches">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-other-approaches" class="section-name selfRef">Other Approaches</a>
+      </h2>
+<p id="appendix-A-1">
+        In the past, some implementations of Compact Denial of Existence
+        have used other means to differentiate NXDOMAIN from ENTs.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">
+        One method employed by both Cloudflare and Amazon Route53 for
+        a period of time was the following: For responses to ENTs,
+        they synthesized the NSEC Type Bit Maps field to include
+        all record types supported except for the queried type. This
+        method has the undesirable effect of no longer being able to
+        reliably determine the existence of ENTs and of making the Type
+        Bit Maps field larger than it needs to be. It also has the potential
+        to confuse validators and others tools that infer type existence
+        from the NSEC record.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3">
+        Another way to distinguish NXDOMAIN from ENT is to
+        define the synthetic RR type for ENTs instead,
+        as specified in <span>[<a href="#I-D.huque-dnsop-blacklies-ent" class="cite xref">ENT-SENTINEL</a>]</span>.
+        This method was successfully deployed in the field by NS1 for a
+        period of time. This typically imposes less work on the server
+        since NXDOMAIN responses are a lot more common than ENTs. At the
+        time it was deployed, it also allowed a common bitmap pattern
+        ("NSEC RRSIG") to identify NXDOMAIN across this and other
+        implementations that returned a broad bitmap pattern for 
+        ENTs. However, the advantage of the NXNAME RR type is
+        that it explicitly identifies NXDOMAIN responses and allows
+        them to be distinguished conclusively from potential ENT responses
+        in other online signing NSEC implementations.<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="implementations">
+<section id="appendix-B">
+      <h2 id="name-historical-implementation-n">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-historical-implementation-n" class="section-name selfRef">Historical Implementation Notes</a>
+      </h2>
+<p id="appendix-B-1">
+        At the time of publication, the basic Compact Denial of Existence
+        method using NSEC is implemented by Cloudflare, NS1, Amazon Route53,
+        and Knot DNS's optional online signing module. From early 2021 until
+        November 2023, NS1 had deployed the ENT distinguisher
+        <span>[<a href="#I-D.huque-dnsop-blacklies-ent" class="cite xref">ENT-SENTINEL</a>]</span> using the private
+        RR type code 65281. A version of the NXNAME distinguisher using
+        the private RR type code 65238 was deployed by both Cloudflare
+        (from July 2023) and NS1 (from November 2023) until roughly
+        September 2024. Since September 2024, both Cloudflare and NS1 have
+        deployed NXNAME using the officially allocated code point of 128.
+        Oracle Cloud Initiative implemented Compact Denial of Existence
+        using NSEC3 in October 2024.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="acks">
+<section id="appendix-C">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-C-1">The Compact Answers technique was
+      originally proposed in <span>[<a href="#I-D.valsorda-dnsop-black-lies" class="cite xref">COMPACT</a>]</span> by <span class="contact-name">Filippo Valsorda</span> and
+      <span class="contact-name">Olafur Gudmundsson</span> and implemented by
+      Cloudflare. The ENT distinguisher RR type was originally
+      proposed in <span>[<a href="#I-D.huque-dnsop-blacklies-ent" class="cite xref">ENT-SENTINEL</a>]</span> by <span class="contact-name">Shumon Huque</span> and deployed by
+      NS1.  The NXNAME type is based on the FDOM type proposed in <span>[<a href="#I-D.ogud-fake-nxdomain-type" class="cite xref">NXDOMAIN-TYPE</a>]</span> by Gudmundsson
+      and Valsorda.<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+<p id="appendix-C-2">Especially detailed discussions on many technical aspects of this
+      document were conducted with <span class="contact-name">Paul Vixie</span>, <span class="contact-name">Jan Včelák</span>, <span class="contact-name">Viktor Dukhovni</span>, <span class="contact-name">Ed Lewis</span>, and <span class="contact-name">John Levine</span>. The
+      authors would also like to thank the many other members of the IETF DNS
+      Operations Working Group for helpful comments and discussions.<a href="#appendix-C-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Shumon Huque</span></div>
+<div dir="auto" class="left"><span class="org">Salesforce</span></div>
+<div dir="auto" class="left"><span class="street-address">415 Mission Street, 3rd Floor</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Francisco</span>, <span class="region">CA</span> <span class="postal-code">94105</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:shuque@gmail.com" class="email">shuque@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Christian Elmerot</span></div>
+<div dir="auto" class="left"><span class="org">Cloudflare</span></div>
+<div dir="auto" class="left"><span class="street-address">101 Townsend St.</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Francisco</span>, <span class="region">CA</span> <span class="postal-code">94107</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:elmerot@cloudflare.com" class="email">elmerot@cloudflare.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Olafur Gudmundsson</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ogud@ogud.com" class="email">ogud@ogud.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
