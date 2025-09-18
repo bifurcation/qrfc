@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9840: rLEDBAT: Receiver-Driven Low Extra Delay Background Transport for TCP</title>
+<meta content="Marcelo Bagnulo" name="author">
+<meta content="Alberto García-Martínez" name="author">
+<meta content="Gabriel Montenegro" name="author">
+<meta content="Praveen Balasubramanian" name="author">
+<meta content="
+        This document specifies receiver-driven Low Extra Delay Background Transport (rLEDBAT) -- a set of mechanisms that enable the execution of a less-than-best-effort congestion control algorithm for TCP at the receiver end. This document is a product of the Internet Congestion Control Research Group (ICCRG) of the Internet Research Task Force (IRTF).
+       
+    " name="description">
+<meta content="xml2rfc 3.30.2" name="generator">
+<meta content="Congestion control" name="keyword">
+<meta content="scavenger/less-than-best-effort traffic" name="keyword">
+<meta content="9840" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9840.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-irtf-iccrg-rledbat-10" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9840" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9840</td>
+<td class="center">rLEDBAT</td>
+<td class="right">September 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Bagnulo, et al.</td>
+<td class="center">Experimental</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Research Task Force (IRTF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9840" class="eref">9840</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Experimental</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-09" class="published">September 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Bagnulo</div>
+<div class="org">Universidad Carlos III de Madrid</div>
+</div>
+<div class="author">
+      <div class="author-name">A. García-Martínez</div>
+<div class="org">Universidad Carlos III de Madrid</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Montenegro</div>
+</div>
+<div class="author">
+      <div class="author-name">P. Balasubramanian</div>
+<div class="org">Confluent</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9840</h1>
+<h1 id="title">rLEDBAT: Receiver-Driven Low Extra Delay Background Transport for TCP</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1"> This document specifies receiver-driven Low Extra Delay Background Transport (rLEDBAT) -- a set of mechanisms that enable the execution of a less-than-best-effort congestion control algorithm for TCP at the receiver end. This document is a product of the Internet Congestion Control Research Group (ICCRG) of the Internet Research Task Force (IRTF).<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for examination, experimental implementation, and
+            evaluation.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document defines an Experimental Protocol for the Internet
+            community.  This document is a product of the Internet Research
+            Task Force (IRTF).  The IRTF publishes the results of Internet-related
+            research and development activities.  These results might not be
+            suitable for deployment.  This RFC represents the consensus of the
+            Internet Congestion Control Research Group of the Internet Research Task Force
+            (IRTF).  Documents approved for publication by the IRSG are not
+            candidates for any level of Internet Standard; see Section 2 of RFC
+            7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9840">https://www.rfc-editor.org/info/rfc9840</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-terminology" class="internal xref">Conventions and Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-motivations-for-rledbat" class="internal xref">Motivations for rLEDBAT</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-rledbat-mechanisms" class="internal xref">rLEDBAT Mechanisms</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-controlling-the-receive-win" class="internal xref">Controlling the Receive Window</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-avoiding-window-shrinking" class="internal xref">Avoiding Window Shrinking</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-setting-the-window-scale-op" class="internal xref">Setting the Window Scale Option</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-measuring-delays" class="internal xref">Measuring Delays</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-measuring-rtt-to-estimate-t" class="internal xref">Measuring RTT to Estimate the Queuing Delay</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-measuring-one-way-delay-to-" class="internal xref">Measuring One-Way Delay to Estimate the Queuing Delay</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-detecting-packet-losses-and" class="internal xref">Detecting Packet Losses and Retransmissions</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-experiment-considerations" class="internal xref">Experiment Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-status-of-the-experiment-at" class="internal xref">Status of the Experiment at the Time of This Writing</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-rledbat-pseudocode" class="internal xref">rLEDBAT Pseudocode</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">LEDBAT (Low Extra Delay Background Transport) <span>[<a href="#RFC6817" class="cite xref">RFC6817</a>]</span> is a congestion control algorithm used for less-than-best-effort (LBE) traffic.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">When LEDBAT traffic shares a bottleneck with other traffic using standard congestion control algorithms (for example, TCP traffic using CUBIC <span>[<a href="#RFC9438" class="cite xref">RFC9438</a>]</span>, hereafter referred to as "standard-TCP" for short), it reduces its sending rate earlier and more aggressively than standard-TCP congestion control, allowing other non-background traffic to use more of the available capacity. In the absence of competing traffic, LEDBAT aims to make efficient use of the available capacity, while keeping the queuing delay within predefined bounds.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">LEDBAT reacts to both packet loss and variations in delay.  With respect to packet loss, LEDBAT reacts with a multiplicative decrease, similar to most TCP congestion controllers. Regarding delay, LEDBAT aims for a target queuing delay. When the measured current queuing delay is below the target, LEDBAT increases the sending rate, and when the delay is above the target, it reduces the sending rate. LEDBAT estimates the queuing delay by subtracting the measured current one-way delay from the estimated base one-way delay (i.e., the one-way delay in the absence of queues).<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">The LEDBAT specification <span>[<a href="#RFC6817" class="cite xref">RFC6817</a>]</span> defines the LEDBAT congestion control algorithm, implemented in the sender to control its sending rate. LEDBAT is specified in a protocol-agnostic and layer-agnostic manner.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">LEDBAT++ <span>[<a href="#I-D.irtf-iccrg-ledbat-plus-plus" class="cite xref">LEDBAT++</a>]</span> is also an LBE congestion control algorithm that is inspired by LEDBAT while addressing several problems identified with the original LEDBAT specification. In particular, the differences between LEDBAT and LEDBAT++ include the following:<a href="#section-1-5" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-1-6">
+ <dt>i)</dt>
+<dd id="section-1-6.1">LEDBAT++ uses the round-trip time (RTT) (as opposed to the one-way delay used in LEDBAT) to estimate the queuing delay.<a href="#section-1-6.1" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>ii)</dt>
+<dd id="section-1-6.2">LEDBAT++ uses an additive increase/multiplicative decrease algorithm to achieve inter-LEDBAT++ fairness and avoid the latecomer advantage observed in LEDBAT.<a href="#section-1-6.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>iii)</dt>
+<dd id="section-1-6.3">LEDBAT++ performs periodic slowdowns to improve the measurement of the base delay.<a href="#section-1-6.3" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>iv)</dt>
+<dd id="section-1-6.4">LEDBAT++ is defined for TCP.<a href="#section-1-6.4" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-1-7">In this specification, we describe receiver-driven Low Extra Delay Background Transport (rLEDBAT) -- a set of mechanisms that enable the execution of an LBE delay-based congestion control algorithm such as LEDBAT or LEDBAT++ at the receiver end of a TCP connection.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8"> The consensus of the Internet Congestion Control Research Group (ICCRG) is to publish this document to encourage further experimentation and review of rLEDBAT. This document is not an IETF product and is not an Internet Standards Track specification. The status of this document is Experimental. In <a href="#sect-5" class="auto internal xref">Section 5</a> ("<a href="#sect-5" class="internal xref">Experiment Considerations</a>"), we describe the purpose of the experiment and its current status.<a href="#section-1-8" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-conventions-and-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-terminology" class="section-name selfRef">Conventions and Terminology</a>
+      </h2>
+<p id="section-2-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+       "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>",
+       "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>",
+       "<span class="bcp14">SHOULD NOT</span>",
+       "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+       "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document
+       are to be interpreted as described in BCP 14
+       <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only
+       when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">We use the following abbreviations throughout the text and include them here for the reader's convenience:<a href="#section-2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-3">
+        <dt id="section-2-3.1">RCV.WND:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.2">The value included in the Receive Window field of
+        the TCP header (the computation of which is modified by its
+        specification).<a href="#section-2-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.3">SND.WND:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.4">The TCP sender's window.<a href="#section-2-3.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.5">cwnd:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.6">The congestion window as computed by the congestion
+        control algorithm running at the TCP sender.<a href="#section-2-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.7">RLWND:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.8">The window value calculated by the rLEDBAT algorithm.<a href="#section-2-3.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.9">fcwnd:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.10">The value that a standard-TCP receiver compliant with
+        <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>
+        calculates to set in the receive window for flow control
+        purposes.<a href="#section-2-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.11">RCV.HGH:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.12">The highest sequence number corresponding to a
+        received byte of data at one point in time.<a href="#section-2-3.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.13">TSV.HGH:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.14">The Timestamp Value (TSval) <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span> corresponding to the
+        segment in which RCV.HGH was carried at that point in time.<a href="#section-2-3.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.15">SEG.SEQ:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.16">The sequence number of the last received segment.<a href="#section-2-3.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.17">TSV.SEQ:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.18">The TSval of the last received segment.<a href="#section-2-3.18" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-3">
+      <h2 id="name-motivations-for-rledbat">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-motivations-for-rledbat" class="section-name selfRef">Motivations for rLEDBAT</a>
+      </h2>
+<p id="section-3-1">rLEDBAT enables new use cases and new deployment models, fostering the use of LBE traffic. The following scenarios are enabled by rLEDBAT:<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3-2">
+        <dt id="section-3-2.1">Content Delivery Networks (CDNs) and more sophisticated file distribution scenarios:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-2.2">Consider the case where the source of a file to be distributed (e.g., a software developer that wishes to distribute a software update) would prefer to use LBE and enables LEDBAT/LEDBAT++ in the servers containing the source file. However, because the file is being distributed through a CDN that does not implement LBE congestion control, the result is that the file transfers originated from CDN surrogates will not be using LBE. Interestingly enough, in the case of the software update, the developer may also control the software performing the download in the client (the receiver of the file), but because current LEDBAT/LEDBAT++ are sender-based algorithms, controlling the client is not enough to enable LBE congestion control in the communication.  rLEDBAT would enable the use of an LBE traffic class for file distribution in this setup.<a href="#section-3-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-2.3">Interference from proxies and other middleboxes:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-2.4">Proxies and other middleboxes are commonplace in the Internet. For instance, in the case of mobile networks, proxies are frequently used. In the case of enterprise networks, it is common to deploy corporate proxies for filtering and firewalling. In the case of satellite links, Performance Enhancing Proxies (PEPs) are deployed to mitigate the effect of long delays in a TCP connection. These proxies terminate the TCP connection on both ends and prevent the use of LBE congestion control in the segment between the proxy and the sink of the content, the client. By enabling rLEDBAT, clients can then enable LBE traffic between them and the proxy.<a href="#section-3-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-2.5">Receiver-defined preferences:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-2.6">Frequently, the access link is the communication bottleneck. This is particularly true in the case of mobile devices. It is then especially relevant for mobile devices to properly manage the capacity of the access link. With current technologies, it is possible for the mobile device to use different congestion control algorithms expressing different preferences for the traffic. For instance, a device can choose to use standard-TCP for some traffic and use LEDBAT/LEDBAT++ for other traffic. However, this would only affect the outgoing traffic, since both standard-TCP and LEDBAT/LEDBAT++ are driven by the sender. The mobile device has no means to manage the traffic in the downlink, which is, in most cases, the communication bottleneck for a typical "eyeball" end user.  rLEDBAT enables the mobile device to selectively use an LBE traffic class for some of the incoming traffic. For instance, by using rLEDBAT, a user can use regular standard-TCP/UDP for a video stream (e.g., YouTube) and use rLEDBAT for other background file downloads.<a href="#section-3-2.6" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+<section id="section-4">
+      <h2 id="name-rledbat-mechanisms">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-rledbat-mechanisms" class="section-name selfRef">rLEDBAT Mechanisms</a>
+      </h2>
+<p id="section-4-1">rLEDBAT provides the mechanisms to implement an LBE congestion control algorithm at the receiver end of a TCP connection. The rLEDBAT receiver controls the sender's rate through the receive window announced by the receiver in the TCP header.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">rLEDBAT assumes that the sender is a standard-TCP sender.  rLEDBAT does not require any rLEDBAT-specific modifications to the TCP sender. The envisioned deployment model for rLEDBAT is that the clients implement rLEDBAT and this enables rLEDBAT in communications with existing standard-TCP senders.  In particular, the sender <span class="bcp14">MUST</span> implement <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span> and also <span class="bcp14">MUST</span> implement the TCP Timestamps (TS) option as defined in <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span>. Also, the sender should implement some of the standard congestion control mechanisms, such as CUBIC <span>[<a href="#RFC9438" class="cite xref">RFC9438</a>]</span> or NewReno <span>[<a href="#RFC5681" class="cite xref">RFC5681</a>]</span> <span>[<a href="#RFC6582" class="cite xref">RFC6582</a>]</span>.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">rLEDBAT does not define a new congestion control algorithm. The definition of the actual LBE congestion control algorithm executed in the rLEDBAT receiver is beyond the scope of this document. The rLEDBAT receiver <span class="bcp14">MUST</span> use an LBE congestion control algorithm. Because rLEDBAT assumes a standard-TCP sender, the sender will be using a "best effort" congestion control algorithm (such as CUBIC or NewReno). Since rLEDBAT uses the receive window to control the sender's rate and the sender calculates the sender's window as the minimum of the receive window and the congestion window, rLEDBAT will only be effective as long as the congestion control algorithm executed in the receiver yields a smaller window than the one calculated by the sender. This is normally the case when the receiver is using an LBE congestion control algorithm. The rLEDBAT receiver <span class="bcp14">SHOULD</span> use the LEDBAT congestion control algorithm <span>[<a href="#RFC6817" class="cite xref">RFC6817</a>]</span> or the LEDBAT++ congestion control algorithm <span>[<a href="#I-D.irtf-iccrg-ledbat-plus-plus" class="cite xref">LEDBAT++</a>]</span>.  rLEDBAT <span class="bcp14">MAY</span> use other LBE congestion control algorithms defined elsewhere. Irrespective of which congestion control algorithm is executed in the receiver, a rLEDBAT connection will never be more aggressive than standard-TCP, since it is always bounded by the congestion control algorithm executed at the sender.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">rLEDBAT is essentially composed of three types of mechanisms, namely 
+those that provide the means to measure the packet delay (either the RTT or the one-way delay, depending on the selected algorithm), mechanisms to detect packet loss, and the means to manipulate the receive window to control the sender's rate. The first two provide input to the LBE congestion control algorithm, while the third uses the congestion window computed by the LBE congestion control algorithm to manipulate the receive window, as depicted in <a href="#fig1" class="auto internal xref">Figure 1</a>.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<span id="name-the-rledbat-architecture"></span><div id="fig1">
+<figure id="figure-1">
+        <div class="alignCenter art-text artwork" id="section-4-5.1">
+<pre>
++------------------------------------------+
+|   TCP Receiver                           |
+|                      +-----------------+ |
+|                      |  +------------+ | |
+|   +---------------------|     RTT    | | |
+|   |                  |  | Estimation | | |
+|   |                  |  +------------+ | |
+|   |                  |                 | |
+|   |                  |  +------------+ | |
+|   |      +--------------| Loss, RTX  | | |
+|   |      |           |  | Detection  | | |
+|   |      |           |  +------------+ | |
+|   v      v           |                 | |
+| +----------------+   |                 | |
+| | LBE Congestion |   |    rLEDBAT      | |
+| |    Control     |   |                 | |
+| +----------------+   |                 | |
+|       |              |  +------------+ | |
+|       |              |  | RCV.WND    | | |
+|       +----------------&gt;| Control    | | |
+|                      |  +------------+ | |
+|                      +-----------------+ |
++------------------------------------------+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-the-rledbat-architecture" class="selfRef">The rLEDBAT Architecture</a>
+        </figcaption></figure>
+</div>
+<p id="section-4-6">We next describe each of the rLEDBAT components.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<section id="section-4.1">
+        <h3 id="name-controlling-the-receive-win">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-controlling-the-receive-win" class="section-name selfRef">Controlling the Receive Window</a>
+        </h3>
+<p id="section-4.1-1">rLEDBAT uses the TCP receive window (RCV.WND) to enable the receiver to control the sender's rate.  <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span> specifies that the RCV.WND is used to announce the available receive buffer to the sender for flow control purposes. In order to avoid confusion, we will call fcwnd the value that a standard-TCP receiver compliant with <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span> calculates to set in the receive window for flow control purposes. We call RLWND the window value calculated by the rLEDBAT algorithm, and we call RCV.WND the value actually included in the Receive Window field of the TCP header. For a receiver compliant with <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>, RCV.WND == fcwnd.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">In the case of the rLEDBAT receiver, this receiver <span class="bcp14">MUST NOT</span> set the RCV.WND to a value larger than fcwnd and <span class="bcp14">SHOULD</span> set the RCV.WND to the minimum of RLWND and fcwnd, honoring both.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">When using rLEDBAT, two congestion controllers are in action in the flow of data from the sender to the receiver, namely the TCP congestion control algorithm on the sender side and the LBE congestion control  algorithm executed in the receiver and conveyed to the sender through the RCV.WND. In the normal TCP operation, the sender uses the minimum of the cwnd and the RCV.WND to calculate the SND.WND. This is also true for rLEDBAT, as the sender is a regular TCP sender. This guarantees that the rLEDBAT flow will never transmit more aggressively than a standard-TCP flow, as the sender's congestion window limits the sending rate. Moreover, because an LBE congestion control algorithm such as LEDBAT/LEDBAT++ is designed to react earlier and more aggressively to congestion than regular TCP congestion control, the RLWND contained in the TCP RCV.WND field will generally be smaller than the congestion window calculated by the TCP sender, implying that the rLEDBAT congestion control algorithm  will be effectively controlling the sender's window. One exception to this scenario is that at the beginning of the connection, when there is no information to set RLWND, RLWND is set to its maximum value, so that the sending rate of the sender is governed by the flow control algorithm of the receiver and the TCP slow start mechanism of the sender.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">In summary, the sender's window is SND.WND = min(cwnd, RLWND, fcwnd)<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<section id="section-4.1.1">
+          <h4 id="name-avoiding-window-shrinking">
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-avoiding-window-shrinking" class="section-name selfRef">Avoiding Window Shrinking</a>
+          </h4>
+<p id="section-4.1.1-1">The LEDBAT/LEDBAT++ algorithm executed in a rLEDBAT receiver increases or decreases RLWND according to congestion signals (variations in the estimated queuing delay and packet loss). 
+ 
+ If RLWND is decreased and directly announced in RCV.WND, this could lead to an announced window that is smaller than what is currently in use. This so-called "shrinking the window" is discouraged as per <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>, as it may cause unnecessary packet loss and performance penalties. To be consistent with <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>, the rLEDBAT receiver <span class="bcp14">SHOULD NOT</span> shrink the receive window.<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-2">In order to avoid window shrinking, the receiver <span class="bcp14">MUST</span> only reduce RCV.WND by the number of bytes contained in a received data packet. This may fall short to honor the new calculated value of the RLWND immediately. However, the receiver <span class="bcp14">SHOULD</span> progressively reduce the advertised RCV.WND, always honoring that the reduction is less than or equal to the received bytes, until the target window determined by the rLEDBAT algorithm is reached. 
+This implies that it may take up to one RTT for the rLEDBAT receiver to drain enough in-flight bytes to completely close its receive window without shrinking it. This is sufficient to honor the window output from the LEDBAT/LEDBAT++ algorithms, since they are only allowed to perform at most one multiplicative decrease per RTT.<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.1.2">
+          <h4 id="name-setting-the-window-scale-op">
+<a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-setting-the-window-scale-op" class="section-name selfRef">Setting the Window Scale Option</a>
+          </h4>
+<p id="section-4.1.2-1">The Window Scale (WS) option <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span> is a means to increase the maximum window size permitted by the receive window. The WS option defines a scale factor that restricts the granularity of the receive window that can be announced. This means that the rLEDBAT client will have to accumulate the increases resulting from multiple received packets and only convey a change in the window when the accumulated sum of increases is equal to or higher than one increase step as imposed by the scaling factor according to the WS option in place for the TCP connection.<a href="#section-4.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-2">Changes in the receive window that are smaller than 1 MSS (Maximum Segment Size) are unlikely to have any immediate impact on the sender's rate. As usual, TCP's segmentation practice results in sending full segments (i.e., segments of size equal to the MSS). <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span>, which defines the WS option, specifies that allowed values for the WS option are between 0 and 14. Assuming an MSS of around 1500 bytes, WS option values between 0 and 11 result in the receive window being expressed in units that are about 1 MSS or smaller. So, WS option values between 0 and 11 have no impact in rLEDBAT (unless packets smaller than the MSS are being exchanged).<a href="#section-4.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-3">WS option values higher than 11 can affect the dynamics of rLEDBAT, since control may become too coarse (e.g., with a WS option value of 14, a change in one unit of the receive window implies a change of 10 MSS in the effective window).<a href="#section-4.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-4">For the above reasons, the rLEDBAT client <span class="bcp14">SHOULD</span> set WS option values lower than 12. Additional experimentation is required to explore the impact of larger WS values on rLEDBAT dynamics.<a href="#section-4.1.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-5">Note that the recommendation for rLEDBAT to set the WS option values to lower values does not preclude communication with servers that set the WS option values to larger values, since WS option values are set independently for each direction of the TCP connection.<a href="#section-4.1.2-5" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4.2">
+        <h3 id="name-measuring-delays">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-measuring-delays" class="section-name selfRef">Measuring Delays</a>
+        </h3>
+<p id="section-4.2-1">Both LEDBAT and LEDBAT++ measure base and current delays to estimate the queuing delay. LEDBAT uses the one-way delay, while LEDBAT++ uses the RTT. In the next sections, we describe how rLEDBAT mechanisms enable the receiver to measure the one-way delay or the RTT -- whichever is needed, depending on the congestion control algorithm used.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<section id="section-4.2.1">
+          <h4 id="name-measuring-rtt-to-estimate-t">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-measuring-rtt-to-estimate-t" class="section-name selfRef">Measuring RTT to Estimate the Queuing Delay</a>
+          </h4>
+<p id="section-4.2.1-1">LEDBAT++ uses the RTT to estimate the queuing delay. In order to estimate the queuing delay using RTT, the rLEDBAT receiver estimates the base RTT (i.e., the constant components of RTT) and also measures the current RTT. By subtracting these two values, we obtain the queuing delay to be used by the rLEDBAT controller.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">LEDBAT++ discovers the base RTT (RTTb) by taking the minimum value of the measured RTTs over a period of time. The current RTT (RTTc) is estimated using a number of recent samples and applying a filter, such as the minimum (or the mean) of the last k samples. Using RTT to estimate the queuing delay has a number of shortcomings and difficulties, as discussed below.<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-3">The queuing delay measured using RTT also includes the queuing delay experienced by the return packets in the direction from the rLEDBAT receiver to the sender. This is a fundamental limitation of this approach. The impact of this limitation is that the rLEDBAT controller will also react to congestion in the reverse path direction, resulting in an even more conservative mechanism.<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4">In order to measure RTT, the rLEDBAT client <span class="bcp14">MUST</span> enable the TS option <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span>. By matching the TSval carried in outgoing packets with the Timestamp Echo Reply (TSecr) value <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span> observed in incoming packets, it is possible to measure RTT. This allows the rLEDBAT receiver to measure RTT even if it is acting as a pure receiver. In a pure receiver, there is no data flowing from the rLEDBAT receiver to the sender, making it impossible to match data packets with Acknowledgment packets to measure RTT, in contrast to what is usually done in TCP for other purposes.<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-5">Depending on the frequency of the local clock used to generate the values included in the TS option, several packets may carry the same TSval. If that happens, the rLEDBAT receiver will be unable to match the different outgoing packets carrying the same TSval with the different incoming packets also carrying the same TSecr value. However, it is not necessary for rLEDBAT to use all packets to estimate RTT, and sampling a subset of in-flight packets per RTT is enough to properly assess the queuing delay. RTT <span class="bcp14">MUST</span> then be calculated as the time since the first packet with a given TSval was sent and the first packet that was received with the same value contained in the TSecr. Other packets with repeated TS values <span class="bcp14">SHOULD NOT</span> be used for RTT calculations.<a href="#section-4.2.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-6">Several issues must be addressed in order to avoid an artificial increase in the observed RTT. Different issues emerge, depending on whether the
+rLEDBAT-capable host is sending data packets or pure ACKs to measure RTT. We next consider these issues separately.<a href="#section-4.2.1-6" class="pilcrow">¶</a></p>
+<section id="section-4.2.1.1">
+            <h5 id="name-measuring-rtt-when-sending-">
+<a href="#section-4.2.1.1" class="section-number selfRef">4.2.1.1. </a><a href="#name-measuring-rtt-when-sending-" class="section-name selfRef">Measuring RTT When Sending Pure ACKs</a>
+            </h5>
+<p id="section-4.2.1.1-1">In this scenario, the rLEDBAT node (node A) sends a pure ACK to the other endpoint of the TCP connection (node B), including the TS option. Upon the reception of the TS option, host B will copy the value of the TSval into the TSecr field of the TS option and include that option in the next data packet towards host A. However, there are two reasons why B may not send a packet immediately back to A, artificially increasing the measured RTT. The first reason is when A has no data to send. 
+The second is when A has no available window to put more packets in flight. We next describe how each of these cases is addressed.<a href="#section-4.2.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1.1-2">The case where host B has no data to send when it receives the pure Acknowledgment is expected to be rare in the rLEDBAT use cases.  rLEDBAT will be used mostly for background file transfers, so the expected common case is that the sender will have data to send throughout the lifetime of the communication. However, if, for example, the file is structured in blocks of data, it may be the case that the sender will seldom have to wait until the next block is available to proceed with the data transfer. To address this situation, the filter used by the congestion control algorithm executed in the receiver <span class="bcp14">SHOULD</span> discard outliers (e.g., a MIN filter <span>[<a href="#RFC6817" class="cite xref">RFC6817</a>]</span> would achieve this) when measuring RTT using pure ACK packets.<a href="#section-4.2.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1.1-3">This limitation of the sender's window can come from either the TCP congestion window in host B or the announced receive window from rLEDBAT in host A. Normally, the receive window will be the one to limit the sender's transmission rate, since the LBE congestion control algorithm used by the rLEDBAT node is designed to be more restrictive on the sender's rate than standard-TCP. If the limiting factor is the congestion window in the sender, it is less relevant if rLEDBAT further reduces the receive window due to a bloated RTT measurement, since the rLEDBAT node is not actively controlling the sender's rate. Nevertheless, the proposed approach to discard larger samples would also address this issue.<a href="#section-4.2.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.1.1-4">To address the case in which the limiting factor is the receive window announced by rLEDBAT, the congestion control algorithm at the receiver <span class="bcp14">SHOULD</span> discard RTT measurements during the window reduction phase that are triggered by pure ACK packets. The rLEDBAT receiver is aware of whether a given TSval was sent in a pure ACK packet where the window was reduced, and if so, it can discard the corresponding RTT measurement.<a href="#section-4.2.1.1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2.1.2">
+            <h5 id="name-measuring-rtt-when-sending-d">
+<a href="#section-4.2.1.2" class="section-number selfRef">4.2.1.2. </a><a href="#name-measuring-rtt-when-sending-d" class="section-name selfRef">Measuring RTT When Sending Data Packets</a>
+            </h5>
+<p id="section-4.2.1.2-1">In the case that the rLEDBAT node is sending data packets and matching them with pure ACKs to measure RTT, a factor that can artificially increase the RTT measured is the presence of delayed Acknowledgments. 
+ According to the TS option generation rules <span>[<a href="#RFC7323" class="cite xref">RFC7323</a>]</span>,  
+ the value included in the TSecr for a delayed ACK is the one in the TSval field of the earliest unacknowledged segment.
+ This may artificially increase the measured RTT.<a href="#section-4.2.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1.2-2">If both endpoints of the connection are sending data packets, Acknowledgments are piggybacked onto the data packets and they are not delayed. Delayed ACKs only increase RTT measurements in the case that the sender has no data to send. Since the expected use case for rLEDBAT is that the sender will be sending background traffic to the rLEDBAT receiver, the cases where delayed ACKs increase the measured RTT are expected to be rare.<a href="#section-4.2.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1.2-3">Nevertheless, measurements based on data packets from the rLEDBAT node matching pure ACKs from the other end will result in an increased RTT sample. The additional increase in the measured RTT will be up to 500 ms. This is because delayed ACKs are generated every second data packet received and not delayed more than 500 ms according to <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>. The rLEDBAT receiver <span class="bcp14">MAY</span> discard RTT measurements done using data packets from the rLEDBAT receiver and matching pure ACKs, especially if it has recent measurements done using other packet combinations. Applying a filter (e.g., a MIN filter) that discards outliers would also address this issue.<a href="#section-4.2.1.2-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4.2.2">
+          <h4 id="name-measuring-one-way-delay-to-">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-measuring-one-way-delay-to-" class="section-name selfRef">Measuring One-Way Delay to Estimate the Queuing Delay</a>
+          </h4>
+<p id="section-4.2.2-1">The LEDBAT algorithm uses the one-way delay of packets as input. A TCP receiver can measure the delay of incoming packets directly (as opposed to the sender-based LEDBAT, where the receiver measures the one-way delay and needs to convey it to the sender).<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">In the case of TCP, the receiver can use the TS option to measure the one-way delay by subtracting the timestamp contained in the incoming packet from the local time at which the packet has arrived. As noted in <span>[<a href="#RFC6817" class="cite xref">RFC6817</a>]</span>, the clock offset between the sender's clock and the receiver's clock does not affect the LEDBAT operation, since LEDBAT uses the difference between the base one-way delay and the current one-way delay to estimate the queuing delay, effectively "canceling out" the clock offset error in the queuing delay estimation. There are, however, two other issues that the rLEDBAT receiver needs to take into account in order to properly estimate the one-way delay, namely the units in which the received timestamps are expressed and the clock skew. These issues are addressed below.<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">In order to measure the one-way delay using TCP timestamps, the rLEDBAT receiver first needs to discover the units of values in the TS option and then needs to account for the skew between the two endpoint clocks. Note that a mismatch of 100 ppm (parts per million) in the estimation of the sender's clock rate accounts for 6 ms of variation per minute in the measured delay. This is just one order of magnitude below the target delay set by rLEDBAT (or potentially more if the target is set to lower values, which is possible). Typical skew for untrained clocks is reported to be around 100-200 ppm <span>[<a href="#RFC6817" class="cite xref">RFC6817</a>]</span>.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-4">In order to learn both the TS units and the clock skew, the rLEDBAT receiver measures how much local time has elapsed between two packets with different TS values issued by the sender. By comparing the local time difference and the TS value difference, the receiver can assess the TS units and relative clock skews. In order for this to be accurate, the packets carrying the different TS values should experience equal (or at least similar) delay when traveling from the sender to the receiver, as any difference in the experienced delays would introduce an error in the unit/skew estimation. One possible approach is to select packets that experienced minimal delay (i.e., queuing delay close to zero) to make the estimations.<a href="#section-4.2.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-5">An additional difficulty regarding the estimation of the TS units and clock skew in the context of (r)LEDBAT is that the LEDBAT congestion controller actions directly affect the (queuing) delay experienced by packets. In particular, if there is an error in the estimation of the TS units/skew, the LEDBAT controller will attempt to compensate for it by reducing/increasing the load. The result is that the LEDBAT operation interferes with the TS units/clock skew measurements. Because of this, measurements are more accurate when there is no traffic in the connection (in addition to the packets used for the measurements). The problem is that the receiver is unaware of whether the sender is injecting traffic at any point in time; it is therefore unable to use these quiet intervals to perform measurements. The receiver can, however, force periodic slowdowns, reducing the
+announced receive window to a few packets and performing the measurements at that time.<a href="#section-4.2.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-6">It is possible for the rLEDBAT receiver to perform multiple measurements to assess both the TS units and the relative clock skew during the lifetime of the connection, in order to obtain more accurate results. Clock skew measurements are more accurate if the time period used to discover the skew is larger, as the impact of the skew becomes more apparent.  It is a reasonable approach for the rLEDBAT receiver to perform an early discovery of the TS units (and the clock skew) using the first few packets of the TCP connection and then improve the accuracy of the TS units/clock skew estimation using periodic measurements later in the lifetime of the connection.<a href="#section-4.2.2-6" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-4.3">
+        <h3 id="name-detecting-packet-losses-and">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-detecting-packet-losses-and" class="section-name selfRef">Detecting Packet Losses and Retransmissions</a>
+        </h3>
+<p id="section-4.3-1">The rLEDBAT receiver is capable of detecting retransmitted packets as follows. We call RCV.HGH the highest sequence number corresponding to a received byte of data (not assuming that all bytes with smaller sequence numbers have been received already, there may be holes), and we call TSV.HGH the TSval corresponding to the segment in which that byte was carried. SEG.SEQ stands for the sequence number of a newly received segment, and we call TSV.SEQ the TSval of the newly received segment.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">If SEG.SEQ &lt; RCV.HGH and TSV.SEQ &gt; TSV.HGH, then the newly received segment is a retransmission. This is so because the newly received segment was generated later than another already-received segment that contained data with a larger sequence number. This means that this segment was lost and was retransmitted.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">The proposed mechanism to detect retransmissions at the receiver fails when there are window tail drops. If all packets in the tail of the window are lost, the receiver will not be able to detect a mismatch between the sequence numbers of the packets and the order of the timestamps. In this case, rLEDBAT will not react to losses; however, the TCP congestion controller at the sender will, most likely reducing its window to 1 MSS and taking over the control of the sending rate until slow start ramps up and catches the current value of the rLEDBAT window.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+</section>
+</section>
+<div id="sect-5">
+<section id="section-5">
+      <h2 id="name-experiment-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-experiment-considerations" class="section-name selfRef">Experiment Considerations</a>
+      </h2>
+<p id="section-5-1">The status of this document is Experimental. The general purpose of the proposed experiment is to gain more experience running rLEDBAT over different network paths to see if the proposed rLEDBAT parameters perform well in different situations. Specifically, we would like to learn about the following aspects of the rLEDBAT mechanism:<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-2.1">
+          <p id="section-5-2.1.1">Interaction between the sender's and receiver's congestion control algorithms.  rLEDBAT posits that because the rLEDBAT receiver is using a less-than-best-effort congestion control algorithm, the receiver's congestion control algorithm will expose a smaller congestion window (conveyed through the receive window) than the one resulting from the congestion control algorithm executed at the sender. One of the purposes of the experiment is to learn how these two algorithms
+interact and if the assumption that the receiver side is always controlling the sender's rate (and making rLEDBAT effective) holds. The experiment should include the different congestion control algorithms that are currently widely used in the Internet, including CUBIC, Bottleneck Bandwidth and Round-trip propagation time (BBR), and LEDBAT(++).<a href="#section-5-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-2.2">
+          <p id="section-5-2.2.1">Interaction between rLEDBAT and Active Queue Management techniques such as Controlled Delay (CoDel); Proportional Integral controller Enhanced (PIE); and Low Latency, Low Loss, and Scalable Throughput (L4S).<a href="#section-5-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-2.3">
+          <p id="section-5-2.3.1">How rLEDBAT should resume after a period during which there was no incoming traffic and the information about the rLEDBAT state information is potentially dated.<a href="#section-5-2.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<section id="section-5.1">
+        <h3 id="name-status-of-the-experiment-at">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-status-of-the-experiment-at" class="section-name selfRef">Status of the Experiment at the Time of This Writing</a>
+        </h3>
+<p id="section-5.1-1">Currently, the following implementations of rLEDBAT can be used for experimentation:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-2.1">
+            <p id="section-5.1-2.1.1">Windows 11.  rLEDBAT is available in Microsoft's Windows 11 22H2 since October 2023 <span>[<a href="#Windows11" class="cite xref">Windows11</a>]</span>.<a href="#section-5.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.2">
+            <p id="section-5.1-2.2.1">Windows Server 2022.  rLEDBAT is available in Microsoft's Windows Server 2022 since September 2022 <span>[<a href="#WindowsServer" class="cite xref">WindowsServer</a>]</span>.<a href="#section-5.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.3">
+            <p id="section-5.1-2.3.1">Apple.  rLEDBAT is available in macOS and iOS since 2021   <span>[<a href="#Apple" class="cite xref">Apple</a>]</span>.<a href="#section-5.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.4">
+            <p id="section-5.1-2.4.1">Linux implementation, open source, available since 2022 <span>[<a href="#rledbat_module" class="cite xref">rledbat_module</a>]</span>.<a href="#section-5.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.5">
+            <p id="section-5.1-2.5.1">ns3 implementation, open source, available since 2020 <span>[<a href="#rLEDBAT-in-ns-3" class="cite xref">rLEDBAT-in-ns-3</a>]</span>.<a href="#section-5.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.1-3">In addition, rLEDBAT has been deployed by Microsoft at wide scale in the following services:<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-4.1">
+            <p id="section-5.1-4.1.1">BITS (Background Intelligent Transfer Service)<a href="#section-5.1-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.2">
+            <p id="section-5.1-4.2.1">DO (Delivery Optimization) service<a href="#section-5.1-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.3">
+            <p id="section-5.1-4.3.1">Windows update: using DO<a href="#section-5.1-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.4">
+            <p id="section-5.1-4.4.1">Windows Store: using DO<a href="#section-5.1-4.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.5">
+            <p id="section-5.1-4.5.1">OneDrive<a href="#section-5.1-4.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.6">
+            <p id="section-5.1-4.6.1">Windows Error Reporting: wermgr.exe; werfault.exe<a href="#section-5.1-4.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.7">
+            <p id="section-5.1-4.7.1">System Center Configuration Manager (SCCM)<a href="#section-5.1-4.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.8">
+            <p id="section-5.1-4.8.1">Windows Media Player<a href="#section-5.1-4.8.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.9">
+            <p id="section-5.1-4.9.1">Microsoft Office<a href="#section-5.1-4.9.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-4.10">
+            <p id="section-5.1-4.10.1">Xbox (download games): using DO<a href="#section-5.1-4.10.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.1-5"> Some initial experiments involving rLEDBAT have been reported in <span>[<a href="#COMNET3" class="cite xref">COMNET3</a>]</span>. Experiments involving the interaction between LEDBAT++ and BBR are presented in <span>[<a href="#COMNET2" class="cite xref">COMNET2</a>]</span>. An experimental evaluation of the LEDBAT++ algorithm is presented in <span>[<a href="#COMNET1" class="cite xref">COMNET1</a>]</span>. As LEDBAT++ is one of the less-than-best-effort congestion control algorithms that rLEDBAT relies on, the results regarding how LEDBAT++ interacts with other congestion control algorithms are relevant for the understanding of rLEDBAT as well.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">Overall, we believe that rLEDBAT does not introduce any new vulnerabilities to existing TCP endpoints, as it relies on existing TCP knobs, notably the receive window and timestamps.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">Specifically, rLEDBAT uses RCV.WND to modulate the rate of the sender. An attacker wishing to starve a flow can simply reduce the RCV.WND, irrespective of whether rLEDBAT is being used or not.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3"> We can further ask ourselves whether the attacker can use the rLEDBAT mechanisms in place to force the rLEDBAT receiver to reduce the RCV.WND. There are two ways an attacker can do this:<a href="#section-6-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-4.1">One would be to introduce an artificial delay to the packets by either actually delaying the packets or modifying the timestamps. This would cause the rLEDBAT receiver to believe that a queue is building up and reduce the RCV.WND. Note that to do so, an attacker must be on path, so if that is the case, it is probably more direct to simply reduce the RCV.WND.<a href="#section-6-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-4.2">The other option would be for the attacker to make the rLEDBAT receiver believe that a loss has occurred. To do this, it basically needs to retransmit an old packet (to be precise, it needs to transmit a packet with the correct sequence number and the correct port and IP numbers). This means that the attacker can achieve a reduction of incoming traffic to the rLEDBAT receiver not only by modifying the RCV.WND field of the packets originated from the rLEDBAT host but also by injecting packets with the proper sequence number in the other direction. This may slightly expand the attack surface.<a href="#section-6-4.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="Apple">[Apple]</dt>
+        <dd>
+<span class="refAuthor">Cheshire, S.</span> and <span class="refAuthor">V. Goel</span>, <span class="refTitle">"Reduce network delays for your app"</span>, <span class="refContent">Apple Worldwide Developers Conference (WWDC2021), Video</span>, <time datetime="2021" class="refDate">2021</time>, <span>&lt;<a href="https://developer.apple.com/videos/play/wwdc2021/10239/">https://developer.apple.com/videos/play/wwdc2021/10239/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="COMNET1">[COMNET1]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span> and <span class="refAuthor">A. García-Martínez</span>, <span class="refTitle">"An experimental evaluation of LEDBAT++"</span>, <span class="refContent">Computer Networks, vol. 212</span>, <span class="seriesInfo">DOI 10.1016/j.comnet.2022.109036</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://doi.org/10.1016/j.comnet.2022.109036">https://doi.org/10.1016/j.comnet.2022.109036</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="COMNET2">[COMNET2]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span> and <span class="refAuthor">A. García-Martínez</span>, <span class="refTitle">"When less is more: BBR versus LEDBAT++"</span>, <span class="refContent">Computer Networks, vol. 219</span>, <span class="seriesInfo">DOI 10.1016/j.comnet.2022.109460</span>, <time datetime="2022-12" class="refDate">December 2022</time>, <span>&lt;<a href="https://doi.org/10.1016/j.comnet.2022.109460">https://doi.org/10.1016/j.comnet.2022.109460</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="COMNET3">[COMNET3]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">García-Martínez, A.</span>, <span class="refAuthor">Mandalari, A.M.</span>, <span class="refAuthor">Balasubramanian, P.</span>, <span class="refAuthor">Havey, D.</span>, and <span class="refAuthor">G. Montenegro</span>, <span class="refTitle">"Design, implementation and validation of a receiver-driven less-than-best-effort transport"</span>, <span class="refContent">Computer Networks, vol. 233</span>, <span class="seriesInfo">DOI 10.1016/j.comnet.2023.109841</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://doi.org/10.1016/j.comnet.2023.109841">https://doi.org/10.1016/j.comnet.2023.109841</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.irtf-iccrg-ledbat-plus-plus">[LEDBAT++]</dt>
+        <dd>
+<span class="refAuthor">Balasubramanian, P.</span>, <span class="refAuthor">Ertugay, O.</span>, <span class="refAuthor">Havey, D.</span>, and <span class="refAuthor">M. Bagnulo</span>, <span class="refTitle">"LEDBAT++: Congestion Control for Background Traffic"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-iccrg-ledbat-plus-plus-03</span>, <time datetime="2025-09-09" class="refDate">9 September 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-irtf-iccrg-ledbat-plus-plus-03">https://datatracker.ietf.org/doc/html/draft-irtf-iccrg-ledbat-plus-plus-03</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5681">[RFC5681]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Paxson, V.</span>, and <span class="refAuthor">E. Blanton</span>, <span class="refTitle">"TCP Congestion Control"</span>, <span class="seriesInfo">RFC 5681</span>, <span class="seriesInfo">DOI 10.17487/RFC5681</span>, <time datetime="2009-09" class="refDate">September 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5681">https://www.rfc-editor.org/info/rfc5681</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6582">[RFC6582]</dt>
+        <dd>
+<span class="refAuthor">Henderson, T.</span>, <span class="refAuthor">Floyd, S.</span>, <span class="refAuthor">Gurtov, A.</span>, and <span class="refAuthor">Y. Nishida</span>, <span class="refTitle">"The NewReno Modification to TCP's Fast Recovery Algorithm"</span>, <span class="seriesInfo">RFC 6582</span>, <span class="seriesInfo">DOI 10.17487/RFC6582</span>, <time datetime="2012-04" class="refDate">April 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6582">https://www.rfc-editor.org/info/rfc6582</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6817">[RFC6817]</dt>
+        <dd>
+<span class="refAuthor">Shalunov, S.</span>, <span class="refAuthor">Hazel, G.</span>, <span class="refAuthor">Iyengar, J.</span>, and <span class="refAuthor">M. Kuehlewind</span>, <span class="refTitle">"Low Extra Delay Background Transport (LEDBAT)"</span>, <span class="seriesInfo">RFC 6817</span>, <span class="seriesInfo">DOI 10.17487/RFC6817</span>, <time datetime="2012-12" class="refDate">December 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6817">https://www.rfc-editor.org/info/rfc6817</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7323">[RFC7323]</dt>
+        <dd>
+<span class="refAuthor">Borman, D.</span>, <span class="refAuthor">Braden, B.</span>, <span class="refAuthor">Jacobson, V.</span>, and <span class="refAuthor">R. Scheffenegger, Ed.</span>, <span class="refTitle">"TCP Extensions for High Performance"</span>, <span class="seriesInfo">RFC 7323</span>, <span class="seriesInfo">DOI 10.17487/RFC7323</span>, <time datetime="2014-09" class="refDate">September 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7323">https://www.rfc-editor.org/info/rfc7323</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9293">[RFC9293]</dt>
+        <dd>
+<span class="refAuthor">Eddy, W., Ed.</span>, <span class="refTitle">"Transmission Control Protocol (TCP)"</span>, <span class="seriesInfo">STD 7</span>, <span class="seriesInfo">RFC 9293</span>, <span class="seriesInfo">DOI 10.17487/RFC9293</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9293">https://www.rfc-editor.org/info/rfc9293</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9438">[RFC9438]</dt>
+        <dd>
+<span class="refAuthor">Xu, L.</span>, <span class="refAuthor">Ha, S.</span>, <span class="refAuthor">Rhee, I.</span>, <span class="refAuthor">Goel, V.</span>, and <span class="refAuthor">L. Eggert, Ed.</span>, <span class="refTitle">"CUBIC for Fast and Long-Distance Networks"</span>, <span class="seriesInfo">RFC 9438</span>, <span class="seriesInfo">DOI 10.17487/RFC9438</span>, <time datetime="2023-08" class="refDate">August 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9438">https://www.rfc-editor.org/info/rfc9438</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="rLEDBAT-in-ns-3">[rLEDBAT-in-ns-3]</dt>
+        <dd>
+<span class="refTitle">"Implementation-of-rLEDBAT-in-ns-3"</span>, <span class="refContent">commit 2ab34ad</span>, <time datetime="2020-06-24" class="refDate">24 June 2020</time>, <span>&lt;<a href="https://github.com/manas11/implementation-of-rLEDBAT-in-ns-3">https://github.com/manas11/implementation-of-rLEDBAT-in-ns-3</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="rledbat_module">[rledbat_module]</dt>
+        <dd>
+<span class="refTitle">"rledbat_module"</span>, <span class="refContent">commit d82ff20</span>, <time datetime="2022-09-09" class="refDate">9 September 2022</time>, <span>&lt;<a href="https://github.com/net-research/rledbat_module">https://github.com/net-research/rledbat_module</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Windows11">[Windows11]</dt>
+        <dd>
+<span class="refAuthor">Microsoft</span>, <span class="refTitle">"What's new in Delivery Optimization"</span>, <span class="refContent">Microsoft Windows Documentation</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://learn.microsoft.com/en-us/windows/deployment/do/whats-new-do">https://learn.microsoft.com/en-us/windows/deployment/do/whats-new-do</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="WindowsServer">[WindowsServer]</dt>
+      <dd>
+<span class="refAuthor">Havey, D.</span>, <span class="refTitle">"LEDBAT Background Data Transfer for Windows"</span>, <span class="refContent">Microsoft Networking Blog</span>, <time datetime="2022-09" class="refDate">September 2022</time>, <span>&lt;<a href="https://techcommunity.microsoft.com/t5/networking-blog/ledbat-background-data-transfer-for-windows/ba-p/3639278">https://techcommunity.microsoft.com/t5/networking-blog/ledbat-background-data-transfer-for-windows/ba-p/3639278</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<section id="appendix-A">
+      <h2 id="name-rledbat-pseudocode">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-rledbat-pseudocode" class="section-name selfRef">rLEDBAT Pseudocode</a>
+      </h2>
+<p id="appendix-A-1">In this section, we describe how to integrate the proposed rLEDBAT mechanisms and  an LBE delay-based congestion control algorithm such as LEDBAT or LEDBAT++.  We describe the integrated  algorithm as two procedures: one that is executed when a packet is received by a rLEDBAT-enabled endpoint (<a href="#fig2" class="auto internal xref">Figure 2</a>) and another that is executed when the rLEDBAT-enabled endpoint sends a packet (<a href="#fig3" class="auto internal xref">Figure 3</a>). At the beginning, RLWND is set to its maximum value, so that the sending rate of the sender is governed by the flow control algorithm of the receiver and the TCP slow start mechanism of the sender, and the ackedBytes variable is set to 0.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">We assume that the LBE congestion control algorithm defines a WindowIncrease() function and a WindowDecrease() function. For example, in the case of LEDBAT++, the WindowIncrease() function is an additive increase, while the WindowDecrease() function is a multiplicative decrease. In the case of the WindowIncrease() function, we assume that it takes as input the current window size and the number of bytes that were acknowledged since the last window update (ackedBytes) and returns as output the updated window size. In the case of the WindowDecrease() function, it takes as input the current window size and returns the updated window size.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3">The data structures used in the algorithms are as follows. The sendList is a list that contains  the TSval and the local send time of each packet sent by the rLEDBAT-enabled endpoint. The TSecr field of the packets received by the rLEDBAT-enabled endpoint is matched with the sendList to compute the RTT.<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+<p id="appendix-A-4">The RTT values computed for each received packet are stored in the RTTlist, which also contains the received TSecr (to avoid using multiple packets with the same TSecr for RTT calculations, only the first packet received for a given TSecr is used to compute the RTT). It also contains the local time at which the packet was received, to allow selecting the RTTs measured in a given period (e.g., in the last 10 minutes). RTTlist is initialized with all its values to its maximum.<a href="#appendix-A-4" class="pilcrow">¶</a></p>
+<span id="name-procedure-executed-when-a-p"></span><div id="fig2">
+<figure id="figure-2">
+        <div class="lang-pseudocode sourcecode" id="appendix-A-5.1">
+<pre>
+procedure receivePacket()
+  //Looks for first sent packet with same TSval as TSecr, and
+  //returns time difference
+  receivedRTT = computeRTT(sendList, receivedTSecr, receivedTime)
+
+  //Inserts minimum value for a given receivedTSecr
+  //Note that many received packets may contain same receivedTSecr
+  insertRTT (RTTlist, receivedRTT, receivedTSecr, receivedTime)
+
+  filteredRTT = minLastKMeasures(RTTlist, K=4)
+  baseRTT = minLastNSeconds(RTTlist, N=180)
+  qd = filteredRTT - baseRTT
+
+  //ackedBytes is the number of bytes that can be used to reduce
+  //the receive window - without shrinking it - if necessary
+  ackedBytes = ackedBytes + receiveBytes
+
+  if retransmittedPacketDetected then
+        RLWND = DecreaseWindow(RLWND)  //Only once per RTT
+  end if
+  if qd &lt; T then
+        RLWND = IncreaseWindow(RLWND, ackedBytes)
+  else
+        RLWND = DecreaseWindow(RLWND)
+  end if
+end procedure
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-procedure-executed-when-a-p" class="selfRef">Procedure Executed When a Packet Is Received</a>
+        </figcaption></figure>
+</div>
+<span id="name-procedure-executed-when-a-pa"></span><div id="fig3">
+<figure id="figure-3">
+        <div class="lang-pseudocode sourcecode" id="appendix-A-6.1">
+<pre>
+procedure SENDPACKET
+  if (RLWND &gt; RLWNDPrevious) or (RLWND - RLWNDPrevious &lt; ackedBytes)
+  then
+        RLWNDPrevious = RLWND
+  else
+        RLWNDPrevious = RLWND - ackedBytes
+  end if
+  ackedBytes = 0
+  RLWNDPrevious = RLWND
+
+  //Compute the RLWND to include in the packet
+  RLWND = min(RLWND, fcwnd)
+end procedure
+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-procedure-executed-when-a-pa" class="selfRef">Procedure Executed When a Packet Is Sent</a>
+        </figcaption></figure>
+</div>
+</section>
+<section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1">This work was supported by the EU through the StandICT projects RXQ, CCI, and CEL6; the NGI Pointer RIM project; and the H2020 5G-RANGE project; and by the Spanish Ministry of Economy and Competitiveness through the 5G-City project (TEC2016-76795-C6-3-R).<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">We would like to thank ICCRG chairs <span class="contact-name">Reese Enghardt</span> and <span class="contact-name">Vidhi Goel</span> for their support on this work. We would also like to thank <span class="contact-name">Daniel Havey</span> for his help. We would like to thank <span class="contact-name">Colin Perkins</span>, <span class="contact-name">Mirja Kühlewind</span>, and <span class="contact-name">Vidhi Goel</span> for their reviews and comments on earlier draft versions of this document.<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Marcelo Bagnulo</span></div>
+<div dir="auto" class="left"><span class="org">Universidad Carlos III de Madrid</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:marcelo@it.uc3m.es" class="email">marcelo@it.uc3m.es</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Alberto García-Martínez</span></div>
+<div dir="auto" class="left"><span class="org">Universidad Carlos III de Madrid</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:alberto@it.uc3m.es" class="email">alberto@it.uc3m.es</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gabriel Montenegro</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:g.e.montenegro@hotmail.com" class="email">g.e.montenegro@hotmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Praveen Balasubramanian</span></div>
+<div dir="auto" class="left"><span class="org">Confluent</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:pravb.ietf@gmail.com" class="email">pravb.ietf@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
