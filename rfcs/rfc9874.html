@@ -1,0 +1,2618 @@
+<!DOCTYPE html>
+<html lang="en" class="BCP RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9874: Best Practices for Deletion of Domain and Host Objects in the Extensible Provisioning Protocol (EPP)</title>
+<meta content="Scott Hollenbeck" name="author">
+<meta content="William Carroll" name="author">
+<meta content="Gautam Akiwate" name="author">
+<meta content="
+       The Extensible Provisioning Protocol (EPP) includes commands for clients to delete
+                domain and host objects, both of which are used to publish information in the Domain
+                Name System (DNS). EPP also includes guidance for deletions that is intended
+                to avoid DNS resolution disruptions and maintain data consistency. However,
+                operational relationships between objects can make that guidance difficult to
+                implement. Some EPP clients have developed operational practices to delete those
+                objects that have unintended impacts on DNS resolution and security. This document
+ describes best current practices and proposes new potential practices to delete
+ domain and host objects that reduce the risk of DNS resolution failure and maintain
+ client-server data consistency. 
+    " name="description">
+<meta content="xml2rfc 3.30.2" name="generator">
+<meta content="EPP" name="keyword">
+<meta content="9874" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9874.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-regext-epp-delete-bcp-10" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9874" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9874</td>
+<td class="center">Domain and Host Object Deletion in EPP</td>
+<td class="right">September 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Hollenbeck, et al.</td>
+<td class="center">Best Current Practice</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9874" class="eref">9874</a></dd>
+<dt class="label-bcp">BCP:</dt>
+<dd class="bcp">244</dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Best Current Practice</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-09" class="published">September 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Hollenbeck</div>
+<div class="org">Verisign Labs</div>
+</div>
+<div class="author">
+      <div class="author-name">W. Carroll</div>
+<div class="org">Verisign Labs</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Akiwate</div>
+<div class="org">Stanford University</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9874</h1>
+<h1 id="title">Best Practices for Deletion of Domain and Host Objects in the Extensible Provisioning Protocol (EPP)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">The Extensible Provisioning Protocol (EPP) includes commands for clients to delete
+                domain and host objects, both of which are used to publish information in the Domain
+                Name System (DNS). EPP also includes guidance for deletions that is intended
+                to avoid DNS resolution disruptions and maintain data consistency. However,
+                operational relationships between objects can make that guidance difficult to
+                implement. Some EPP clients have developed operational practices to delete those
+                objects that have unintended impacts on DNS resolution and security. This document
+ describes best current practices and proposes new potential practices to delete
+ domain and host objects that reduce the risk of DNS resolution failure and maintain
+ client-server data consistency.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This memo documents an Internet Best Current Practice.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further information
+            on BCPs is available in Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9874">https://www.rfc-editor.org/info/rfc9874</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-used-in-this-do" class="internal xref">Conventions Used in This Document</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-rationale-for-should-not-be" class="internal xref">Rationale for "SHOULD NOT be deleted"</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-dns-considerations" class="internal xref">DNS Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-client-server-consistency-c" class="internal xref">Client-Server Consistency Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-relational-consistency-cons" class="internal xref">Relational Consistency Considerations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-host-object-renaming-risk" class="internal xref">Host Object Renaming Risk</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-analysis-of-practices-for-d" class="internal xref">Analysis of Practices for Domain and Host Object Deletion</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-renaming-to-sacrificial-hos" class="internal xref">Renaming to Sacrificial Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-practice-benefits" class="internal xref">Practice Benefits</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-practice-detriments" class="internal xref">Practice Detriments</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3">
+                    <p id="section-toc.1-1.5.2.1.2.3.1"><a href="#section-5.1.3" class="auto internal xref">5.1.3</a>.  <a href="#name-observed-practices-for-rena" class="internal xref">Observed Practices for Renaming to Sacrificial Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.1">
+                        <p id="section-toc.1-1.5.2.1.2.3.2.1.1"><a href="#section-5.1.3.1" class="auto internal xref">5.1.3.1</a>.  <a href="#name-renaming-to-external-presum" class="internal xref">Renaming to External, Presumed Non-Existent Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.1.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.1.2.1.1"><a href="#section-5.1.3.1.1" class="auto internal xref">5.1.3.1.1</a>.  <a href="#name-practice-benefits-2" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.1.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.1.2.2.1"><a href="#section-5.1.3.1.2" class="auto internal xref">5.1.3.1.2</a>.  <a href="#name-practice-detriments-2" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.2">
+                        <p id="section-toc.1-1.5.2.1.2.3.2.2.1"><a href="#section-5.1.3.2" class="auto internal xref">5.1.3.2</a>.  <a href="#name-renaming-to-as112arpa" class="internal xref">Renaming to "AS112.ARPA"</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.2.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.2.2.1.1"><a href="#section-5.1.3.2.1" class="auto internal xref">5.1.3.2.1</a>.  <a href="#name-practice-benefits-3" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.2.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.2.2.2.1"><a href="#section-5.1.3.2.2" class="auto internal xref">5.1.3.2.2</a>.  <a href="#name-practice-detriments-3" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.3">
+                        <p id="section-toc.1-1.5.2.1.2.3.2.3.1"><a href="#section-5.1.3.3" class="auto internal xref">5.1.3.3</a>.  <a href="#name-renaming-to-non-authoritati" class="internal xref">Renaming to Non-Authoritative Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.3.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.3.2.1.1"><a href="#section-5.1.3.3.1" class="auto internal xref">5.1.3.3.1</a>.  <a href="#name-practice-benefits-4" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.3.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.3.2.2.1"><a href="#section-5.1.3.3.2" class="auto internal xref">5.1.3.3.2</a>.  <a href="#name-practice-detriments-4" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.4">
+                        <p id="section-toc.1-1.5.2.1.2.3.2.4.1"><a href="#section-5.1.3.4" class="auto internal xref">5.1.3.4</a>.  <a href="#name-renaming-to-client-maintain" class="internal xref">Renaming to Client-Maintained Dedicated Sacrificial Name Server Host Objects</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.4.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.4.2.1.1"><a href="#section-5.1.3.4.1" class="auto internal xref">5.1.3.4.1</a>.  <a href="#name-practice-benefits-5" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3.2.4.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.3.2.4.2.2.1"><a href="#section-5.1.3.4.2" class="auto internal xref">5.1.3.4.2</a>.  <a href="#name-practice-detriments-5" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                    </ul>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4">
+                    <p id="section-toc.1-1.5.2.1.2.4.1"><a href="#section-5.1.4" class="auto internal xref">5.1.4</a>.  <a href="#name-potential-practices-for-ren" class="internal xref">Potential Practices for Renaming to Sacrificial Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.1">
+                        <p id="section-toc.1-1.5.2.1.2.4.2.1.1"><a href="#section-5.1.4.1" class="auto internal xref">5.1.4.1</a>.  <a href="#name-renaming-to-pseudo-tld" class="internal xref">Renaming to Pseudo-TLD</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.1.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.1.2.1.1"><a href="#section-5.1.4.1.1" class="auto internal xref">5.1.4.1.1</a>.  <a href="#name-practice-benefits-6" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.1.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.1.2.2.1"><a href="#section-5.1.4.1.2" class="auto internal xref">5.1.4.1.2</a>.  <a href="#name-practice-detriments-6" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.2">
+                        <p id="section-toc.1-1.5.2.1.2.4.2.2.1"><a href="#section-5.1.4.2" class="auto internal xref">5.1.4.2</a>.  <a href="#name-renaming-to-existing-specia" class="internal xref">Renaming to Existing Special-Use TLD</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.2.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.2.2.1.1"><a href="#section-5.1.4.2.1" class="auto internal xref">5.1.4.2.1</a>.  <a href="#name-renaming-to-reserved-tld" class="internal xref">Renaming to Reserved TLD</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.3">
+                        <p id="section-toc.1-1.5.2.1.2.4.2.3.1"><a href="#section-5.1.4.3" class="auto internal xref">5.1.4.3</a>.  <a href="#name-renaming-to-a-special-use-d" class="internal xref">Renaming to a Special-Use Domain</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.3.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.3.2.1.1"><a href="#section-5.1.4.3.1" class="auto internal xref">5.1.4.3.1</a>.  <a href="#name-practice-benefits-8" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.3.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.3.2.2.1"><a href="#section-5.1.4.3.2" class="auto internal xref">5.1.4.3.2</a>.  <a href="#name-practice-detriments-8" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.4">
+                        <p id="section-toc.1-1.5.2.1.2.4.2.4.1"><a href="#section-5.1.4.4" class="auto internal xref">5.1.4.4</a>.  <a href="#name-renaming-to-community-sacri" class="internal xref">Renaming to Community Sacrificial Name Server Service</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.4.2.1">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.4.2.1.1"><a href="#section-5.1.4.4.1" class="auto internal xref">5.1.4.4.1</a>.  <a href="#name-practice-benefits-9" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4.2.4.2.2">
+                            <p id="section-toc.1-1.5.2.1.2.4.2.4.2.2.1"><a href="#section-5.1.4.4.2" class="auto internal xref">5.1.4.4.2</a>.  <a href="#name-practice-detriments-9" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                    </ul>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-deletion-of-hosts" class="internal xref">Deletion of Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1">
+                    <p id="section-toc.1-1.5.2.2.2.1.1"><a href="#section-5.2.1" class="auto internal xref">5.2.1</a>.  <a href="#name-observed-practices-for-dele" class="internal xref">Observed Practices for Deletion of Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1.2.1">
+                        <p id="section-toc.1-1.5.2.2.2.1.2.1.1"><a href="#section-5.2.1.1" class="auto internal xref">5.2.1.1</a>.  <a href="#name-implicit-deletion-of-affect" class="internal xref">Implicit Deletion of Affected Host Objects</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1.2.1.2.1">
+                            <p id="section-toc.1-1.5.2.2.2.1.2.1.2.1.1"><a href="#section-5.2.1.1.1" class="auto internal xref">5.2.1.1.1</a>.  <a href="#name-practice-benefits-10" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1.2.1.2.2">
+                            <p id="section-toc.1-1.5.2.2.2.1.2.1.2.2.1"><a href="#section-5.2.1.1.2" class="auto internal xref">5.2.1.1.2</a>.  <a href="#name-practice-detriments-10" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1.2.2">
+                        <p id="section-toc.1-1.5.2.2.2.1.2.2.1"><a href="#section-5.2.1.2" class="auto internal xref">5.2.1.2</a>.  <a href="#name-inform-affected-clients" class="internal xref">Inform Affected Clients</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1.2.2.2.1">
+                            <p id="section-toc.1-1.5.2.2.2.1.2.2.2.1.1"><a href="#section-5.2.1.2.1" class="auto internal xref">5.2.1.2.1</a>.  <a href="#name-practice-benefits-11" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1.2.2.2.2">
+                            <p id="section-toc.1-1.5.2.2.2.1.2.2.2.2.1"><a href="#section-5.2.1.2.2" class="auto internal xref">5.2.1.2.2</a>.  <a href="#name-practice-detriments-11" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                    </ul>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2">
+                    <p id="section-toc.1-1.5.2.2.2.2.1"><a href="#section-5.2.2" class="auto internal xref">5.2.2</a>.  <a href="#name-potential-practices-for-del" class="internal xref">Potential Practices for Deletion of Hosts</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.1">
+                        <p id="section-toc.1-1.5.2.2.2.2.2.1.1"><a href="#section-5.2.2.1" class="auto internal xref">5.2.2.1</a>.  <a href="#name-request-explicit-deletion-o" class="internal xref">Request Explicit Deletion of Affected Host Objects</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.1.2.1">
+                            <p id="section-toc.1-1.5.2.2.2.2.2.1.2.1.1"><a href="#section-5.2.2.1.1" class="auto internal xref">5.2.2.1.1</a>.  <a href="#name-practice-benefits-12" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.1.2.2">
+                            <p id="section-toc.1-1.5.2.2.2.2.2.1.2.2.1"><a href="#section-5.2.2.1.2" class="auto internal xref">5.2.2.1.2</a>.  <a href="#name-practice-detriments-12" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.2">
+                        <p id="section-toc.1-1.5.2.2.2.2.2.2.1"><a href="#section-5.2.2.2" class="auto internal xref">5.2.2.2</a>.  <a href="#name-provide-additional-deletion" class="internal xref">Provide Additional Deletion Details</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.2.2.1">
+                            <p id="section-toc.1-1.5.2.2.2.2.2.2.2.1.1"><a href="#section-5.2.2.2.1" class="auto internal xref">5.2.2.2.1</a>.  <a href="#name-practice-benefits-13" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.2.2.2">
+                            <p id="section-toc.1-1.5.2.2.2.2.2.2.2.2.1"><a href="#section-5.2.2.2.2" class="auto internal xref">5.2.2.2.2</a>.  <a href="#name-practice-detriments-13" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                      <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.3">
+                        <p id="section-toc.1-1.5.2.2.2.2.2.3.1"><a href="#section-5.2.2.3" class="auto internal xref">5.2.2.3</a>.  <a href="#name-allow-explicit-deletion-of-" class="internal xref">Allow Explicit Deletion of a Domain with Restore Capability</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.3.2.1">
+                            <p id="section-toc.1-1.5.2.2.2.2.2.3.2.1.1"><a href="#section-5.2.2.3.1" class="auto internal xref">5.2.2.3.1</a>.  <a href="#name-practice-benefits-14" class="internal xref">Practice Benefits</a></p>
+</li>
+                          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2.2.3.2.2">
+                            <p id="section-toc.1-1.5.2.2.2.2.2.3.2.2.1"><a href="#section-5.2.2.3.2" class="auto internal xref">5.2.2.3.2</a>.  <a href="#name-practice-detriments-14" class="internal xref">Practice Detriments</a></p>
+</li>
+                        </ul>
+</li>
+                    </ul>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-recommendations" class="internal xref">Recommendations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><span><a href="https://rfc-editor.org/rfc/rfc5731#section-3.2.2" class="relref">Section 3.2.2</a> of [<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> contains text that has led some
+                domain name registrars (acting as EPP clients) to adopt an operational practice of
+                renaming name server host objects so that they can delete domain objects:<a href="#section-1-1" class="pilcrow">¶</a></p>
+<blockquote id="section-1-2">
+        <p id="section-1-2.1">A domain object <span class="bcp14">SHOULD NOT</span> be deleted if subordinate host objects are associated
+                with the domain object. For example, if domain "example.com" exists and host object
+                "ns1.example.com" also exists, then domain "example.com" <span class="bcp14">SHOULD NOT</span> be deleted until
+                host "ns1.example.com" has either been deleted or renamed to exist in a different
+                superordinate domain.<a href="#section-1-2.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-1-3">Similarly, <span><a href="https://rfc-editor.org/rfc/rfc5732#section-3.2.2" class="relref">Section 3.2.2</a> of [<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> contains this text
+                regarding deletion of host objects:<a href="#section-1-3" class="pilcrow">¶</a></p>
+<blockquote id="section-1-4">
+        <p id="section-1-4.1">A host name object <span class="bcp14">SHOULD NOT</span> be deleted if the host object is associated with any
+                other object. For example, if the host object is associated with a domain object,
+                the host object <span class="bcp14">SHOULD NOT</span> be deleted until the existing association has been
+                broken. Deleting a host object without first breaking existing associations can
+                cause DNS resolution failure for domain objects that refer to the deleted host
+                object.<a href="#section-1-4.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-1-5">These recommendations create a dilemma when the sponsoring client for "example.com"
+                intends to delete "example.com" but its associated host object "ns1.example.com" is
+                also associated with domain objects sponsored by another client. It is advised not
+                to delete the host object due to its associated domain objects. However, the
+                associated domain objects cannot be directly updated because they are sponsored by
+                another client. This situation affects all EPP operators that have implemented
+                support for host objects.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6"><span><a href="https://rfc-editor.org/rfc/rfc5732#section-3.2.5" class="relref">Section 3.2.5</a> of [<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> describes host object renaming:<a href="#section-1-6" class="pilcrow">¶</a></p>
+<blockquote id="section-1-7">
+        <p id="section-1-7.1">Host name changes can have an impact on associated objects that refer to the host
+                object. A host name change <span class="bcp14">SHOULD NOT</span> require additional updates of associated
+                objects to preserve existing associations, with one exception: changing an external
+                host object that has associations with objects that are sponsored by a different
+                client. Attempts to update such hosts directly <span class="bcp14">MUST</span> fail with EPP error code 2305.
+                The change can be provisioned by creating a new external host with a new name and
+                any needed new attributes, and subsequently updating the other objects sponsored by
+                the client.<a href="#section-1-7.1" class="pilcrow">¶</a></p>
+</blockquote>
+<p id="section-1-8"><span><a href="https://rfc-editor.org/rfc/rfc5732#section-1.1" class="relref">Section 1.1</a> of [<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> includes a description of external hosts. Some EPP
+                clients have developed operational practices that use host object renaming to break
+                association between a domain object and host object. Note that the specific
+                method used to rename the host object can create DNS delegation failures and introduce
+                risks of loss of management control. If the new external host refers
+                to an unregistered domain, then a malicious actor may register the domain and create
+                the host object to gain control of DNS resolution for the domain previously associated
+                with "ns1.example.com". If the new external host offers an authoritative DNS service but
+                the domain is not assigned to an account, then a malicious actor may add the domain
+                to a service account and gain control of (i.e., hijack) DNS resolution functionality. If the
+                new external host
+                offers recursive DNS service or no DNS service, then DNS requests for the domain
+                will result in SERVFAIL messages or other errors. Aggressive requeries by DNS
+                resolvers may then create large numbers of spurious DNS queries for an unresolvable
+                domain. Note that renaming a host object to a name of an external host cannot be
+            reversed by the EPP client.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">This document describes the rationale for the "<span class="bcp14">SHOULD NOT</span> be deleted" text in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> and <span>[<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> as well as the risk 
+                associated with host object renaming. <a href="#practice-analysis" class="auto internal xref">Section 5</a> includes a detailed analysis 
+                of the practices that have been and can be used to mitigate that risk. 
+                <a href="#recommendations" class="auto internal xref">Section 6</a> includes specific recommendations for the best practices.<a href="#section-1-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-2">
+      <h2 id="name-conventions-used-in-this-do">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-used-in-this-do" class="section-name selfRef">Conventions Used in This Document</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+<div id="rationale">
+<section id="section-3">
+      <h2 id="name-rationale-for-should-not-be">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-rationale-for-should-not-be" class="section-name selfRef">Rationale for "<span class="bcp14">SHOULD NOT</span> be deleted"</a>
+      </h2>
+<div id="dns-cons">
+<section id="section-3.1">
+        <h3 id="name-dns-considerations">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-dns-considerations" class="section-name selfRef">DNS Considerations</a>
+        </h3>
+<p id="section-3.1-1">The primary consideration when deleting domain and host objects concerns the
+                    potential impact on DNS resolution. Deletion of a domain object will make all
+                    name servers associated with subordinate host objects unresolvable. Deletion of
+                    a host object will make any domain that has been delegated to the associated
+                    name server unresolvable. The text in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> and <span>[<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> was written to
+                    encourage clients to take singular, discrete steps to delete objects in a way
+                    that avoids breaking DNS resolution functionality. Additionally, allowing host
+                    objects to exist after deletion of their superordinate domain object invites
+                    hijacking, as a malicious actor may reregister the domain object, potentially
+                    controlling resolution for the host objects and for their associated domain
+                    objects. It also creates orphan glue as described in <span>[<a href="#SAC048" class="cite xref">SAC048</a>]</span>.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="client-server-cons">
+<section id="section-3.2">
+        <h3 id="name-client-server-consistency-c">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-client-server-consistency-c" class="section-name selfRef">Client-Server Consistency Considerations</a>
+        </h3>
+<p id="section-3.2-1">A server that implicitly deletes subordinate host objects in response to a
+                    request to delete a domain object can create a data inconsistency condition in
+                    which the EPP client and the EPP server have different views of what remains
+                    registered after processing a &lt;delete&gt; command. The text in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> and
+                    <span>[<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> was written to encourage clients to take singular, discrete steps to delete
+                    objects in a way that maintains client-server data consistency. Experience
+ suggests that this inconsistency poses little operational risk.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="relational-cons">
+<section id="section-3.3">
+        <h3 id="name-relational-consistency-cons">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-relational-consistency-cons" class="section-name selfRef">Relational Consistency Considerations</a>
+        </h3>
+<p id="section-3.3-1">Implementations of EPP can have dependencies on the hierarchical domain
+                    object / host object relationship, which can exist in a relational database. In such
+                    instances, deletion of a domain object without addressing the existing
+                    subordinate host objects can cause relational consistency and integrity issues.
+                    The text in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> and <span>[<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> was written to reduce the risk of these issues
+                    arising as a result of implicit object deletion.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="renaming-risk">
+<section id="section-4">
+      <h2 id="name-host-object-renaming-risk">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-host-object-renaming-risk" class="section-name selfRef">Host Object Renaming Risk</a>
+      </h2>
+<p id="section-4-1">As described in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>, it is possible to delete a domain object that has associated
+                host objects that are managed by other clients by renaming the host object to exist
+                in a different superordinate domain. This is commonly required when the sponsoring
+                client is unable to disassociate a host object from a domain object managed by
+                another client because only the second client is authorized to make changes to their
+                domain object and the EPP server requires host object disassociation to process a
+                request to delete a domain object. For example:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Domain object "domain1.example" is registered by ClientX.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">Domain object "domain2.example" is registered by ClientY.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">Subordinate host object "ns1.domain1.example" is registered and associated with
+                domain object "domain1.example" by ClientX.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">Host object "ns1.domain1.example" is associated with domain object "domain2.example"
+                by ClientY.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">ClientX wishes to delete domain object "domain1.example". It can modify domain object
+                "domain1.example" to remove the association of host object "ns1.domain1.example",
+                but
+                ClientX cannot remove the association of host object "ns1.domain1.example" from
+                domain
+                object "domain2.example" because "domain2.example" is sponsored by ClientY and
+                ClientX is unable to determine that relationship. Only ClientY can
+                modify domain object "domain2.example", and if they do not do so, ClientX will need
+                to
+                rename host object "ns1.domain1.example" so that "domain1.example" can be deleted.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">ClientX renames host object "ns1.domain1.example" to "ns1.example.org", creating an
+                external host and meeting the EPP server's subordinate host object disassociation
+                requirement. The renamed host object "ns1.example.org" is referred to as a "sacrificial"
+                host <span>[<a href="#Risky-BIZness" class="cite xref">Risky-BIZness</a>]</span>.<a href="#section-4-7" class="pilcrow">¶</a></p>
+<p id="section-4-8">If domain "example.org" does not exist, this practice introduces a risk of DNS
+                resolution hijacking if someone were to register the "example.org" domain and create
+                a subordinate
+                host object named "ns1.example.org". That name server would receive DNS queries for
+                all domains delegated to it, allowing the operator of the name server to respond in
+                potentially malicious ways.<a href="#section-4-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="practice-analysis">
+<section id="section-5">
+      <h2 id="name-analysis-of-practices-for-d">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-analysis-of-practices-for-d" class="section-name selfRef">Analysis of Practices for Domain and Host Object Deletion</a>
+      </h2>
+<p id="section-5-1">EPP servers can employ a range of practices for domain
+                and host object deletion. Notably, the scope of any practice
+                discussed here is the EPP server that adopts the practice, the
+                domains managed by it, and the associated host objects where "associated" is described in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> and <span>[<a href="#RFC5732" class="cite xref">RFC5732</a>]</span>. The practices described in this document fall into two broad
+                categories: renaming objects to use sacrificial hosts and allowing objects to be
+                deleted even if there are existing data relationships. These practice categories are
+                described in the following sections. 
+                For a broader consideration of practices and potential impacts on registries and registrars, 
+                <span>[<a href="#SAC125" class="cite xref">SAC125</a>]</span> 
+                offers some complementary insight.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="renaming-overall">
+<section id="section-5.1">
+        <h3 id="name-renaming-to-sacrificial-hos">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-renaming-to-sacrificial-hos" class="section-name selfRef">Renaming to Sacrificial Hosts</a>
+        </h3>
+<p id="section-5.1-1">Sacrificial hosts are hosts whose name is intended to remove an existing relationship
+                between domain and host objects. To that end, sacrificial hosts are either renamed to an
+                external host or associated with a different domain object in the EPP server.
+                The first group of deletion practices use sacrificial
+                hosts leveraging existing  EPP server support for renaming host objects.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div id="renaming-overall-pros">
+<section id="section-5.1.1">
+          <h4 id="name-practice-benefits">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-practice-benefits" class="section-name selfRef">Practice Benefits</a>
+          </h4>
+<p id="section-5.1.1-1">Affected domains remain delegated in the zone. Registrars and 
+                    registrants of affected domains may be able to determine the intention 
+                    of the change.<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-overall-cons">
+<section id="section-5.1.2">
+          <h4 id="name-practice-detriments">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-practice-detriments" class="section-name selfRef">Practice Detriments</a>
+          </h4>
+<p id="section-5.1.2-1">Zones are crowded with irrelevant records. Registrars and registrants of affected domains are required to clean them up.<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-observed">
+<section id="section-5.1.3">
+          <h4 id="name-observed-practices-for-rena">
+<a href="#section-5.1.3" class="section-number selfRef">5.1.3. </a><a href="#name-observed-practices-for-rena" class="section-name selfRef">Observed Practices for Renaming to Sacrificial Hosts</a>
+          </h4>
+<div id="renaming-external">
+<section id="section-5.1.3.1">
+            <h5 id="name-renaming-to-external-presum">
+<a href="#section-5.1.3.1" class="section-number selfRef">5.1.3.1. </a><a href="#name-renaming-to-external-presum" class="section-name selfRef">Renaming to External, Presumed Non-Existent Hosts</a>
+            </h5>
+<p id="section-5.1.3.1-1">As described above, this practice renames subordinate host objects to an
+                            external host in order to allow the deletion of the superordinate domain object.
+                            The
+                            external host is presumed to be non-existent by the deleting EPP client, but
+                            no check for existence is typically performed.
+                            This practice has been observed in use. This practice <span class="bcp14">MUST NOT</span> be used.<a href="#section-5.1.3.1-1" class="pilcrow">¶</a></p>
+<div id="renaming-external-pros">
+<section id="section-5.1.3.1.1">
+              <h6 id="name-practice-benefits-2">
+<a href="#section-5.1.3.1.1" class="section-number selfRef">5.1.3.1.1. </a><a href="#name-practice-benefits-2" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.3.1.1-1">The primary benefit is convenience for the deleting EPP client. The deleting
+                                EPP client is not required to
+                                maintain an authoritative DNS service or receive traffic.<a href="#section-5.1.3.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-external-cons">
+<section id="section-5.1.3.1.2">
+              <h6 id="name-practice-detriments-2">
+<a href="#section-5.1.3.1.2" class="section-number selfRef">5.1.3.1.2. </a><a href="#name-practice-detriments-2" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.3.1.2-1">Malicious actors have registered these parent domains and 
+                                created child host objects to take control of DNS resolution
+                                for associated domains <span>[<a href="#Risky-BIZness" class="cite xref">Risky-BIZness</a>]</span>.<a href="#section-5.1.3.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.3.1.2-2">Sponsoring clients of the associated domains are not informed of the change.
+                                Associated domains may no longer resolve if all their hosts are renamed.
+                                Associated domains may still resolve if they continue to be associated with
+                                existent hosts; in which case, their partial vulnerability to hijacking is
+                                more difficult to detect.<a href="#section-5.1.3.1.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="renaming-as112">
+<section id="section-5.1.3.2">
+            <h5 id="name-renaming-to-as112arpa">
+<a href="#section-5.1.3.2" class="section-number selfRef">5.1.3.2. </a><a href="#name-renaming-to-as112arpa" class="section-name selfRef">Renaming to "AS112.ARPA"</a>
+            </h5>
+<p id="section-5.1.3.2-1">Some domain registrars, acting as EPP clients, have renamed host objects
+                            to subdomains of "AS112.ARPA" or "EMPTY.AS112.ARPA" <span>[<a href="#Risky-BIZness-IRTF" class="cite xref">Risky-BIZness-IRTF</a>]</span>.
+                            This practice has been observed in use.<a href="#section-5.1.3.2-1" class="pilcrow">¶</a></p>
+<div id="renaming-as112-pros">
+<section id="section-5.1.3.2.1">
+              <h6 id="name-practice-benefits-3">
+<a href="#section-5.1.3.2.1" class="section-number selfRef">5.1.3.2.1. </a><a href="#name-practice-benefits-3" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.3.2.1-1">
+                                The primary benefit is convenience for the deleting EPP client. The deleting
+                                EPP client is
+                                not required to
+                                maintain an authoritative DNS service or receive traffic.<a href="#section-5.1.3.2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-as112-cons">
+<section id="section-5.1.3.2.2">
+              <h6 id="name-practice-detriments-3">
+<a href="#section-5.1.3.2.2" class="section-number selfRef">5.1.3.2.2. </a><a href="#name-practice-detriments-3" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.3.2.2-1"> This is a misuse of AS112, which is for reverse lookups on non-unique IPs,
+                                primarily so local admins can sinkhole non-global traffic <span>[<a href="#RFC7535" class="cite xref">RFC7535</a>]</span>. 
+                                "EMPTY.AS112.ARPA" is designed to be used with DNAME aliasing, not as a parent domain for sacrificial name servers (see <span><a href="https://rfc-editor.org/rfc/rfc7535#section-3" class="relref">Section 3</a> of [<a href="#RFC7535" class="cite xref">RFC7535</a>]</span>).
+                                    Unexpected AS112 traffic has previously caused
+                                problems with intrusion detection systems and firewalls <span>[<a href="#RFC6305" class="cite xref">RFC6305</a>]</span>. Local administrators can potentially hijack
+                                requests. AS112 infrastructure must be maintained.<a href="#section-5.1.3.2.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="renaming-non-provisioned">
+<section id="section-5.1.3.3">
+            <h5 id="name-renaming-to-non-authoritati">
+<a href="#section-5.1.3.3" class="section-number selfRef">5.1.3.3. </a><a href="#name-renaming-to-non-authoritati" class="section-name selfRef">Renaming to Non-Authoritative Hosts</a>
+            </h5>
+<p id="section-5.1.3.3-1">Some domain registrars, acting as EPP clients, have maintained host objects
+                            with glue records pointing to prominent public recursive DNS services.
+                            This practice has been observed in use. This practice <span class="bcp14">MUST NOT</span> be used.<a href="#section-5.1.3.3-1" class="pilcrow">¶</a></p>
+<div id="renaming-non-provisioned-pros">
+<section id="section-5.1.3.3.1">
+              <h6 id="name-practice-benefits-4">
+<a href="#section-5.1.3.3.1" class="section-number selfRef">5.1.3.3.1. </a><a href="#name-practice-benefits-4" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.3.3.1-1">The primary benefit is convenience for the deleting EPP client. The deleting
+                                EPP client is
+                                not required to
+                                maintain an authoritative DNS service or receive traffic.<a href="#section-5.1.3.3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-non-provisioned-cons">
+<section id="section-5.1.3.3.2">
+              <h6 id="name-practice-detriments-4">
+<a href="#section-5.1.3.3.2" class="section-number selfRef">5.1.3.3.2. </a><a href="#name-practice-detriments-4" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.3.3.2-1"> Queries for the associated domains result in SERVFAIL or other failure
+                                responses. Some recursive name server implementations may aggressively
+                                requery for these responses, potentially resulting in large numbers of
+                                queries for unresolvable domains <span>[<a href="#RFC9520" class="cite xref">RFC9520</a>]</span>.<a href="#section-5.1.3.3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="control-rename">
+<section id="section-5.1.3.4">
+            <h5 id="name-renaming-to-client-maintain">
+<a href="#section-5.1.3.4" class="section-number selfRef">5.1.3.4. </a><a href="#name-renaming-to-client-maintain" class="section-name selfRef">Renaming to Client-Maintained Dedicated Sacrificial Name Server Host Objects</a>
+            </h5>
+<p id="section-5.1.3.4-1">EPP clients <span class="bcp14">MAY</span> rename the host object to be deleted to a
+                        sacrificial name server host object maintained by the client.  This
+                        requires that the client maintain the registration of the sacrificial
+                        name server's superordinate domain.  The client may consider long
+                        registration periods and the use of registrar and registry lock
+                        services to maintain and protect the superordinate domain and the
+                        host object.  Failures to maintain these registrations have allowed
+                        domain hijacks <span>[<a href="#Risky-BIZness" class="cite xref">Risky-BIZness</a>]</span>.<a href="#section-5.1.3.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.3.4-2">
+                        The client-maintained dedicated sacrificial name server <span class="bcp14">MUST</span> resolve to one or more IP addresses,
+                        and the client <span class="bcp14">MUST</span> operate an authoritative DNS name server on those addresses.  
+                        The name server <span class="bcp14">MAY</span> provide any valid response.<a href="#section-5.1.3.4-2" class="pilcrow">¶</a></p>
+<p id="section-5.1.3.4-3">
+                        This practice has been observed in use.<a href="#section-5.1.3.4-3" class="pilcrow">¶</a></p>
+<div id="control-rename-pros">
+<section id="section-5.1.3.4.1">
+              <h6 id="name-practice-benefits-5">
+<a href="#section-5.1.3.4.1" class="section-number selfRef">5.1.3.4.1. </a><a href="#name-practice-benefits-5" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.3.4.1-1"> Associated domains are not able to be hijacked, remain in the zone, and have
+                                valid DNS records and a responsive DNS service. The service may provide
+                                responses that indicate problems with a domain's delegation, such as
+                                non-existence or including controlled interruption IP addresses <span>[<a href="#RFC8023" class="cite xref">RFC8023</a>]</span>.<a href="#section-5.1.3.4.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="control-rename-cons">
+<section id="section-5.1.3.4.2">
+              <h6 id="name-practice-detriments-5">
+<a href="#section-5.1.3.4.2" class="section-number selfRef">5.1.3.4.2. </a><a href="#name-practice-detriments-5" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.3.4.2-1">This requires that the client maintain the registration of the sacrificial
+                                name server's superordinate domain. The client may consider long
+                                registration periods and the use of registrar and registry lock services to
+                                maintain and protect the superordinate domain and the host object. Failures
+                                to maintain these registrations have allowed domain hijacks <span>[<a href="#Risky-BIZness" class="cite xref">Risky-BIZness</a>]</span>.<a href="#section-5.1.3.4.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.3.4.2-2">Failure responses may cause aggressive requerying (see <a href="#renaming-non-provisioned-cons" class="auto internal xref">Section 5.1.3.3.2</a>).<a href="#section-5.1.3.4.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="renaming-potential">
+<section id="section-5.1.4">
+          <h4 id="name-potential-practices-for-ren">
+<a href="#section-5.1.4" class="section-number selfRef">5.1.4. </a><a href="#name-potential-practices-for-ren" class="section-name selfRef">Potential Practices for Renaming to Sacrificial Hosts</a>
+          </h4>
+<div id="renaming-pseudo-tld">
+<section id="section-5.1.4.1">
+            <h5 id="name-renaming-to-pseudo-tld">
+<a href="#section-5.1.4.1" class="section-number selfRef">5.1.4.1. </a><a href="#name-renaming-to-pseudo-tld" class="section-name selfRef">Renaming to Pseudo-TLD</a>
+            </h5>
+<p id="section-5.1.4.1-1">Clients may rename host objects to use ".alt" or another non-DNS pseudo-TLD (Top-Level Domain), as suggested in <span>[<a href="#Risky-BIZness-IRTF" class="cite xref">Risky-BIZness-IRTF</a>]</span>. 
+                            This practice has not been observed in use. This practice <span class="bcp14">MUST NOT</span> be used.<a href="#section-5.1.4.1-1" class="pilcrow">¶</a></p>
+<div id="renaming-pseudo-tld-pros">
+<section id="section-5.1.4.1.1">
+              <h6 id="name-practice-benefits-6">
+<a href="#section-5.1.4.1.1" class="section-number selfRef">5.1.4.1.1. </a><a href="#name-practice-benefits-6" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.4.1.1-1">The primary benefit is convenience for the deleting
+                                EPP client. The deleting EPP client is not required to
+                                maintain an authoritative DNS service or receive
+                                traffic. Dependent domains cannot be hijacked through
+                                the registration of these identifiers and delegation in
+                                the DNS.<a href="#section-5.1.4.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-pseudo-tld-cons">
+<section id="section-5.1.4.1.2">
+              <h6 id="name-practice-detriments-6">
+<a href="#section-5.1.4.1.2" class="section-number selfRef">5.1.4.1.2. </a><a href="#name-practice-detriments-6" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.4.1.2-1">The ".alt" pseudo-TLD is to be used "to signify that this is an alternative
+                                (non-DNS) namespace and should not be looked up in a DNS context" <span>[<a href="#RFC9476" class="cite xref">RFC9476</a>]</span>. Some EPP servers may restrict TLDs to valid
+                                IANA-delegated TLDs. These entries would mix DNS and non-DNS protocols, risk
+                                name collisions, create confusion, and potentially result in unpredictable
+                                resolver behaviors. These identifiers may be registered in non-DNS
+                                namespaces, potentially leading to hijacking vulnerabilities based in other
+                                systems.<a href="#section-5.1.4.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="renaming-existing-special-use">
+<section id="section-5.1.4.2">
+            <h5 id="name-renaming-to-existing-specia">
+<a href="#section-5.1.4.2" class="section-number selfRef">5.1.4.2. </a><a href="#name-renaming-to-existing-specia" class="section-name selfRef">Renaming to Existing Special-Use TLD</a>
+            </h5>
+<p id="section-5.1.4.2-1">Clients may rename host objects to a special-use TLD that cannot resolve in the DNS. Several variations have been suggested.
+                            This practice has not been observed in use.<a href="#section-5.1.4.2-1" class="pilcrow">¶</a></p>
+<div id="renaming-existing-special-use-reserved">
+<section id="section-5.1.4.2.1">
+              <h6 id="name-renaming-to-reserved-tld">
+<a href="#section-5.1.4.2.1" class="section-number selfRef">5.1.4.2.1. </a><a href="#name-renaming-to-reserved-tld" class="section-name selfRef">Renaming to Reserved TLD</a>
+              </h6>
+<p id="section-5.1.4.2.1-1">Clients may rename host objects to use a reserved special-use <span>[<a href="#RFC6761" class="cite xref">RFC6761</a>]</span> TLD,
+                                as suggested in <span>[<a href="#Risky-BIZness" class="cite xref">Risky-BIZness</a>]</span>.<a href="#section-5.1.4.2.1-1" class="pilcrow">¶</a></p>
+<div id="renaming-existing-special-use-pros">
+<section id="section-5.1.4.2.1.1">
+                <h6 id="name-practice-benefits-7">
+<a href="#section-5.1.4.2.1.1" class="section-number selfRef">5.1.4.2.1.1. </a><a href="#name-practice-benefits-7" class="section-name selfRef">Practice Benefits</a>
+                </h6>
+<p id="section-5.1.4.2.1.1-1">The primary benefit is convenience for the deleting
+                                    EPP client. These TLDs are already reserved and will not
+                                    resolve. The deleting EPP client is not required to
+                                    maintain an authoritative DNS service or receive
+                                    traffic. Dependent domains cannot be hijacked.<a href="#section-5.1.4.2.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-existing-special-use-cons">
+<section id="section-5.1.4.2.1.2">
+                <h6 id="name-practice-detriments-7">
+<a href="#section-5.1.4.2.1.2" class="section-number selfRef">5.1.4.2.1.2. </a><a href="#name-practice-detriments-7" class="section-name selfRef">Practice Detriments</a>
+                </h6>
+<p id="section-5.1.4.2.1.2-1">The use of TLDs reserved for special purposes <span>[<a href="#RFC6761" class="cite xref">RFC6761</a>]</span> may be confusing without a 
+                                domain designated by the community for this purpose 
+                                (see "sacrificial.invalid" in Sections <a href="#renaming-new-special-use" class="auto internal xref">5.1.4.3</a> and <a href="#recommendations" class="auto internal xref">6</a>). 
+                                In addition, their use may be prevented by EPP server policy.<a href="#section-5.1.4.2.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="renaming-new-special-use">
+<section id="section-5.1.4.3">
+            <h5 id="name-renaming-to-a-special-use-d">
+<a href="#section-5.1.4.3" class="section-number selfRef">5.1.4.3. </a><a href="#name-renaming-to-a-special-use-d" class="section-name selfRef">Renaming to a Special-Use Domain</a>
+            </h5>
+<p id="section-5.1.4.3-1">
+                            Clients would rename hosts to a special-use domain or subdomain thereof.
+                            The domain may be a special-use SLD (Second-Level Domain) (e.g., sacrificial.invalid) or a new reserved TLD (e.g., .sacrificial).
+                            Use of this domain would communicate the client's intention to create a sacrificial host.
+                            IANA would add this domain to the "Special-Use Domain Name" registry if such a new TLD is created using either
+                            IETF or ICANN processes. This practice has not been observed in use.
+                            In terms of the questions from <span>[<a href="#RFC6761" class="cite xref">RFC6761</a>]</span>:<a href="#section-5.1.4.3-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.1.4.3-2">
+                            <li id="section-5.1.4.3-2.1">
+                                These names are not expected to be visible to human users.
+                                However, the purpose of these domains is expected to be semantically recognizable to human users.<a href="#section-5.1.4.3-2.1" class="pilcrow">¶</a>
+</li>
+              <li id="section-5.1.4.3-2.2">
+                                Application software is not expected to recognize these names
+                                as special or treat them differently than other allowed domain names.<a href="#section-5.1.4.3-2.2" class="pilcrow">¶</a>
+</li>
+              <li id="section-5.1.4.3-2.3">
+                                Name resolution APIs and libraries are not expected to recognize
+                                these names as special or treat them differently than other allowed domain names.<a href="#section-5.1.4.3-2.3" class="pilcrow">¶</a>
+</li>
+              <li id="section-5.1.4.3-2.4">
+                                Caching name servers are not expected to recognize these names
+                                as special or treat them differently than other allowed domain names.<a href="#section-5.1.4.3-2.4" class="pilcrow">¶</a>
+</li>
+              <li id="section-5.1.4.3-2.5">
+                                Authoritative name servers are not expected to recognize
+                                these names as special or treat them differently than other allowed domain names.
+                                Requests to the root for this domain would result in an NXDOMAIN response <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span>.<a href="#section-5.1.4.3-2.5" class="pilcrow">¶</a>
+</li>
+              <li id="section-5.1.4.3-2.6">
+                                DNS server operators will treat this domain and its subdomains as they would any other allowed names in the DNS.<a href="#section-5.1.4.3-2.6" class="pilcrow">¶</a>
+</li>
+              <li id="section-5.1.4.3-2.7">
+                                DNS registries/registrars will not be able to register this domain and must deny requests to register it or its subdomains.<a href="#section-5.1.4.3-2.7" class="pilcrow">¶</a>
+</li>
+            </ol>
+<div id="renaming-new-special-use-pros">
+<section id="section-5.1.4.3.1">
+              <h6 id="name-practice-benefits-8">
+<a href="#section-5.1.4.3.1" class="section-number selfRef">5.1.4.3.1. </a><a href="#name-practice-benefits-8" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.4.3.1-1">
+                                    This option would offer clarity concerning the intentions of registrars that rename hosts. 
+                                    It would also enable registrars of affected domains ease of detection of renamed hosts.
+                                    This option is also convenient for the deleting EPP client. 
+                                    The deleting EPP client is not required to
+                                    maintain an authoritative DNS service or receive
+                                    traffic. 
+                                    Dependent domains cannot be hijacked through
+                                    the registration of these identifiers and delegation in
+                                    the DNS.<a href="#section-5.1.4.3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renaming-new-special-use-cons">
+<section id="section-5.1.4.3.2">
+              <h6 id="name-practice-detriments-8">
+<a href="#section-5.1.4.3.2" class="section-number selfRef">5.1.4.3.2. </a><a href="#name-practice-detriments-8" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.4.3.2-1">
+                                    This would require cooperation and policy changes for registrars and registries.<a href="#section-5.1.4.3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="new-service">
+<section id="section-5.1.4.4">
+            <h5 id="name-renaming-to-community-sacri">
+<a href="#section-5.1.4.4" class="section-number selfRef">5.1.4.4. </a><a href="#name-renaming-to-community-sacri" class="section-name selfRef">Renaming to Community Sacrificial Name Server Service</a>
+            </h5>
+<p id="section-5.1.4.4-1">A new community-wide service could be created explicitly intended for use for
+                            renaming host records. This would require maintenance of name servers capable of
+                            authoritatively responding with NXDOMAIN or a controlled interruption IP
+                            addresses <span>[<a href="#RFC8023" class="cite xref">RFC8023</a>]</span> for all queries without delegating domains
+                            or records. This service could use a new special-use TLD created through
+                            ICANN or IETF processes (e.g., ".sacrificial"), as an IAB request that IANA
+                            delegate an SLD for ".arpa" (e.g.,
+                            "sacrificial-nameserver.arpa"), or as a contracted sinkhole service by ICANN or
+                            other DNS ecosystem actors. This practice has not been observed in use.<a href="#section-5.1.4.4-1" class="pilcrow">¶</a></p>
+<div id="new-service-pros">
+<section id="section-5.1.4.4.1">
+              <h6 id="name-practice-benefits-9">
+<a href="#section-5.1.4.4.1" class="section-number selfRef">5.1.4.4.1. </a><a href="#name-practice-benefits-9" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.1.4.4.1-1">This is convenient for the deleting EPP client. The deleting EPP client is
+                                not required to
+                                maintain an authoritative DNS service or receive traffic. The associated
+                                domains are not vulnerable to hijacking.
+                                This would provide a well-understood, industry-standard solution, allowing
+                                registrars and registrants to easily identify associated domains that have
+                                been affected. Infrastructure operators could monitor traffic to identify
+                                affected associated domains that result in significant traffic and attempt
+                                to contact registrars and registrants.
+                                Economies of scale would allow reduced overall costs to the industry (in
+                                contrast to each client running an independent service).<a href="#section-5.1.4.4.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="new-service-cons">
+<section id="section-5.1.4.4.2">
+              <h6 id="name-practice-detriments-9">
+<a href="#section-5.1.4.4.2" class="section-number selfRef">5.1.4.4.2. </a><a href="#name-practice-detriments-9" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.1.4.4.2-1">Some entity must maintain the infrastructure for the service.<a href="#section-5.1.4.4.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="delete-overall">
+<section id="section-5.2">
+        <h3 id="name-deletion-of-hosts">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-deletion-of-hosts" class="section-name selfRef">Deletion of Hosts</a>
+        </h3>
+<p id="section-5.2-1">The second group of practices is based on EPP server support for allowing objects to be deleted
+                even if there are existing data relationships. The recommendations in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> are intended to
+                maintain consistency. However, they are not requirements.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<div id="delete-observed">
+<section id="section-5.2.1">
+          <h4 id="name-observed-practices-for-dele">
+<a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-observed-practices-for-dele" class="section-name selfRef">Observed Practices for Deletion of Hosts</a>
+          </h4>
+<div id="automatic-delete">
+<section id="section-5.2.1.1">
+            <h5 id="name-implicit-deletion-of-affect">
+<a href="#section-5.2.1.1" class="section-number selfRef">5.2.1.1. </a><a href="#name-implicit-deletion-of-affect" class="section-name selfRef">Implicit Deletion of Affected Host Objects</a>
+            </h5>
+<p id="section-5.2.1.1-1"> EPP servers may relax
+                            their constraints and allow sponsoring clients to delete host objects without consideration of 
+                            associations with domain objects sponsored by other clients. The registry automatically
+                            disassociates the deleted host objects from domain objects sponsored by other clients.
+                            This practice has been observed in use.<a href="#section-5.2.1.1-1" class="pilcrow">¶</a></p>
+<div id="automatic-delete-pros">
+<section id="section-5.2.1.1.1">
+              <h6 id="name-practice-benefits-10">
+<a href="#section-5.2.1.1.1" class="section-number selfRef">5.2.1.1.1. </a><a href="#name-practice-benefits-10" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.2.1.1.1-1">
+                                This is convenient for the deleting EPP client. The deleting EPP client is
+                                not required to
+                                maintain an authoritative DNS service or receive traffic. The associated
+                                domains are not vulnerable to hijacking.<a href="#section-5.2.1.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="automatic-delete-cons">
+<section id="section-5.2.1.1.2">
+              <h6 id="name-practice-detriments-10">
+<a href="#section-5.2.1.1.2" class="section-number selfRef">5.2.1.1.2. </a><a href="#name-practice-detriments-10" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.2.1.1.2-1">This could
+                                result in domains with no name servers being removed from the zone
+                                or
+                                domains with only one name server remaining in the zone.
+                                Deletions could potentially affect large numbers of associated domains,
+                                placing strain on domain registries.<a href="#section-5.2.1.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="inform-affected-client">
+<section id="section-5.2.1.2">
+            <h5 id="name-inform-affected-clients">
+<a href="#section-5.2.1.2" class="section-number selfRef">5.2.1.2. </a><a href="#name-inform-affected-clients" class="section-name selfRef">Inform Affected Clients</a>
+            </h5>
+<p id="section-5.2.1.2-1"> The sponsoring clients of affected domain objects may also be informed of
+                            the change (e.g., through the EPP Change Poll extension <span>[<a href="#RFC8590" class="cite xref">RFC8590</a>]</span>).
+                            This practice has been observed in use.<a href="#section-5.2.1.2-1" class="pilcrow">¶</a></p>
+<div id="inform-affected-client-pros">
+<section id="section-5.2.1.2.1">
+              <h6 id="name-practice-benefits-11">
+<a href="#section-5.2.1.2.1" class="section-number selfRef">5.2.1.2.1. </a><a href="#name-practice-benefits-11" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.2.1.2.1-1">Updates help achieve the goals of client-server data consistency
+                                and minimal interruptions to resolution.
+                                The sponsoring clients of affected domain objects are able to
+                                update their database to reflect the change and would be able to inform
+                                the domain's registrant.
+                                The sponsoring clients can automatically update the
+                                affected domains to use another authoritative host.<a href="#section-5.2.1.2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="inform-affected-client-cons">
+<section id="section-5.2.1.2.2">
+              <h6 id="name-practice-detriments-11">
+<a href="#section-5.2.1.2.2" class="section-number selfRef">5.2.1.2.2. </a><a href="#name-practice-detriments-11" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.2.1.2.2-1">
+                                This change requires additional development on the part of EPP
+                                servers and clients. There may be scalability concerns if large numbers
+                                of domain objects are updated in a single transaction.<a href="#section-5.2.1.2.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="delete-potential">
+<section id="section-5.2.2">
+          <h4 id="name-potential-practices-for-del">
+<a href="#section-5.2.2" class="section-number selfRef">5.2.2. </a><a href="#name-potential-practices-for-del" class="section-name selfRef">Potential Practices for Deletion of Hosts</a>
+          </h4>
+<div id="explicit-delete">
+<section id="section-5.2.2.1">
+            <h5 id="name-request-explicit-deletion-o">
+<a href="#section-5.2.2.1" class="section-number selfRef">5.2.2.1. </a><a href="#name-request-explicit-deletion-o" class="section-name selfRef">Request Explicit Deletion of Affected Host Objects</a>
+            </h5>
+<p id="section-5.2.2.1-1">Sponsoring clients requesting the deletion of host objects would explicitly request 
+                            their disassociation from domain objects sponsored by other clients. 
+                            This practice has not been observed in use.<a href="#section-5.2.2.1-1" class="pilcrow">¶</a></p>
+<div id="explicit-delete-pros">
+<section id="section-5.2.2.1.1">
+              <h6 id="name-practice-benefits-12">
+<a href="#section-5.2.2.1.1" class="section-number selfRef">5.2.2.1.1. </a><a href="#name-practice-benefits-12" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.2.2.1.1-1">
+                                Registries would not be required to unilaterally take responsibility for deletion. 
+                                The deleting EPP client is not required to maintain an authoritative DNS service or receive traffic. 
+                                The associated domains are not vulnerable to hijacking.<a href="#section-5.2.2.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="explicit-delete-cons">
+<section id="section-5.2.2.1.2">
+              <h6 id="name-practice-detriments-12">
+<a href="#section-5.2.2.1.2" class="section-number selfRef">5.2.2.1.2. </a><a href="#name-practice-detriments-12" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.2.2.1.2-1">This could result in domains with no name servers being removed from the zone or domains with only one name server remaining in the zone.
+                                Deletions could potentially affect large numbers of associated domains,
+                                placing strain on domain registries.<a href="#section-5.2.2.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="additional-deletion-details">
+<section id="section-5.2.2.2">
+            <h5 id="name-provide-additional-deletion">
+<a href="#section-5.2.2.2" class="section-number selfRef">5.2.2.2. </a><a href="#name-provide-additional-deletion" class="section-name selfRef">Provide Additional Deletion Details</a>
+            </h5>
+<p id="section-5.2.2.2-1">The EPP server may provide the deleting EPP client with additional details of the affected
+                            objects. The deleting EPP client may receive a response (e.g., using msg, reason, or msgQ elements of the EPP response <span>[<a href="#RFC5730" class="cite xref">RFC5730</a>]</span>)
+                            that deletion of the host object would affect
+                            domain objects sponsored by another client and may receive details about those objects (e.g., using the EPP poll command).
+                            This practice has not been observed in use.<a href="#section-5.2.2.2-1" class="pilcrow">¶</a></p>
+<div id="additional-deletion-details-pros">
+<section id="section-5.2.2.2.1">
+              <h6 id="name-practice-benefits-13">
+<a href="#section-5.2.2.2.1" class="section-number selfRef">5.2.2.2.1. </a><a href="#name-practice-benefits-13" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.2.2.2.1-1">
+                                The deleting EPP client would be able to better understand and assess
+                                the potential harms of host object deletion.
+                                Depending on the content of the message, the deleting EPP client might
+                                choose additional actions, such as delaying the deletion until manual
+                                approval can be obtained, renaming the host objects, or informing
+                                affected EPP clients.
+                                This would give EPP clients greater flexibility with respect to
+                                deletion. For example, they may choose only to exercise deletions that
+                                have no impact on other clients.<a href="#section-5.2.2.2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="additional-deletion-details-cons">
+<section id="section-5.2.2.2.2">
+              <h6 id="name-practice-detriments-13">
+<a href="#section-5.2.2.2.2" class="section-number selfRef">5.2.2.2.2. </a><a href="#name-practice-detriments-13" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.2.2.2.2-1">
+                                This change would require additional development on the part of EPP
+                                servers and clients. There may be scalability concerns if large numbers
+                                of domain objects are updated in a single transaction. The EPP server
+                                must
+                                determine the relevant information to provide for the EPP client's
+                                assessment.<a href="#section-5.2.2.2.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="delete-with-restore">
+<section id="section-5.2.2.3">
+            <h5 id="name-allow-explicit-deletion-of-">
+<a href="#section-5.2.2.3" class="section-number selfRef">5.2.2.3. </a><a href="#name-allow-explicit-deletion-of-" class="section-name selfRef">Allow Explicit Deletion of a Domain with Restore Capability</a>
+            </h5>
+<p id="section-5.2.2.3-1">
+                            Explicit deletion of a domain name with a
+                            cascade purge of subordinate host objects and associations
+                            with other domains may be an unrecoverable operation, increasing
+                            the potential negative effects of malicious or accidental actions.<a href="#section-5.2.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.2.2.3-2">
+                            To mitigate this risk, EPP servers can allow for the explicit deletion of a domain with
+                            subordinate host objects associated with other domains only when the
+                            associations can be restored by the &lt;restore&gt; operation described in <span>[<a href="#RFC3915" class="cite xref">RFC3915</a>]</span>.<a href="#section-5.2.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.2.2.3-3">
+                            In order to allow restore, EPP servers may keep the subordinate host objects with a "pendingDelete" status 
+                            and keep associations with other domains. This makes the objects unavailable in the DNS and
+                            provides a preview of the deletion.<a href="#section-5.2.2.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.2.2.3-4">
+                            If the action was malicious, accidental, or had
+                            negative side effects, the domain, its subordinate host objects, and
+                            the associations with other domains can be restored with the
+                            &lt;restore&gt; operation <span>[<a href="#RFC3915" class="cite xref">RFC3915</a>]</span> during the redemption period.  The
+                            purge of the domain will correspond with the purging of the
+                            subordinate hosts objects and the associations at the end of the
+                            pending delete period <span>[<a href="#RFC3915" class="cite xref">RFC3915</a>]</span>.<a href="#section-5.2.2.3-4" class="pilcrow">¶</a></p>
+<p id="section-5.2.2.3-5">
+                            Due to the potentially large
+                            number of associations, the server can asynchronously update (e.g.,
+                            add and remove from DNS) and purge the associations.<a href="#section-5.2.2.3-5" class="pilcrow">¶</a></p>
+<p id="section-5.2.2.3-6">
+                            This practice has not been observed in use.<a href="#section-5.2.2.3-6" class="pilcrow">¶</a></p>
+<div id="delete-with-restore-pros">
+<section id="section-5.2.2.3.1">
+              <h6 id="name-practice-benefits-14">
+<a href="#section-5.2.2.3.1" class="section-number selfRef">5.2.2.3.1. </a><a href="#name-practice-benefits-14" class="section-name selfRef">Practice Benefits</a>
+              </h6>
+<p id="section-5.2.2.3.1-1">
+                                This practice enables the clients to directly delete the domains that
+                                they need since the server will fully support restoration of the
+                                associations during the redemption period.  The management of the
+                                domain and the subordinate hosts will be simplified for the client by
+                                supporting the explicit deletion of the domain with the capability of
+                                mitigating a destructive malicious or accidental action.<a href="#section-5.2.2.3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="delete-with-restore-cons">
+<section id="section-5.2.2.3.2">
+              <h6 id="name-practice-detriments-14">
+<a href="#section-5.2.2.3.2" class="section-number selfRef">5.2.2.3.2. </a><a href="#name-practice-detriments-14" class="section-name selfRef">Practice Detriments</a>
+              </h6>
+<p id="section-5.2.2.3.2-1">
+                                By making it easier for a client to explicitly delete a domain having subordinate hosts
+                                with associations, there is higher risk of inadvertent side effects in a single delete command.
+                                There is existing risk in EPP of inadvertent side effects, such as adding the "clientHold"
+                                status to the domain that will impact the DNS resolution of the subordinate hosts and the
+                                associated delegations. The ability to easily roll back the command is key to minimize the
+                                impact of the side effects. Another issue is the potential size of the database transaction to
+                                disable, re-enable, or purge the subordinate host associations, since there is no limit to the
+                                number of associations to delegated domains. Servers can break up the disable, re-enable, or purge
+                                of the subordinate host associations into smaller transactions by implementing it asynchronously.<a href="#section-5.2.2.3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="recommendations">
+<section id="section-6">
+      <h2 id="name-recommendations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-recommendations" class="section-name selfRef">Recommendations</a>
+      </h2>
+<p id="section-6-1">EPP servers and clients <span class="bcp14">MUST</span> implement one of the following practices to delete domain and host objects with minimal undesired side effects:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-2.1">Rename host objects to a sacrificial name server host object maintained by the client
+                    (see <a href="#control-rename" class="auto internal xref">Section 5.1.3.4</a>).<a href="#section-6-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-2.2"> 
+                     Delete host objects and associations with the restore option (see <a href="#delete-with-restore" class="auto internal xref">Section 5.2.2.3</a>)
+                     based on explicit client requests (see <a href="#explicit-delete" class="auto internal xref">Section 5.2.2.1</a>). 
+                     Provide requesting clients additional deletion details (see <a href="#additional-deletion-details" class="auto internal xref">Section 5.2.2.2</a>),
+                     and inform affected clients of changes (see <a href="#inform-affected-client" class="auto internal xref">Section 5.2.1.2</a>).<a href="#section-6-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-6-2.3">
+                    Rename host objects to a sacrificial name server host object that uses a special-use domain (see <a href="#renaming-new-special-use" class="auto internal xref">Section 5.1.4.3</a>)
+                    that avoids the special-use domain issues described in <span>[<a href="#RFC8244" class="cite xref">RFC8244</a>]</span>. Use of "sacrificial.invalid" (see <a href="#renaming-new-special-use" class="auto internal xref">Section 5.1.4.3</a>) as the parent domain for the host objects is
+                    <span class="bcp14">RECOMMENDED</span> to avoid the overhead of creating a new TLD using either IETF or ICANN processes
+                    that offers no additional operational benefit.<a href="#section-6-2.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-6-3">All other practices described in <a href="#practice-analysis" class="auto internal xref">Section 5</a> are <span class="bcp14">NOT RECOMMENDED</span> due to undesired side effects.<a href="#section-6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="IANA">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Security">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">This document describes guidance found in <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span> and <span>[<a href="#RFC5732" class="cite xref">RFC5732</a>]</span> regarding the deletion
+                of domain and host objects by EPP clients. That guidance sometimes requires that
+                host objects be renamed such that they become "external" hosts (see 
+                <span><a href="https://rfc-editor.org/rfc/rfc5731#section-1.1" class="relref">Section 1.1</a> of [<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>) in order to meet an EPP server's requirements
+                for host object disassociation prior to domain object deletion. Host object renaming
+                can introduce a risk of DNS resolution hijack under certain operational
+                conditions. This document provides guidance that is intended to reduce the risk of
+                DNS resolution failure or hijacking as part of the process of deleting EPP domain or
+                host objects.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Child domains that depend on host objects associated with domain objects sponsored by
+                another EPP client for DNS resolution may be protected from hijacking through the use
+                of DNSSEC. Their resolution may be protected from the effects of deletion by using
+                host objects associated with multiple domain objects. DNSSEC and multiple
+                host objects may interfere with the use of controlled interruption IP addresses to alert
+                registrants to DNS changes. EPP clients can periodically scan sponsored domains for
+                association with sacrificial name servers and alert end users concerning those domains.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">In absence of DNSSEC use by the victim, an attacker who gains control of a
+                single name server can use DNSSEC to instead take over the victim domain completely
+                if the registry operator and registrar process for automated DS maintenance neglects
+                to check all name servers for consistency in CDS/CDNSKEY records. In this scenario,
+                the domain will end up with DS records derived from the attacker CDS/CDNSKEY records
+                if, by chance, the queries happen to hit the attacker-controlled name server. Subsequently, validating
+                resolvers will no longer accept responses from the legitimate name servers.
+ Moreover, with
+                the use of CSYNC, an attacker may update the domain NS records, removing the legitimate
+                name servers entirely.<a href="#section-8-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3915">[RFC3915]</dt>
+        <dd>
+<span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Domain Registry Grace Period Mapping for the Extensible Provisioning Protocol (EPP)"</span>, <span class="seriesInfo">RFC 3915</span>, <span class="seriesInfo">DOI 10.17487/RFC3915</span>, <time datetime="2004-09" class="refDate">September 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3915">https://www.rfc-editor.org/info/rfc3915</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5730">[RFC5730]</dt>
+        <dd>
+<span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP)"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5730</span>, <span class="seriesInfo">DOI 10.17487/RFC5730</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5730">https://www.rfc-editor.org/info/rfc5730</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5731">[RFC5731]</dt>
+        <dd>
+<span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Domain Name Mapping"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5731</span>, <span class="seriesInfo">DOI 10.17487/RFC5731</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5731">https://www.rfc-editor.org/info/rfc5731</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5732">[RFC5732]</dt>
+        <dd>
+<span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Host Mapping"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5732</span>, <span class="seriesInfo">DOI 10.17487/RFC5732</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5732">https://www.rfc-editor.org/info/rfc5732</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6761">[RFC6761]</dt>
+        <dd>
+<span class="refAuthor">Cheshire, S.</span> and <span class="refAuthor">M. Krochmal</span>, <span class="refTitle">"Special-Use Domain Names"</span>, <span class="seriesInfo">RFC 6761</span>, <span class="seriesInfo">DOI 10.17487/RFC6761</span>, <time datetime="2013-02" class="refDate">February 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6761">https://www.rfc-editor.org/info/rfc6761</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8244">[RFC8244]</dt>
+        <dd>
+<span class="refAuthor">Lemon, T.</span>, <span class="refAuthor">Droms, R.</span>, and <span class="refAuthor">W. Kumari</span>, <span class="refTitle">"Special-Use Domain Names Problem Statement"</span>, <span class="seriesInfo">RFC 8244</span>, <span class="seriesInfo">DOI 10.17487/RFC8244</span>, <time datetime="2017-10" class="refDate">October 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8244">https://www.rfc-editor.org/info/rfc8244</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9476">[RFC9476]</dt>
+      <dd>
+<span class="refAuthor">Kumari, W.</span> and <span class="refAuthor">P. Hoffman</span>, <span class="refTitle">"The .alt Special-Use Top-Level Domain"</span>, <span class="seriesInfo">RFC 9476</span>, <span class="seriesInfo">DOI 10.17487/RFC9476</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9476">https://www.rfc-editor.org/info/rfc9476</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC6305">[RFC6305]</dt>
+        <dd>
+<span class="refAuthor">Abley, J.</span> and <span class="refAuthor">W. Maton</span>, <span class="refTitle">"I'm Being Attacked by PRISONER.IANA.ORG!"</span>, <span class="seriesInfo">RFC 6305</span>, <span class="seriesInfo">DOI 10.17487/RFC6305</span>, <time datetime="2011-07" class="refDate">July 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6305">https://www.rfc-editor.org/info/rfc6305</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7535">[RFC7535]</dt>
+        <dd>
+<span class="refAuthor">Abley, J.</span>, <span class="refAuthor">Dickson, B.</span>, <span class="refAuthor">Kumari, W.</span>, and <span class="refAuthor">G. Michaelson</span>, <span class="refTitle">"AS112 Redirection Using DNAME"</span>, <span class="seriesInfo">RFC 7535</span>, <span class="seriesInfo">DOI 10.17487/RFC7535</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7535">https://www.rfc-editor.org/info/rfc7535</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8023">[RFC8023]</dt>
+        <dd>
+<span class="refAuthor">Thomas, M.</span>, <span class="refAuthor">Mankin, A.</span>, and <span class="refAuthor">L. Zhang</span>, <span class="refTitle">"Report from the Workshop and Prize on Root Causes and Mitigation of Name Collisions"</span>, <span class="seriesInfo">RFC 8023</span>, <span class="seriesInfo">DOI 10.17487/RFC8023</span>, <time datetime="2016-11" class="refDate">November 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8023">https://www.rfc-editor.org/info/rfc8023</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8590">[RFC8590]</dt>
+        <dd>
+<span class="refAuthor">Gould, J.</span> and <span class="refAuthor">K. Feher</span>, <span class="refTitle">"Change Poll Extension for the Extensible Provisioning Protocol (EPP)"</span>, <span class="seriesInfo">RFC 8590</span>, <span class="seriesInfo">DOI 10.17487/RFC8590</span>, <time datetime="2019-05" class="refDate">May 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8590">https://www.rfc-editor.org/info/rfc8590</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9499">[RFC9499]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">K. Fujiwara</span>, <span class="refTitle">"DNS Terminology"</span>, <span class="seriesInfo">BCP 219</span>, <span class="seriesInfo">RFC 9499</span>, <span class="seriesInfo">DOI 10.17487/RFC9499</span>, <time datetime="2024-03" class="refDate">March 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9499">https://www.rfc-editor.org/info/rfc9499</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9520">[RFC9520]</dt>
+        <dd>
+<span class="refAuthor">Wessels, D.</span>, <span class="refAuthor">Carroll, W.</span>, and <span class="refAuthor">M. Thomas</span>, <span class="refTitle">"Negative Caching of DNS Resolution Failures"</span>, <span class="seriesInfo">RFC 9520</span>, <span class="seriesInfo">DOI 10.17487/RFC9520</span>, <time datetime="2023-12" class="refDate">December 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9520">https://www.rfc-editor.org/info/rfc9520</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Risky-BIZness">[Risky-BIZness]</dt>
+        <dd>
+<span class="refAuthor">Akiwate, G.</span>, <span class="refAuthor">Savage, S.</span>, <span class="refAuthor">Voelker, G.</span>, and <span class="refAuthor">K. Claffy</span>, <span class="refTitle">"Risky BIZness: Risks Derived from Registrar Name Management"</span>, <span class="refContent">IMC '21: Proceedings of the 21st ACM Internet Measurement Conference</span>, <span class="seriesInfo">DOI 10.1145/3487552.3487816</span>, <time datetime="2021-11" class="refDate">November 2021</time>, <span>&lt;<a href="https://doi.org/10.1145/3487552.3487816">https://doi.org/10.1145/3487552.3487816</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Risky-BIZness-IRTF">[Risky-BIZness-IRTF]</dt>
+        <dd>
+<span class="refAuthor">Akiwate, G.</span>, <span class="refAuthor">Savage, S.</span>, <span class="refAuthor">Voelker, G.</span>, and <span class="refAuthor">K. Claffy</span>, <span class="refTitle">"Risky BIZness: Risks Derived from Registrar Name Management"</span>, <span class="refContent">IETF 115 Proceedings</span>, <time datetime="2022-11" class="refDate">November 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/slides-115-irtfopen-risky-bizness-risks-derived-from-registrar-name-management/">https://datatracker.ietf.org/doc/slides-115-irtfopen-risky-bizness-risks-derived-from-registrar-name-management/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SAC048">[SAC048]</dt>
+        <dd>
+<span class="refAuthor">ICANN Security and Stability Advisory Committee</span>, <span class="refTitle">"SSAC Comment on Orphan Glue Records in the Draft Applicant Guidebook"</span>, <span class="seriesInfo">SAC 048</span>, <time datetime="2011-05-12" class="refDate">12 May 2011</time>, <span>&lt;<a href="https://itp.cdn.icann.org/en/files/security-and-stability-advisory-committee-ssac-reports/sac-048-en.pdf">https://itp.cdn.icann.org/en/files/security-and-stability-advisory-committee-ssac-reports/sac-048-en.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SAC125">[SAC125]</dt>
+      <dd>
+<span class="refAuthor">ICANN Security and Stability Advisory Committee</span>, <span class="refTitle">"SSAC Report on Registrar Nameserver Management"</span>, <span class="seriesInfo">SAC 125</span>, <time datetime="2024-05-09" class="refDate">9 May 2024</time>, <span>&lt;<a href="https://itp.cdn.icann.org/en/files/security-and-stability-advisory-committee-ssac-reports/sac-125-09-05-2024-en.pdf">https://itp.cdn.icann.org/en/files/security-and-stability-advisory-committee-ssac-reports/sac-125-09-05-2024-en.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="acks">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">The authors would like to thank the following people for their contributions to this
+                document: <span class="contact-name">David Blacka</span>, <span class="contact-name">Brian Dickson</span>, <span class="contact-name">James Gould</span>, <span class="contact-name">Pawel Kowalik</span>, <span class="contact-name">Mario Loffredo</span>, <span class="contact-name">James Mitchell</span>, <span class="contact-name">Matthew Thomas</span>, <span class="contact-name">Peter                 Thomassen</span>, and <span class="contact-name">Duane Wessels</span>.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Scott Hollenbeck</span></div>
+<div dir="auto" class="left"><span class="org">Verisign Labs</span></div>
+<div dir="auto" class="left"><span class="street-address">12061 Bluemont Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">Reston</span>, <span class="region">VA</span> <span class="postal-code">20190</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:shollenbeck@verisign.com" class="email">shollenbeck@verisign.com</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://www.verisignlabs.com/" class="url">https://www.verisignlabs.com/</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">William Carroll</span></div>
+<div dir="auto" class="left"><span class="org">Verisign Labs</span></div>
+<div dir="auto" class="left"><span class="street-address">12061 Bluemont Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">Reston</span>, <span class="region">VA</span> <span class="postal-code">20190</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+1%20703%20948-3200" class="tel">+1 703 948-3200</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:wicarroll@verisign.com" class="email">wicarroll@verisign.com</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://verisign.com" class="url">https://verisign.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gautam Akiwate</span></div>
+<div dir="auto" class="left"><span class="org">Stanford University</span></div>
+<div dir="auto" class="left"><span class="street-address">450 Jane Stanford Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">Stanford</span>, <span class="region">CA</span> <span class="postal-code">94305</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+1%20650%20723-2300" class="tel">+1 650 723-2300</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gakiwate@cs.stanford.edu" class="email">gakiwate@cs.stanford.edu</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://cs.stanford.edu/~gakiwate/" class="url">https://cs.stanford.edu/~gakiwate/</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
