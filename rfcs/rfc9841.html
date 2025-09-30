@@ -1,0 +1,3251 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9841: Shared Brotli Compressed Data Format</title>
+<meta content="Jyrki Alakuijala" name="author">
+<meta content="Thai Duong" name="author">
+<meta content="Evgenii Kliuchnikov" name="author">
+<meta content="Zoltan Szabadka" name="author">
+<meta content="Lode Vandevenne" name="author">
+<meta content="
+       
+   This specification defines a data format for shared brotli
+   compression, which adds support for shared dictionaries, large window,
+   and a container format to brotli (RFC 7932). Shared dictionaries and
+   large window support allow significant compression gains compared to
+   regular brotli. This document specifies an extension to the method defined in RFC 7932. 
+    " name="description">
+<meta content="xml2rfc 3.30.2" name="generator">
+<meta content="dictionary compression lz77" name="keyword">
+<meta content="9841" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9841.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-vandevenne-shared-brotli-format-15" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9841" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9841</td>
+<td class="center">Shared Brotli Data Format</td>
+<td class="right">September 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Alakuijala, et al.</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9841" class="eref">9841</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc7932" class="eref">7932</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-09" class="published">September 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">J. Alakuijala</div>
+<div class="org">Google, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Duong</div>
+<div class="org">Google, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">E. Kliuchnikov</div>
+<div class="org">Google, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">Z. Szabadka</div>
+<div class="org">Google, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">L. Vandevenne, <span class="editor">Ed.</span>
+</div>
+<div class="org">Google, Inc.</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9841</h1>
+<h1 id="title">Shared Brotli Compressed Data Format</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+   This specification defines a data format for shared brotli
+   compression, which adds support for shared dictionaries, large window,
+   and a container format to brotli (RFC 7932). Shared dictionaries and
+   large window support allow significant compression gains compared to
+   regular brotli. This document specifies an extension to the method defined in RFC 7932.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9841">https://www.rfc-editor.org/info/rfc9841</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-purpose" class="internal xref">Purpose</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-intended-audience" class="internal xref">Intended Audience</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-scope" class="internal xref">Scope</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.4">
+                <p id="section-toc.1-1.1.2.4.1"><a href="#section-1.4" class="auto internal xref">1.4</a>.  <a href="#name-compliance" class="internal xref">Compliance</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.5">
+                <p id="section-toc.1-1.1.2.5.1"><a href="#section-1.5" class="auto internal xref">1.5</a>.  <a href="#name-definitions-of-terms-and-co" class="internal xref">Definitions of Terms and Conventions Used</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.5.2.1">
+                    <p id="section-toc.1-1.1.2.5.2.1.1"><a href="#section-1.5.1" class="auto internal xref">1.5.1</a>.  <a href="#name-packing-into-bytes" class="internal xref">Packing into Bytes</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-shared-brotli-overview" class="internal xref">Shared Brotli Overview</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-shared-dictionaries" class="internal xref">Shared Dictionaries</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-custom-static-dictionaries" class="internal xref">Custom Static Dictionaries</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.1">
+                    <p id="section-toc.1-1.3.2.1.2.1.1"><a href="#section-3.1.1" class="auto internal xref">3.1.1</a>.  <a href="#name-transform-operations" class="internal xref">Transform Operations</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-lz77-dictionaries" class="internal xref">LZ77 Dictionaries</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-varint-encoding" class="internal xref">Varint Encoding</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-shared-dictionary-stream" class="internal xref">Shared Dictionary Stream</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-large-window-brotli-compres" class="internal xref">Large Window Brotli Compressed Data Stream</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-shared-brotli-compressed-da" class="internal xref">Shared Brotli Compressed Data Stream</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-shared-brotli-framing-forma" class="internal xref">Shared Brotli Framing Format Stream</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-main-format" class="internal xref">Main Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-chunk-format" class="internal xref">Chunk Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-metadata-format" class="internal xref">Metadata Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4">
+                <p id="section-toc.1-1.8.2.4.1"><a href="#section-8.4" class="auto internal xref">8.4</a>.  <a href="#name-chunk-specifications" class="internal xref">Chunk Specifications</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.1">
+                    <p id="section-toc.1-1.8.2.4.2.1.1"><a href="#section-8.4.1" class="auto internal xref">8.4.1</a>.  <a href="#name-padding-chunk-type-0" class="internal xref">Padding Chunk (Type 0)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.2">
+                    <p id="section-toc.1-1.8.2.4.2.2.1"><a href="#section-8.4.2" class="auto internal xref">8.4.2</a>.  <a href="#name-metadata-chunk-type-1" class="internal xref">Metadata Chunk (Type 1)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.3">
+                    <p id="section-toc.1-1.8.2.4.2.3.1"><a href="#section-8.4.3" class="auto internal xref">8.4.3</a>.  <a href="#name-data-chunk-type-2" class="internal xref">Data Chunk (Type 2)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.4">
+                    <p id="section-toc.1-1.8.2.4.2.4.1"><a href="#section-8.4.4" class="auto internal xref">8.4.4</a>.  <a href="#name-first-partial-data-chunk-ty" class="internal xref">First Partial Data Chunk (Type 3)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.5">
+                    <p id="section-toc.1-1.8.2.4.2.5.1"><a href="#section-8.4.5" class="auto internal xref">8.4.5</a>.  <a href="#name-middle-partial-data-chunk-t" class="internal xref">Middle Partial Data Chunk (Type 4)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.6">
+                    <p id="section-toc.1-1.8.2.4.2.6.1"><a href="#section-8.4.6" class="auto internal xref">8.4.6</a>.  <a href="#name-last-partial-data-chunk-typ" class="internal xref">Last Partial Data Chunk (Type 5)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.7">
+                    <p id="section-toc.1-1.8.2.4.2.7.1"><a href="#section-8.4.7" class="auto internal xref">8.4.7</a>.  <a href="#name-footer-metadata-chunk-type-" class="internal xref">Footer Metadata Chunk (Type 6)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.8">
+                    <p id="section-toc.1-1.8.2.4.2.8.1"><a href="#section-8.4.8" class="auto internal xref">8.4.8</a>.  <a href="#name-global-metadata-chunk-type-" class="internal xref">Global Metadata Chunk (Type 7)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.9">
+                    <p id="section-toc.1-1.8.2.4.2.9.1"><a href="#section-8.4.9" class="auto internal xref">8.4.9</a>.  <a href="#name-repeat-metadata-chunk-type-" class="internal xref">Repeat Metadata Chunk (Type 8)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.10">
+                    <p id="section-toc.1-1.8.2.4.2.10.1"><a href="#section-8.4.10" class="auto internal xref">8.4.10</a>. <a href="#name-central-directory-chunk-typ" class="internal xref">Central Directory Chunk (Type 9)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.11">
+                    <p id="section-toc.1-1.8.2.4.2.11.1"><a href="#section-8.4.11" class="auto internal xref">8.4.11</a>. <a href="#name-final-footer-chunk-type-10" class="internal xref">Final Footer Chunk (Type 10)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.12">
+                    <p id="section-toc.1-1.8.2.4.2.12.1"><a href="#section-8.4.12" class="auto internal xref">8.4.12</a>. <a href="#name-chunk-ordering" class="internal xref">Chunk Ordering</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="sect-1">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<div id="sect-1.1">
+<section id="section-1.1">
+        <h3 id="name-purpose">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-purpose" class="section-name selfRef">Purpose</a>
+        </h3>
+<p id="section-1.1-1">
+   The purpose of this specification is to extend the brotli compressed
+   data format <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> with new abilities that allow further
+   compression gains.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1.1-2.1">
+            <p id="section-1.1-2.1.1">Shared dictionaries allow a static shared context between
+        encoder and decoder for significant compression gains.<a href="#section-1.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.1-2.2">
+            <p id="section-1.1-2.2.1">Large window brotli allows much larger back reference distances
+        to give compression gains for files over 16 MiB.<a href="#section-1.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.1-2.3">
+            <p id="section-1.1-2.3.1">The framing format is a container format that allows storage of
+        multiple resources and references dictionaries.<a href="#section-1.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-1.1-3">
+   This document is the authoritative specification of shared brotli
+   data formats and the backwards compatible changes to brotli. This document also defines the following:<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1.1-4.1">
+            <p id="section-1.1-4.1.1">The data format of serialized shared dictionaries<a href="#section-1.1-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.1-4.2">
+            <p id="section-1.1-4.2.1">The data format of the framing format<a href="#section-1.1-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.1-4.3">
+            <p id="section-1.1-4.3.1">The encoding of window bits and distances for large window
+        brotli in the brotli data format<a href="#section-1.1-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.1-4.4">
+            <p id="section-1.1-4.4.1">The encoding of shared dictionary references in the brotli data
+        format<a href="#section-1.1-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="sect-1.2">
+<section id="section-1.2">
+        <h3 id="name-intended-audience">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-intended-audience" class="section-name selfRef">Intended Audience</a>
+        </h3>
+<p id="section-1.2-1">
+   This specification is intended for use by software implementers to
+   compress data into and/or decompress data from the shared brotli
+   dictionary format.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<p id="section-1.2-2">
+   The text of the specification assumes a basic background in
+   programming at the level of bits and other primitive data
+   representations. Familiarity with the technique of LZ77 coding <span>[<a href="#LZ77" class="cite xref">LZ77</a>]</span>
+   is helpful, but not required.<a href="#section-1.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-1.3">
+<section id="section-1.3">
+        <h3 id="name-scope">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-scope" class="section-name selfRef">Scope</a>
+        </h3>
+<p id="section-1.3-1">
+   This specification defines a data format for shared brotli
+   compression, which adds support for dictionaries and extended
+   features to brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-1.4">
+<section id="section-1.4">
+        <h3 id="name-compliance">
+<a href="#section-1.4" class="section-number selfRef">1.4. </a><a href="#name-compliance" class="section-name selfRef">Compliance</a>
+        </h3>
+<p id="section-1.4-1">
+   Unless otherwise indicated below, a compliant decompressor must be
+   able to accept and decompress any data set that conforms to all the
+   specifications presented here. Additionally, a compliant compressor must produce
+   data sets that conform to all the specifications presented here.<a href="#section-1.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-1.5">
+<section id="section-1.5">
+        <h3 id="name-definitions-of-terms-and-co">
+<a href="#section-1.5" class="section-number selfRef">1.5. </a><a href="#name-definitions-of-terms-and-co" class="section-name selfRef">Definitions of Terms and Conventions Used</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-1.5-1">
+          <dt id="section-1.5-1.1">Byte:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.5-1.2">8 bits stored or transmitted as a unit (same as an octet).  For
+   this specification, a byte is exactly 8 bits, even on machines that
+   store a character on a number of bits different from eight.  See
+   below for the numbering of bits within a byte.<a href="#section-1.5-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.5-1.3">String:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.5-1.4">A sequence of arbitrary bytes.<a href="#section-1.5-1.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-1.5-2">
+   Bytes stored within a computer do not have a "bit order" since they are
+   always treated as a unit. However, a byte considered as an integer between
+   0 and 255 does have a most significant bit (MSB) and least significant bit
+   (LSB), and since we write numbers with the most significant digit on the left,
+   we also write bytes with the MSB on the left. In the diagrams below, the
+   bits of a byte are written so that bit 0 is the LSB, i.e., the bits are
+   numbered as follows:<a href="#section-1.5-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-1.5-3">
+<pre>
+   +--------+
+   |76543210|
+   +--------+
+</pre><a href="#section-1.5-3" class="pilcrow">¶</a>
+</div>
+<p id="section-1.5-4">
+   Within a computer, a number may occupy multiple bytes. All multi-byte
+   numbers in the format described here are unsigned and stored with the
+   least significant byte first (at the lower memory address). For
+ example, the decimal 16-bit number 520 is stored as:<a href="#section-1.5-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-1.5-5">
+<pre>
+   0        1
+   +--------+--------+
+   |00001000|00000010|
+   +--------+--------+
+   ^        ^
+   |        |
+   |        + more significant byte = 2 x 256
+   + less significant byte = 8
+</pre><a href="#section-1.5-5" class="pilcrow">¶</a>
+</div>
+<div id="sect-1.5.1">
+<section id="section-1.5.1">
+          <h4 id="name-packing-into-bytes">
+<a href="#section-1.5.1" class="section-number selfRef">1.5.1. </a><a href="#name-packing-into-bytes" class="section-name selfRef">Packing into Bytes</a>
+          </h4>
+<p id="section-1.5.1-1">
+   This document does not address the issue of the order in which bits
+   of a byte are transmitted on a bit-sequential medium, since the final
+   data format described here is byte- rather than bit-oriented.
+   However, the compressed block format is described below as a sequence
+   of data elements of various bit lengths, not a sequence of bytes. Therefore,
+   we must specify how to pack these data elements into bytes to
+   form the final compressed byte sequence:<a href="#section-1.5.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1.5.1-2.1">
+              <p id="section-1.5.1-2.1.1">Data elements are packed into bytes in order of
+        increasing bit number within the byte, i.e., starting
+        with the LSB of the byte.<a href="#section-1.5.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-1.5.1-2.2">
+              <p id="section-1.5.1-2.2.1">Data elements other than prefix codes are packed
+        starting with the LSB of the data
+        element. These are referred to here as integer values
+        and are considered unsigned.<a href="#section-1.5.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-1.5.1-2.3">
+              <p id="section-1.5.1-2.3.1">Prefix codes are packed starting with the MSB of the code.<a href="#section-1.5.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-1.5.1-3">
+   In other words, if one were to print out the compressed data as a
+   sequence of bytes starting with the first byte at the <strong>right</strong> margin
+   and proceeding to the <strong>left</strong>, with the MSB of each
+   byte on the left as usual, one would be able to parse the result from
+   right to left with fixed-width elements in the correct MSB-to-LSB
+   order and prefix codes in bit-reversed order (i.e., with the first
+   bit of the code in the relative LSB position).<a href="#section-1.5.1-3" class="pilcrow">¶</a></p>
+<p id="section-1.5.1-4">
+   As an example, consider packing the following data elements into a
+   sequence of 3 bytes: 3-bit integer value 6, 4-bit integer value 2,
+   3-bit prefix code b'110, 2-bit prefix code b'10, and 12-bit integer value
+   3628.<a href="#section-1.5.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-1.5.1-5">
+<pre>
+     byte 2   byte 1   byte 0
+   +--------+--------+--------+
+   |11100010|11000101|10010110|
+   +--------+--------+--------+
+    ^            ^ ^   ^   ^
+    |            | |   |   |
+    |            | |   |   +------ integer value 6
+    |            | |   +---------- integer value 2
+    |            | +-------------- prefix code 110
+    |            +---------------- prefix code 10
+    +----------------------------- integer value 3628
+</pre><a href="#section-1.5.1-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-2">
+<section id="section-2">
+      <h2 id="name-shared-brotli-overview">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-shared-brotli-overview" class="section-name selfRef">Shared Brotli Overview</a>
+      </h2>
+<p id="section-2-1">
+   Shared brotli extends brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> with support for shared
+   dictionaries, a larger LZ77 window, and a framing format.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3">
+<section id="section-3">
+      <h2 id="name-shared-dictionaries">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-shared-dictionaries" class="section-name selfRef">Shared Dictionaries</a>
+      </h2>
+<p id="section-3-1">
+   A shared dictionary is a piece of data shared by a compressor and
+   decompressor. The compressor can take advantage of the dictionary
+   context to encode the input in a more compact manner. The compressor
+   and the decompressor must use exactly the same dictionary. A shared
+   dictionary is specially useful to compress short input sequences.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">A shared brotli dictionary can use two methods of sharing context:<a href="#section-3-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3-3">
+        <dt id="section-3-3.1">LZ77 dictionary:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.2">The encoder and decoder could refer
+        to a given sequence of bytes. Multiple LZ77 dictionaries
+        can be set.<a href="#section-3-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.3">Custom static dictionary:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.4">A word list with transforms. The
+        encoder and decoder will replace the static dictionary data
+        with the data in the shared dictionary. The original static
+        dictionary is described in <a href="#sect-8" class="auto internal xref">Section 8</a> in <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>. The original
+        data from Appendices <a href="https://rfc-editor.org/rfc/rfc7932#appendix-A" class="relref">A</a> and <a href="https://rfc-editor.org/rfc/rfc7932#appendix-B" class="relref">B</a> of <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> will be
+        replaced. In addition, it is possible to dynamically switch
+        this dictionary based on the data compression context and/or
+        include a reference to the original dictionary in the custom
+        dictionary.<a href="#section-3-3.4" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-4">
+   If no shared dictionary is set, the decoder behaves the same as in
+   <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> on a brotli stream.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">
+   If a shared dictionary is set, then it can set LZ77 dictionaries, override
+   static dictionary words, and/or override transforms.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<div id="sect-3.1">
+<section id="section-3.1">
+        <h3 id="name-custom-static-dictionaries">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-custom-static-dictionaries" class="section-name selfRef">Custom Static Dictionaries</a>
+        </h3>
+<p id="section-3.1-1">
+
+   If a custom word list is set, then the following behaviors of the decoder defined in <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> are overridden:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1-2">
+      Instead of the Static Dictionary Data from <span><a href="https://rfc-editor.org/rfc/rfc7932#appendix-A" class="relref">Appendix A</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>, one or more word lists from the custom static
+      dictionary data are used.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1-3">
+      Instead of NDBITS at the end of <span><a href="https://rfc-editor.org/rfc/rfc7932#appendix-A" class="relref">Appendix A</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>, a custom
+      SIZE_BITS_BY_LENGTH per custom word list is used.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1-4">
+      The copy length for a static dictionary reference must be
+      between 4 and 31 and may not be a value for which
+      SIZE_BITS_BY_LENGTH of this dictionary is 0.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1-5">
+   If a custom transforms list is set without context dependency, then
+   the following behaviors of the decoder defined in <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> are
+   overridden:<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1-6">
+      The "List of Word Transformations" from <span><a href="https://rfc-editor.org/rfc/rfc7932#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> is
+      overridden by one or more lists of custom prefixes, suffixes, and
+      transform operations.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1-7">
+      The transform_id must be smaller than the number of transforms
+      given in the custom transforms list.<a href="#section-3.1-7" class="pilcrow">¶</a></p>
+<p id="section-3.1-8">
+   If the dictionary is context dependent, it includes a lookup table of
+   64 word list and transform list combinations. When resolving a static
+   dictionary word, the decoder computes the literal Context ID as described in
+   <span><a href="https://rfc-editor.org/rfc/rfc7932#section-7.1" class="relref">Section 7.1</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>. The literal Context ID is used as the index in
+   the lookup tables to select the word list and transforms to use. If
+   the dictionary is not context dependent, this ID is implicitly 0
+   instead.<a href="#section-3.1-8" class="pilcrow">¶</a></p>
+<p id="section-3.1-9">
+
+   If a distance goes beyond the dictionary for the current ID and
+   multiple word/transform list combinations are defined, then the
+   next dictionary is used in the following order:<a href="#section-3.1-9" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-10.1">
+            <p id="section-3.1-10.1.1">If context dependent:<a href="#section-3.1-10.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-10.1.2.1">use the index matching the current context first, and then<a href="#section-3.1-10.1.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.1-10.1.2.2">use the same order as defined in the shared dictionary (excluding the current context) next.<a href="#section-3.1-10.1.2.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-3.1-10.2">
+            <p id="section-3.1-10.2.1">If not context dependent:<a href="#section-3.1-10.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-10.2.2.1">use the same order as defined in the shared dictionary.<a href="#section-3.1-10.2.2.1" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+        </ul>
+<div id="sect-3.1.1">
+<section id="section-3.1.1">
+          <h4 id="name-transform-operations">
+<a href="#section-3.1.1" class="section-number selfRef">3.1.1. </a><a href="#name-transform-operations" class="section-name selfRef">Transform Operations</a>
+          </h4>
+<p id="section-3.1.1-1">
+   A shared dictionary may include custom word transformations to
+   replace those specified in <a href="#sect-8" class="auto internal xref">Section 8</a> and <span><a href="https://rfc-editor.org/rfc/rfc7932#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>.  
+
+A
+   transform consists of a possible prefix, a transform operation, a parameter (for some operations), and a possible suffix. In the shared
+   dictionary format, the transform operation is represented by a
+   numerical ID, which is listed in the table below.<a href="#section-3.1.1-1" class="pilcrow">¶</a></p>
+<div id="operation-ids">
+<table class="center" id="table-1">
+            <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">ID</th>
+                <th class="text-left" rowspan="1" colspan="1">Operation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">0</td>
+                <td class="text-left" rowspan="1" colspan="1">Identity</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">1</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast1</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">2</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast2</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">3</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast3</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">4</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast4</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">5</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast5</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">6</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast6</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">7</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast7</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">8</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast8</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">9</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitLast9</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">10</td>
+                <td class="text-left" rowspan="1" colspan="1">FermentFirst</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">11</td>
+                <td class="text-left" rowspan="1" colspan="1">FermentAll</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">12</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst1</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">13</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst2</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">14</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst3</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">15</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst4</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">16</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst5</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">17</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst6</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">18</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst7</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">19</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst8</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">20</td>
+                <td class="text-left" rowspan="1" colspan="1">OmitFirst9</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">21</td>
+                <td class="text-left" rowspan="1" colspan="1">ShiftFirst (by PARAMETER)</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">22</td>
+                <td class="text-left" rowspan="1" colspan="1">ShiftAll (by PARAMETER)</td>
+              </tr>
+            </tbody>
+          </table>
+</div>
+<p id="section-3.1.1-3">
+   Operations 0 to 20 are specified in <span><a href="https://rfc-editor.org/rfc/rfc7932#section-8" class="relref">Section 8</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>.
+   ShiftFirst and ShiftAll transform specifically encoded SCALARs.<a href="#section-3.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-4">
+   A SCALAR is a 7-, 11-, 16-, or 21-bit unsigned integer encoded with 1,
+   2, 3, or 4 bytes, respectively, with the following bit contents:<a href="#section-3.1.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1.1-5">
+<pre>
+   7-bit SCALAR:
+   +--------+
+   |0sssssss|
+   +--------+
+
+   11-bit SCALAR:
+   +--------+--------+
+   |110sssss|XXssssss|
+   +--------+--------+
+
+   16-bit SCALAR:
+   +--------+--------+--------+
+   |1110ssss|XXssssss|XXssssss|
+   +--------+--------+--------+
+
+   21-bit SCALAR:
+   +--------+--------+--------+--------+
+   |11110sss|XXssssss|XXssssss|XXssssss|
+   +--------+--------+--------+--------+
+</pre><a href="#section-3.1.1-5" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1.1-6">
+   Given the input bytes matching the SCALAR encoding pattern, the SCALAR
+   value is obtained by concatenation of the "s" bits, with the MSBs coming from the earliest byte. The "X" bits could
+   have arbitrary value.<a href="#section-3.1.1-6" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-7">
+   An ADDEND is defined as the result of limited sign extension of
+   a 16-bit unsigned PARAMETER:<a href="#section-3.1.1-7" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1.1-8">
+      At first, the PARAMETER is zero-extended to 32 bits. After this,
+      0xFF0000 is added if the resulting value is greater or equal than 0x8000.<a href="#section-3.1.1-8" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-9">
+   ShiftAll starts at the beginning of the word and repetitively applies
+   the following transformation until the whole word is transformed:<a href="#section-3.1.1-9" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1.1-10">
+      If the next untransformed byte matches the first byte of the 7-,
+      11-, 16-, or 21-bit SCALAR pattern, then:<a href="#section-3.1.1-10" class="pilcrow">¶</a></p>
+<p style="margin-left: 3.0em" id="section-3.1.1-11">
+         If the untransformed part of the word is not long enough to
+         match the whole SCALAR pattern, then the whole word is
+         marked as transformed.<a href="#section-3.1.1-11" class="pilcrow">¶</a></p>
+<p style="margin-left: 3.0em" id="section-3.1.1-12">
+Otherwise, let SHIFTED be the sum of the ADDEND and the
+         encoded SCALAR. The lowest bits from SHIFTED
+         are written back into the corresponding "s" bits. The "0",
+         "1", and "X" bits remain unchanged. Next, 1, 2, 3, or
+         4 untransformed bytes are marked as transformed according to
+         the SCALAR pattern length.<a href="#section-3.1.1-12" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.1.1-13">
+      Otherwise, the next untransformed byte is marked as transformed.<a href="#section-3.1.1-13" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-14">
+   ShiftFirst applies the same transformation as ShiftAll, but does not
+   iterate.<a href="#section-3.1.1-14" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-3.2">
+<section id="section-3.2">
+        <h3 id="name-lz77-dictionaries">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-lz77-dictionaries" class="section-name selfRef">LZ77 Dictionaries</a>
+        </h3>
+<p id="section-3.2-1">
+   If an LZ77 dictionary is set, the decoder treats it as a
+   regular LZ77 copy but behaves as if the bytes of this dictionary are
+   accessible as the uncompressed bytes outside of the regular LZ77
+   window for backwards references.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">
+   Let LZ77_DICTIONARY_LENGTH be the length of the LZ77 dictionary.
+   Then word_id, described in <span><a href="https://rfc-editor.org/rfc/rfc7932#section-8" class="relref">Section 8</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>, is redefined as:<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.2-3">
+<pre>
+word_id = distance - (max allowed distance + 1 +
+LZ77_DICTIONARY_LENGTH)
+</pre><a href="#section-3.2-3" class="pilcrow">¶</a>
+</div>
+<p id="section-3.2-4">
+   For the case when LZ77_DICTIONARY_LENGTH is 0, word_id matches the
+   <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> definition.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5">
+   Let dictionary_address be:<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-3.2-6"> LZ77_DICTIONARY_LENGTH + max allowed distance - distance<a href="#section-3.2-6" class="pilcrow">¶</a></p>
+<p id="section-3.2-7">
+   Then distance values of &lt;length, distance&gt; pairs <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> in range
+   (max allowed distance + 1)..(LZ77_DICTIONARY_LENGTH + max allowed
+   distance) are interpreted as references starting in the LZ77
+   dictionary at the byte at dictionary_address. If length is longer
+   than (LZ77_DICTIONARY_LENGTH - dictionary_address), then the
+   reference continues to copy (length - LZ77_DICTIONARY_LENGTH +
+   dictionary_address) bytes from the regular LZ77 window starting at
+   the beginning.<a href="#section-3.2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-4">
+<section id="section-4">
+      <h2 id="name-varint-encoding">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-varint-encoding" class="section-name selfRef">Varint Encoding</a>
+      </h2>
+<p id="section-4-1">A varint is encoded in base 128 in one or more bytes as follows:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4-2">
+<pre>
+   +--------+--------+             +--------+
+   |1xxxxxxx|1xxxxxxx| {0-8 times} |0xxxxxxx|
+   +--------+--------+             +--------+
+</pre><a href="#section-4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4-3">
+   where the "x" bits of the first byte are the LSBs
+   of the value and the "x" bits of the last byte are the MSBs of the value. 
+
+   The last byte must have its MSB set to 0 and all other bytes must                                    
+   have their MSBs set to 1 to indicate there is a next byte.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">
+   The maximum allowed amount of bits to read is 63 bits; if the 9th
+   byte is present and has its MSB set, then the stream must be
+   considered as invalid.<a href="#section-4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-5">
+<section id="section-5">
+      <h2 id="name-shared-dictionary-stream">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-shared-dictionary-stream" class="section-name selfRef">Shared Dictionary Stream</a>
+      </h2>
+<p id="section-5-1">
+   The shared dictionary stream encodes a custom dictionary for brotli,
+   including custom words and/or custom transformations. A shared
+   dictionary may appear as a standalone or as contents of a resource in a
+   framing format container.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">
+   A compliant shared brotli dictionary stream must have the following
+   format:<a href="#section-5-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-3">
+        <dt id="section-5-3.1">2 bytes:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.2">File signature in hexadecimal format (bytes 91 and 0).<a href="#section-5-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-5-3.3">varint:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.4">LZ77_DICTIONARY_LENGTH. The number of bytes for an LZ77 dictionary, or 0 if there is none.
+              The maximum allowed value is the maximum possible sliding
+              window size of brotli or large window brotli.<a href="#section-5-3.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-5-3.5">
+      LZ77_DICTIONARY_LENGTH bytes:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.6">Contents of the LZ77 dictionary.<a href="#section-5-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-5-3.7">1 byte:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.8">
+          <p id="section-5-3.8.1">NUM_CUSTOM_WORD_LISTS. May have a value in range  0 to 64.<a href="#section-5-3.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-5-3.9">NUM_CUSTOM_WORD_LISTS times a word list with the following format for each word list:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.10">
+          <p id="section-5-3.10.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-3.10.2">
+            <dt id="section-5-3.10.2.1">28 bytes:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.10.2.2">SIZE_BITS_BY_LENGTH. An array of 28 unsigned 8-bit
+ integers, indexed by word lengths 4 to 31. The value
+                   represents log2(number of words of this length),
+                   with the exception of 0 meaning 0 words of this
+                   length. The max allowed length value is 15 bits.
+                   OFFSETS_BY_LENGTH is computed from this as
+    OFFSETS_BY_LENGTH[i + 1] = OFFSETS_BY_LENGTH[i] +
+                   (SIZE_BITS_BY_LENGTH[i] ? (i &lt;&lt; SIZE_BITS_BY_LENGTH[i]) : 0).<a href="#section-5-3.10.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5-3.10.2.3">N bytes:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.10.2.4">Words dictionary data, where N is
+ OFFSETS_BY_LENGTH[31] + (SIZE_BITS_BY_LENGTH[31] ?
+                  (31 &lt;&lt; SIZE_BITS_BY_LENGTH[31]) : 0), with all the words of shortest length first, then all words of the next length, and so on, where there are either 0 or a positive power of two number of words for each length.<a href="#section-5-3.10.2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-5-3.11">
+      1 byte:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.12">NUM_CUSTOM_TRANSFORM_LISTS. May have a value in range 0 to 64.<a href="#section-5-3.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-5-3.13">
+            NUM_CUSTOM_TRANSFORM_LISTS times a transform list with the
+ following format for each transform list:
+        </dt>
+        <dd style="margin-left: 1.5em" id="section-5-3.14">
+          <p id="section-5-3.14.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-3.14.2">
+            <dt id="section-5-3.14.2.1">2 bytes:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.14.2.2"> PREFIX_SUFFIX_LENGTH. The length of prefix/suffix 
+ data. Must be at least 1 because the list must 
+                  always end with a zero-length stringlet even
+                  if it is empty.<a href="#section-5-3.14.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5-3.14.2.3">NUM_PREFIX_SUFFIX times:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.14.2.4">
+              <p id="section-5-3.14.2.4.1">Prefix/suffix stringlet. NUM_PREFIX_SUFFIX is the number of stringlets parsed and
+            must be in range 1..256.<a href="#section-5-3.14.2.4.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-3.14.2.4.2">
+                <dt id="section-5-3.14.2.4.2.1">1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-3.14.2.4.2.2"> STRING_LENGTH. The length of the entry contents. 
+ 0 for the last (terminating) entry of the
+                    transform list. For other entries, STRING_LENGTH
+                    must be in range 1..255. The 0 entry must be
+                    present and must be the last byte of the
+                    PREFIX_SUFFIX_LENGTH bytes of prefix/suffix
+                    data, else the stream must be rejected as
+                    invalid.<a href="#section-5-3.14.2.4.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-5-3.14.2.4.2.3">STRING_LENGTH bytes:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-3.14.2.4.2.4"> Contents of the prefix/suffix.<a href="#section-5-3.14.2.4.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5-3.14.2.5">1 byte:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.14.2.6"> NTRANSFORMS. Number of transformation triplets.<a href="#section-5-3.14.2.6" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5-3.14.2.7">NTRANSFORMS times the data for each transform listed below:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.14.2.8">
+              <p id="section-5-3.14.2.8.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-3.14.2.8.2">
+                <dt id="section-5-3.14.2.8.2.1">
+ 1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-3.14.2.8.2.2">Index of prefix in prefix/suffix data;
+                    must be less than NUM_PREFIX_SUFFIX.<a href="#section-5-3.14.2.8.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-5-3.14.2.8.2.3">1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-3.14.2.8.2.4">Index of suffix in prefix/suffix data;
+                    must be less than NUM_PREFIX_SUFFIX.<a href="#section-5-3.14.2.8.2.4" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-5-3.14.2.8.2.5">1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-3.14.2.8.2.6">Operation index; must be an index in the table of
+ operations listed in <a href="#sect-3.1.1" class="auto internal xref">Section 3.1.1</a>.<a href="#section-5-3.14.2.8.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlParallel" id="section-5-3.14.3">
+            <dt id="section-5-3.14.3.1">
+ If and only if at least one transform has operation index
+         ShiftFirst or ShiftAll, then NTRANSFORMS times the following:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-3.14.3.2">
+              <p id="section-5-3.14.3.2.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-3.14.3.2.2">
+                <dt id="section-5-3.14.3.2.2.1">
+ 2 bytes:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-3.14.3.2.2.2">Parameters for the transform. If the transform
+                        does not have type ShiftFirst or ShiftAll, the
+                        value must be 0. ShiftFirst and ShiftAll
+                        interpret these bytes as an unsigned 16-bit
+                        integer.<a href="#section-5-3.14.3.2.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlParallel" id="section-5-4">
+        <dt id="section-5-4.1">If NUM_CUSTOM_WORD_LISTS &gt; 0 or NUM_CUSTOM_TRANSFORM_LISTS &gt; 0
+ (else implicitly NUM_DICTIONARIES is 1 and points to the
+         brotli built-in and there is no context map):</dt>
+        <dd style="margin-left: 1.5em" id="section-5-4.2">
+          <p id="section-5-4.2.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-4.2.2">
+            <dt id="section-5-4.2.2.1">1 byte:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-4.2.2.2">NUM_DICTIONARIES. May have a value in range 1 to 64. Each
+ dictionary is a combination of a word list and a
+                 transform list. Each next dictionary is used when the
+                 distance goes beyond the previous. If a CONTEXT_MAP is
+                 enabled, then the dictionary matching the context is
+                 moved to the front in the order for this context.<a href="#section-5-4.2.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5-4.2.2.3">NUM_DICTIONARIES times the DICTIONARY_MAP, which contains:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-4.2.2.4">
+              <p id="section-5-4.2.2.4.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-4.2.2.4.2">
+                <dt id="section-5-4.2.2.4.2.1">
+ 1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-4.2.2.4.2.2">Index into a custom word list or value
+                    NUM_CUSTOM_WORD_LISTS to indicate using the brotli
+                    <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> built-in default word list.<a href="#section-5-4.2.2.4.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-5-4.2.2.4.2.3">1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-4.2.2.4.2.4">Index into a custom transform list or value
+ NUM_CUSTOM_TRANSFORM_LISTS to indicate using the
+                    brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> built-in default transform list.<a href="#section-5-4.2.2.4.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5-4.2.2.5">1 byte:</dt>
+            <dd style="margin-left: 1.5em" id="section-5-4.2.2.6">CONTEXT_ENABLED. If 0, there is no context map. If 1, a
+ context map used to select the dictionary is encoded as
+        below.<a href="#section-5-4.2.2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<span class="break"></span><dl class="dlParallel" id="section-5-4.2.3">
+            <dt id="section-5-4.2.3.1">If CONTEXT_ENABLED is 1, there is a context map for the 64 brotli
+                  <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> literals contexts:
+            </dt>
+            <dd style="margin-left: 1.5em" id="section-5-4.2.3.2">
+              <p id="section-5-4.2.3.2.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-4.2.3.2.2">
+                <dt id="section-5-4.2.3.2.2.1">64 bytes:</dt>
+                <dd style="margin-left: 1.5em" id="section-5-4.2.3.2.2.2"> CONTEXT_MAP. Index into the DICTIONARY_MAP for
+ the first dictionary to use for this context.<a href="#section-5-4.2.3.2.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-6">
+<section id="section-6">
+      <h2 id="name-large-window-brotli-compres">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-large-window-brotli-compres" class="section-name selfRef">Large Window Brotli Compressed Data Stream</a>
+      </h2>
+<p id="section-6-1">
+   Large window brotli allows a sliding window beyond the 24-bit maximum
+   of regular brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">
+   The compressed data stream is backwards compatible to brotli
+      <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> and may optionally have the following differences:<a href="#section-6-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6-3">
+        <dt id="section-6-3.1">In the encoding of WBITS in the stream header, the following new pattern of 14 bits is supported:</dt>
+        <dd style="margin-left: 1.5em" id="section-6-3.2">
+          <p id="section-6-3.2.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-6-3.2.2">
+            <dt id="section-6-3.2.2.1">8 bits:</dt>
+            <dd style="margin-left: 1.5em" id="section-6-3.2.2.2">Value 00010001 to indicate a large window
+ brotli stream.<a href="#section-6-3.2.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-6-3.2.2.3">6 bits:</dt>
+            <dd style="margin-left: 1.5em" id="section-6-3.2.2.4"> WBITS. Must have value in range 10 to 62.<a href="#section-6-3.2.2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-6-3.3">Distance alphabet:</dt>
+        <dd style="margin-left: 1.5em" id="section-6-3.4">If the stream is a large window brotli
+ stream, the maximum number of extra bits is 62 and the
+         theoretical maximum size of the distance alphabet is
+         (16 + NDIRECT + (124 &lt;&lt; NPOSTFIX)). This overrides the value for the distance alphabet size given in <span><a href="https://rfc-editor.org/rfc/rfc7932#section-3.3" class="relref">Section 3.3</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> and affects the number of bits in the encoding of the Simple Prefix Code for distances as described in <span><a href="https://rfc-editor.org/rfc/rfc7932#section-3.4" class="relref">Section 3.4</a> of [<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>. An additional limitation to distances, despite the large allowed alphabet size, is that the alphabet is not allowed to contain a distance symbol able to represent a distance larger than ((1 &lt;&lt; 63) - 4) when its extra bits have their maximum value. It depends on NPOSTFIX and NDIRECT when this can occur.<a href="#section-6-3.4" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-6-4">
+   A decoder that does not support 64-bit integers may reject a stream
+   if WBITS is higher than 30 or a distance symbol from the distance
+   alphabet is able to encode a distance larger than 2147483644.<a href="#section-6-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-7">
+<section id="section-7">
+      <h2 id="name-shared-brotli-compressed-da">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-shared-brotli-compressed-da" class="section-name selfRef">Shared Brotli Compressed Data Stream</a>
+      </h2>
+<p id="section-7-1">
+   The format of a shared brotli compressed data stream without a framing
+   format is backwards compatible with brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> with the
+   following optional differences:<a href="#section-7-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-2.1">LZ77 dictionaries as described above are supported.<a href="#section-7-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-2.2"> Custom static dictionaries replacing or extending the static
+     dictionary of brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> with different words or
+         transforms are supported.<a href="#section-7-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-2.3">The stream may have the format of regular brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>
+ or the format of large window brotli as described in <a href="#sect-6" class="auto internal xref">Section 6</a>.<a href="#section-7-2.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="sect-8">
+<section id="section-8">
+      <h2 id="name-shared-brotli-framing-forma">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-shared-brotli-framing-forma" class="section-name selfRef">Shared Brotli Framing Format Stream</a>
+      </h2>
+<p id="section-8-1">
+   A compliant shared brotli framing format stream has the format
+   described below.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<div id="sect-8.1">
+<section id="section-8.1">
+        <h3 id="name-main-format">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-main-format" class="section-name selfRef">Main Format</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-8.1-1">
+          <dt id="section-8.1-1.1">4 bytes:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.1-1.2">File signature in hexadecimal format (bytes 0x91, 0x0a, 0x42, and 0x52). The first byte contains the invalid WBITS
+              combination for brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> and large window brotli.<a href="#section-8.1-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.1-1.3">1 byte:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.1-1.4">
+            <p id="section-8.1-1.4.1">Container flags that are 8 bits and have the following meanings:<a href="#section-8.1-1.4.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.1-1.4.2">
+              <dt id="section-8.1-1.4.2.1"> bits 0 and 1:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.1-1.4.2.2">Version indicator that must be b'00. Otherwise, the
+           decoder must reject the data stream as invalid.<a href="#section-8.1-1.4.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.1-1.4.2.3">bit 2:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.1-1.4.2.4">If 0, the file contains no final footer, may not contain
+ any metadata chunks, may not contain a central directory,
+           and may encode only a single resource (using one or more
+           data chunks). If 1, the file may contain one or more
+           resources, metadata, and a central directory, and it must contain a
+           final footer.<a href="#section-8.1-1.4.2.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.1-1.5">multiple times:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.1-1.6">A chunk, each with the format specified in <a href="#sect-8.2" class="auto internal xref">Section 8.2</a>.<a href="#section-8.1-1.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-8.2">
+<section id="section-8.2">
+        <h3 id="name-chunk-format">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-chunk-format" class="section-name selfRef">Chunk Format</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1">
+          <dt id="section-8.2-1.1">varint:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.2">Length of this chunk excluding this varint
+              but including all next header bytes and data. If the value is 0,
+              then the chunk type byte is not present and the chunk type is
+              assumed to be 0.<a href="#section-8.2-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.2-1.3">1 byte:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.4">
+            <p id="section-8.2-1.4.1">CHUNK_TYPE<a href="#section-8.2-1.4.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-8.2-1.4.2">
+              <dt id="section-8.2-1.4.2.1">               0:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.2"> padding chunk<a href="#section-8.2-1.4.2.2" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.3">               1:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.4"> metadata chunk<a href="#section-8.2-1.4.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.5">               2:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.6"> data chunk<a href="#section-8.2-1.4.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.7">               3:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.8"> first partial data chunk<a href="#section-8.2-1.4.2.8" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.9">               4:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.10"> middle partial data chunk<a href="#section-8.2-1.4.2.10" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.11">               5:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.12"> last partial data chunk<a href="#section-8.2-1.4.2.12" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.13">               6:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.14"> footer metadata chunk<a href="#section-8.2-1.4.2.14" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.15">               7:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.16"> global metadata chunk<a href="#section-8.2-1.4.2.16" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.17">               8:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.18"> repeat metadata chunk<a href="#section-8.2-1.4.2.18" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.19">               9:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.20"> central directory chunk<a href="#section-8.2-1.4.2.20" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.4.2.21">               10:</dt>
+              <dd style="margin-left: 2.5em" id="section-8.2-1.4.2.22"> final footer<a href="#section-8.2-1.4.2.22" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.2-1.5">If CHUNK_TYPE is not padding chunk, central directory, or final footer:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.6">
+            <p id="section-8.2-1.6.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.6.2">
+              <dt id="section-8.2-1.6.2.1">         1 byte:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.2-1.6.2.2">
+                <p id="section-8.2-1.6.2.2.1"> CODEC:<a href="#section-8.2-1.6.2.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-8.2-1.6.2.2.2">
+                  <dt id="section-8.2-1.6.2.2.2.1">0:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.6.2.2.2.2"> uncompressed<a href="#section-8.2-1.6.2.2.2.2" class="pilcrow">¶</a>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-8.2-1.6.2.2.2.3"> 1:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.6.2.2.2.4"> keep decoder<a href="#section-8.2-1.6.2.2.2.4" class="pilcrow">¶</a>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-8.2-1.6.2.2.2.5"> 2:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.6.2.2.2.6"> brotli<a href="#section-8.2-1.6.2.2.2.6" class="pilcrow">¶</a>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-8.2-1.6.2.2.2.7"> 3:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.6.2.2.2.8"> shared brotli<a href="#section-8.2-1.6.2.2.2.8" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.2-1.7">If CODEC is not "uncompressed":</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.8">
+            <p id="section-8.2-1.8.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.8.2">
+              <dt id="section-8.2-1.8.2.1">
+ varint:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.2-1.8.2.2">Uncompressed size in bytes of the data contained
+                 within the compressed stream.<a href="#section-8.2-1.8.2.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.2-1.9">If CODEC is "shared brotli":</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.10">
+            <p id="section-8.2-1.10.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.10.2">
+              <dt id="section-8.2-1.10.2.1">
+ 1 byte:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.2">
+                <p id="section-8.2-1.10.2.2.1">Number of dictionary references. Multiple dictionary
+                 references are possible with the following
+                 restrictions: there can be 1 serialized
+                 dictionary and 15 prefix dictionaries maximum (a
+                 serialized dictionary may already contain one of
+                 those). Circular references are not allowed (any
+                 dictionary reference that directly or indirectly
+                 uses this chunk itself as dictionary).<a href="#section-8.2-1.10.2.2.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.3">Per dictionary reference:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4">
+                <p id="section-8.2-1.10.2.4.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.10.2.4.2">
+                  <dt id="section-8.2-1.10.2.4.2.1">1 byte:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.2">
+                    <p id="section-8.2-1.10.2.4.2.2.1"> Flags:<a href="#section-8.2-1.10.2.4.2.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.10.2.4.2.2.2">
+                      <dt id="section-8.2-1.10.2.4.2.2.2.1">bits 0 and 1:</dt>
+                      <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.2.2.2">
+                        <p id="section-8.2-1.10.2.4.2.2.2.2.1"> Dictionary source:<a href="#section-8.2-1.10.2.4.2.2.2.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.10.2.4.2.2.2.2.2">
+                          <dt id="section-8.2-1.10.2.4.2.2.2.2.2.1">00:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.2.2.2"> Internal dictionary reference to a full resource
+                      by pointer, which can span one or more chunks.
+                      Must point to a full data chunk or a first
+                      partial data chunk.<a href="#section-8.2-1.10.2.4.2.2.2.2.2.2" class="pilcrow">¶</a>
+</dd>
+                          <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.2.2.3">01:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.2.2.4"> Internal dictionary reference to single chunk
+            contents by pointer. May point to any chunk with
+                      content (data or metadata). If a partial data
+                      chunk, only this part is the dictionary. In this
+                      case, the dictionary type is not allowed to be a
+                      serialized dictionary.<a href="#section-8.2-1.10.2.4.2.2.2.2.2.4" class="pilcrow">¶</a>
+</dd>
+                          <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.2.2.5">10:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.2.2.6"> Reference to a dictionary by hash code of a
+ resource. The dictionary can come from an
+                      external source, such as a different container.
+                      The user of the decoder must be able to provide
+                      the dictionary contents given its hash code (even
+                      if it comes from this container itself) or treat
+                      it as an error when the user does not have it
+                      available.<a href="#section-8.2-1.10.2.4.2.2.2.2.2.6" class="pilcrow">¶</a>
+</dd>
+                          <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.2.2.7">11:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.2.2.8"> Invalid bit combination<a href="#section-8.2-1.10.2.4.2.2.2.2.2.8" class="pilcrow">¶</a>
+</dd>
+                        <dd class="break"></dd>
+</dl>
+</dd>
+                      <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.3">               bits 2 and 3:</dt>
+                      <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.2.2.4">
+                        <p id="section-8.2-1.10.2.4.2.2.2.4.1">Dictionary type:<a href="#section-8.2-1.10.2.4.2.2.2.4.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.10.2.4.2.2.2.4.2">
+                          <dt id="section-8.2-1.10.2.4.2.2.2.4.2.1">00:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.4.2.2">
+                            <p id="section-8.2-1.10.2.4.2.2.2.4.2.2.1">Prefix dictionary, set in front of the sliding
+                      window<a href="#section-8.2-1.10.2.4.2.2.2.4.2.2.1" class="pilcrow">¶</a></p>
+</dd>
+                          <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.4.2.3">01:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.4.2.4">Serialized dictionary in the shared brotli
+                      format as specified in <a href="#sect-5" class="auto internal xref">Section 5</a>.<a href="#section-8.2-1.10.2.4.2.2.2.4.2.4" class="pilcrow">¶</a>
+</dd>
+                          <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.4.2.5">
+ 10:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.4.2.6"> Invalid bit combination<a href="#section-8.2-1.10.2.4.2.2.2.4.2.6" class="pilcrow">¶</a>
+</dd>
+                          <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.4.2.7">11:</dt>
+                          <dd style="margin-left: 2.5em" id="section-8.2-1.10.2.4.2.2.2.4.2.8"> Invalid bit combination<a href="#section-8.2-1.10.2.4.2.2.2.4.2.8" class="pilcrow">¶</a>
+</dd>
+                        <dd class="break"></dd>
+</dl>
+</dd>
+                      <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.2.2.5">bits 4-7:</dt>
+                      <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.2.2.6"> Must be 0<a href="#section-8.2-1.10.2.4.2.2.2.6" class="pilcrow">¶</a>
+</dd>
+                    <dd class="break"></dd>
+</dl>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.3">If hash-based:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.4">
+                    <p id="section-8.2-1.10.2.4.2.4.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.2-1.10.2.4.2.4.2">
+                      <dt id="section-8.2-1.10.2.4.2.4.2.1">1 byte:</dt>
+                      <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.4.2.2">Type of hash used. Only supported value: 3,
+                       indicating 256-bit HighwayHash <span>[<a href="#HWYHASH" class="cite xref">HWYHASH</a>]</span>.<a href="#section-8.2-1.10.2.4.2.4.2.2" class="pilcrow">¶</a>
+</dd>
+                      <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.4.2.3">32 bytes:</dt>
+                      <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.4.2.4">
+                        <p id="section-8.2-1.10.2.4.2.4.2.4.1"> 256-bit HighwayHash checksum to refer to
+                         dictionary.<a href="#section-8.2-1.10.2.4.2.4.2.4.1" class="pilcrow">¶</a></p>
+</dd>
+                    <dd class="break"></dd>
+</dl>
+</dd>
+                  <dd class="break"></dd>
+<dt id="section-8.2-1.10.2.4.2.5">If pointer based:</dt>
+                  <dd style="margin-left: 1.5em" id="section-8.2-1.10.2.4.2.6">Varint-encoded pointer to its
+               chunk in this container. The chunk must come in the container earlier
+               than the current chunk.<a href="#section-8.2-1.10.2.4.2.6" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.2-1.11">X bytes:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.12">Extra header bytes, depending on CHUNK_TYPE. If present,
+ they are specified in the subsequent sections.<a href="#section-8.2-1.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-8.2-1.13">remaining bytes:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.2-1.14">
+            <p id="section-8.2-1.14.1">The chunk contents. The uncompressed data
+                          in the chunk content depends on CHUNK_TYPE
+                          and is specified in the subsequent sections.
+                          The compressed data has following
+                          format depending on CODEC:<a href="#section-8.2-1.14.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.2-1.14.2.1">uncompressed: The raw bytes.<a href="#section-8.2-1.14.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-8.2-1.14.2.2">If "keep decoder", the continuation of the compressed
+ stream that was interrupted at the end of the previous
+               chunk. The decoder from the previous chunk must be used
+               and its state it had at the end of the previous chunk
+               must be kept at the start of the decoding of this chunk.<a href="#section-8.2-1.14.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-8.2-1.14.2.3">brotli: The bytes are in brotli format
+                    <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span>.<a href="#section-8.2-1.14.2.3" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-8.2-1.14.2.4">shared brotli: The bytes are in the
+ shared brotli format specified in <a href="#sect-7" class="auto internal xref">Section 7</a>.<a href="#section-8.2-1.14.2.4" class="pilcrow">¶</a>
+</li>
+            </ul>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-8.3">
+<section id="section-8.3">
+        <h3 id="name-metadata-format">
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-metadata-format" class="section-name selfRef">Metadata Format</a>
+        </h3>
+<p id="section-8.3-1">All the metadata chunk types use the following format for the
+   uncompressed content:<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-8.3-2">
+          <dt id="section-8.3-2.1">Per field:</dt>
+          <dd style="margin-left: 1.5em" id="section-8.3-2.2">
+            <span class="break"></span><dl class="dlParallel" id="section-8.3-2.2.1">
+              <dt id="section-8.3-2.2.1.1">2 bytes:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.3-2.2.1.2">
+                <p id="section-8.3-2.2.1.2.1">Code to identify this metadata field. This must be
+                  two lowercase or two uppercase alpha ASCII
+                  characters. If the decoder encounters a lowercase
+                  field that it does not recognize for the current
+                  chunk type, non-ASCII characters, or non-alpha
+                  characters, the decoder must reject the data stream
+                  as invalid. Uppercase codes may be used for custom
+                  user metadata and can be ignored by a compliant
+                  decoder.<a href="#section-8.3-2.2.1.2.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.3-2.2.1.3">varint:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.3-2.2.1.4">
+                <p id="section-8.3-2.2.1.4.1">Length of the content of this field in bytes,
+ excluding the code bytes and this varint.<a href="#section-8.3-2.2.1.4.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-8.3-2.2.1.5">N bytes:</dt>
+              <dd style="margin-left: 1.5em" id="section-8.3-2.2.1.6">The contents of this field.<a href="#section-8.3-2.2.1.6" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-8.3-3">
+   The last field is reached when the chunk content end is reached. If
+   the length of the last field does not end at the same byte as the end
+   of the uncompressed content of the chunk, the decoder must reject the
+   data stream as invalid.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4">
+<section id="section-8.4">
+        <h3 id="name-chunk-specifications">
+<a href="#section-8.4" class="section-number selfRef">8.4. </a><a href="#name-chunk-specifications" class="section-name selfRef">Chunk Specifications</a>
+        </h3>
+<div id="sect-8.4.1">
+<section id="section-8.4.1">
+          <h4 id="name-padding-chunk-type-0">
+<a href="#section-8.4.1" class="section-number selfRef">8.4.1. </a><a href="#name-padding-chunk-type-0" class="section-name selfRef">Padding Chunk (Type 0)</a>
+          </h4>
+<p id="section-8.4.1-1">
+   All bytes in this chunk must be zero except for the initial varint
+   that specifies the remaining chunk length.<a href="#section-8.4.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.1-2">
+   Since the varint itself takes up bytes as well, when the goal is to
+   introduce a number of padding bytes, the dependence of the length of
+   the varint on the value it encodes must be taken into account.<a href="#section-8.4.1-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.1-3">
+   A single byte varint with a value of 0 is a padding chunk of length 1.
+   For more padding, use higher varint values. Do not use multiple
+   shorter padding chunks since this is slower to decode.<a href="#section-8.4.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.2">
+<section id="section-8.4.2">
+          <h4 id="name-metadata-chunk-type-1">
+<a href="#section-8.4.2" class="section-number selfRef">8.4.2. </a><a href="#name-metadata-chunk-type-1" class="section-name selfRef">Metadata Chunk (Type 1)</a>
+          </h4>
+<p id="section-8.4.2-1">
+   This chunk contains metadata that applies to the resource whose
+   beginning is encoded in the subsequent data chunk or first partial
+   data chunk.<a href="#section-8.4.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.2-2">
+   The contents of this chunk follows the format described in <a href="#sect-8.3" class="auto internal xref">Section 8.3</a>.<a href="#section-8.4.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.2-3">The following field types are recognized:<a href="#section-8.4.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.2-4">
+            <dt id="section-8.4.2-4.1">id (N bytes):</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.2-4.2">Name field. May appear 0 or 1 times. Has the following
+          format: name in UTF-8 encoding, length 
+                  determined by the field length. Treated generically but may
+                  be used as a filename. If used as a filename, forward slashes
+                  '/' should be used as directory separators, relative paths
+                  should be used, and filenames ending in a slash with 0-length
+                  content in the matching data chunk should be treated as an
+                  empty directory.<a href="#section-8.4.2-4.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-8.4.2-4.3">mt (8 bytes):</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.2-4.4">Modification type. May appear 0 or 1 times. Has the following format: contains microseconds since epoch, as a little-endian, signed two's complement 64-bit integer.<a href="#section-8.4.2-4.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-8.4.2-4.5">custom user field:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.2-4.6">Any two uppercase ASCII characters.<a href="#section-8.4.2-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-8.4.3">
+<section id="section-8.4.3">
+          <h4 id="name-data-chunk-type-2">
+<a href="#section-8.4.3" class="section-number selfRef">8.4.3. </a><a href="#name-data-chunk-type-2" class="section-name selfRef">Data Chunk (Type 2)</a>
+          </h4>
+<p id="section-8.4.3-1">
+   A data chunk contains the actual data of a resource.<a href="#section-8.4.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.3-2">This chunk has the following extra header bytes:<a href="#section-8.4.3-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.3-3">
+            <dt id="section-8.4.3-3.1">1 byte: </dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.3-3.2">
+              <p id="section-8.4.3-3.2.1">Flags:<a href="#section-8.4.3-3.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.3-3.2.2">
+                <dt id="section-8.4.3-3.2.2.1">        bit 0:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.3-3.2.2.2"> If true, indicates this is not a resource that should be
+               output implicitly as part of extracting resources from
+               this container. Instead, it may be referred to only
+               explicitly, e.g., as a dictionary reference by hash code
+               or offset. This flag should be set for data used as
+               dictionary to improve compression of actual resources.<a href="#section-8.4.3-3.2.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-8.4.3-3.2.2.3">
+ bit 1:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.3-3.2.2.4">If true, hash code is given.<a href="#section-8.4.3-3.2.2.4" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-8.4.3-3.2.2.5">
+ bits 2-7:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.3-3.2.2.6">Must be zero.<a href="#section-8.4.3-3.2.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-8.4.3-3.3">If hash code is given:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.3-3.4">
+              <p id="section-8.4.3-3.4.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.3-3.4.2">
+                <dt id="section-8.4.3-3.4.2.1">1 byte:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.3-3.4.2.2">Type of hash used. Only supported value: 3,
+                indicating 256-bit HighwayHash <span>[<a href="#HWYHASH" class="cite xref">HWYHASH</a>]</span>.<a href="#section-8.4.3-3.4.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-8.4.3-3.4.2.3">        32 bytes:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.3-3.4.2.4"> 256-bit HighwayHash checksum of the uncompressed
+                  data.<a href="#section-8.4.3-3.4.2.4" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-8.4.3-4">
+   The uncompressed content bytes of this chunk are the actual data of
+   the resource.<a href="#section-8.4.3-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.4">
+<section id="section-8.4.4">
+          <h4 id="name-first-partial-data-chunk-ty">
+<a href="#section-8.4.4" class="section-number selfRef">8.4.4. </a><a href="#name-first-partial-data-chunk-ty" class="section-name selfRef">First Partial Data Chunk (Type 3)</a>
+          </h4>
+<p id="section-8.4.4-1">
+   This chunk contains partial data of a resource. This is the first
+   chunk in a series containing the entire data of the resource.<a href="#section-8.4.4-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.4-2">
+   The format of this chunk is the same as the format of a data chunk
+   (<a href="#sect-8.4.3" class="auto internal xref">Section 8.4.3</a>) except for the differences noted below.<a href="#section-8.4.4-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.4-3">
+   The second bit of flags must be set to 0 and no hash code given.<a href="#section-8.4.4-3" class="pilcrow">¶</a></p>
+<p id="section-8.4.4-4">
+   The uncompressed data size is only of this part of the resource, not
+   of the full resource.<a href="#section-8.4.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.5">
+<section id="section-8.4.5">
+          <h4 id="name-middle-partial-data-chunk-t">
+<a href="#section-8.4.5" class="section-number selfRef">8.4.5. </a><a href="#name-middle-partial-data-chunk-t" class="section-name selfRef">Middle Partial Data Chunk (Type 4)</a>
+          </h4>
+<p id="section-8.4.5-1">
+   This chunk contains partial data of a resource and is neither the
+   first nor the last part of the full resource.<a href="#section-8.4.5-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.5-2">
+   The format of this chunk is the same as the format of a data chunk
+   (<a href="#sect-8.4.3" class="auto internal xref">Section 8.4.3</a>) except for the differences noted below.<a href="#section-8.4.5-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.5-3">
+   The first and second bits of flags must be set to 0.<a href="#section-8.4.5-3" class="pilcrow">¶</a></p>
+<p id="section-8.4.5-4">
+   The uncompressed data size is only of this part of the resource, not
+   of the full resource.<a href="#section-8.4.5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.6">
+<section id="section-8.4.6">
+          <h4 id="name-last-partial-data-chunk-typ">
+<a href="#section-8.4.6" class="section-number selfRef">8.4.6. </a><a href="#name-last-partial-data-chunk-typ" class="section-name selfRef">Last Partial Data Chunk (Type 5)</a>
+          </h4>
+<p id="section-8.4.6-1">
+   This chunk contains the final piece of partial data of a resource.<a href="#section-8.4.6-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.6-2">
+   The format of this chunk is the same as the format of a data chunk
+   (<a href="#sect-8.4.3" class="auto internal xref">Section 8.4.3</a>) except for the differences noted below.<a href="#section-8.4.6-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.6-3">
+   The first bit of flags must be set to 0.<a href="#section-8.4.6-3" class="pilcrow">¶</a></p>
+<p id="section-8.4.6-4">
+   If a hash code is given, the hash code of the full resource
+   (concatenated from all previous chunks and this chunk) is given in
+   this chunk.<a href="#section-8.4.6-4" class="pilcrow">¶</a></p>
+<p id="section-8.4.6-5">
+   The uncompressed data size is only of this part of the resource, not
+   of the full resource.<a href="#section-8.4.6-5" class="pilcrow">¶</a></p>
+<p id="section-8.4.6-6">
+   The type of this chunk indicates that there are no further chunk
+   encoding this resource, so the full resource is now known.<a href="#section-8.4.6-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.7">
+<section id="section-8.4.7">
+          <h4 id="name-footer-metadata-chunk-type-">
+<a href="#section-8.4.7" class="section-number selfRef">8.4.7. </a><a href="#name-footer-metadata-chunk-type-" class="section-name selfRef">Footer Metadata Chunk (Type 6)</a>
+          </h4>
+<p id="section-8.4.7-1">
+   This metadata applies to the resource whose encoding ended in the
+   preceding data chunk or last partial data chunk.<a href="#section-8.4.7-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.7-2">
+   The contents of this chunk follows the format described in <a href="#sect-8.3" class="auto internal xref">Section 8.3</a>.<a href="#section-8.4.7-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.7-3">
+   There are no lowercase field types defined for footer metadata.
+   Uppercase field types can be used as custom user data.<a href="#section-8.4.7-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.8">
+<section id="section-8.4.8">
+          <h4 id="name-global-metadata-chunk-type-">
+<a href="#section-8.4.8" class="section-number selfRef">8.4.8. </a><a href="#name-global-metadata-chunk-type-" class="section-name selfRef">Global Metadata Chunk (Type 7)</a>
+          </h4>
+<p id="section-8.4.8-1">
+   This metadata applies to the whole container instead of a single
+   resource.<a href="#section-8.4.8-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.8-2">
+   The contents of this chunk follows the format described in <a href="#sect-8.3" class="auto internal xref">Section 8.3</a>.<a href="#section-8.4.8-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.8-3">
+   There are no lowercase field types defined for global metadata.
+   Uppercase field types can be used as custom user data.<a href="#section-8.4.8-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.9">
+<section id="section-8.4.9">
+          <h4 id="name-repeat-metadata-chunk-type-">
+<a href="#section-8.4.9" class="section-number selfRef">8.4.9. </a><a href="#name-repeat-metadata-chunk-type-" class="section-name selfRef">Repeat Metadata Chunk (Type 8)</a>
+          </h4>
+<p id="section-8.4.9-1">
+   These chunks optionally repeat metadata that is interleaved between
+   data chunks. To use these chunks, it is necessary to also read
+   additional information, such as pointers to the original chunks, from
+   the central directory.<a href="#section-8.4.9-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.9-2">
+   The contents of this chunk follows the format described in <a href="#sect-8.3" class="auto internal xref">Section 8.3</a>.<a href="#section-8.4.9-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.9-3">This chunk has an extra header byte:<a href="#section-8.4.9-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.9-4">
+            <dt id="section-8.4.9-4.1">
+ 1 byte:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.9-4.2">Chunk type of repeated chunk (metadata chunk
+              or footer metadata chunk).<a href="#section-8.4.9-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-8.4.9-5">This set of chunks must follow the following restrictions:<a href="#section-8.4.9-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.4.9-6.1">
+ It is optional whether or not repeat metadata chunks are
+         present.<a href="#section-8.4.9-6.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-8.4.9-6.2">If they are present, then they must be present for all
+ metadata chunks and footer metadata chunks.<a href="#section-8.4.9-6.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-8.4.9-6.3">There may be only 1 repeat metadata chunk per repeated metadata chunk.<a href="#section-8.4.9-6.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-8.4.9-6.4">They must appear in the same order as the chunks appear in the container, which is also the same order as listed in the
+         central directory.<a href="#section-8.4.9-6.4" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-8.4.9-6.5">Compression of these chunks is allowed; however, it is not allowed
+ to use any internal dictionary except an earlier repeat
+         metadata chunk of this series, and it is not allowed for a
+         metadata chunk to keep the decoder state if the previous chunk
+         is not a repeat metadata chunk. That is, the series of
+         metadata chunks must be decompressible without using other
+         chunks of the framing format file.<a href="#section-8.4.9-6.5" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-8.4.9-7">
+   The fields contained in this metadata chunk must follow the following
+   restrictions:<a href="#section-8.4.9-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.4.9-8.1">If a field is present, it must
+ exactly match the corresponding field of the copied chunk.<a href="#section-8.4.9-8.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-8.4.9-8.2">It is allowed to leave out a field that is present
+ in the copied chunk.<a href="#section-8.4.9-8.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-8.4.9-8.3">If a field is present, then it must be present in <strong>all</strong> other
+ repeat metadata chunks when the copied chunk contains this
+         field. In other words, if you know you can get the name field
+         from a repeat chunk, you know that you will be able to get all
+         names of all resources from all repeat chunks.<a href="#section-8.4.9-8.3" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<div id="sect-8.4.10">
+<section id="section-8.4.10">
+          <h4 id="name-central-directory-chunk-typ">
+<a href="#section-8.4.10" class="section-number selfRef">8.4.10. </a><a href="#name-central-directory-chunk-typ" class="section-name selfRef">Central Directory Chunk (Type 9)</a>
+          </h4>
+<p id="section-8.4.10-1">
+   The central directory chunk along with the repeat metadata chunks
+   allow quickly finding and listing compressed resources in the container
+   file.<a href="#section-8.4.10-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.10-2">
+   The central directory chunk is always uncompressed and does not have
+   the codec byte. It instead has the following format:<a href="#section-8.4.10-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.10-3">
+            <dt id="section-8.4.10-3.1">varint:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.10-3.2">
+              <p id="section-8.4.10-3.2.1">Pointer into the file where the repeat metadata chunks are located or 0 if they are not present.<a href="#section-8.4.10-3.2.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-8.4.10-3.3">per chunk listed:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.10-3.4">
+              <p id="section-8.4.10-3.4.1"><br></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.10-3.4.2">
+                <dt id="section-8.4.10-3.4.2.1">
+ varint:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.10-3.4.2.2">Pointer into the file where this chunk begins.<a href="#section-8.4.10-3.4.2.2" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-8.4.10-3.4.2.3">varint:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.10-3.4.2.4">Number of header bytes N used below.<a href="#section-8.4.10-3.4.2.4" class="pilcrow">¶</a>
+</dd>
+                <dd class="break"></dd>
+<dt id="section-8.4.10-3.4.2.5">N bytes:</dt>
+                <dd style="margin-left: 1.5em" id="section-8.4.10-3.4.2.6">Copy of all the header bytes of the pointed at chunk,
+ including total size, chunk type byte, codec,
+                 uncompressed size, dictionary references, and X extra
+                 header bytes. The content is not repeated here.<a href="#section-8.4.10-3.4.2.6" class="pilcrow">¶</a>
+</dd>
+              <dd class="break"></dd>
+</dl>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-8.4.10-4">
+   The last listed chunk is reached when the end of the contents of the
+   central directory are reached. If the end does not match the last
+   byte of the central directory, the decoder must reject the data
+   stream as invalid.<a href="#section-8.4.10-4" class="pilcrow">¶</a></p>
+<p id="section-8.4.10-5">
+   If present, the central directory must list all data and metadata
+   chunks of all types.<a href="#section-8.4.10-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.11">
+<section id="section-8.4.11">
+          <h4 id="name-final-footer-chunk-type-10">
+<a href="#section-8.4.11" class="section-number selfRef">8.4.11. </a><a href="#name-final-footer-chunk-type-10" class="section-name selfRef">Final Footer Chunk (Type 10)</a>
+          </h4>
+<p id="section-8.4.11-1">
+
+   The final footer chunk closes the file and is only present if bit 2 of the
+   initial container flags was set.<a href="#section-8.4.11-1" class="pilcrow">¶</a></p>
+<p id="section-8.4.11-2">This chunk has the following content, which is always uncompressed:<a href="#section-8.4.11-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-8.4.11-3">
+            <dt id="section-8.4.11-3.1">
+ reversed varint:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.11-3.2">
+              <p id="section-8.4.11-3.2.1">Size of this entire framing format file,
+                       including these bytes themselves, or 0 if this
+                       size is not given.<a href="#section-8.4.11-3.2.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-8.4.11-3.3">reversed varint:</dt>
+            <dd style="margin-left: 1.5em" id="section-8.4.11-3.4">Pointer to the start of the central directory, or 0 if there is none.<a href="#section-8.4.11-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-8.4.11-4">
+   A reversed varint has the same format as a varint but its bytes
+   are in reversed order, and it is designed to be parsed from the end of the file
+   towards the beginning.<a href="#section-8.4.11-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-8.4.12">
+<section id="section-8.4.12">
+          <h4 id="name-chunk-ordering">
+<a href="#section-8.4.12" class="section-number selfRef">8.4.12. </a><a href="#name-chunk-ordering" class="section-name selfRef">Chunk Ordering</a>
+          </h4>
+<p id="section-8.4.12-1">
+   The chunk ordering must follow the rules described below. If the
+   decoder sees otherwise, it must reject the data stream as invalid.<a href="#section-8.4.12-1" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-2">
+      Padding chunks may be inserted anywhere, even between chunks for
+      which the rules below say no other chunk types may come in
+      between.<a href="#section-8.4.12-2" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-3">
+      Metadata chunks must come immediately before the data chunks of
+      the resource they apply to.<a href="#section-8.4.12-3" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-4">
+      Footer metadata chunks must come immediately after the data
+      chunks of the resource they apply to.<a href="#section-8.4.12-4" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-5">
+      There may be only 0 or 1 metadata chunks per resource.<a href="#section-8.4.12-5" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-6">
+      There may be only 0 or 1 footer metadata chunks per resource.<a href="#section-8.4.12-6" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-7">
+      A resource must exist out of either 1 data chunk or 1 first
+      partial data chunk, 0 or more middle partial data
+      chunks, and 1 last partial data chunk, in that order.<a href="#section-8.4.12-7" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-8">
+      Repeat metadata chunks must follow the rules of <a href="#sect-8.4.9" class="auto internal xref">Section 8.4.9</a>.<a href="#section-8.4.12-8" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-9">
+      There may be only 0 or 1 central directory chunks.<a href="#section-8.4.12-9" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-10">
+      If bit 2 of the container flags is set, there may be only a
+      single resource, no metadata chunks of any type, no central
+      directory, and no final footer.<a href="#section-8.4.12-10" class="pilcrow">¶</a></p>
+<p style="margin-left: 1.5em" id="section-8.4.12-11">
+      If bit 2 of the container flags is not set, there must be exactly
+      1 final footer chunk, and it must be the last chunk in the file.<a href="#section-8.4.12-11" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-9">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-9-1">
+   The security considerations for brotli <span>[<a href="#RFC7932" class="cite xref">RFC7932</a>]</span> apply to shared
+   brotli as well.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<p id="section-9-2">
+   In addition, the same considerations apply to the decoding of new
+   file format streams for shared brotli, including shared dictionaries,
+   the framing format, and the shared brotli format.<a href="#section-9-2" class="pilcrow">¶</a></p>
+<p id="section-9-3">
+   The dictionary must be treated with the same security precautions as
+   the content because a change to the dictionary can result in a
+   change to the decompressed content.<a href="#section-9-3" class="pilcrow">¶</a></p>
+<p id="section-9-4">
+   The CRIME attack <span>[<a href="#CRIME" class="cite xref">CRIME</a>]</span> shows that it's a bad idea to compress data
+   from mixed (e.g., public and private) sources -- the data sources
+   include not only the compressed data but also the dictionaries. For
+   example, if you compress secret cookies using a public-data-only
+   dictionary, you still leak information about the cookies.<a href="#section-9-4" class="pilcrow">¶</a></p>
+<p id="section-9-5">The dictionary can reveal information about the compressed data and vice versa. That is, data compressed with the dictionary can reveal contents of the dictionary when an adversary can control parts of the data to compress and see the compressed size. On the other hand, if
+   the adversary can control the dictionary, the adversary can learn
+   information about the compressed data.<a href="#section-9-5" class="pilcrow">¶</a></p>
+<p id="section-9-6">
+   The most robust defense against CRIME is not to compress private data, e.g., sensitive headers like cookies or any content with personally identifiable information (PII).  The
+   challenge has been to identify secrets within a vast amount of data to be compressed.
+   Cloudflare uses a regular expression <span>[<a href="#CLOUDFLARE" class="cite xref">CLOUDFLARE</a>]</span>.
+   Another idea is to extend existing web template systems (e.g., Soy
+   <span>[<a href="#SOY" class="cite xref">SOY</a>]</span>) to allow developers to mark secrets that must not be
+   compressed.<a href="#section-9-6" class="pilcrow">¶</a></p>
+<p id="section-9-7">
+   A less robust idea, but easier to implement, is to randomize the
+   compression algorithm, i.e., adding randomly generated padding,
+   varying the compression ratio, etc. The tricky part is to find the
+   right balance between cost and security (i.e., on one hand, we don't
+   want to add too much padding because it adds a cost to data, but on the
+   other hand, we don't want to add too little because the adversary can
+   detect a small amount of padding with traffic analysis).<a href="#section-9-7" class="pilcrow">¶</a></p>
+<p id="section-9-8">
+   Additionally, another defense is to not use dictionaries for cross-
+   domain requests and to only use shared brotli for the response when the
+   origin is the same as where the content is hosted (using CORS).  This
+   prevents an adversary from using a private dictionary with user
+   secrets to compress content hosted on the adversary's origin.  It
+   also helps prevent CRIME attacks that try to benefit from a public
+   dictionary by preventing data compression with dictionaries for
+   requests that do not originate from the host itself.<a href="#section-9-8" class="pilcrow">¶</a></p>
+<p id="section-9-9">
+   The content of the dictionary itself should not be affected by
+   external users; allowing adversaries to control the dictionary allows
+   a form of chosen plaintext attack. Instead, only base the dictionary
+   on content you control or generic large scale content such as a
+   spoken language and update the dictionary with large time intervals
+   (days, not seconds) to prevent fast probing.<a href="#section-9-9" class="pilcrow">¶</a></p>
+<p id="section-9-10">
+   The use of HighwayHash <span>[<a href="#HWYHASH" class="cite xref">HWYHASH</a>]</span> for dictionary identifiers does not
+   guarantee against collisions in an adversarial environment and is
+   intended to be used for identifying the dictionary within a trusted,
+   known set of dictionaries. In an adversarial environment, users of
+   shared brotli should use another mechanism to validate a negotiated
+   dictionary such as a cryptographically proven secure hash.<a href="#section-9-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-10">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-10-1">
+   This document has no IANA actions.<a href="#section-10-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="HWYHASH">[HWYHASH]</dt>
+        <dd>
+<span class="refAuthor">Alakuijala, J.</span>, <span class="refAuthor">Cox, B.</span>, and <span class="refAuthor">J. Wassenberg</span>, <span class="refTitle">"Fast keyed hash/pseudo-random function using SIMD multiply and permute"</span>, <span class="seriesInfo">DOI 10.48550/arXiv.1612.06257</span>, <time datetime="2017-02" class="refDate">February 2017</time>, <span>&lt;<a href="https://arxiv.org/abs/1612.06257">https://arxiv.org/abs/1612.06257</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7932">[RFC7932]</dt>
+      <dd>
+<span class="refAuthor">Alakuijala, J.</span> and <span class="refAuthor">Z. Szabadka</span>, <span class="refTitle">"Brotli Compressed Data Format"</span>, <span class="seriesInfo">RFC 7932</span>, <span class="seriesInfo">DOI 10.17487/RFC7932</span>, <time datetime="2016-07" class="refDate">July 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7932">https://www.rfc-editor.org/info/rfc7932</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="CLOUDFLARE">[CLOUDFLARE]</dt>
+        <dd>
+<span class="refAuthor">Loring, B.</span>, <span class="refTitle">"A Solution to Compression Oracles on the Web"</span>, <span class="refContent">The Cloudflare Blog</span>, <time datetime="2018-03-27" class="refDate">27 March 2018</time>, <span>&lt;<a href="https://blog.cloudflare.com/a-solution-to-compression-oracles-on-the-web/">https://blog.cloudflare.com/a-solution-to-compression-oracles-on-the-web/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CRIME">[CRIME]</dt>
+        <dd>
+<span class="refAuthor">CVE Program</span>, <span class="refTitle">"CVE-2012-4929"</span>, <span>&lt;<a href="https://www.cve.org/CVERecord?id=CVE-2012-4929">https://www.cve.org/CVERecord?id=CVE-2012-4929</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LZ77">[LZ77]</dt>
+        <dd>
+<span class="refAuthor">Ziv, J.</span> and <span class="refAuthor">A. Lempel</span>, <span class="refTitle">"A Universal Algorithm for Sequential Data Compression"</span>, <span class="refContent">IEEE Transactions on Information Theory, vol. 23, no. 3, pp. 337-343</span>, <span class="seriesInfo">DOI 10.1109/TIT.1977.1055714</span>, <time datetime="1977-05" class="refDate">May 1977</time>, <span>&lt;<a href="https://doi.org/10.1109/TIT.1977.1055714">https://doi.org/10.1109/TIT.1977.1055714</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SOY">[SOY]</dt>
+      <dd>
+<span class="refAuthor">Google Developers</span>, <span class="refTitle">"Closure Tools"</span>, <span>&lt;<a href="https://developers.google.com/closure">https://developers.google.com/closure</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">
+   The authors would like to thank <span class="contact-name">Robert Obryk</span> for suggesting
+   improvements to the format and the text of the specification.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jyrki Alakuijala</span></div>
+<div dir="auto" class="left"><span class="org">Google, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jyrki@google.com" class="email">jyrki@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Thai Duong</span></div>
+<div dir="auto" class="left"><span class="org">Google, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:thaidn@google.com" class="email">thaidn@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Evgenii Kliuchnikov</span></div>
+<div dir="auto" class="left"><span class="org">Google, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:eustas@google.com" class="email">eustas@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Zoltan Szabadka</span></div>
+<div dir="auto" class="left"><span class="org">Google, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:szabadka@google.com" class="email">szabadka@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Lode Vandevenne (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Google, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:lode@google.com" class="email">lode@google.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
