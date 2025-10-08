@@ -1,0 +1,2764 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9866: Root Node Failure Detector (RNFD): Fast Detection of Border Router Crashes in the Routing Protocol for Low-Power and Lossy Networks (RPL)</title>
+<meta content="Konrad Iwanicki" name="author">
+<meta content="
+       By and large, correct operation of a network running the Routing
+      Protocol for Low-Power and Lossy Networks (RPL) requires border routers to be
+      up.  In many applications, it is beneficial for the nodes to detect a
+      failure of a border router as soon as possible to trigger fallback
+      actions.  This document specifies the Root Node Failure Detector (RNFD),
+      an extension to RPL that expedites detection of border router crashes by
+      having nodes collaboratively monitor the status of a given border
+      router.  The extension introduces an additional state at each node, a
+      new type of RPL Control Message Option for synchronizing this state
+      among different nodes, and the coordination algorithm itself. 
+    " name="description">
+<meta content="xml2rfc 3.30.2" name="generator">
+<meta content="9866" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9866.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-roll-rnfd-07" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9866" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9866</td>
+<td class="center">RNFD</td>
+<td class="right">October 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Iwanicki</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9866" class="eref">9866</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-10" class="published">October 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">K. Iwanicki</div>
+<div class="org">University of Warsaw</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9866</h1>
+<h1 id="title">Root Node Failure Detector (RNFD): Fast Detection of Border Router Crashes in the Routing Protocol for Low-Power and Lossy Networks (RPL)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">By and large, correct operation of a network running the Routing
+      Protocol for Low-Power and Lossy Networks (RPL) requires border routers to be
+      up.  In many applications, it is beneficial for the nodes to detect a
+      failure of a border router as soon as possible to trigger fallback
+      actions.  This document specifies the Root Node Failure Detector (RNFD),
+      an extension to RPL that expedites detection of border router crashes by
+      having nodes collaboratively monitor the status of a given border
+      router.  The extension introduces an additional state at each node, a
+      new type of RPL Control Message Option for synchronizing this state
+      among different nodes, and the coordination algorithm itself.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9866">https://www.rfc-editor.org/info/rfc9866</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-effects-of-lbr-crashes" class="internal xref">Effects of LBR Crashes</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-design-principles" class="internal xref">Design Principles</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-other-solutions" class="internal xref">Other Solutions</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-overview" class="internal xref">Overview</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-protocol-state-machine" class="internal xref">Protocol State Machine</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-counters-and-communication" class="internal xref">Counters and Communication</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-the-rnfd-option" class="internal xref">The RNFD Option</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-general-cfrc-requirements" class="internal xref">General CFRC Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-format-of-the-option" class="internal xref">Format of the Option</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-rpl-router-behavior" class="internal xref">RPL Router Behavior</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-joining-a-dodag-version-and" class="internal xref">Joining a DODAG Version and Changing the RNFD Role</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-detecting-and-verifying-pro" class="internal xref">Detecting and Verifying Problems with the DODAG Root</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-disseminating-observations-" class="internal xref">Disseminating Observations and Reaching Agreement</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-dodag-roots-behavior" class="internal xref">DODAG Root's Behavior</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-activating-and-deactivating" class="internal xref">Activating and Deactivating the Protocol on Demand</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
+                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-processing-cfrcs-of-incompa" class="internal xref">Processing CFRCs of Incompatible Lengths</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.7">
+                <p id="section-toc.1-1.5.2.7.1"><a href="#section-5.7" class="auto internal xref">5.7</a>.  <a href="#name-summary-of-rnfds-interactio" class="internal xref">Summary of RNFD's Interactions with RPL</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.8">
+                <p id="section-toc.1-1.5.2.8.1"><a href="#section-5.8" class="auto internal xref">5.8</a>.  <a href="#name-summary-of-rnfds-constants" class="internal xref">Summary of RNFD's Constants</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-manageability-consideration" class="internal xref">Manageability Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-role-assignment-and-cfrc-si" class="internal xref">Role Assignment and CFRC Size Adjustment</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-virtual-dodag-roots" class="internal xref">Virtual DODAG Roots</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-monitoring" class="internal xref">Monitoring</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">RPL is an IPv6 routing protocol for Low-Power and Lossy Networks
+      (LLNs) <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>.  Such networks are
+      usually constrained in device energy and channel capacity.  They are
+      formed largely of nodes that offer little processing power and memory,
+      and links that are of variable qualities and support low data rates.
+      Therefore, a significant challenge that a routing protocol for LLNs has
+      to address is minimizing resource consumption without sacrificing
+      reaction time to network changes.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">One of the main design principles adopted in RPL to minimize node
+      resource consumption is delegating much of the responsibility for
+      routing to LLN Border Routers (LBRs).  A network is organized into
+      Destination-Oriented Directed Acyclic Graphs (DODAGs), each
+      corresponding to an LBR and having all its paths terminate at the LBR.
+      To this end, every node is dynamically assigned a Rank representing its
+      distance to a given LBR, measured in some metric, with the LBR having
+      the minimal Rank, which reflects its role as the DODAG root.  The Ranks
+      allow each non-LBR node to select from among its neighbors (i.e., nodes
+      to which the node has links) those that are closer to the LBR than the
+      node itself (i.e., the node's parents in the graph).  The resulting DODAG
+      paths, consisting of the node-parent links, are utilized for routing
+      packets upward to the LBR and outside the LLN.  They are also used by
+      nodes to periodically report their connectivity upward to the LBR, which
+      allows for directing packets downward from the LBR to these
+      nodes (e.g., by means of source routing <span>[<a href="#RFC6554" class="cite xref">RFC6554</a>]</span>).  All in all, not only do LBRs
+      participate in routing, but they also drive the process of DODAG construction
+      and maintenance underlying the protocol.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">To play this central role, LBRs are expected to be more capable than
+      regular LLN nodes.  They are assumed not to be constrained in computing
+      power, memory, and energy, which often entails a more involved
+      hardware-software architecture and tethered power supply.  However, this
+      also makes them prone to failures, especially since
+      it is often difficult to ensure a backup power supply for every LBR in large deployments.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<div id="effects-of-lbr-crashes">
+<section id="section-1.1">
+        <h3 id="name-effects-of-lbr-crashes">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-effects-of-lbr-crashes" class="section-name selfRef">Effects of LBR Crashes</a>
+        </h3>
+<p id="section-1.1-1">When an LBR crashes, or more generally, fails in a way that
+        prevents other nodes in its DODAG from communicating with it, the
+        nodes also lose the ability to communicate with other Internet hosts.
+        In addition, a significant fraction of DODAG paths interconnecting the
+        nodes become invalid, as they pass through the dead LBR.  The others
+        also degenerate as a result of DODAG repair attempts, which are bound
+        to fail.  In effect, routing inside the DODAG also becomes largely
+        impossible.  Consequently, it is desirable that an LBR crash be
+        detected by the nodes fast, so that they can leave the broken DODAG
+        and join another one or trigger additional application- or
+        deployment-dependent fallback mechanisms, thereby minimizing the
+        negative impact of the disconnection.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">Since all DODAG paths lead to the corresponding LBR, detecting its
+        crash by a node entails dropping all parents and adopting an infinite
+        Rank, which reflects the node's inability to reach the dead LBR.
+        Depending on the deployment settings, the node can then remain in such
+        a state, join a different DODAG, or even become the root of a
+        floating DODAG.  In any case, however, achieving this state for all
+        nodes is slow, can generate heavy traffic, and is difficult to
+        implement correctly <span>[<a href="#Iwanicki16" class="cite xref">Iwanicki16</a>]</span> <span>[<a href="#Paszkowska19" class="cite xref">Paszkowska19</a>]</span> <span>[<a href="#Ciolkosz19" class="cite xref">Ciolkosz19</a>]</span>.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">To start with, tearing down all DODAG paths requires each of the
+        dead LBR's neighbors to detect that its link with the LBR is no longer
+        up.  Otherwise, any of the neighbors unaware of this fact can keep
+        advertising a finite Rank and can thus be other nodes' parent or
+        ancestor in the DODAG; such nodes will incorrectly believe they have a
+        valid path to the dead LBR. 
+Detecting a crash of a link by a node normally happens when the node has observed a sufficient number of forwarding failures over the link.
+ Therefore, considering the
+        low-data-rate applications of LLNs, the period from the crash to the
+        moment of eliminating the last link to the dead LBR from the DODAG may
+        be long.  Subsequently, learning by all nodes that none of their links
+        can form any path leading to the dead LBR also adds latency, partly
+        due to parent changes that the nodes independently perform in attempts
+        to repair their broken paths locally.  Since a non-LBR node has only
+        local knowledge of the network, potentially inconsistent with that of
+        other nodes, such parent changes often produce paths containing loops,
+        which have to be broken before all nodes can conclude that no path to
+        the dead LBR exists globally.  Even with RPL's dedicated loop
+        detection mechanisms <span>[<a href="#RFC6553" class="cite xref">RFC6553</a>]</span>, this
+        also requires traffic and hence time.  Finally, switching a parent or
+        discovering a loop can also generate cascaded bursts of control
+        traffic, owing to the adaptive Trickle algorithm for exchanging DODAG
+        information <span>[<a href="#RFC6206" class="cite xref">RFC6206</a>]</span>.  Overall, the
+        behavior of the network when handling an LBR crash is highly
+        suboptimal, thereby not being in line with RPL's goals of minimizing
+        resource consumption and reaction latencies.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="design-principles">
+<section id="section-1.2">
+        <h3 id="name-design-principles">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-design-principles" class="section-name selfRef">Design Principles</a>
+        </h3>
+<p id="section-1.2-1">To address this issue, this document proposes an extension to RPL,
+        dubbed the "Root Node Failure Detector (RNFD)".  To minimize the time
+        and traffic required to handle an LBR crash, the RNFD algorithm adopts
+        the following design principles, derived directly from the previous
+        observations:<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1.2-2">
+<li id="section-1.2-2.1">
+            <p id="section-1.2-2.1.1">Explicitly coordinating LBR monitoring between nodes instead of
+            relying only on the emergent behavior resulting from their
+            independent operation.<a href="#section-1.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-2.2">
+            <p id="section-1.2-2.2.1">Avoiding probing all links to the dead LBR so as to reduce the
+            tail latency when eliminating these links from the DODAG.<a href="#section-1.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-2.3">
+            <p id="section-1.2-2.3.1">Exploiting concurrency by prompting proactive checking for a
+            possible LBR crash when some nodes suspect such a failure may have
+            taken place, which aims to further reduce the overall latency.<a href="#section-1.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-2.4">
+            <p id="section-1.2-2.4.1">Minimizing changes to RPL's existing algorithms by operating in
+            parallel and largely independently (in the background) and by
+            introducing few additional assumptions.<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-1.2-3">While these principles do improve RPL's performance under a wide
+        range of LBR crashes, their probabilistic nature precludes hard
+        guarantees for all possible corner cases.  In particular, in some
+        scenarios, RNFD's operation may result in false negatives, but these
+        situations are peculiar and will eventually be handled by RPL's own
+        aforementioned mechanisms.  Likewise, in some scenarios, notably
+        involving highly unstable links, false positives may occur, but they
+        can be alleviated as well.  In any case, the principles also guarantee
+        that RNFD can be deactivated at any time if needed, in which case
+        RPL's operation is unaffected.<a href="#section-1.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="other-solutions">
+<section id="section-1.3">
+        <h3 id="name-other-solutions">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-other-solutions" class="section-name selfRef">Other Solutions</a>
+        </h3>
+<p id="section-1.3-1">Given the consequences of LBR failures, it is also
+        worth considering other solutions to the problem.  More specifically,
+        power outages can be alleviated by provisioning redundant power
+        sources or emergency batteries.  Likewise, RPL's so-called virtual
+        DODAG roots can help tolerate some failures of individual LBRs.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+<p id="section-1.3-2">As mentioned previously, RNFD has been designed to be largely
+        independent of those solutions; that is, rather than aiming to be
+        their replacement, RNFD can complement them.  In particular, the
+        operation of RNFD with different variants of virtual DODAG roots is
+        covered in <a href="#mgmnt_virt_dodag_roots" class="auto internal xref">Section 6.2</a>.<a href="#section-1.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="terms">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">The terminology used in this document is consistent with and
+ incorporates that described in "Terms Used in Routing for Low-Power
+ and Lossy Networks" <span>[<a href="#RFC7102" class="cite xref">RFC7102</a>]</span>, "RPL:
+ IPv6 Routing Protocol for Low-Power and Lossy Networks" <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>, and "The Routing Protocol for
+ Low-Power and Lossy Networks (RPL) Option for Carrying RPL Information
+ in Data-Plane Datagrams" <span>[<a href="#RFC6553" class="cite xref">RFC6553</a>]</span>.
+ Other terms used in LLNs can be found in "Terminology for
+ Constrained-Node Networks" <span>[<a href="#RFC7228" class="cite xref">RFC7228</a>]</span>.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">In particular, the following acronyms appear in the document:<a href="#section-2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-4">
+        <dt id="section-2-4.1">DIO:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.2">DODAG Information Object (a RPL message)<a href="#section-2-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.3">DIS:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.4">DODAG Information Solicitation (a RPL message)<a href="#section-2-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.5">DODAG:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.6">Destination-Oriented Directed Acyclic Graph<a href="#section-2-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.7">LLN:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.8">Low-Power and Lossy Network<a href="#section-2-4.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.9">LBR:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.10">LLN Border Router<a href="#section-2-4.10" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-2-5">In addition, the document introduces the following concepts:<a href="#section-2-5" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-6">
+        <dt id="section-2-6.1">Sentinel:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-6.2">One of the two roles that a node can play in RNFD. For a given
+        DODAG Version, a Sentinel node is a DODAG root's neighbor that
+        monitors the DODAG root's status. There are normally multiple
+        Sentinels for a DODAG root. However, being the DODAG root's neighbor
+        need not imply being a Sentinel.<a href="#section-2-6.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-6.3">Acceptor:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-6.4">The other of the two roles that a node can play in RNFD. For a
+        given DODAG Version, an Acceptor node is a node that is not
+        a Sentinel.<a href="#section-2-6.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-6.5">Locally Observed DODAG Root's State (LORS):</dt>
+        <dd style="margin-left: 1.5em" id="section-2-6.6">A node's local knowledge of the DODAG root's status, specifying in
+        particular whether the DODAG root is up.<a href="#section-2-6.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-6.7">Conflict-Free Replicated Counter (CFRC):</dt>
+        <dd style="margin-left: 1.5em" id="section-2-6.8">Conceptually represents a dynamic set whose cardinality can be
+        estimated. It defines a partial order on its values and supports
+        element addition and union. The union operation is order- and
+        duplicate-insensitive, that is, idempotent, commutative, and
+        associative.<a href="#section-2-6.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="overview">
+<section id="section-3">
+      <h2 id="name-overview">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-overview" class="section-name selfRef">Overview</a>
+      </h2>
+<p id="section-3-1">As mentioned previously, LBRs are DODAG roots in RPL; hence, a
+      crash of an LBR is global in that it affects all nodes in the
+      corresponding DODAG.  Therefore, each node running RNFD for a given
+      DODAG explicitly tracks the DODAG root's current condition, which is
+      referred to as Locally Observed DODAG Root's State (LORS), and
+      synchronizes its local knowledge with other nodes.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Since monitoring the condition of the DODAG root is performed by
+      tracking the status of its links (i.e., whether they are up or down), it
+      can only be done by the root's neighbors; other nodes must accept their
+      observations.  Consequently, depending on their roles, non-root nodes
+      are divided in RNFD into two disjoint groups: Sentinels and Acceptors.
+      A Sentinel node is a DODAG root's neighbor that monitors its link with
+      the root.  Thus, the DODAG root normally has multiple Sentinels, but being
+      its neighbor need not imply being a Sentinel.  An Acceptor node is
+      a node that is not a Sentinel.  Acceptors thus mainly collect and
+      propagate Sentinels' observations.  More information on Sentinel
+      selection can be found in <a href="#mgmnt_roles_and_cfrc_lens" class="auto internal xref">Section 6.1</a>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<div id="protocol-state-machine">
+<section id="section-3.1">
+        <h3 id="name-protocol-state-machine">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-protocol-state-machine" class="section-name selfRef">Protocol State Machine</a>
+        </h3>
+<p id="section-3.1-1">The possible values of LORS and transitions between them are
+        depicted in <a href="#fig_state_machine" class="auto internal xref">Figure 1</a>.
+        States "UP" and "GLOBALLY DOWN" can be attained by both Sentinels and
+        Acceptors; states "SUSPECTED DOWN" and "LOCALLY DOWN" can be attained
+        by Sentinels only.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<span id="name-rnfd-states-and-transitions"></span><div id="fig_state_machine">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-3.1-2.1">
+<pre>
+  +---------------------------------------------------------+
+  |                      |---------------------------+   3a |
+  |    +-----------------+---------+              3b |      |
+  |    | 2b              |         v                 v      v
++-+----+-+   1 +---------+-+     +-----------+     +-+------+-+
+|   UP   +----&gt;+ SUSPECTED +----&gt;+  LOCALLY  +----&gt;+ GLOBALLY |
+|        +&lt;----+    DOWN   | 2a  |    DOWN   | 3c  |   DOWN   |
++-+----+-+  4a +-----------+     +-+---------+     +-+--------+
+  ^    ^                           |                 |
+  |    |                        4b |                 |
+  |    +---------------------------+               5 |
+  +--------------------------------------------------+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-rnfd-states-and-transitions" class="selfRef">RNFD States and Transitions</a>
+          </figcaption></figure>
+</div>
+<p id="section-3.1-3">To begin with, when any node joins a DODAG Version, the DODAG root
+        must appear alive, so the node initializes RNFD with its LORS equal to
+        "UP".  For a properly working DODAG root, the node remains in state
+        "UP".<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">However, when a node acting as a Sentinel starts suspecting that
+        the root may have crashed, it changes its LORS to "SUSPECTED DOWN"
+        (transition 1 in <a href="#fig_state_machine" class="auto internal xref">Figure 1</a>).
+        The transition from "UP" to "SUSPECTED DOWN" can happen based on the
+        node's observations at either the data plane (e.g., link-layer
+        triggers about missing hop-by-hop acknowledgments for packets
+        forwarded over the node's link to the root) or at the control plane (e.g.,
+        a significant growth in the number of Sentinels already
+        suspecting the root to be dead).  In state "SUSPECTED DOWN", the
+        Sentinel node may verify its suspicion and/or inform other nodes about
+        the suspicion.  When this has been done, it changes its LORS to
+        "LOCALLY DOWN" (transition 2a).  In some cases, the verification need
+        not be performed, and as an optimization, a direct transition from
+        "UP" to "LOCALLY DOWN" (transition 2b) can be done instead.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1-5">If a sufficient number of Sentinels have their LORS equal to "LOCALLY
+        DOWN", all nodes (Sentinels and Acceptors) consent globally that the
+        DODAG root must have crashed and set their LORS to "GLOBALLY DOWN",
+        irrespective of the previous value (transitions 3a, 3b, and 3c).
+        State "GLOBALLY DOWN" is terminal in that the only transition any node
+        can perform from this to another state (transition 5) takes place when
+        the node joins a new DODAG Version.  When a node is in state "GLOBALLY
+        DOWN", RNFD forces RPL to maintain an infinite Rank and no parent,
+        thereby preventing routing packets upward in the DODAG.  In other
+        words, this state represents a situation in which all non-root nodes
+        agree that the current DODAG Version is unusable; hence, to
+        recover, the root has to give a proof of being alive by initiating a
+        new DODAG Version.<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+<p id="section-3.1-6">In contrast, if a node (either a Sentinel or Acceptor) is in state
+        "UP", RNFD does not influence RPL's packet forwarding; a node can
+        route packets upward if it has a parent.  The same is true for states
+        "SUSPECTED DOWN" and "LOCALLY DOWN", attainable only by Sentinels.
+        Finally, while in any of the two states, a Sentinel node may observe
+        some activity of the DODAG root and hence decide that its suspicion
+        is a mistake.  In such a case, it returns to state "UP" (transitions
+        4a and 4b).<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="counters-and-communication">
+<section id="section-3.2">
+        <h3 id="name-counters-and-communication">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-counters-and-communication" class="section-name selfRef">Counters and Communication</a>
+        </h3>
+<p id="section-3.2-1">To enable arriving at a global conclusion that the DODAG root has
+        crashed (i.e., transiting to state "GLOBALLY DOWN"), all nodes count
+        locally and synchronize among each other the number of Sentinels
+        considering the root to be dead (i.e., those in state "LOCALLY DOWN").
+        This process employs structures referred to as Conflict-Free
+        Replicated Counters (CFRCs).  They are stored and modified
+        independently by each node and are disseminated throughout the network
+        in options added to RPL link-local control messages: DODAG Information
+        Objects (DIOs) and DODAG Information Solicitations (DISs).  Upon
+        reception of such an option from its neighbor, a node merges the
+        received counter with its local one, thereby obtaining a new content
+        for its local counter.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">The merging operation is idempotent, commutative, and associative.
+        Moreover, all possible counter values are partially ordered.  This
+        enables ensuring eventual consistency of the counters across all
+        nodes, irrespective of the particular sequence of merges, shape of the
+        DODAG, or general network topology.  In effect, as long as the network
+        is connected, all nodes will be able to arrive at the same conclusion
+        regarding the DODAG root, in particular when no two Sentinels
+        have a direct link with each other.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">Each node in RNFD maintains two CFRCs for a DODAG:<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.2-4">
+          <dt id="section-3.2-4.1">PositiveCFRC:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-4.2">Counts Sentinels that consider or have
+            previously considered the root node as alive in the current DODAG
+            Version.<a href="#section-3.2-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-4.3">NegativeCFRC:</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-4.4">Counts Sentinels that consider or have
+            previously considered the root node as dead in the current DODAG
+            Version.<a href="#section-3.2-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.2-5">The PositiveCFRC is always greater than or equal to the NegativeCFRC in
+        terms of the partial order defined for the counters.  The difference
+        between the value of the PositiveCFRC and the value of the NegativeCFRC is
+        thus nonnegative and estimates the number of Sentinels that still
+        consider the DODAG root node as alive.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="the-rnfd-option">
+<section id="section-4">
+      <h2 id="name-the-rnfd-option">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-the-rnfd-option" class="section-name selfRef">The RNFD Option</a>
+      </h2>
+<p id="section-4-1">RNFD state synchronization between nodes takes place through the RNFD
+      Option.  It is a new type of RPL Control Message Option that is carried
+      in link-local RPL control messages, notably DIOs and DISs.  Its main
+      task is allowing the receivers to merge their two CFRCs with the
+      sender's CFRCs.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="general-cfrc-requirements">
+<section id="section-4.1">
+        <h3 id="name-general-cfrc-requirements">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-general-cfrc-requirements" class="section-name selfRef">General CFRC Requirements</a>
+        </h3>
+<p id="section-4.1-1">CFRCs in RNFD <span class="bcp14">MUST</span> support the following operations:<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-4.1-2">
+          <dt id="section-4.1-2.1">value(c)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.2">Returns a nonnegative integer value corresponding to the number
+          of nodes counted by a given CFRC, c.<a href="#section-4.1-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-2.3">zero()</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.4">Returns a CFRC that counts no nodes, that is, has its value
+          equal to 0.<a href="#section-4.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-2.5">self()</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.6">Returns a CFRC that counts only the node executing the operation.<a href="#section-4.1-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-2.7">infinity()</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.8">Returns a CFRC that counts all possible nodes and represents a
+          special value, infinity.<a href="#section-4.1-2.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-2.9">merge(c1, c2)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.10">Returns a CFRC that is a union of c1 and c2 (i.e., counts all
+          nodes that are counted by either c1, c2, or both c1 and c2).<a href="#section-4.1-2.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-2.11">compare(c1, c2)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.12">Returns the result of comparing c1 to c2.<a href="#section-4.1-2.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-2.13">saturated(c)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.14">Returns TRUE if a given CFRC, c, is saturated (i.e., no more new
+          nodes should be counted by it); returns FALSE otherwise.<a href="#section-4.1-2.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-4.1-3">The partial ordering of CFRCs implies that the result of compare(c1, c2) can be either:<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-4.1">
+            <p id="section-4.1-4.1.1">smaller, if c1 is ordered before c2 (i.e., c2 counts all nodes
+            that c1 counts and at least one node that c1 does not count);<a href="#section-4.1-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-4.2">
+            <p id="section-4.1-4.2.1">greater, if c1 is ordered after c2 (i.e., c1 counts all nodes
+            that c2 counts and at least one node that c2 does not count);<a href="#section-4.1-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-4.3">
+            <p id="section-4.1-4.3.1">equal, if c1 and c2 are the same (i.e., they count the same nodes); or<a href="#section-4.1-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-4.4">
+            <p id="section-4.1-4.4.1">incomparable, otherwise.<a href="#section-4.1-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.1-5">In particular, zero() is smaller than all other values, and infinity() is greater than any other value.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1-6">The properties of merging can be formalized as follows for
+        any c1, c2, and c3:<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-7.1">
+            <p id="section-4.1-7.1.1">idempotence: c1 = merge(c1, c1);<a href="#section-4.1-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-7.2">
+            <p id="section-4.1-7.2.1">commutativity: merge(c1, c2) = merge(c2, c1); and<a href="#section-4.1-7.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-7.3">
+            <p id="section-4.1-7.3.1">associativity: merge(c1, merge(c2, c3)) = merge(merge(c1, c2), c3).<a href="#section-4.1-7.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.1-8">In particular, merge(c, zero()) always equals c, while merge(c,
+        infinity()) always equals infinity().<a href="#section-4.1-8" class="pilcrow">¶</a></p>
+<p id="section-4.1-9">There are many algorithmic structures that can provide the
+        aforementioned properties of CFRC.  Although in principle RNFD does
+        not rely on any specific one, the option adopts so-called linear
+        counting <span>[<a href="#Whang90" class="cite xref">Whang90</a>]</span>.<a href="#section-4.1-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="msg_format">
+<section id="section-4.2">
+        <h3 id="name-format-of-the-option">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-format-of-the-option" class="section-name selfRef">Format of the Option</a>
+        </h3>
+<p id="section-4.2-1">The format of the RNFD Option conforms to the generic format of RPL Control Message Options (see <span><a href="https://rfc-editor.org/rfc/rfc6550#section-6.7.1" class="relref">Section 6.7.1</a> of [<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>):<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<span id="name-format-of-the-rnfd-option"></span><div id="fig_opt_format">
+<figure id="figure-2">
+          <div class="alignLeft art-text artwork" id="section-4.2-2.1">
+<pre>
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  Type = 0x0E  | Option Length |                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
+  |                                                               |
+  +                                                               +
+  |               PosCFRC, NegCFRC (Variable Length*)             |
+  .                                                               .
+  .                                                               .
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-format-of-the-rnfd-option" class="selfRef">Format of the RNFD Option</a>
+          </figcaption></figure>
+</div>
+<p id="section-4.2-3">The "*" denotes that, if present, the fields have equal lengths.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.2-4">
+          <dt id="section-4.2-4.1">Option Type:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.2">0x0E<a href="#section-4.2-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.3">Option Length:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.4">8-bit unsigned integer. Denotes the length of the option in
+          octets, excluding the Option Type and Option Length fields. Its value
+          <span class="bcp14">MUST</span> be even. A value of 0 denotes that RNFD is
+          disabled in the current DODAG Version.<a href="#section-4.2-4.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-4.5">PosCFRC, NegCFRC:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.6">Two variable-length, octet-aligned bit arrays carrying the
+          sender's PositiveCFRC and NegativeCFRC, respectively.<a href="#section-4.2-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-4.2-5">The length of the arrays constituting the PosCFRC and NegCFRC
+        fields is the same and is derived from Option Length as follows.  The
+        value of Option Length is divided by 2 to obtain the number of octets
+        each of the two arrays occupies.  The resulting number of octets is
+        multiplied by 8, which yields an upper bound on the number of bits in
+        each array.  As the actual bit length of each of the arrays, the
+        largest prime number less than the upper bound is assumed.  For
+        example, if the value of Option Length is 16, then each array occupies
+        8 octets, and its actual bit length is 61, as this is the largest
+        prime number less than 64.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.2-6">Furthermore, for any bit equal to 1 in the NegCFRC, the bit with
+        the same index <span class="bcp14">MUST</span> also be equal to 1 in the PosCFRC.
+        Any unused bits (i.e., the bits beyond the actual bit length of each
+        of the arrays) <span class="bcp14">MUST</span> be equal to 0.  Finally, if PosCFRC
+        has all its bits equal to 1, then NegCFRC <span class="bcp14">MUST</span> also
+        have all its bits equal to 1.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.2-7">The CFRC operations are defined for such bit arrays of a given length as follows:<a href="#section-4.2-7" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-4.2-8">
+          <dt id="section-4.2-8.1">value(c)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.2">Returns the smallest integer value not less than -LT*ln(L0/LT),
+          where ln() is the natural logarithm function, L0 is the number of
+          bits equal to 0 in the array corresponding to c, and LT is
+          the bit length of the array.<a href="#section-4.2-8.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-8.3">zero()</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.4">Returns an array with all bits equal to 0.<a href="#section-4.2-8.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-8.5">self()</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.6">Returns an array with a single bit, selected uniformly at random, equal to 1.<a href="#section-4.2-8.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-8.7">infinity()</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.8">Returns an array with all bits equal to 1.<a href="#section-4.2-8.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-8.9">merge(c1, c2)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.10">Returns a bit array that constitutes a bitwise OR of c1 and c2.
+          That is, a bit in the resulting array is equal to 0 only if the same
+          bit is equal to 0 in both c1 and c2.<a href="#section-4.2-8.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-8.11">compare(c1, c2)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.12">
+            <p id="section-4.2-8.12.1">Returns:<a href="#section-4.2-8.12.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2-8.12.2.1">
+                <p id="section-4.2-8.12.2.1.1">equal, if each bit of c1 is equal to the corresponding bit of
+            c2;<a href="#section-4.2-8.12.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.2-8.12.2.2">
+                <p id="section-4.2-8.12.2.2.1">less, if c1 and c2 are not equal, and for each bit equal to 1 in
+            c1, the corresponding bit in c2 is also equal to 1;<a href="#section-4.2-8.12.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.2-8.12.2.3">
+                <p id="section-4.2-8.12.2.3.1">greater, if c1 and c2 are not equal, and for each bit equal to 1
+            in c2, the corresponding bit in c1 is also equal to 1; or<a href="#section-4.2-8.12.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.2-8.12.2.4">
+                <p id="section-4.2-8.12.2.4.1">incomparable, otherwise.<a href="#section-4.2-8.12.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-8.13">saturated(c)</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-8.14">Returns TRUE if more than RNFD_CFRC_SATURATION_THRESHOLD of the
+          bits in c are equal to 1; returns FALSE otherwise.<a href="#section-4.2-8.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="rnfd_behavior">
+<section id="section-5">
+      <h2 id="name-rpl-router-behavior">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-rpl-router-behavior" class="section-name selfRef">RPL Router Behavior</a>
+      </h2>
+<p id="section-5-1">Although RNFD operates largely independently of RPL, it does need to
+      interact with RPL and the overall protocol stack.  These interactions
+      are described next and can be realized, for instance, by means of event
+      triggers.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="rnfd_behavior_roles">
+<section id="section-5.1">
+        <h3 id="name-joining-a-dodag-version-and">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-joining-a-dodag-version-and" class="section-name selfRef">Joining a DODAG Version and Changing the RNFD Role</a>
+        </h3>
+<p id="section-5.1-1">Whenever RPL is running at a node and joins a DODAG Version, RNFD (if
+        active) <span class="bcp14">MUST</span> assume the role of Acceptor for the node.
+        Accordingly, it <span class="bcp14">MUST</span> set its LORS to "UP" and its
+        PositiveCFRC and NegativeCFRC to zero().<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">The role may then change between Acceptor and Sentinel at any time.
+        However, while a switch from Sentinel to Acceptor has no
+        preconditions, in order for a switch from Acceptor to Sentinel to be possible,
+        <em>all</em> of the following conditions <span class="bcp14">MUST</span> hold:<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.1-3">
+<li id="section-5.1-3.1">
+            <p id="section-5.1-3.1.1">LORS is "UP";<a href="#section-5.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-3.2">
+            <p id="section-5.1-3.2.1">saturated(PositiveCFRC) is FALSE;<a href="#section-5.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-3.3">
+            <p id="section-5.1-3.3.1">a neighbor entry for the DODAG root is present in RPL's DODAG parent set; and<a href="#section-5.1-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-3.4">
+            <p id="section-5.1-3.4.1">the neighbor is considered reachable via its link-local IPv6 address.<a href="#section-5.1-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-5.1-4">A role change also requires appropriate updates to LORS and CFRCs,
+        so that the node is properly accounted for.  More specifically, when
+        changing its role from Acceptor to Sentinel, the node
+        <span class="bcp14">MUST</span> add itself to its PositiveCFRC as follows.  It
+        <span class="bcp14">MUST</span> generate a new CFRC value, selfc = self(), and
+        it <span class="bcp14">MUST</span> replace its PositiveCFRC, denoted oldpc, with
+        newpc = merge(oldpc, selfc).  In contrast, the effects of a switch
+        from Sentinel to Acceptor vary depending on the node's value of LORS
+        before the switch:<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-5.1">
+            <p id="section-5.1-5.1.1">For "GLOBALLY DOWN", the node <span class="bcp14">MUST NOT</span> modify
+            its LORS, PositiveCFRC, and NegativeCFRC.<a href="#section-5.1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-5.2">
+            <p id="section-5.1-5.2.1">For "LOCALLY DOWN", the node <span class="bcp14">MUST</span> set its LORS
+            to "UP" but <span class="bcp14">MUST NOT</span> modify its PositiveCFRC and
+            NegativeCFRC.<a href="#section-5.1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-5.3">
+            <p id="section-5.1-5.3.1">For "UP" and "SUSPECTED DOWN", the node <span class="bcp14">MUST</span> set
+            its LORS to "UP" and <span class="bcp14">MUST NOT</span> modify its PositiveCFRC,
+            but the node <span class="bcp14">MUST</span> add itself to NegativeCFRC, by replacing its 
+            NegativeCFRC, denoted oldnc, with newnc = merge(oldnc,
+            selfc), where selfc is the counter generated with self() when the
+            node last added itself to its PositiveCFRC.<a href="#section-5.1-5.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="rnfd_behavior_detection">
+<section id="section-5.2">
+        <h3 id="name-detecting-and-verifying-pro">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-detecting-and-verifying-pro" class="section-name selfRef">Detecting and Verifying Problems with the DODAG Root</a>
+        </h3>
+<p id="section-5.2-1">Only nodes that are Sentinels take an active part in detecting crashes
+        of the DODAG root; Acceptors just disseminate their observations,
+        reflected in the CFRCs.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">The DODAG root monitoring <span class="bcp14">SHOULD</span> be based on both
+        internal inputs, notably the values of CFRCs and LORS, and external
+        inputs, such as triggers from RPL and other protocols.  External input
+        monitoring <span class="bcp14">SHOULD</span> be performed preferably in a reactive
+        fashion, also independently of RPL, and at both the data plane and control
+        plane.  In particular, it is <span class="bcp14">RECOMMENDED</span> that RNFD be
+        directly notified of events relevant to the routing adjacency
+        maintenance mechanisms on which RPL relies, such as Layer 2 (L2) triggers
+        <span>[<a href="#RFC5184" class="cite xref">RFC5184</a>]</span> or the Neighbor
+        Unreachability Detection <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span>
+        mechanism.  In addition, depending on the underlying protocol stack,
+        there may be other potential sources of such events, for instance,
+        neighbor communication overhearing.  In any case, only events
+        concerning the DODAG root need to be monitored.  For example, RNFD can
+        conclude that there may be problems with the DODAG root if it observes
+        a lack of multiple consecutive L2 acknowledgments for packets
+        transmitted by the node via the link to the DODAG root.  Internally, in turn,
+        it is <span class="bcp14">RECOMMENDED</span> that RNFD take action
+        whenever there is a change to its local CFRCs, so that a node can have
+        a chance to participate in detecting potential problems even when
+        normally it would not exchange packets over the link with the DODAG
+        root during some period.  In particular, RNFD <span class="bcp14">SHOULD</span>
+        conclude that there may be problems with the DODAG root when the
+        fraction value(NegativeCFRC)/value(PositiveCFRC) has grown by at least
+        RNFD_SUSPICION_GROWTH_THRESHOLD since the node last set its LORS to
+        "UP".<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">Whenever, having its LORS set to "UP", RNFD concludes (based on either
+external or internal inputs) that there may be problems with the
+link with the DODAG root, it <span class="bcp14">MUST</span> set its LORS either to "SUSPECTED
+DOWN" or, as an optimization, to "LOCALLY DOWN".<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">The "SUSPECTED DOWN" value of LORS is temporary: its aim is to give
+        RNFD an additional opportunity to verify whether the link with the
+        DODAG root is indeed down.  Depending on the outcome of such
+        verification, RNFD <span class="bcp14">MUST</span> set its LORS to either "UP", if
+        the link has been confirmed not to be down, or "LOCALLY DOWN",
+        otherwise.  The verification can be performed, for example, by
+        transmitting RPL DIS or ICMPv6 Echo Request messages to the DODAG
+        root's link-local IPv6 address and expecting replies confirming that
+        the root is up and reachable through the link.  Care should be taken
+        not to overload the DODAG root with traffic due to simultaneous
+        probes, for instance, random backoffs can be employed to this end.  It
+        is <span class="bcp14">RECOMMENDED</span> that the "SUSPECTED DOWN" value of LORS
+        be attained and verification take place if RNFD's conclusion on the
+        state of the DODAG root is based only on indirect observations, for
+        example, the aforementioned growth of the CFRC values.  In contrast,
+        for direct observations, such as missing L2 acknowledgments, the
+        verification <span class="bcp14">MAY</span> be skipped, with the node's LORS
+        effectively changing from "UP" directly to "LOCALLY DOWN".<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2-5">For consistency with RPL, when detecting potential problems with
+        the DODAG root, RNFD also must make use of RPL's independent
+        knowledge.  More specifically, a node <span class="bcp14">MUST</span> switch its
+        LORS from "UP" or "SUSPECTED DOWN" directly to "LOCALLY DOWN" if a
+        neighbor entry for the DODAG root is removed from RPL's DODAG parent
+        set or the neighbor ceases to be considered reachable via its
+        link-local IPv6 address.<a href="#section-5.2-5" class="pilcrow">¶</a></p>
+<p id="section-5.2-6">Finally, while having its LORS already equal to "LOCALLY DOWN", a
+        node may make an observation confirming that its link with the DODAG
+        root is actually up.  In such a case, it <span class="bcp14">SHOULD</span> set its
+        LORS back to "UP" but <span class="bcp14">MUST NOT</span> do this before
+        conditions 2-4 in <a href="#rnfd_behavior_roles" class="auto internal xref">Section 5.1</a>, which are necessary for a node
+        to change its role from Acceptor to Sentinel, all hold.<a href="#section-5.2-6" class="pilcrow">¶</a></p>
+<p id="section-5.2-7">To appropriately account for the node's observations on the state
+        of the DODAG root, the aforementioned LORS transitions are accompanied
+        by changes to the node's local CFRCs as follows.  Transitions between
+        "UP" and "SUSPECTED DOWN" do not affect either of the two CFRCs.  In contrast, during
+        a switch from "UP" or "SUSPECTED DOWN" to "LOCALLY DOWN", the
+        node <span class="bcp14">MUST</span> add itself to its NegativeCFRC, as explained
+        previously.  By symmetry, if there is a transition from "LOCALLY DOWN"
+        to "UP", the node <span class="bcp14">MUST</span> add itself to its PositiveCFRC,
+        as explained previously.<a href="#section-5.2-7" class="pilcrow">¶</a></p>
+<p id="section-5.2-8">Such changes to a node's local CFRCs, if performed repeatedly due
+        to incorrect decisions regarding the status of the node's link with
+        the DODAG root, may lead to those CFRCs becoming saturated.  An
+        implementation should thus try to minimize false-positive transitions
+        from "UP" and "SUSPECTED DOWN" to "LOCALLY DOWN".  The exact approach
+        depends on the specific solutions employed for assessing the state of
+        a link.  For instance, one can utilize additional mechanisms for
+        increasing the confidence of individual decisions, such as during the
+        aforementioned verification in the "SUSPECTED DOWN" state, or can
+        limit the number of transitions per node, possibly in an adaptive
+        fashion.<a href="#section-5.2-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rnfd_behavior_consensus">
+<section id="section-5.3">
+        <h3 id="name-disseminating-observations-">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-disseminating-observations-" class="section-name selfRef">Disseminating Observations and Reaching Agreement</a>
+        </h3>
+<p id="section-5.3-1">Nodes disseminate their observations by exchanging CFRCs in the
+        RNFD Options embedded in link-local RPL control messages, notably DIOs
+        and DISs.  When processing such a received option, a node (acting as a
+        Sentinel or Acceptor) <span class="bcp14">MUST</span> update its PositiveCFRC and
+        NegativeCFRC to newpc = merge(oldpc, recvpc) and newnc =
+        merge(oldnc, recvnc), respectively. Here, oldpc and oldnc are the values of the
+        node's PositiveCFRC and NegativeCFRC before the update, while recvpc
+        and recvnc are the received values of option fields PosCFRC and
+        NegCFRC, respectively.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">In effect, the node's value of the fraction
+        value(NegativeCFRC)/value(PositiveCFRC) may change.  If the fraction
+        reaches at least RNFD_CONSENSUS_THRESHOLD (with value(PositiveCFRC)
+        being greater than zero), then the node consents on the DODAG root
+        being down.  Accordingly, it <span class="bcp14">MUST</span> change its LORS to
+        "GLOBALLY DOWN" and set its PositiveCFRC and NegativeCFRC both to
+        infinity().<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">The "GLOBALLY DOWN" value of LORS is terminal; the node <span class="bcp14">MUST NOT</span> change it and <span class="bcp14">MUST NOT</span> modify its CFRCs
+        until it joins a new DODAG Version.  With this value of LORS, RNFD at
+        the node <span class="bcp14">MUST</span> also prevent RPL from having any DODAG
+        parent and advertising any Rank other than INFINITE_RANK.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-4">Since the RNFD Option is embedded, among others, in RPL DIO control
+        messages, updates to a node's CFRCs may affect the sending schedule of
+        these messages, which is driven by the DIO Trickle timer <span>[<a href="#RFC6206" class="cite xref">RFC6206</a>]</span>.  It is <span class="bcp14">RECOMMENDED</span>
+        to use a dedicated Trickle timer for RNFD that is different from RPL's
+        original DIO Trickle timer.  In such a setting, whenever the dedicated
+        timer fires and no DIO message containing the RNFD Option has been
+        sent to the link-local all-RPL-nodes multicast IPv6 address since the
+        previous firing, the node sends a DIO message containing the RNFD
+        Option to the address.  The minimal and maximal interval sizes of the
+        dedicated timer <span class="bcp14">SHOULD NOT</span> be smaller than those of
+        RPL's original DIO Trickle timer.  In contrast, in the absence of the
+        dedicated Trickle timer for RNFD, an implementation
+        <span class="bcp14">SHOULD</span> ensure that the RNFD Option is present in
+        multicast DIO messages sufficiently often to quickly propagate changes
+        to the node's CFRCs and, notably, as soon as possible after a reset of
+        the timer triggered by RNFD.  In the remainder of this document, we
+        will refer to the Trickle timer utilized by RNFD (either the
+        dedicated one or RPL's original one, depending on the implementation)
+        simply as "Trickle timer".  In particular, a node <span class="bcp14">MUST</span>
+        reset its Trickle timer when it changes its LORS to "GLOBALLY DOWN",
+        so that information about the detected crash of the DODAG root is
+        disseminated in the DODAG fast.  Likewise, a node
+        <span class="bcp14">SHOULD</span> reset its Trickle timer when any of its local
+        CFRCs change significantly.<a href="#section-5.3-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rnfd_behavior_root">
+<section id="section-5.4">
+        <h3 id="name-dodag-roots-behavior">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-dodag-roots-behavior" class="section-name selfRef">DODAG Root's Behavior</a>
+        </h3>
+<p id="section-5.4-1">The DODAG root node <span class="bcp14">MUST</span> assume the role of Acceptor
+        in RNFD and <span class="bcp14">MUST NOT</span> ever switch this role.  It
+        <span class="bcp14">MUST</span> also monitor its LORS and local CFRCs, so that it
+        can react to various events.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.4-2">To start with, the DODAG root <span class="bcp14">MUST</span> generate a new
+        DODAG Version, thereby restarting the protocol, if it changes its LORS
+        to "GLOBALLY DOWN", which may happen when the root has restarted after
+        a crash or the nodes have falsely detected its crash.  It
+        <span class="bcp14">MAY</span> also generate a new DODAG Version if the fraction
+        value(NegativeCFRC)/value(PositiveCFRC) approaches
+        RNFD_CONSENSUS_THRESHOLD, so as to avoid potential interruptions to
+        routing.<a href="#section-5.4-2" class="pilcrow">¶</a></p>
+<p id="section-5.4-3">Furthermore, the DODAG root <span class="bcp14">SHOULD</span> either generate a
+        new DODAG Version or increase the bit length of its CFRCs if
+        saturated(PositiveCFRC) becomes TRUE.  This is a self-regulation
+        mechanism that helps adjust the CFRCs to a potentially large number of
+        Sentinels (see <a href="#mgmnt_roles_and_cfrc_lens" class="auto internal xref">Section 6.1</a>).<a href="#section-5.4-3" class="pilcrow">¶</a></p>
+<p id="section-5.4-4">In general, issuing a new DODAG Version effectively restarts RNFD.
+        Thus, the DODAG root <span class="bcp14">MAY</span> also perform this operation in
+        other situations.<a href="#section-5.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rnfd_behavior_deactivation">
+<section id="section-5.5">
+        <h3 id="name-activating-and-deactivating">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-activating-and-deactivating" class="section-name selfRef">Activating and Deactivating the Protocol on Demand</a>
+        </h3>
+<p id="section-5.5-1">RNFD can be activated and deactivated on demand, once per DODAG
+        Version.  The particular policies for activating and deactivating the
+        protocol are outside the scope of this document.  However, the
+        activation and deactivation <span class="bcp14">MUST</span> be done at the DODAG
+        root node; other nodes <span class="bcp14">MUST</span> comply.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<p id="section-5.5-2">More specifically, when a non-root node joins a DODAG Version, RNFD
+        at the node is initially inactive.  The node <span class="bcp14">MUST NOT</span>
+        activate the protocol unless it receives for this DODAG Version a
+        valid RNFD Option containing some CFRCs, that is, having its Option
+        Length field positive.  In particular, if the option accompanies the
+        message that causes the node to join the DODAG Version, the protocol
+        <span class="bcp14">MUST</span> be active from the moment of the joining.  RNFD
+        then remains active at the node until it is explicitly deactivated or
+        the node joins a new DODAG Version.  An explicit deactivation
+        <span class="bcp14">MUST</span> take place when the node receives an RNFD Option
+        for the DODAG Version with no CFRCs, that is, having its Option Length
+        field equal to zero.  When explicitly deactivated, RNFD <span class="bcp14">MUST NOT</span> be reactivated unless the node joins a new DODAG Version.
+        In particular, when the first RNFD Option received by the node has its
+        Option Length field equal to zero, the protocol <span class="bcp14">MUST</span>
+        remain deactivated for the entire time the node belongs to the current
+        DODAG Version.<a href="#section-5.5-2" class="pilcrow">¶</a></p>
+<p id="section-5.5-3">When RNFD at a node is initially inactive for a DODAG Version, the
+        node <span class="bcp14">MUST NOT</span> attach any RNFD Option to the messages it
+        sends (in particular, because it may not know the desired CFRC length;
+        see <a href="#rnfd_behavior_cfrc_size" class="auto internal xref">Section 5.6</a>).  When
+        the protocol has been explicitly deactivated, the node
+        <span class="bcp14">MAY</span> also decide not to attach the option to its
+        outgoing messages.  However, it is <span class="bcp14">RECOMMENDED</span> that it
+        send a sufficient number of messages with the option to the link-local
+        all-RPL-nodes multicast IPv6 address to allow its neighbors to learn
+        that RNFD has been deactivated in the current DODAG Version.  In
+        particular, it <span class="bcp14">MAY</span> reset its Trickle timer to this end
+        but <span class="bcp14">MAY</span> also use some reactive mechanisms. For example, it might
+        reply with a unicast DIO or DIS containing the RNFD Option with no
+        CFRCs to a message from a neighbor that contains the option with some
+        CFRCs, as such a neighbor appears not to have learned about the
+        deactivation of RNFD.<a href="#section-5.5-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rnfd_behavior_cfrc_size">
+<section id="section-5.6">
+        <h3 id="name-processing-cfrcs-of-incompa">
+<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-processing-cfrcs-of-incompa" class="section-name selfRef">Processing CFRCs of Incompatible Lengths</a>
+        </h3>
+<p id="section-5.6-1">The merge() and compare() operations on CFRCs require both
+        arguments to be compatible, that is, to have the same bit length.
+        However, the processing rules for the RNFD Option (see <a href="#msg_format" class="auto internal xref">Section 4.2</a>) do not necessitate this.  This
+        fact is made use of not only in the mechanisms for activating and
+        deactivating the protocol (see <a href="#rnfd_behavior_deactivation" class="auto internal xref">Section 5.5</a>), but also in
+        mechanisms for dynamic adjustments of CFRCs, which aim to enable
+        deployment-specific policies (see <a href="#mgmnt_roles_and_cfrc_lens" class="auto internal xref">Section 6.1</a>).  A node thus
+        must be prepared to receive the RNFD Option with fields PosCFRC and
+        NegCFRC of a different bit length than the node's own PositiveCFRC and
+        NegativeCFRC.  Assuming that it has RNFD active and that fields
+        PosCFRC and NegCFRC in the option have a positive length, the node
+        <span class="bcp14">MUST</span> react as follows.<a href="#section-5.6-1" class="pilcrow">¶</a></p>
+<p id="section-5.6-2">If the bit length of fields PosCFRC and NegCFRC is the same as that
+        of the node's local PositiveCFRC and NegativeCFRC, then the node
+        <span class="bcp14">MUST</span> perform the merges, as detailed previously (see
+        <a href="#rnfd_behavior_consensus" class="auto internal xref">Section 5.3</a>).<a href="#section-5.6-2" class="pilcrow">¶</a></p>
+<p id="section-5.6-3">If the bit length of fields PosCFRC and NegCFRC is smaller than
+        that of the node's local PositiveCFRC and NegativeCFRC, then the node
+        <span class="bcp14">MUST</span> ignore the option and <span class="bcp14">MAY</span> reset its
+        Trickle timer.<a href="#section-5.6-3" class="pilcrow">¶</a></p>
+<p id="section-5.6-4">If the bit length of fields PosCFRC and NegCFRC is greater than
+        that of the node's local PositiveCFRC and NegativeCFRC, then the node
+        <span class="bcp14">MUST</span> extend the bit length of its local CFRCs to be
+        equal to that in the option and set the CFRCs as follows:<a href="#section-5.6-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.6-5.1">
+            <p id="section-5.6-5.1.1">If the node's LORS is "GLOBALLY DOWN", then both of its local
+            CFRCs <span class="bcp14">MUST</span> be set to infinity().<a href="#section-5.6-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.6-5.2">
+            <p id="section-5.6-5.2.1">Otherwise, they both <span class="bcp14">MUST</span> be set to zero(), and
+            the node <span class="bcp14">MUST</span> account for itself in so initialized
+            CFRCs. More specifically, if the node is a Sentinel, then it
+            <span class="bcp14">MUST</span> add itself to its PositiveCFRC, as detailed
+            previously. In addition, if its LORS is "LOCALLY DOWN", then it
+            <span class="bcp14">MUST</span> also add itself to its NegativeCFRC, as
+            explained previously. Finally, the node <span class="bcp14">MUST</span>
+            perform merges of its local CFRCs and the ones received in the
+            option (see <a href="#rnfd_behavior_consensus" class="auto internal xref">Section 5.3</a>) and <span class="bcp14">MAY</span> reset its Trickle
+            timer.<a href="#section-5.6-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.6-6">In contrast, if the node is unable to extend its local CFRCs, for
+        example, because it lacks resources, then it <span class="bcp14">MUST</span> stop
+        participating in RNFD. That is, until it joins a new DODAG Version, it
+        <span class="bcp14">MUST NOT</span> send the RNFD Option and <span class="bcp14">MUST</span>
+        ignore this option in received messages.<a href="#section-5.6-6" class="pilcrow">¶</a></p>
+<p id="section-5.6-7">A DODAG root node can be requested to increase the bit length of
+        its CFRCs externally, as part of the management policies (see <a href="#mgmnt_roles_and_cfrc_lens" class="auto internal xref">Section 6.1</a>).  If it cannot
+        fulfill such a request, then it <span class="bcp14">MUST NOT</span> stop
+        participating in RNFD and <span class="bcp14">SHOULD</span> return an error to the
+        requester instead.  Otherwise, since it is always an Acceptor, the above
+        rules require it to extend both CFRCs to the requested length and to
+        set them both to either zero() or infinity(), depending on whether its
+        LORS is different from or equal to "GLOBALLY DOWN", respectively.  In
+        the latter case, given the earlier rules governing the root's behavior
+        upon reaching the "GLOBALLY DOWN" state (cf. <a href="#rnfd_behavior_root" class="auto internal xref">Section 5.4</a>), the root is also
+        bound to eventually set its CFRCs to zero() and, in addition, generate
+        a new DODAG Version and change its LORS back to "UP".  Therefore,
+        these two steps can be optimized into one, meaning that effectively,
+        irrespective of its LORS, when increasing the bit length of its CFRCs
+        in response to an external request, the root also sets the CFRCs to
+        zero().<a href="#section-5.6-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="summary-of-rnfds-interactions-with-rpl">
+<section id="section-5.7">
+        <h3 id="name-summary-of-rnfds-interactio">
+<a href="#section-5.7" class="section-number selfRef">5.7. </a><a href="#name-summary-of-rnfds-interactio" class="section-name selfRef">Summary of RNFD's Interactions with RPL</a>
+        </h3>
+<p id="section-5.7-1">In summary, RNFD interacts with RPL in the following manner:<a href="#section-5.7-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.7-2.1">
+            <p id="section-5.7-2.1.1">While having its LORS equal to "GLOBALLY DOWN", RNFD prevents
+            RPL from routing packets and advertising upward routes in the
+            corresponding DODAG (see <a href="#rnfd_behavior_consensus" class="auto internal xref">Section 5.3</a>).<a href="#section-5.7-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.7-2.2">
+            <p id="section-5.7-2.2.1">In some scenarios, RNFD triggers RPL to issue a new DODAG
+            Version (see <a href="#rnfd_behavior_root" class="auto internal xref">Section 5.4</a>).<a href="#section-5.7-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.7-2.3">
+            <p id="section-5.7-2.3.1">Depending on the implementation, RNFD may cause RPL's DIO
+            Trickle timer resets (see Sections <a href="#rnfd_behavior_consensus" class="auto internal xref">5.3</a>, <a href="#rnfd_behavior_deactivation" class="auto internal xref">5.5</a>, and <a href="#rnfd_behavior_cfrc_size" class="auto internal xref">5.6</a>).<a href="#section-5.7-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.7-2.4">
+            <p id="section-5.7-2.4.1">RNFD monitors events relevant to routing adjacency maintenance
+            as well as those affecting RPL's DODAG parent set (see Sections <a href="#rnfd_behavior_roles" class="auto internal xref">5.1</a> and <a href="#rnfd_behavior_detection" class="auto internal xref">5.2</a>).<a href="#section-5.7-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.7-2.5">
+            <p id="section-5.7-2.5.1">Using RNFD entails embedding the RNFD Option into link-local
+            RPL control messages (see <a href="#msg_format" class="auto internal xref">Section 4.2</a>).<a href="#section-5.7-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="rnfd_behavior_constants">
+<section id="section-5.8">
+        <h3 id="name-summary-of-rnfds-constants">
+<a href="#section-5.8" class="section-number selfRef">5.8. </a><a href="#name-summary-of-rnfds-constants" class="section-name selfRef">Summary of RNFD's Constants</a>
+        </h3>
+<p id="section-5.8-1">The following is a summary of RNFD's constants:<a href="#section-5.8-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.8-2">
+          <dt id="section-5.8-2.1">RNFD_CONSENSUS_THRESHOLD:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.8-2.2">A threshold concerning the value of the fraction
+          value(NegativeCFRC)/value(PositiveCFRC). If the value at a Sentinel
+          or Acceptor node reaches the threshold, then the node's LORS is set
+          to "GLOBALLY DOWN", which implies that consensus has been reached on
+          the DODAG root node being down (see <a href="#rnfd_behavior_consensus" class="auto internal xref">Section 5.3</a>). The default
+          value of the threshold is 0.51, which indicates that a majority of
+          Sentinels must consider the root to be down to reach the
+          consensus. In general, when the value is higher, the detection period is longer, but the risk of false positives is lower.<a href="#section-5.8-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.8-2.3">RNFD_SUSPICION_GROWTH_THRESHOLD:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.8-2.4">A threshold concerning the value of the fraction
+          value(NegativeCFRC)/value(PositiveCFRC). If the value at a Sentinel
+          node grows at least by this threshold since the time the node's LORS
+          was last set to "UP", then the node's LORS is set to "SUSPECTED
+          DOWN" or "LOCALLY DOWN", which implies that the node starts
+          suspecting or assumes a crash of the DODAG root (see <a href="#rnfd_behavior_detection" class="auto internal xref">Section 5.2</a>).  When the
+          value is higher, the duration of detecting true crashes is longer,
+          but the risk of increased traffic due to verifying false suspicions
+          is lower.  The default value of the threshold is 0.12, which in
+          sparse networks (up to 8 neighbors per node) triggers a suspicion at
+          a Sentinel node after just one other Sentinel starts considering the
+          root as dead, while being gradually more conservative in denser
+          networks.<a href="#section-5.8-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-5.8-2.5">RNFD_CFRC_SATURATION_THRESHOLD:</dt>
+          <dd style="margin-left: 1.5em" id="section-5.8-2.6">A threshold concerning the percentage of bits set to 1 in a
+          CFRC, c. If the percentage for c is equal to or greater than this
+          threshold, then saturated(c) returns TRUE, which hints the DODAG
+          root to generate a new DODAG Version or increase the bit length of
+          the CFRCs (see <a href="#rnfd_behavior_root" class="auto internal xref">Section 5.4</a>). The default value of the threshold is 0.63.
+          When the value is higher, the probability of bit collisions is
+          higher, and the results of function value(c) may thus be more
+          erratic.<a href="#section-5.8-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-5.8-3">The means of configuring the constants at individual nodes are outside the scope of this document.<a href="#section-5.8-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="mgmnt">
+<section id="section-6">
+      <h2 id="name-manageability-consideration">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-manageability-consideration" class="section-name selfRef">Manageability Considerations</a>
+      </h2>
+<p id="section-6-1">RNFD is largely self-managed, with the exception of protocol
+      activation and deactivation, as well as node role assignment and the
+      related CFRC size adjustment, for which only the aforementioned
+      mechanisms are defined, so as to enable adopting deployment-specific
+      policies.  This section discusses the manageability issues.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="mgmnt_roles_and_cfrc_lens">
+<section id="section-6.1">
+        <h3 id="name-role-assignment-and-cfrc-si">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-role-assignment-and-cfrc-si" class="section-name selfRef">Role Assignment and CFRC Size Adjustment</a>
+        </h3>
+<p id="section-6.1-1">One approach to node role and CFRC size selection is to manually
+        designate specific nodes as Sentinels in RNFD, assuming that they will
+        have chances to satisfy the necessary conditions for attaining this
+        role (see <a href="#rnfd_behavior_roles" class="auto internal xref">Section 5.1</a>), and
+        to fix the CFRC bit length to accommodate these nodes.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2">Another approach is to automate the selection process. In
+        principle, any node satisfying the necessary conditions for becoming
+        a Sentinel (see <a href="#rnfd_behavior_roles" class="auto internal xref">Section 5.1</a>)
+        can attain this role.  However, in networks where the DODAG root node
+        has many neighbors, this approach may lead to saturated(PositiveCFRC)
+        quickly becoming TRUE, which may
+        degrade RNFD's performance without additional measures.  This issue can be handled with a
+        probabilistic solution: if PositiveCFRC becomes saturated with little
+        or no increase in NegativeCFRC, then a new DODAG Version can be issued,
+        and a node satisfying the necessary conditions can become a Sentinel in
+        this version only with probability 1/2.  This process can be continued
+        with the probability being halved in each new DODAG Version until
+        PositiveCFRC is no longer quickly saturated.  Another solution is to
+        increase, potentially multiple times, the bit length of the CFRCs by
+        the DODAG root if PositiveCFRC becomes saturated with little or no
+        growth in NegativeCFRC. This does not require issuing a new DODAG
+        Version but lengthens the RNFD Option.  In this way, a
+        sufficient bit length can be dynamically discovered, or the root can
+        conclude that a given bit length is excessive for (some) nodes and
+        resort to the previous solution.  Increasing the bit length can be
+        done, for instance, by doubling it, respecting the condition that it
+        has to be a prime number (see <a href="#msg_format" class="auto internal xref">Section 4.2</a>).<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.1-3">In either of the solutions, Sentinel nodes should preferably be
+        stable themselves and have stable links to the DODAG root.  Otherwise,
+        they may often exhibit LORS transitions between "UP" and "LOCALLY
+        DOWN" or switches between Acceptor and Sentinel roles, which gradually
+        saturates CFRCs.  As a mitigation, the number of such
+        transitions and switches per node <span class="bcp14">MAY</span> be limited; however,
+        having Sentinels be stable <span class="bcp14">SHOULD</span> be preferred.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="mgmnt_virt_dodag_roots">
+<section id="section-6.2">
+        <h3 id="name-virtual-dodag-roots">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-virtual-dodag-roots" class="section-name selfRef">Virtual DODAG Roots</a>
+        </h3>
+<p id="section-6.2-1">RPL allows a DODAG to have a so-called "virtual root", that is, a
+        collection of nodes coordinating to act as a single root of the DODAG.
+        The details of the coordination process are left open in
+        <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>, but from
+        RNFD's perspective, two possible realizations are worth
+        consideration:<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.2-2.1">
+            <p id="section-6.2-2.1.1">Just a single (primary) node of the nodes comprising the
+            virtual root acts as the actual root of the DODAG. Only when this
+            node fails does another (backup) node take over. As a result, at
+            any time, at most one of the nodes comprising the virtual root is
+            the actual root.<a href="#section-6.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.2-2.2">
+            <p id="section-6.2-2.2.1">More than one of the nodes comprising the virtual root act as
+            actual roots of the DODAG, all advertising the same Rank in the
+            DODAG. When some of the nodes fail, the other nodes may or may not
+            react in any specific way. In other words, at any time, more than
+            one node can be the actual root.<a href="#section-6.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.2-3">In the first realization, RNFD's operation is largely unaffected.
+        The necessary conditions for a node to become a Sentinel (<a href="#rnfd_behavior_roles" class="auto internal xref">Section 5.1</a>) guarantee that only
+        the current primary root node is monitored by the protocol.  This
+        <span class="bcp14">SHOULD</span> be taken into account in the policies for node
+        role assignment, CFRC size selection, and, possibly, the setting of
+        the three thresholds (<a href="#rnfd_behavior_constants" class="auto internal xref">Section 5.8</a>).  Moreover, when a new primary has been elected,
+         a
+        new DODAG Version <span class="bcp14">MUST</span> be issued to avoid polluting CFRCs with observations on the previous primary.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<p id="section-6.2-4">In the second realization, the fact that the virtual root consists
+        of multiple nodes is transparent to RNFD.  Therefore, employing RNFD
+        in such a setting can be beneficial only if the nodes comprising the
+        virtual root may suffer from correlated crashes, for instance, due to
+        global power outages.<a href="#section-6.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="mgmnt_monitoring">
+<section id="section-6.3">
+        <h3 id="name-monitoring">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-monitoring" class="section-name selfRef">Monitoring</a>
+        </h3>
+<p id="section-6.3-1">For monitoring the operation of RNFD, its implementation <span class="bcp14">SHOULD</span> provide the following information about a node:<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.3-2.1">
+            <p id="section-6.3-2.1.1">whether the protocol is active, and<a href="#section-6.3-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.3-2.2">
+            <p id="section-6.3-2.2.1">whether LORS is "GLOBALLY DOWN".<a href="#section-6.3-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.3-3">This information <span class="bcp14">MUST</span> be accompanied by the monitoring parameters defined by RPL <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span>, including at least the DODAG Version Number and the Rank. To offer even finer-grained visibility into RNFD's
+        state at the node, the implementation <span class="bcp14">MAY</span> also
+        provide:<a href="#section-6.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.3-4.1">
+            <p id="section-6.3-4.1.1">the assigned role (i.e., Sentinel or Acceptor),<a href="#section-6.3-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.3-4.2">
+            <p id="section-6.3-4.2.1">the exact value of LORS (i.e., "UP", "SUSPECTED DOWN", "LOCALLY
+            DOWN", or "GLOBALLY DOWN"),<a href="#section-6.3-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.3-4.3">
+            <p id="section-6.3-4.3.1">the two CFRCs (i.e., PositiveCFRC and NegativeCFRC), and<a href="#section-6.3-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.3-4.4">
+            <p id="section-6.3-4.4.1">the constants listed in <a href="#rnfd_behavior_constants" class="auto internal xref">Section 5.8</a>.<a href="#section-6.3-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="security">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">RNFD is an extension to RPL and thus is vulnerable to and
+      benefits from the security issues and solutions described in <span>[<a href="#RFC6550" class="cite xref">RFC6550</a>]</span> and <span>[<a href="#RFC7416" class="cite xref">RFC7416</a>]</span>.  Its specification in this document does not
+      introduce new traffic patterns or new messages, for which specific
+      mitigation techniques would be required beyond what can already be
+      adopted for RPL.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">In particular, RNFD depends on information exchanged in the RNFD
+      Option.  If the contents of this option were compromised, then failure
+      misdetection may occur.  One possibility is that the DODAG root may be
+      falsely detected as crashed, which would result in an inability of the
+      nodes to route packets, at least until a new DODAG Version is issued by
+      the root.  Another possibility is that a crash of the DODAG root may not
+      be detected by RNFD, in which case RPL would have to rely on its own
+      mechanisms.  Moreover, compromising the contents of the RNFD Option may
+      also lead to increased DIO traffic due to Trickle timer resets.
+      Consequently, RNFD deployments are <span class="bcp14">RECOMMENDED</span> to use RPL
+      security mechanisms if there is a risk that control information might be
+      modified or spoofed.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">In this context, two features of RNFD are worth highlighting.  First,
+      unless all neighbors of a DODAG root are compromised, a false positive
+      can always be detected by the root based on its local CFRCs.  If the
+      frequency of such false positives becomes problematic, RNFD can be
+      disabled altogether, for instance, until the problem has been diagnosed.
+      This procedure can be largely automated at LBRs.  Second, some types of
+      false negatives can also be detected this way.  Those that do pass
+      undetected are likely not to have major negative consequences
+      on RPL apart from the lack of improvement to its performance upon a
+      DODAG root's crash, at least if RPL's other components are not attacked
+      as well.<a href="#section-7-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-8">
+      <h2 id="name-iana-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-8-1">IANA has allocated the following value
+      in the "RPL
+      Control Message Options" registry within the <a href="https://www.iana.org/assignments/rpl">"Routing Protocol for
+      Low Power and Lossy Networks (RPL)" registry group</a>.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<div id="options-iana">
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Value</th>
+            <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">0x0E</td>
+            <td class="text-left" rowspan="1" colspan="1">RNFD Option</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9866</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6206">[RFC6206]</dt>
+        <dd>
+<span class="refAuthor">Levis, P.</span>, <span class="refAuthor">Clausen, T.</span>, <span class="refAuthor">Hui, J.</span>, <span class="refAuthor">Gnawali, O.</span>, and <span class="refAuthor">J. Ko</span>, <span class="refTitle">"The Trickle Algorithm"</span>, <span class="seriesInfo">RFC 6206</span>, <span class="seriesInfo">DOI 10.17487/RFC6206</span>, <time datetime="2011-03" class="refDate">March 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6206">https://www.rfc-editor.org/info/rfc6206</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6550">[RFC6550]</dt>
+        <dd>
+<span class="refAuthor">Winter, T., Ed.</span>, <span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Brandt, A.</span>, <span class="refAuthor">Hui, J.</span>, <span class="refAuthor">Kelsey, R.</span>, <span class="refAuthor">Levis, P.</span>, <span class="refAuthor">Pister, K.</span>, <span class="refAuthor">Struik, R.</span>, <span class="refAuthor">Vasseur, JP.</span>, and <span class="refAuthor">R. Alexander</span>, <span class="refTitle">"RPL: IPv6 Routing Protocol for Low-Power and Lossy Networks"</span>, <span class="seriesInfo">RFC 6550</span>, <span class="seriesInfo">DOI 10.17487/RFC6550</span>, <time datetime="2012-03" class="refDate">March 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6550">https://www.rfc-editor.org/info/rfc6550</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6553">[RFC6553]</dt>
+        <dd>
+<span class="refAuthor">Hui, J.</span> and <span class="refAuthor">JP. Vasseur</span>, <span class="refTitle">"The Routing Protocol for Low-Power and Lossy Networks (RPL) Option for Carrying RPL Information in Data-Plane Datagrams"</span>, <span class="seriesInfo">RFC 6553</span>, <span class="seriesInfo">DOI 10.17487/RFC6553</span>, <time datetime="2012-03" class="refDate">March 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6553">https://www.rfc-editor.org/info/rfc6553</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6554">[RFC6554]</dt>
+        <dd>
+<span class="refAuthor">Hui, J.</span>, <span class="refAuthor">Vasseur, JP.</span>, <span class="refAuthor">Culler, D.</span>, and <span class="refAuthor">V. Manral</span>, <span class="refTitle">"An IPv6 Routing Header for Source Routes with the Routing Protocol for Low-Power and Lossy Networks (RPL)"</span>, <span class="seriesInfo">RFC 6554</span>, <span class="seriesInfo">DOI 10.17487/RFC6554</span>, <time datetime="2012-03" class="refDate">March 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6554">https://www.rfc-editor.org/info/rfc6554</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="Ciolkosz19">[Ciolkosz19]</dt>
+        <dd>
+<span class="refAuthor">Ciolkosz, P.</span>, <span class="refTitle">"Integration of the RNFD Algorithm for Border Router Failure Detection with the RPL Standard for Routing IPv6 Packets"</span>, <span class="refContent">Master's Thesis, University of Warsaw</span>, <time datetime="2019" class="refDate">2019</time>. </dd>
+<dd class="break"></dd>
+<dt id="Iwanicki16">[Iwanicki16]</dt>
+        <dd>
+<span class="refAuthor">Iwanicki, K.</span>, <span class="refTitle">"RNFD: Routing-Layer Detection of DODAG (Root) Node Failures in Low-Power Wireless Networks"</span>, <span class="refContent">2016 15th ACM/IEEE International Conference on Information Processing in Sensor Networks (IPSN), pp. 1-12</span>, <span class="seriesInfo">DOI 10.1109/IPSN.2016.7460720</span>, <time datetime="2016" class="refDate">2016</time>, <span>&lt;<a href="https://doi.org/10.1109/IPSN.2016.7460720">https://doi.org/10.1109/IPSN.2016.7460720</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Paszkowska19">[Paszkowska19]</dt>
+        <dd>
+<span class="refAuthor">Paszkowska, A.</span> and <span class="refAuthor">K. Iwanicki</span>, <span class="refTitle">"Failure Handling in RPL Implementations: An Experimental Qualitative Study"</span>, <span class="refContent">Mission-Oriented Sensor Networks and Systems: Art and Science, Springer International Publishing, pp. 49-95</span>, <span class="seriesInfo">DOI 10.1007/978-3-319-91146-5_3</span>, <time datetime="2019" class="refDate">2019</time>, <span>&lt;<a href="https://doi.org/10.1007/978-3-319-91146-5_3">https://doi.org/10.1007/978-3-319-91146-5_3</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4861">[RFC4861]</dt>
+        <dd>
+<span class="refAuthor">Narten, T.</span>, <span class="refAuthor">Nordmark, E.</span>, <span class="refAuthor">Simpson, W.</span>, and <span class="refAuthor">H. Soliman</span>, <span class="refTitle">"Neighbor Discovery for IP version 6 (IPv6)"</span>, <span class="seriesInfo">RFC 4861</span>, <span class="seriesInfo">DOI 10.17487/RFC4861</span>, <time datetime="2007-09" class="refDate">September 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4861">https://www.rfc-editor.org/info/rfc4861</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5184">[RFC5184]</dt>
+        <dd>
+<span class="refAuthor">Teraoka, F.</span>, <span class="refAuthor">Gogo, K.</span>, <span class="refAuthor">Mitsuya, K.</span>, <span class="refAuthor">Shibui, R.</span>, and <span class="refAuthor">K. Mitani</span>, <span class="refTitle">"Unified Layer 2 (L2) Abstractions for Layer 3 (L3)-Driven Fast Handover"</span>, <span class="seriesInfo">RFC 5184</span>, <span class="seriesInfo">DOI 10.17487/RFC5184</span>, <time datetime="2008-05" class="refDate">May 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5184">https://www.rfc-editor.org/info/rfc5184</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7102">[RFC7102]</dt>
+        <dd>
+<span class="refAuthor">Vasseur, JP.</span>, <span class="refTitle">"Terms Used in Routing for Low-Power and Lossy Networks"</span>, <span class="seriesInfo">RFC 7102</span>, <span class="seriesInfo">DOI 10.17487/RFC7102</span>, <time datetime="2014-01" class="refDate">January 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7102">https://www.rfc-editor.org/info/rfc7102</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7228">[RFC7228]</dt>
+        <dd>
+<span class="refAuthor">Bormann, C.</span>, <span class="refAuthor">Ersue, M.</span>, and <span class="refAuthor">A. Keranen</span>, <span class="refTitle">"Terminology for Constrained-Node Networks"</span>, <span class="seriesInfo">RFC 7228</span>, <span class="seriesInfo">DOI 10.17487/RFC7228</span>, <time datetime="2014-05" class="refDate">May 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7228">https://www.rfc-editor.org/info/rfc7228</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7416">[RFC7416]</dt>
+        <dd>
+<span class="refAuthor">Tsao, T.</span>, <span class="refAuthor">Alexander, R.</span>, <span class="refAuthor">Dohler, M.</span>, <span class="refAuthor">Daza, V.</span>, <span class="refAuthor">Lozano, A.</span>, and <span class="refAuthor">M. Richardson, Ed.</span>, <span class="refTitle">"A Security Threat Analysis for the Routing Protocol for Low-Power and Lossy Networks (RPLs)"</span>, <span class="seriesInfo">RFC 7416</span>, <span class="seriesInfo">DOI 10.17487/RFC7416</span>, <time datetime="2015-01" class="refDate">January 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7416">https://www.rfc-editor.org/info/rfc7416</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Whang90">[Whang90]</dt>
+      <dd>
+<span class="refAuthor">Whang, K.-Y.</span>, <span class="refAuthor">Vander-Zanden, B.T.</span>, and <span class="refAuthor">H.M. Taylor</span>, <span class="refTitle">"A Linear-time Probabilistic Counting Algorithm for Database Applications"</span>, <span class="refContent">ACM Transactions on Database Systems (TODS), vol. 15, no. 2, pp. 208-229</span>, <span class="seriesInfo">DOI 10.1145/78922.78925</span>, <time datetime="1990" class="refDate">1990</time>, <span>&lt;<a href="https://doi.org/10.1145/78922.78925">https://doi.org/10.1145/78922.78925</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The author would like to acknowledge <span class="contact-name">Piotr       Ciolkosz</span> and <span class="contact-name">Agnieszka Paszkowska</span>.  Agnieszka
+      contributed to deeper understanding and formally proving various aspects
+      of RPL's behavior upon an LBR crash.  Piotr developed a
+      prototype implementation of RNFD dedicated for RPL to verify earlier
+      performance claims.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Konrad Iwanicki</span></div>
+<div dir="auto" class="left"><span class="org">University of Warsaw</span></div>
+<div dir="auto" class="left"><span class="street-address">Banacha 2</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">02-097</span> <span class="locality">Warszawa</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Poland</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+48%2022%2055%2044%20428" class="tel">+48 22 55 44 428</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:iwanicki@mimuw.edu.pl" class="email">iwanicki@mimuw.edu.pl</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>

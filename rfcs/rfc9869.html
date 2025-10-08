@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9869: Datagram Packetization Layer Path MTU Discovery (DPLPMTUD) for UDP Options</title>
+<meta content="Godred Fairhurst" name="author">
+<meta content="Tom Jones" name="author">
+<meta content="
+       This document specifies how a UDP Options sender implements Datagram
+      Packetization Layer Path MTU Discovery (DPLPMTUD)
+      as a robust method for Path MTU Discovery (PMTUD). This
+      method uses the UDP Options packetization layer. It allows an
+      application to discover the largest size of datagram that can be sent
+      across a network path. It also provides a way to allow the application
+      to periodically verify the current Maximum Packet Size (MPS) supported by a
+      path and to update this when required. 
+    " name="description">
+<meta content="xml2rfc 3.30.2" name="generator">
+<meta content="UDP" name="keyword">
+<meta content="UDP-Options" name="keyword">
+<meta content="PMTUD" name="keyword">
+<meta content="PLPMTUD" name="keyword">
+<meta content="DPLPMTUD" name="keyword">
+<meta content="Datagram" name="keyword">
+<meta content="9869" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.30.2
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    setuptools 44.1.1
+    six 1.16.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9869.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://fonts.googleapis.com/css?family=Noto+Sans'); /* Sans-serif */
+@import url('https://fonts.googleapis.com/css?family=Noto+Serif'); /* Serif (print) */
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-tsvwg-udp-options-dplpmtud-15" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9869" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9869</td>
+<td class="center">UDP Options with DPLPMTUD</td>
+<td class="right">October 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Fairhurst &amp; Jones</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9869" class="eref">9869</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-10" class="published">October 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">G. Fairhurst</div>
+<div class="org">University of Aberdeen</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Jones</div>
+<div class="org">University of Aberdeen</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9869</h1>
+<h1 id="title">Datagram Packetization Layer Path MTU Discovery (DPLPMTUD) for UDP Options</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document specifies how a UDP Options sender implements Datagram
+      Packetization Layer Path MTU Discovery (DPLPMTUD)
+      as a robust method for Path MTU Discovery (PMTUD). This
+      method uses the UDP Options packetization layer. It allows an
+      application to discover the largest size of datagram that can be sent
+      across a network path. It also provides a way to allow the application
+      to periodically verify the current Maximum Packet Size (MPS) supported by a
+      path and to update this when required.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9869">https://www.rfc-editor.org/info/rfc9869</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-dplpmtud-for-udp-options" class="internal xref">DPLPMTUD for UDP Options</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-packet-formats" class="internal xref">Packet Formats</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-sending-probe-packets-with-" class="internal xref">Sending Probe Packets with the Request Option</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-receiving-udp-options-probe" class="internal xref">Receiving UDP Options Probe Packets and Sending the RES Option</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-dplpmtud-sender-procedures-" class="internal xref">DPLPMTUD Sender Procedures for UDP Options</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-confirmation-of-connectivit" class="internal xref">Confirmation of Connectivity Across a Path</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-sending-probe-packets-to-in" class="internal xref">Sending Probe Packets to Increase the PLPMTU</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-validating-the-path-with-ud" class="internal xref">Validating the Path with UDP Options</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-probe-packets-that-do-not-i" class="internal xref">Probe Packets That Do Not Include Application Data</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-probe-packets-that-include-" class="internal xref">Probe Packets That Include Application Data</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-receiving-events-from-the-n" class="internal xref">Receiving Events from the Network</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-changes-in-the-path" class="internal xref">Changes in the Path</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-validation-of-ptb-messages" class="internal xref">Validation of PTB Messages</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-examples-with-different-rec" class="internal xref">Examples with Different Receiver Behaviors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The User Datagram Protocol (UDP) <span>[<a href="#RFC0768" class="cite xref">RFC0768</a>]</span> offers a
+            minimal transport service on top of IP and is frequently used as a
+            substrate for other protocols. Section <a href="https://rfc-editor.org/rfc/rfc8085#section-3.2" class="relref">3.2</a> of UDP Guidelines <span>[<a href="#RFC8085" class="cite xref">RFC8085</a>]</span> recommends that applications implement some
+            form of Path MTU Discovery (PMTUD) to avoid the generation of IP fragments:<a href="#section-1-1" class="pilcrow">¶</a></p>
+<blockquote id="section-1-2">Consequently, an application <span class="bcp14">SHOULD</span> either use the path MTU
+            information provided by the IP layer or implement Path MTU Discovery
+            (PMTUD) itself [RFC1191] [RFC1981] [RFC4821] to determine whether the
+   path to a destination will support its desired message size without
+   fragmentation.<a href="#section-1-2" class="pilcrow">¶</a>
+</blockquote>
+<p id="section-1-3">The UDP API <span>[<a href="#RFC8304" class="cite xref">RFC8304</a>]</span> offers calls for
+            applications to receive ICMP Packet Too Big (PTB) messages and to
+            control the maximum size of datagrams that are sent, but it does not offer
+            any automated mechanisms for an application to discover the MPS
+            supported by a path. Upper Layer protocols, which
+            include applications, can
+            implement mechanisms for PMTUD above the UDP API.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">Packetization Layer Path MTU Discovery (PLPMTUD) <span>[<a href="#RFC4821" class="cite xref">RFC4821</a>]</span>
+            describes a method for a bidirectional Packetization Layer (PL)
+            to search for the largest Packetization Layer PMTU (PLPMTU) supported on
+            a path. DPLPMTUD <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>
+            specifies this support for datagram transports. PLPMTUD and DPLPMTUD
+            gain robustness by using a probing mechanism that does not solely rely on
+            ICMP PTB messages and works on paths that drop ICMP PTB messages.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">UDP Options <span>[<a href="#RFC9868" class="cite xref">RFC9868</a>]</span> supplies
+            functionality that can be used to implement DPLPMTUD within the
+            transport service or in an Upper Layer protocol (including an application)
+            that uses UDP Options. 
+            This document specifies how DPLPMTUD using UDP Options
+            is implemented (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>)
+            and requires support to be enabled at both the sender and receiver.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">Implementing DPLPMTUD within the
+            transport service above UDP Options avoids the need for
+            each Upper Layer protocol to implement the DPLPMTUD
+            method. It provides a standard method for applications to discover the
+            current MPS for a path and to detect when this
+            changes. It can be used with Equal-Cost Multipath (ECMP) routing
+           and/or multihoming. If multipath or multihoming is supported,
+           a state machine is needed for each path.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">DPLPMTUD is not specified for multicast. The method requires
+           explicit acknowledgement of probe packets provided by UDP Options,
+           which is primarily intended for unicast use (see 
+           <span><a href="https://rfc-editor.org/rfc/rfc9868#section-23" class="relref">Section 23</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>).<a href="#section-1-7" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">This document uses the terms defined for DPLPMTUD (Sections <a href="https://rfc-editor.org/rfc/rfc8899#section-2" class="relref">2</a> and <a href="https://rfc-editor.org/rfc/rfc8899#section-5" class="relref">5</a> of <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).<a href="#section-2-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3">
+      <h2 id="name-dplpmtud-for-udp-options">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-dplpmtud-for-udp-options" class="section-name selfRef">DPLPMTUD for UDP Options</a>
+      </h2>
+<p id="section-3-1">A UDP Options sender implementing DPLPMTUD uses the method specified
+            in <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>. In this specification, DPLPMTUD is
+            realized using a pair of
+            UDP Options:
+            the Request (REQ) Option and the Response (RES) Option
+            (<span><a href="https://rfc-editor.org/rfc/rfc9868#section-11.7" class="relref">Section 11.7</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>).
+            The method also uses the End of Options List (EOL) Option
+            (<span><a href="https://rfc-editor.org/rfc/rfc9868#section-11.1" class="relref">Section 11.1</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>) to
+            introduce padding to set the size of a probe packet.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Use of DPLPMTUD <span class="bcp14">MUST</span> be explicitly enabled by the application, for instance,
+            once an application has established connectivity and is ready
+            to exchange data with the remote Upper Layer protocol.
+            Similarly, a DPLPMTUD receiver <span class="bcp14">MUST NOT</span> respond to a UDP REQ
+            Option until DPLPMTUD has been enabled. This is to help
+            protect from misuse of the mechanism for other forms of probing.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">Probe packets consume network capacity and incur endpoint
+            processing (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).
+            Implementations ought to send a probe packet with a UDP REQ
+            Option only when required by their local DPLPMTUD state machine,
+            i.e., when confirming the base PMTU for the path,
+            probing to increase the PLPMTU, or confirming the current
+            PLPMTU.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">DPLPMTUD can be implemented
+            over UDP Options in two ways:<a href="#section-3-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-5.1">
+          <p id="section-3-5.1.1">Implementation within the UDP transport service.<a href="#section-3-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-5.2">
+          <p id="section-3-5.2.1">Implementation in an Upper Layer protocol (or application) that uses UDP Options.<a href="#section-3-5.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-3-6">When DPLPMTUD is implemented within the UDP
+            transport service, the DPLPMTUD state machine
+            is responsible for sending probe packets to determine a PLPMTU, as described
+            in this document. This determines an MPS,
+            the largest size of application data block that can be sent across a network path
+            using a single datagram. The Upper Layer protocol is responsible for deciding
+            when a session enables DPLPMTUD.<a href="#section-3-6" class="pilcrow">¶</a></p>
+<p id="section-3-7">The discovered PLPMTU can be used to either:<a href="#section-3-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-8.1">
+          <p id="section-3-8.1.1"> set the maximum datagram size for the current path or<a href="#section-3-8.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-8.2">
+          <p id="section-3-8.2.1"> set the maximum fragment size when a sender uses the
+                    UDP Fragmentation Option to divide a datagram into
+                    multiple UDP fragments for transmission. The size of each UDP fragment
+                    is then less than or equal to the size of the discovered largest IP packet that can
+                    be received across the current path.<a href="#section-3-8.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-3-9">The figure below shows an implementation of DPLPMTUD within the UDP
+            transport service.
+            It illustrates key interactions between the layers.
+            This design requires an API primitive to allow the application to
+            control whether the DPLPMTUD state machine is enabled for a specific
+      UDP port. By default, this API <span class="bcp14">MUST</span> disable DPLPMTUD processing.<a href="#section-3-9" class="pilcrow">¶</a></p>
+<div id="section-3-10">
+        <div class="alignLeft art-svg artwork" id="section-3-10.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="352" width="560" viewBox="0 0 560 352" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+            <path d="M 8,16 L 8,64" fill="none" stroke="black"></path>
+            <path d="M 8,112 L 8,192" fill="none" stroke="black"></path>
+            <path d="M 8,256 L 8,288" fill="none" stroke="black"></path>
+            <path d="M 40,72 L 40,112" fill="none" stroke="black"></path>
+            <path d="M 40,200 L 40,256" fill="none" stroke="black"></path>
+            <path d="M 40,296 L 40,336" fill="none" stroke="black"></path>
+            <path d="M 232,64 L 232,104" fill="none" stroke="black"></path>
+            <path d="M 232,192 L 232,248" fill="none" stroke="black"></path>
+            <path d="M 232,288 L 232,336" fill="none" stroke="black"></path>
+            <path d="M 272,16 L 272,64" fill="none" stroke="black"></path>
+            <path d="M 272,112 L 272,192" fill="none" stroke="black"></path>
+            <path d="M 272,256 L 272,288" fill="none" stroke="black"></path>
+            <path d="M 8,16 L 272,16" fill="none" stroke="black"></path>
+            <path d="M 8,64 L 272,64" fill="none" stroke="black"></path>
+            <path d="M 8,112 L 272,112" fill="none" stroke="black"></path>
+            <path d="M 8,192 L 272,192" fill="none" stroke="black"></path>
+            <path d="M 8,256 L 272,256" fill="none" stroke="black"></path>
+            <path d="M 8,288 L 272,288" fill="none" stroke="black"></path>
+            <polygon class="arrowhead" points="240,336 228,330.4 228,341.6" fill="black" transform="rotate(90,232,336)"></polygon>
+            <polygon class="arrowhead" points="240,248 228,242.4 228,253.6" fill="black" transform="rotate(90,232,248)"></polygon>
+            <polygon class="arrowhead" points="240,104 228,98.4 228,109.6" fill="black" transform="rotate(90,232,104)"></polygon>
+            <polygon class="arrowhead" points="48,296 36,290.4 36,301.6" fill="black" transform="rotate(270,40,296)"></polygon>
+            <polygon class="arrowhead" points="48,200 36,194.4 36,205.6" fill="black" transform="rotate(270,40,200)"></polygon>
+            <polygon class="arrowhead" points="48,72 36,66.4 36,77.6" fill="black" transform="rotate(270,40,72)"></polygon>
+            <g class="text">
+              <text x="140" y="36">Upper Layer Protocol</text>
+              <text x="140" y="52">or Application</text>
+              <text x="352" y="84">Messages (with UDP Options)</text>
+              <text x="80" y="100">receive</text>
+              <text x="196" y="100">send</text>
+              <text x="376" y="100">Primitives for MPS, Min_PMTU, etc.</text>
+              <text x="108" y="132">DPLPMTUD State Machine</text>
+              <text x="136" y="148">Maximum Packet Size (MPS)</text>
+              <text x="148" y="164">PLPMTU, Probed-Size, Min_PMTU</text>
+              <text x="144" y="180">Token Values &amp; Probes, etc.</text>
+              <text x="352" y="212">Messages (with UDP Options)</text>
+              <text x="392" y="228">Send/Receive: Probes with Options</text>
+              <text x="80" y="244">receive</text>
+              <text x="196" y="244">send</text>
+              <text x="392" y="244">Events: ICMP, Interface MTU, etc.</text>
+              <text x="104" y="276">UDP Options Transport</text>
+              <text x="356" y="308">Datagrams (with UDP Options)</text>
+              <text x="408" y="324">Fragmented Datagrams with UDP Options</text>
+              <text x="80" y="340">receive</text>
+              <text x="196" y="340">send</text>
+              <text x="392" y="340">Events: ICMP, Interface MTU, etc.</text>
+            </g>
+          </svg><a href="#section-3-10.1" class="pilcrow">¶</a>
+</div>
+</div>
+<aside id="section-3-11">
+        <p id="section-3-11.1">Note: UDP allows an Upper Layer protocol
+            to send datagrams with or without payload data (with or without
+            UDP Options). These
+            are delivered across the network to the remote Upper Layer.
+            When DPLPMTUD is implemented within the UDP
+            transport service, probe packets that include a REQ or RES UDP Option
+            can be sent with no UDP payload.
+            In this case, these probe packets were not generated by a sending
+            application; therefore, the corresponding received datagrams are
+      not delivered to the remote application.<a href="#section-3-11.1" class="pilcrow">¶</a></p>
+</aside>
+<p id="section-3-12">When DPLPMTUD is instead implemented by an Upper Layer protocol,
+            the format and content
+            of probe packets are determined by the Upper Layer protocol.
+            This design is also permitted to use the REQ and RES Options
+            provided by UDP Options.<a href="#section-3-12" class="pilcrow">¶</a></p>
+<p id="section-3-13">If DPLPMTUD is active at more than one layer,
+            then the values of the tokens used in REQ Options need to be coordinated
+            with any values used for other DPLPMTUD probe packets to ensure
+            that each probe packet can be identified by a unique token.
+            When configurable, a configuration ought to avoid
+            performing such discovery both within UDP Options
+            and also by an Upper Layer protocol 
+            that sends and receives probe packets via UDP Options.
+            <span><a href="https://rfc-editor.org/rfc/rfc8899#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> recommends that:
+            "An application <span class="bcp14">SHOULD</span> avoid using DPLPMTUD when the underlying
+            transport system provides this capability."<a href="#section-3-13" class="pilcrow">¶</a></p>
+<div id="formats">
+<section id="section-3.1">
+        <h3 id="name-packet-formats">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-packet-formats" class="section-name selfRef">Packet Formats</a>
+        </h3>
+<p id="section-3.1-1">The UDP Options used in this document are described in
+                <span>[<a href="#RFC9868" class="cite xref">RFC9868</a>]</span> and are used
+                in the following ways:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1">
+            <p id="section-3.1-2.1.1">The REQ Option is set by a sending PL to solicit a response from a
+                    remote receiver. A four-byte (four-octet) token identifies each request.<a href="#section-3.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-2.2">
+            <p id="section-3.1-2.2.1">A sending PL can use the EOL Option together with a minimum
+                    datagram length to pad probe packets.<a href="#section-3.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-2.3">
+            <p id="section-3.1-2.3.1">The RES Option is sent by a UDP Options receiver in response to a
+                    previously received REQ Option. Each RES Option echoes the last received
+                    four-byte token.<a href="#section-3.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-2.4">
+            <p id="section-3.1-2.4.1"> If a UDP Options  endpoint creates and sends a datagram
+                    with a RES Option solely as response to a received REQ Option,
+                    the responder <span class="bcp14">MUST</span> limit the rate of these responses
+                    (e.g., limiting each pair of ports to send 1 per measured RTT or
+                    1 per second). This rate limit is to mitigate the DoS vector
+                    without significantly impacting the operation of DPLPMTUD.
+                    An example in <a href="#examples" class="auto internal xref">Section 6</a>
+                    describes a case where this might be used.<a href="#section-3.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-2.5">
+            <p id="section-3.1-2.5.1">
+                    Reception of a RES Option by the REQ sender confirms that a specific
+                    probe packet has been received by the remote UDP Options receiver.<a href="#section-3.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.1-3">The token allows a UDP Options sender to distinguish
+            between acknowledgements for initial probe packets and
+            acknowledgements confirming receipt of subsequent probe packets
+            (e.g., travelling along alternate paths with a larger RTT).
+            Each probe packet <span class="bcp14">MUST</span> be uniquely
+            identifiable by the UDP Options sender within the Maximum Segment
+            Lifetime (MSL) <span>[<a href="#RFC8085" class="cite xref">RFC8085</a>]</span>.
+            The UDP Options sender <span class="bcp14">MUST NOT</span> reuse
+            a token value within the MSL. A
+            four-byte value for the token field provides sufficient space for
+            multiple unique probe packets to be made within the MSL. Since UDP Options
+            operates over UDP, the token values only need to be unique for
+            the specific 5-tuple over which it is operating.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">The value of the four-byte token field <span class="bcp14">SHOULD</span> be initialized
+            to a randomized value to enhance protection from off-path attacks,
+            as described in <span><a href="https://rfc-editor.org/rfc/rfc8085#section-5.1" class="relref">Section 5.1</a> of [<a href="#RFC8085" class="cite xref">RFC8085</a>]</span>.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-3.2">
+        <h3 id="name-sending-probe-packets-with-">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-sending-probe-packets-with-" class="section-name selfRef">Sending Probe Packets with the Request Option</a>
+        </h3>
+<p id="section-3.2-1">DPLPMTUD relies upon sending a probe packet
+            with a specific size.
+            Each probe packet includes the UDP Options area containing
+            a REQ Option
+            and any other required options concluded with an EOL Option
+            (<span><a href="https://rfc-editor.org/rfc/rfc9868#section-11.1" class="relref">Section 11.1</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>),
+            followed by any padding needed to inflate to the required probe size.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">A probe packet can therefore be up to the maximum size
+            supported by the local interface (i.e., the Interface MTU).
+            Item 2 in <span><a href="https://rfc-editor.org/rfc/rfc8899#section-3" class="relref">Section 3</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> requires the network interface
+            below DPLPMTUD to provide a way to transmit a probe packet
+            that is larger than the current PLPMTU.
+            The size of this probe packet <span class="bcp14">MUST NOT</span> be constrained by the maximum PMTU
+            set by network layer mechanisms (such as discovered by PMTUD
+            <span>[<a href="#RFC1191" class="cite xref">RFC1191</a>]</span><span>[<a href="#RFC8201" class="cite xref">RFC8201</a>]</span> or the PMTU size
+            held in the IP-layer cache),
+            as noted in item 2 in <span><a href="https://rfc-editor.org/rfc/rfc8899#section-3" class="relref">Section 3</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">UDP datagrams used as DPLPMTUD probe packets, as described in this
+            document, <span class="bcp14">MUST NOT</span> be fragmented at the UDP or IP layer.
+            Therefore, <span><a href="https://rfc-editor.org/rfc/rfc8899#section-3" class="relref">Section 3</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>
+            requires: "In IPv4, a probe packet <span class="bcp14">MUST</span> be sent with the
+            Don't Fragment (DF) bit set in the IP header and without network layer
+            endpoint fragmentation."<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3.3">
+        <h3 id="name-receiving-udp-options-probe">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-receiving-udp-options-probe" class="section-name selfRef">Receiving UDP Options Probe Packets and Sending the RES Option</a>
+        </h3>
+<p id="section-3.3-1">When DPLPMTUD is enabled, a UDP Options receiver responds
+            by sending a UDP datagram with the RES Option when
+            it receives a UDP Options datagram with
+            the REQ Option.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">The operation of DPLPMTUD can depend on the support at
+            the remote UDP Options endpoint, the way in which DPLPMTUD
+            is implemented, and in some cases, the application data that is
+            exchanged over the UDP transport service.
+            When UDP Options is not supported by the remote receiver,
+            DPLPMTUD will be unable to confirm the path or to discover the PLPMTU.
+            This will result in the minimum configured PLPMTU (MIN_PLPMTU).
+            More explanation of usage is provided in <a href="#examples" class="auto internal xref">Section 6</a>.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<aside id="section-3.3-3">
+          <p id="section-3.3-3.1">Note: A receiver that only responds when there is a datagram
+            queued for transmission by the Upper Layer could potentially
+            receive multiple datagrams with a REQ Option before it can
+            respond. When sent, the RES Option will only acknowledge the
+            latest received token value. A sender would then conclude
+            that any earlier REQ Options were not successfully received.
+            However, DPLPMTUD does not usually result in sending more than one
+            probe packet per timeout interval, and a delay in responding
+            will already have been treated as a failed probe attempt.
+            Therefore, this does not significantly impact performance,
+            although a more prompt response would have resulted in
+        DPLPMTUD recording reception of all probe packets.<a href="#section-3.3-3.1" class="pilcrow">¶</a></p>
+</aside>
+</section>
+</section>
+<div id="UDPOPT-PLPMTUD">
+<section id="section-4">
+      <h2 id="name-dplpmtud-sender-procedures-">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-dplpmtud-sender-procedures-" class="section-name selfRef">DPLPMTUD Sender Procedures for UDP Options</a>
+      </h2>
+<p id="section-4-1"> DPLPMTUD utilizes three types of probe. These are described in the following sections:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1">
+          <p id="section-4-2.1.1">Probes to confirm the path can support the BASE_PLPMTU (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-5.1.4" class="relref">Section 5.1.4</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-2.2">
+          <p id="section-4-2.2.1">Probes to detect whether the path can support a larger PLPMTU.<a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-2.3">
+          <p id="section-4-2.3.1">Probes to validate that the path supports the current PLPMTU.<a href="#section-4-2.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<section id="section-4.1">
+        <h3 id="name-confirmation-of-connectivit">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-confirmation-of-connectivit" class="section-name selfRef">Confirmation of Connectivity Across a Path</a>
+        </h3>
+<p id="section-4.1-1">The DPLPMTUD method requires a PL to confirm connectivity over the
+        path (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-5.1.4" class="relref">Section 5.1.4</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>),
+        but UDP itself does not offer a mechanism for this.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">UDP Options can provide this required functionality. A UDP Options
+                    sender implementing this specification <span class="bcp14">MUST</span> elicit a positive
+                    confirmation of connectivity for the path by sending a probe packet
+                    padded to size BASE_PLPMTU. This confirmation probe <span class="bcp14">MUST</span>
+                    include the REQ UDP Option to elicit a response from the remote DPLPMTUD.
+                    Reception of a datagram with the corresponding RES Option confirms
+                    the reception of a packet of the probed size that has successfully
+                    traversed the path to the receiver.
+                    This also confirms that the
+                    remote endpoint supports the RES Option.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.2">
+        <h3 id="name-sending-probe-packets-to-in">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-sending-probe-packets-to-in" class="section-name selfRef">Sending Probe Packets to Increase the PLPMTU</a>
+        </h3>
+<p id="section-4.2-1">From time to time, DPLPMTUD enters the SEARCHING state, described
+        in <span><a href="https://rfc-editor.org/rfc/rfc8899#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>, (e.g.,
+        after expiry of the PMTU_RAISE_TIMER) to detect whether the current
+        path can support a larger PLPMTU.  When the remote endpoint advertises
+        a UDP Maximum Datagram Size (MDS) Option (see <span><a href="https://rfc-editor.org/rfc/rfc9868#section-11.5" class="relref">Section 11.5</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>), this value <span class="bcp14">MAY</span> be used as a hint to
+        initialize this search to increase the PLPMTU.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2"> Probe packets seeking to increase the PLPMTU <span class="bcp14">SHOULD NOT</span> carry application data (see "Probing using padding data" in
+        <span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>), since they
+        will be lost whenever their size exceeds the actual PMTU.  <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> requires a probe packet to elicit
+        a positive acknowledgement that the path has delivered a datagram of
+        the specific probed size; therefore, a probe packet
+        <span class="bcp14">MUST</span> include the REQ Option when using transport
+ options for UDP <span>[<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">At the receiver, a received probe packet that does not carry
+        application data does not form a part of the end-to-end transport data
+        and is not delivered to the Upper Layer protocol (i.e., application or
+        protocol layered above UDP). A zero-length payload notification could
+        still be delivered to the application (see <span><a href="https://rfc-editor.org/rfc/rfc8085#section-5" class="relref">Section 5</a> of [<a href="#RFC8085" class="cite xref">RFC8085</a>]</span>), although
+        <span><a href="https://rfc-editor.org/rfc/rfc9868#section-18" class="relref">Section 18</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>
+                discusses the implications when using UDP Options.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-4.3">
+        <h3 id="name-validating-the-path-with-ud">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-validating-the-path-with-ud" class="section-name selfRef">Validating the Path with UDP Options</a>
+        </h3>
+<p id="section-4.3-1">A PL using DPLPMTUD <span class="bcp14">MUST</span> validate that a path
+        continues to support the PLPMTU discovered in a previous search for a
+        suitable PLPMTU value, as defined in <span><a href="https://rfc-editor.org/rfc/rfc8899#section-6.1.4" class="relref">Section 6.1.4</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>.  This validation sends probe
+        packets in the DPLPMTUD SEARCH_COMPLETE state (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>) to detect black-holing
+        of data 
+        (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> defines a
+        DPLPMTUD black hole).<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">Path validation can be implemented within UDP Options by generating
+        a probe packet of size PLPMTU, which <span class="bcp14">MUST</span> include a REQ
+        Option to elicit a positive confirmation that the path has delivered
+        this probe packet.  A probe packet used to validate the path
+        <span class="bcp14">MAY</span> use either "Probing using padding data" to
+        construct a probe packet that does not carry any application data or
+        "Probing using application data and padding data"; see <span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>.  When using
+        "Probing using padding data", the UDP Options API does not indicate
+        receipt of the zero-length probe packet (see <span><a href="https://rfc-editor.org/rfc/rfc9868#section-6" class="relref">Section 6</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>).<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+</section>
+<div id="no-app-data">
+<section id="section-4.4">
+        <h3 id="name-probe-packets-that-do-not-i">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-probe-packets-that-do-not-i" class="section-name selfRef">Probe Packets That Do Not Include Application Data</a>
+        </h3>
+<p id="section-4.4-1"> A simple implementation of the method might be designed to only
+        use probe packets in a UDP datagram that includes no application
+        data. The size of each probe packet is padded to the required probe
+        size including the REQ Option. This implements "Probing using padding
+        data" (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>) and
+        avoids having to retransmit application data when a probe fails.  This
+        could be achieved by setting a minimum datagram length, such that the
+        options list ends in EOL (<span><a href="https://rfc-editor.org/rfc/rfc9868#section-11.1" class="relref">Section 11.1</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>) with any additional space
+        zero-filled as needed (see <span><a href="https://rfc-editor.org/rfc/rfc9868#section-15" class="relref">Section 15</a> of [<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>).  In this use, the probe packets do
+        not form a part of the end-to-end transport data and a receiver does
+        not deliver them to the Upper Layer protocol.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-4.5">
+        <h3 id="name-probe-packets-that-include-">
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-probe-packets-that-include-" class="section-name selfRef">Probe Packets That Include Application Data</a>
+        </h3>
+<p id="section-4.5-1">
+                An implementation always uses the format in <a href="#no-app-data" class="auto internal xref">Section 4.4</a>
+                when DPLPMTUD searches to increase the PLPMTU.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-2">
+                An alternative format is permitted for a probe packet that is used to confirm
+                the connectivity or to validate the path.
+                These probe packets <span class="bcp14">MAY</span> carry application data.
+                (UDP payload data is permitted because these probe packets perform
+                black-hole detection
+                and will therefore usually have a higher probability of successful
+                transmission, similar to other packets sent by the Upper Layer protocol.)
+                <span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> provides a discussion of
+                the merits and demerits of including application data. For example, this
+                reduces the need to send additional datagrams.<a href="#section-4.5-2" class="pilcrow">¶</a></p>
+<p id="section-4.5-3">This type of probe packet <span class="bcp14">MAY</span> use
+                a control message format defined by the Upper Layer protocol,
+                provided that the message does not need to
+                be delivered reliably. The REQ Option <span class="bcp14">MUST</span> be
+                included when the sending Upper Layer protocol performs DPLPMTUD.
+                The DPLPMTUD method tracks the transmission
+                of probe packets (using the REQ Option token).<a href="#section-4.5-3" class="pilcrow">¶</a></p>
+<p id="section-4.5-4">A receiver that responds to DPLPMTUD <span class="bcp14">MUST</span> process the REQ Option and
+                include the corresponding RES Option with an Upper Layer protocol message
+                that it returns to the requester (examples of receiver processing are
+                provided in <a href="#examples" class="auto internal xref">Section 6</a>).<a href="#section-4.5-4" class="pilcrow">¶</a></p>
+<p id="section-4.5-5">Probe packets that use this format form a part of the end-to-end
+                transport data and can be used to manage the PLPMTU in just
+                one direction or can be used for both directions.<a href="#section-4.5-5" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<section id="section-5">
+      <h2 id="name-receiving-events-from-the-n">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-receiving-events-from-the-n" class="section-name selfRef">Receiving Events from the Network</a>
+      </h2>
+<p id="section-5-1">This specification does not rely upon reception of events from the network,
+        but an implementation can utilize these events when they are provided.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<section id="section-5.1">
+        <h3 id="name-changes-in-the-path">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-changes-in-the-path" class="section-name selfRef">Changes in the Path</a>
+        </h3>
+<p id="section-5.1-1">A change in the path or the loss of a probe packet can result in
+        DPLPMTUD updating the PLPMTU. DPLPMTUD <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> recommends that methods are robust to path changes
+        that could have occurred since the path characteristics were last
+        confirmed and to the possibility of inconsistent path information
+        being received. For example, a notification that a path has changed
+        could trigger path validation to provide black-hole protection (<span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">An Upper Layer protocol could trigger DPLPMTUD to validate the path
+        when it observes a high packet loss rate (or a repeated protocol
+        timeout) <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3"><span><a href="https://rfc-editor.org/rfc/rfc8899#section-3" class="relref">Section 3</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span> requires
+        any methods designed to share the PLPMTU between PLs (such as updating
+        the IP cache PMTU for an interface/destination) to be robust to the
+        wide variety of underlying network forwarding behaviors. For example,
+        an implementation could avoid sharing PMTU information that could
+        potentially relate to packets sent with the same address over a
+        different interface.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.2">
+        <h3 id="name-validation-of-ptb-messages">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-validation-of-ptb-messages" class="section-name selfRef">Validation of PTB Messages</a>
+        </h3>
+<p id="section-5.2-1"> Support for receiving ICMP PTB messages is
+            <span class="bcp14">OPTIONAL</span> for DPLPMTUD. A UDP Options sender
+            can therefore ignore received ICMP PTB messages.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">Before processing an ICMP PTB message, the
+            DPLPMTUD method needs to perform two checks to ensure
+            that the message was received
+            in response to a sent probe packet:<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-3.1">
+            <p id="section-5.2-3.1.1">DPLPMTUD first utilizes the quoted information in each PTB
+            message.  The receiver <span class="bcp14">MUST</span> validate the protocol
+            information in the quoted packet carried in an ICMP PTB message
+            payload to validate the message originated from the sending node
+            (see <span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.6.1" class="relref">Section 4.6.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).<a href="#section-5.2-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-3.2">
+            <p id="section-5.2-3.2.1">The receiver <span class="bcp14">SHOULD</span> utilize information that is
+            not simple for an off-path attacker to determine (see
+            <span><a href="https://rfc-editor.org/rfc/rfc8899#section-4.6.1" class="relref">Section 4.6.1</a> of [<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>).
+            Specifically, a UDP Options receiver <span class="bcp14">SHOULD</span> confirm
+            that the token contained in the UDP REQ Option of the quoted
+            packet has a value that corresponds to a probe packet that was
+            recently sent by the current endpoint.<a href="#section-5.2-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.2-4">An
+            implementation unable to support this validation <span class="bcp14">MUST</span> ignore
+            received ICMP PTB messages.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+</section>
+</section>
+<div id="examples">
+<section id="section-6">
+      <h2 id="name-examples-with-different-rec">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-examples-with-different-rec" class="section-name selfRef">Examples with Different Receiver Behaviors</a>
+      </h2>
+<p id="section-6-1"> When enabled, a DPLPMTUD endpoint that implements UDP Options
+        normally responds with a
+        UDP datagram with a RES Option when requested by a sender.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The following examples describe various possible receiver behaviors:<a href="#section-6-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-3.1">
+          <p id="section-6-3.1.1">No DPLPMTUD receiver support:
+            One case is when a sender supports this specification,
+            but no RES Option is received from the remote endpoint.
+            In this example, the method
+            is unable to discover the PLPMTU. This will result in using the
+            MIN_PLPMTU.
+            Such a remote endpoint might be not configured to process UDP Options or
+            might not return a datagram with a RES Option for some other reason
+            (e.g., packet loss, insufficient space
+            to include the option, filtering on the path, etc.).<a href="#section-6-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.2">
+          <p id="section-6-3.2.1">DPLPMTUD receiver uses application datagrams:
+            In a second case, both the sender and receiver
+            support DPLPMTUD using the specification,
+            and the receiver only returns a RES Option with the next UDP datagram
+            that is sent to the requester.
+            Therefore, reception of a REQ Option does not systematically trigger a response.
+            This allows DPLPMTUD to operate when there is a flow of datagrams in both directions,
+            provided there is periodic feedback (e.g., one acknowledgement packet per RTT).
+            It requires the PLPMTU at the receiver
+            to be sufficiently large enough that the RES Option can be included in the feedback packets
+            that are sent in the return direction.
+            This method avoids opportunities to misuse the method as a DoS attack.
+            However, when there is a low
+            rate of transmission (or no datagrams are sent) in the return direction,
+            this will prevent prompt delivery of the RES Option.
+            At the DPLPMTUD sender, this results in probe packets failing to be
+            acknowledged in time
+            and could result in a smaller PLPMTU than is actually supported by
+            the path or in using the MIN_PLPMTU.<a href="#section-6-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.3">
+          <p id="section-6-3.3.1">Unidirectional transfer: Another case is where an application only transfers data
+            in one direction (or predominantly in one direction).
+            In this case, the wait at the receiver for a datagram to be queued before
+            returning a RES Option could easily result in a probe timeout
+            at the DPLPMTUD sender.
+            In this case, DPLPMTUD could allow exchanging datagrams without
+            a payload (as discussed in earlier sections) to return the RES Option.<a href="#section-6-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.4">
+          <p id="section-6-3.4.1">DPLPMTUD receiver permitted to send responses in UDP datagrams with no payload:
+            A DPLPMTUD receiver can generate a datagram (e.g., with zero payload data)
+            solely to return a RES Option
+            (e.g., sent when no other datagrams are queued for transmission).
+            This would allow an endpoint to probe the set of UDP ports that have
+            been configured with support for this specification
+            using a DPLPMTUD probe packet.
+            Although this results in some additional traffic overhead,
+            it has the advantage that it
+            can ensure timely progress of DPLPMTUD.
+            <a href="#formats" class="auto internal xref">Section 3.1</a> specifies: "If a UDP Options endpoint creates and
+            sends a datagram with a RES Option solely as response to a received REQ Option,
+            the responder <span class="bcp14">MUST</span> limit the rate of these responses
+            (e.g., limiting each pair of ports to send 1 per measured RTT or 1 per second)".
+            This rate limit is to mitigate the DoS vector, without significantly impacting
+            the operation of DPLPMTUD.<a href="#section-6-3.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="IANA">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Security">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">The security considerations for using UDP Options are described in
+            <span>[<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>. The
+            method does not change the integrity protection offered by the UDP
+            Options method.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">The security considerations for using DPLPMTUD are described in <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>. On-path attackers could maliciously drop
+            or modify probe packets to seek to decrease the PMTU or
+            to maliciously modify probe packets in an attempt to black-hole traffic.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">The specification recommends that the token value in the REQ Option is
+            initialized to a randomized value. This is to enhance protection from off-path
+            attacks.
+            If a subsequent probe packet uses a token value that is easily derived
+            from the initial value
+            (e.g., incrementing the value), a misbehaving on-path observer could then
+            determine the token values used for subsequent probe packets from
+            that sender, even if these probe packets are not transiting via the observer.
+            This would allow probe packets to be forged, with an impact similar to other on-path
+            attacks against probe packets.
+            This attack could be mitigated by using an unpredictable
+            token value for each probe packet.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">The method does not change the
+            ICMP PTB message validation method described by DPLPMTUD: A UDP Options
+            sender that utilizes ICMP PTB messages received to a probe packet <span class="bcp14">MUST</span>
+            use the quoted packet to validate the UDP port information in
+            combination with the token contained in the UDP
+            Option before processing the packet using the DPLPMTUD method.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">Upper Layer protocols or applications that employ encryption
+            ought to perform DPLPMTUD
+            at a layer above UDP Options and not enable UDP Options support for DPLPMTUD.
+            This allows the application to control when DPLPMTUD is used to control the additional
+            traffic that this generates.
+            This also ensures that DPLPMTUD probe packets are encrypted.<a href="#section-8-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC0768">[RFC0768]</dt>
+        <dd>
+<span class="refAuthor">Postel, J.</span>, <span class="refTitle">"User Datagram Protocol"</span>, <span class="seriesInfo">STD 6</span>, <span class="seriesInfo">RFC 768</span>, <span class="seriesInfo">DOI 10.17487/RFC0768</span>, <time datetime="1980-08" class="refDate">August 1980</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc768">https://www.rfc-editor.org/info/rfc768</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8899">[RFC8899]</dt>
+        <dd>
+<span class="refAuthor">Fairhurst, G.</span>, <span class="refAuthor">Jones, T.</span>, <span class="refAuthor">Tüxen, M.</span>, <span class="refAuthor">Rüngeler, I.</span>, and <span class="refAuthor">T. Völker</span>, <span class="refTitle">"Packetization Layer Path MTU Discovery for Datagram Transports"</span>, <span class="seriesInfo">RFC 8899</span>, <span class="seriesInfo">DOI 10.17487/RFC8899</span>, <time datetime="2020-09" class="refDate">September 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8899">https://www.rfc-editor.org/info/rfc8899</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9868">[RFC9868]</dt>
+      <dd>
+<span class="refAuthor">Touch, J.</span> and <span class="refAuthor">C. Heard, Ed.</span>, <span class="refTitle">"Transport Options for UDP"</span>, <span class="seriesInfo">RFC 9868</span>, <span class="seriesInfo">DOI 10.17487/RFC9868</span>, <time datetime="2025-10" class="refDate">October 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9868">https://www.rfc-editor.org/info/rfc9868</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1191">[RFC1191]</dt>
+        <dd>
+<span class="refAuthor">Mogul, J.</span> and <span class="refAuthor">S. Deering</span>, <span class="refTitle">"Path MTU discovery"</span>, <span class="seriesInfo">RFC 1191</span>, <span class="seriesInfo">DOI 10.17487/RFC1191</span>, <time datetime="1990-11" class="refDate">November 1990</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1191">https://www.rfc-editor.org/info/rfc1191</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4821">[RFC4821]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span> and <span class="refAuthor">J. Heffner</span>, <span class="refTitle">"Packetization Layer Path MTU Discovery"</span>, <span class="seriesInfo">RFC 4821</span>, <span class="seriesInfo">DOI 10.17487/RFC4821</span>, <time datetime="2007-03" class="refDate">March 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4821">https://www.rfc-editor.org/info/rfc4821</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8085">[RFC8085]</dt>
+        <dd>
+<span class="refAuthor">Eggert, L.</span>, <span class="refAuthor">Fairhurst, G.</span>, and <span class="refAuthor">G. Shepherd</span>, <span class="refTitle">"UDP Usage Guidelines"</span>, <span class="seriesInfo">BCP 145</span>, <span class="seriesInfo">RFC 8085</span>, <span class="seriesInfo">DOI 10.17487/RFC8085</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8085">https://www.rfc-editor.org/info/rfc8085</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8201">[RFC8201]</dt>
+        <dd>
+<span class="refAuthor">McCann, J.</span>, <span class="refAuthor">Deering, S.</span>, <span class="refAuthor">Mogul, J.</span>, and <span class="refAuthor">R. Hinden, Ed.</span>, <span class="refTitle">"Path MTU Discovery for IP version 6"</span>, <span class="seriesInfo">STD 87</span>, <span class="seriesInfo">RFC 8201</span>, <span class="seriesInfo">DOI 10.17487/RFC8201</span>, <time datetime="2017-07" class="refDate">July 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8201">https://www.rfc-editor.org/info/rfc8201</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8304">[RFC8304]</dt>
+      <dd>
+<span class="refAuthor">Fairhurst, G.</span> and <span class="refAuthor">T. Jones</span>, <span class="refTitle">"Transport Features of the User Datagram Protocol (UDP) and Lightweight UDP (UDP-Lite)"</span>, <span class="seriesInfo">RFC 8304</span>, <span class="seriesInfo">DOI 10.17487/RFC8304</span>, <time datetime="2018-02" class="refDate">February 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8304">https://www.rfc-editor.org/info/rfc8304</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="Acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1"><span class="contact-name">Gorry Fairhurst</span> and <span class="contact-name">Tom       Jones</span> are supported by funding provided by the University of
+      Aberdeen. The authors would like to thank <span class="contact-name">Magnus       Westerlund</span> and <span class="contact-name">Mohamed Boucadair</span> for their
+      detailed comments and also other people who contributed to completing
+      this document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Godred Fairhurst</span></div>
+<div dir="auto" class="left"><span class="org">University of Aberdeen</span></div>
+<div dir="auto" class="left"><span class="street-address">School of Engineering<br>Fraser Noble Building</span></div>
+<div dir="auto" class="left"><span class="locality">Aberdeen</span></div>
+<div dir="auto" class="left"><span class="postal-code">AB24 3UE</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gorry@erg.abdn.ac.uk" class="email">gorry@erg.abdn.ac.uk</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tom Jones</span></div>
+<div dir="auto" class="left"><span class="org">University of Aberdeen</span></div>
+<div dir="auto" class="left"><span class="street-address">School of Engineering<br>Fraser Noble Building</span></div>
+<div dir="auto" class="left"><span class="locality">Aberdeen</span></div>
+<div dir="auto" class="left"><span class="postal-code">AB24 3UE</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:tom@erg.abdn.ac.uk" class="email">tom@erg.abdn.ac.uk</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
