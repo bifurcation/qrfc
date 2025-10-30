@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9884: Label Switched Path Ping for Segment Routing Path Segment Identifier with MPLS Data Plane</title>
+<meta content="Xiao Min" name="author">
+<meta content="Shaofu Peng" name="author">
+<meta content="Liyan Gong" name="author">
+<meta content="Rakesh Gandhi" name="author">
+<meta content="Carlos Pignataro" name="author">
+<meta content='
+        Segment Routing (SR) leverages source routing to steer packets through an ordered list of instructions called "segments". SR can 
+  be instantiated over the MPLS data plane. Path Segment Identifiers (PSIDs) are used to identify and correlate bidirectional or 
+  end-to-end paths in SR networks. This document defines procedures (i.e., six new Target Forwarding Equivalence Class 
+  (FEC) Stack sub-TLVs) for the use of LSP Ping to support connectivity verification and fault isolation for SR paths that include 
+  PSIDs. The mechanisms described enable the validation and tracing of SR paths with Path SIDs in MPLS networks, 
+  complementing existing SR-MPLS Operations, Administration, and Maintenance (OAM) capabilities.  
+    ' name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="9884" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9884.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-mpls-spring-lsp-ping-path-sid-13" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9884" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9884</td>
+<td class="center">LSP Ping for SR PSID</td>
+<td class="right">October 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Min, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9884" class="eref">9884</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-10" class="published">October 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">X. Min</div>
+<div class="org">ZTE Corp.</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Peng</div>
+<div class="org">ZTE Corp.</div>
+</div>
+<div class="author">
+      <div class="author-name">L. Gong</div>
+<div class="org">China Mobile</div>
+</div>
+<div class="author">
+      <div class="author-name">R. Gandhi</div>
+<div class="org">Cisco Systems, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">C. Pignataro</div>
+<div class="org">Blue Fern Consulting</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9884</h1>
+<h1 id="title">Label Switched Path Ping for Segment Routing Path Segment Identifier with MPLS Data Plane</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1"> Segment Routing (SR) leverages source routing to steer packets through an ordered list of instructions called "segments". SR can 
+  be instantiated over the MPLS data plane. Path Segment Identifiers (PSIDs) are used to identify and correlate bidirectional or 
+  end-to-end paths in SR networks. This document defines procedures (i.e., six new Target Forwarding Equivalence Class 
+  (FEC) Stack sub-TLVs) for the use of LSP Ping to support connectivity verification and fault isolation for SR paths that include 
+  PSIDs. The mechanisms described enable the validation and tracing of SR paths with Path SIDs in MPLS networks, 
+  complementing existing SR-MPLS Operations, Administration, and Maintenance (OAM) capabilities.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9884">https://www.rfc-editor.org/info/rfc9884</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions" class="internal xref">Conventions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1" class="keepWithNext"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-path-segment-id-sub-tlvs" class="internal xref">Path Segment ID Sub-TLVs</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-sr-policy-associated-psid-i" class="internal xref">SR Policy Associated PSID - IPv4 Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-sr-candidate-path-associate" class="internal xref">SR Candidate Path Associated PSID - IPv4 Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-sr-segment-list-associated-" class="internal xref">SR Segment List Associated PSID - IPv4 Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-sr-policy-associated-psid-ipv" class="internal xref">SR Policy Associated PSID - IPv6 Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-sr-candidate-path-associated-" class="internal xref">SR Candidate Path Associated PSID - IPv6 Sub-TLV</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.6">
+                <p id="section-toc.1-1.3.2.6.1"><a href="#section-3.6" class="auto internal xref">3.6</a>.  <a href="#name-sr-segment-list-associated-ps" class="internal xref">SR Segment List Associated PSID - IPv6 Sub-TLV</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-psid-fec-validation" class="internal xref">PSID FEC Validation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-psid-fec-validation-rules" class="internal xref">PSID FEC Validation Rules</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"> A Path Segment is a local segment <span>[<a href="#RFC9545" class="cite xref">RFC9545</a>]</span> that uniquely identifies an SR path on the egress node. A Path Segment 
+  Identifier (PSID) is a single label that is assigned from the SR Local Block (SRLB) <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span> of the egress 
+  node of an SR path.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2"> As specified in <span>[<a href="#RFC9545" class="cite xref">RFC9545</a>]</span>, PSID is a single label inserted by the ingress node of the SR path and then processed 
+  by the egress node of the SR path. The PSID is placed within the MPLS label stack as a label immediately following the last label of 
+      the SR path. The egress node pops the PSID.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The procedure for LSP Ping <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> as defined in <span><a href="https://rfc-editor.org/rfc/rfc8287#section-7.4" class="relref">Section 7.4</a> of [<a href="#RFC8287" class="cite xref">RFC8287</a>]</span> is also applicable to PSID; this document appends the existing step 4a with a new step 4b specific to PSID. Concretely, LSP Ping can be used to check the correct 
+  operation of a PSID and verify the PSID against the control plane. Checking correct operation means that an initiator can use LSP Ping 
+  to check whether a PSID reached the intended node and got processed by that node correctly. Moreover, verifying a PSID against the control 
+  plane means that the initiator can use LSP Ping to verify the SR path context (segment-list, candidate path, or SR Policy) associated 
+  with the PSID as signaled or provisioned at the egress node. To that end, this document specifies six new Target Forwarding Equivalence 
+  Class (FEC) Stack sub-TLVs for such PSID checks.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4"> LSP Traceroute <span>[<a href="#RFC8287" class="cite xref">RFC8287</a>]</span> is left out of this document because transit nodes are not involved in PSID processing.<a href="#section-1-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2">
+      <h2 id="name-conventions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions" class="section-name selfRef">Conventions</a>
+      </h2>
+<section id="section-2.1">
+        <h3 id="name-requirements-language">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+<div id="sect-2.2">
+<section id="section-2.2">
+        <h3 id="name-terminology">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-2.2-1"> This document uses the terminology defined in <span>[<a href="#RFC3031" class="cite xref">RFC3031</a>]</span>, <span>[<a href="#RFC8402" class="cite xref">RFC8402</a>]</span>, <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>, and 
+ <span>[<a href="#RFC9545" class="cite xref">RFC9545</a>]</span>; readers are expected to be familiar with the terms in those documents.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2">This document introduces the following additional term:<a href="#section-2.2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-2.2-3">
+          <dt id="section-2.2-3.1">Segment-List-ID</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-3.2">The Segment-List-ID field is a 4-octet identifier that uniquely
+          identifies a segment list within the context of the candidate path
+          of an SR Policy. Although not defined in <span>[<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>,
+          the Segment-List-ID is the same identifier as the one that can be
+          signaled through control plane protocols including Border Gateway Protocol (BGP) (<span><a href="https://datatracker.ietf.org/doc/html/draft-ietf-idr-sr-policy-seglist-id-06#section-2.1" class="relref">Section 2.1</a> of [<a href="#I-D.ietf-idr-sr-policy-seglist-id" class="cite xref">SR-SEGLIST-ID</a>]</span>, Path Computation Element Communication Protocol (PCEP) (<span><a href="https://datatracker.ietf.org/doc/html/draft-ietf-pce-multipath-16#section-4.2" class="relref">Section 4.2</a> of [<a href="#I-D.ietf-pce-multipath" class="cite xref">PCE-MULTIPATH</a>]</span>), and Border Gateway Protocol - Link State (BGP-LS) (<span><a href="https://rfc-editor.org/rfc/rfc9857#section-5.7.4" class="relref">Section 5.7.4</a> of [<a href="#RFC9857" class="cite xref">RFC9857</a>]</span>).<a href="#section-2.2-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<section id="section-3">
+      <h2 id="name-path-segment-id-sub-tlvs">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-path-segment-id-sub-tlvs" class="section-name selfRef">Path Segment ID Sub-TLVs</a>
+      </h2>
+<p id="section-3-1"> Analogous to what's defined in <span><a href="https://rfc-editor.org/rfc/rfc8287#section-5" class="relref">Section 5</a> of [<a href="#RFC8287" class="cite xref">RFC8287</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc9703#section-4" class="relref">Section 4</a> of [<a href="#RFC9703" class="cite xref">RFC9703</a>]</span>, six new sub-TLVs 
+  are defined for the Target FEC Stack TLV (Type 1), the Reverse-Path Target FEC Stack TLV (Type 16), and the Reply Path TLV (Type 21). 
+  Note that the structures of the six new sub-TLVs follow the TLV's structure defined in <span><a href="https://rfc-editor.org/rfc/rfc8029#section-3" class="relref">Section 3</a> of [<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span id="name-sub-tlvs-for-psid-checks"></span><table class="center" id="table-1">
+        <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-sub-tlvs-for-psid-checks" class="selfRef">Sub-TLVs for PSID Checks</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Sub-Type</th>
+            <th class="text-left" rowspan="1" colspan="1">Sub-TLV Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">49</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Policy Associated PSID - IPv4</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">50</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Candidate Path Associated PSID - IPv4</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">51</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Segment List Associated PSID - IPv4</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">52</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Policy Associated PSID - IPv6</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">53</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Candidate Path Associated PSID - IPv6</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">54</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Segment List Associated PSID - IPv6</td>
+          </tr>
+        </tbody>
+      </table>
+<p id="section-3-3"> As specified in <span><a href="https://rfc-editor.org/rfc/rfc9545#section-2" class="relref">Section 2</a> of [<a href="#RFC9545" class="cite xref">RFC9545</a>]</span>, a PSID is used to identify the following:<a href="#section-3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-4.1">a single segment list, some segment lists, or all segment lists in a candidate path of an SR Policy,<a href="#section-3-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-4.2">some segment lists across multiple candidate paths of an SR Policy, or<a href="#section-3-4.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-4.3">all segment lists in all candidate paths of an SR Policy.<a href="#section-3-4.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-3-5">Therefore, six different Target FEC Stack sub-TLVs need to be defined for PSID. The ordered list of selection 
+  rules for the six Target FEC Stack sub-TLVs are defined as follows:<a href="#section-3-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-6.1">
+          <p id="section-3-6.1.1"> When a PSID is used to identify all segment lists in an SR Policy, the Target FEC Stack sub-TLV of the type "SR Policy Associated 
+   PSID" (for IPv4 or IPv6) <span class="bcp14">MUST</span> be used for PSID checks.<a href="#section-3-6.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-6.2">
+          <p id="section-3-6.2.1"> When a PSID is used to identify all segment lists in an SR Candidate Path, the Target FEC Stack sub-TLV of the type "SR Candidate 
+   Path Associated PSID" (for IPv4 or IPv6) <span class="bcp14">MUST</span> be used for PSID checks.<a href="#section-3-6.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-6.3">
+          <p id="section-3-6.3.1"> When a PSID is used to identify a single segment list, the Target FEC Stack sub-TLV of the type "SR Segment List Associated PSID" (for IPv4 
+   or IPv6) <span class="bcp14">MUST</span> be used for PSID checks.<a href="#section-3-6.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-6.4">
+          <p id="section-3-6.4.1"> When a PSID is used to identify some segment lists in a candidate path or an SR Policy, the Target FEC Stack sub-TLV of the type 
+   "SR Segment List Associated PSID" (for IPv4 or IPv6) <span class="bcp14">MUST</span> be used for PSID checks. In this case, multiple LSP Ping messages <span class="bcp14">MUST</span> be sent, 
+   and one Target FEC Stack sub-TLV of the type "SR Segment List Associated PSID" (for IPv4 or IPv6) <span class="bcp14">MUST</span> be carried in each LSP Ping message.<a href="#section-3-6.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-3-7"> These six new Target FEC Stack sub-TLVs are not expected to be present in the same message. If more than one of these sub-TLVs are 
+  present in a message, only the first sub-TLV will be processed, per the validation rules in <a href="#sect-4" class="auto internal xref">Section 4</a>.<a href="#section-3-7" class="pilcrow">¶</a></p>
+<div id="sect-3.1">
+<section id="section-3.1">
+        <h3 id="name-sr-policy-associated-psid-i">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-sr-policy-associated-psid-i" class="section-name selfRef">SR Policy Associated PSID - IPv4 Sub-TLV</a>
+        </h3>
+<p id="section-3.1-1"> The SR Policy Associated PSID - IPv4 sub-TLV is defined as follows:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<span id="name-sr-policy-associated-psid-ip"></span><div id="Figure_1">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-3.1-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Type = 49            |             Length            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                     Headend (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Color (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Endpoint (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-sr-policy-associated-psid-ip" class="selfRef">SR Policy Associated PSID - IPv4 Sub-TLV Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-3.1-3">
+          <dt id="section-3.1-3.1">Type (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.2"> The Type field identifies the sub-TLV as an SR Policy Associated PSID - IPv4 sub-TLV. The value is set to 49.<a href="#section-3.1-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.3">Length (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.4"> The Length field indicates the length of the sub-TLV in octets, excluding the first 4 octets (Type and Length fields). The value <span class="bcp14">MUST</span> be set to 12.<a href="#section-3.1-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.5">Headend (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.6"> The Headend field encodes the headend IPv4 address of the SR Policy. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.1-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.7">Color (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.8"> The Color field identifies the color (i.e., policy identifier) of the SR Policy and is encoded as defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.1-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.9">Endpoint (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.10"> The Endpoint field encodes the endpoint IPv4 address of the SR Policy. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.1-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-3.2">
+<section id="section-3.2">
+        <h3 id="name-sr-candidate-path-associate">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-sr-candidate-path-associate" class="section-name selfRef">SR Candidate Path Associated PSID - IPv4 Sub-TLV</a>
+        </h3>
+<p id="section-3.2-1"> The SR Candidate Path Associated PSID - IPv4 sub-TLV is defined as follows:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<span id="name-sr-candidate-path-associated"></span><div id="Figure_2">
+<figure id="figure-2">
+          <div class="alignLeft art-text artwork" id="section-3.2-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Type = 50            |             Length            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                     Headend (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Color (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Endpoint (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Protocol-Origin|                    Reserved                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                                                               |
+|                   Originator (20 octets)                      |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                Discriminator (4 octets)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-sr-candidate-path-associated" class="selfRef">SR Candidate Path Associated PSID - IPv4 Sub-TLV Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-3.2-3">
+          <dt id="section-3.2-3.1">Type (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.2"> The Type field identifies the sub-TLV as an SR Candidate Path Associated PSID - IPv4 sub-TLV. The value is set to 50.<a href="#section-3.2-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.3">Length (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.4"> The Length field indicates the length of the sub-TLV in octets, excluding the first 4 octets (Type and Length fields). The value <span class="bcp14">MUST</span> be set to 40.<a href="#section-3.2-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.5">Headend (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.6"> The Headend field encodes the headend IPv4 address of the SR Candidate Path. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.2-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.7">Color (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.8"> The Color field identifies the policy color and is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.2-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.9">Endpoint (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.10"> The Endpoint field encodes the endpoint IPv4 address of the SR Candidate Path. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.2-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.11">Protocol-Origin (length: 1 octet)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.12"> The Protocol-Origin field indicates the protocol that originated the SR
+  Candidate Path. It is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span> and
+  takes values from the IANA registry <span>[<a href="#PROTOCOL-ORIGIN" class="cite xref">PROTOCOL-ORIGIN</a>]</span>. If an
+  unsupported value is used, validation at the responder <span class="bcp14">MUST</span>
+  fail.<a href="#section-3.2-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.13">Reserved (length: 3 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.14"> The Reserved field is reserved for future use. It <span class="bcp14">MUST</span> be set to zero when sent and <span class="bcp14">MUST</span> be ignored upon receipt.<a href="#section-3.2-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.15">Originator (length: 20 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.16"> The Originator field identifies the originator of the SR Candidate Path and is encoded as defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.4" class="relref">Section 2.4</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.2-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-3.17">Discriminator (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-3.18"> The Discriminator field uniquely identifies the SR Candidate Path within the context of the Headend, Color, and Endpoint fields. 
+    This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.5" class="relref">Section 2.5</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.2-3.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-3.3">
+<section id="section-3.3">
+        <h3 id="name-sr-segment-list-associated-">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-sr-segment-list-associated-" class="section-name selfRef">SR Segment List Associated PSID - IPv4 Sub-TLV</a>
+        </h3>
+<p id="section-3.3-1"> The SR Segment List Associated PSID - IPv4 sub-TLV is used to identify a specific segment list within the context of a candidate path of an SR Policy. 
+  The format of this sub-TLV is shown in <a href="#Figure_3" class="auto internal xref">Figure 3</a>.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<span id="name-sr-segment-list-associated-p"></span><div id="Figure_3">
+<figure id="figure-3">
+          <div class="alignLeft art-text artwork" id="section-3.3-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Type = 51            |             Length            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                     Headend (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Color (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Endpoint (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Protocol-Origin|                    Reserved                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                                                               |
+|                    Originator (20 octets)                     |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|               Discriminator (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|             Segment-List-ID (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-sr-segment-list-associated-p" class="selfRef">SR Segment List Associated PSID - IPv4 Sub-TLV Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-3.3-3">
+          <dt id="section-3.3-3.1">Type (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.2"> The Type field identifies the sub-TLV as an SR Segment List Associated PSID - IPv4 sub-TLV. The value is set to 51.<a href="#section-3.3-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.3">Length (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.4"> The Length field indicates the length of the sub-TLV in octets, excluding the first 4 octets (Type and Length fields). The value <span class="bcp14">MUST</span> be set to 44.<a href="#section-3.3-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.5">Headend (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.6"> The Headend field encodes the headend IPv4 address of the SR Policy. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.3-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.7">Color (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.8"> The Color field identifies the color of the SR Policy and is encoded as specified in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.3-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.9">Endpoint (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.10"> The Endpoint field specifies the endpoint IPv4 address of the SR Policy, as defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.3-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.11">Protocol-Origin (length: 1 octet)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.12"> The Protocol-Origin field indicates the protocol that originated the SR
+  Candidate Path. It is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span> and
+  takes values from the IANA registry <span>[<a href="#PROTOCOL-ORIGIN" class="cite xref">PROTOCOL-ORIGIN</a>]</span>. If an
+  unsupported value is used, validation at the responder <span class="bcp14">MUST</span>
+  fail.<a href="#section-3.3-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.13">Reserved (length: 3 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.14"> The Reserved field is reserved for future use. It <span class="bcp14">MUST</span> be set to zero when transmitted and <span class="bcp14">MUST</span> be ignored upon receipt.<a href="#section-3.3-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.15">Originator (length: 20 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.16"> The Originator field identifies the originator of the SR Candidate Path and is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.4" class="relref">Section 2.4</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.3-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.17">Discriminator (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.18"> The Discriminator field uniquely identifies the SR Candidate Path
+  within the context of the Headend, Color, and Endpoint fields.  This field is
+  defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.5" class="relref">Section 2.5</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.3-3.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.3-3.19">Segment-List-ID (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.3-3.20"> The Segment-List-ID field is a 4-octet identifier that uniquely
+  identifies a segment list within the context of the candidate path of an SR
+  Policy.  This field is defined in <a href="#sect-2.2" class="auto internal xref">Section 2.2</a>.<a href="#section-3.3-3.20" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-3.4">
+<section id="section-3.4">
+        <h3 id="name-sr-policy-associated-psid-ipv">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-sr-policy-associated-psid-ipv" class="section-name selfRef">SR Policy Associated PSID - IPv6 Sub-TLV</a>
+        </h3>
+<p id="section-3.4-1"> The SR Policy Associated PSID - IPv6 sub-TLV is defined as follows:<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<span id="name-sr-policy-associated-psid-ipv6"></span><div id="Figure_4">
+<figure id="figure-4">
+          <div class="alignLeft art-text artwork" id="section-3.4-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Type = 52            |             Length            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                     Headend (16 octets)                       |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Color (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                    Endpoint (16 octets)                       |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-sr-policy-associated-psid-ipv6" class="selfRef">SR Policy Associated PSID - IPv6 Sub-TLV Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-3.4-3">
+          <dt id="section-3.4-3.1">Type (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.4-3.2"> The Type field identifies the sub-TLV as an SR Policy Associated PSID - IPv6 sub-TLV. The value is set to 52.<a href="#section-3.4-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.4-3.3">Length (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.4-3.4"> The Length field indicates the length of the sub-TLV in octets, excluding the first 4 octets (Type and Length fields). The value <span class="bcp14">MUST</span> be set to 36.<a href="#section-3.4-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.4-3.5">Headend (length: 16 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.4-3.6"> The Headend field encodes the headend IPv6 address of the SR Policy. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.4-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.4-3.7">Color (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.4-3.8"> The Color field identifies the color (i.e., policy identifier) of the SR Policy and is encoded as defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.4-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.4-3.9">Endpoint (length: 16 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.4-3.10"> The Endpoint field encodes the endpoint IPv6 address of the SR Policy. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.4-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-3.5">
+<section id="section-3.5">
+        <h3 id="name-sr-candidate-path-associated-">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-sr-candidate-path-associated-" class="section-name selfRef">SR Candidate Path Associated PSID - IPv6 Sub-TLV</a>
+        </h3>
+<p id="section-3.5-1"> The SR Candidate Path Associated PSID - IPv6 sub-TLV is defined as follows:<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<span id="name-sr-candidate-path-associated-p"></span><div id="Figure_5">
+<figure id="figure-5">
+          <div class="alignLeft art-text artwork" id="section-3.5-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Type = 53            |             Length            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                     Headend (16 octets)                       |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Color (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                    Endpoint (16 octets)                       |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Protocol-Origin|                    Reserved                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                                                               |
+|                   Originator (20 octets)                      |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                Discriminator (4 octets)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-sr-candidate-path-associated-p" class="selfRef">SR Candidate Path Associated PSID - IPv6 Sub-TLV Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-3.5-3">
+          <dt id="section-3.5-3.1">Type (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.2"> The Type field identifies the sub-TLV as an SR Candidate Path Associated PSID - IPv6 sub-TLV. The value is set to 53.<a href="#section-3.5-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.3">Length (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.4"> The Length field indicates the length of the sub-TLV in octets, excluding the first 4 octets (Type and Length fields). The value <span class="bcp14">MUST</span> be set to 64.<a href="#section-3.5-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.5">Headend (length: 16 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.6"> The Headend field encodes the headend IPv6 address of the SR Candidate Path. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.5-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.7">Color (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.8"> The Color field identifies the policy color and is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.5-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.9">Endpoint (length: 16 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.10"> The Endpoint field encodes the endpoint IPv6 address of the SR Candidate Path. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.5-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.11">Protocol-Origin (length: 1 octet)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.12"> The Protocol-Origin field indicates the protocol that originated the SR
+  Candidate Path. It is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span> and
+  takes values from the IANA registry <span>[<a href="#PROTOCOL-ORIGIN" class="cite xref">PROTOCOL-ORIGIN</a>]</span>. If an
+  unsupported value is used, validation at the responder <span class="bcp14">MUST</span>
+  fail.<a href="#section-3.5-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.13">Reserved (length: 3 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.14"> The Reserved field is reserved for future use. It <span class="bcp14">MUST</span> be set to zero when sent and <span class="bcp14">MUST</span> be ignored upon receipt.<a href="#section-3.5-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.15">Originator (length: 20 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.16"> The Originator field identifies the originator of the SR Candidate Path and is encoded as defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.4" class="relref">Section 2.4</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.5-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.5-3.17">Discriminator (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.5-3.18"> The Discriminator field uniquely identifies the SR Candidate Path
+  within the context of the Headend, Color, and Endpoint fields.  This field is
+  defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.5" class="relref">Section 2.5</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.5-3.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-3.6">
+<section id="section-3.6">
+        <h3 id="name-sr-segment-list-associated-ps">
+<a href="#section-3.6" class="section-number selfRef">3.6. </a><a href="#name-sr-segment-list-associated-ps" class="section-name selfRef">SR Segment List Associated PSID - IPv6 Sub-TLV</a>
+        </h3>
+<p id="section-3.6-1"> The SR Segment List Associated PSID - IPv6 sub-TLV is used to identify a specific segment list within the context of a candidate path of an SR Policy. 
+  The format of this sub-TLV is shown in <a href="#Figure_6" class="auto internal xref">Figure 6</a>.<a href="#section-3.6-1" class="pilcrow">¶</a></p>
+<span id="name-sr-segment-list-associated-psi"></span><div id="Figure_6">
+<figure id="figure-6">
+          <div class="alignLeft art-text artwork" id="section-3.6-2.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Type = 54            |             Length            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                     Headend (16 octets)                       |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Color (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                    Endpoint (16 octets)                       |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Protocol-Origin|                    Reserved                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                                                               |
+|                    Originator (20 octets)                     |
+|                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|               Discriminator (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|             Segment-List-ID (4 octets)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-sr-segment-list-associated-psi" class="selfRef">SR Segment List Associated PSID - IPv6 Sub-TLV Format</a>
+          </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlNewline" id="section-3.6-3">
+          <dt id="section-3.6-3.1">Type (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.2"> The Type field identifies the sub-TLV as an SR Segment List Associated PSID - IPv6 sub-TLV. The value is set to 54.<a href="#section-3.6-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.3">Length (length: 2 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.4"> The Length field indicates the length of the sub-TLV in octets, excluding the first 4 octets (Type and Length fields). The value <span class="bcp14">MUST</span> be set to 68.<a href="#section-3.6-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.5">Headend (length: 16 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.6"> The Headend field encodes the headend IPv6 address of the SR Policy. This field is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.6-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.7">Color (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.8"> The Color field identifies the color of the SR Policy and is encoded as specified in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.6-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.9">Endpoint (length: 16 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.10"> The Endpoint field specifies the endpoint IPv6 address of the SR Policy, as defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.1" class="relref">Section 2.1</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.6-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.11">Protocol-Origin (length: 1 octet)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.12"> The Protocol-Origin field indicates the protocol that originated the SR
+  Candidate Path. It is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span> and
+  takes values from the IANA registry <span>[<a href="#PROTOCOL-ORIGIN" class="cite xref">PROTOCOL-ORIGIN</a>]</span>. If an
+  unsupported value is used, validation at the responder <span class="bcp14">MUST</span>
+  fail.<a href="#section-3.6-3.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.13">Reserved (length: 3 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.14"> The Reserved field is reserved for future use. It <span class="bcp14">MUST</span> be set to zero when transmitted and <span class="bcp14">MUST</span> be ignored upon receipt.<a href="#section-3.6-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.15">Originator (length: 20 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.16"> The Originator field identifies the originator of the SR Candidate Path and is defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.4" class="relref">Section 2.4</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.6-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.17">Discriminator (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.18"> The Discriminator field uniquely identifies the SR Candidate Path
+  within the context of the Headend, Color, and Endpoint fields.  This field is
+  defined in <span><a href="https://rfc-editor.org/rfc/rfc9256#section-2.5" class="relref">Section 2.5</a> of [<a href="#RFC9256" class="cite xref">RFC9256</a>]</span>.<a href="#section-3.6-3.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.6-3.19">Segment-List-ID (length: 4 octets)</dt>
+          <dd style="margin-left: 1.5em" id="section-3.6-3.20"> The Segment-List-ID field is a 4-octet identifier that uniquely
+  identifies a segment list within the context of the candidate path of an SR
+  Policy.  This field is defined in <a href="#sect-2.2" class="auto internal xref">Section 2.2</a>.<a href="#section-3.6-3.20" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<div id="sect-4">
+<section id="section-4">
+      <h2 id="name-psid-fec-validation">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-psid-fec-validation" class="section-name selfRef">PSID FEC Validation</a>
+      </h2>
+<p id="section-4-1"> The MPLS LSP Ping procedures may be initiated by the headend of the SR path or a 
+  centralized topology-aware data plane monitoring system as described in <span>[<a href="#RFC8403" class="cite xref">RFC8403</a>]</span>. For the 
+  PSID, the responder nodes that receive an echo request and send an echo reply <span class="bcp14">MUST</span> be the endpoint of the 
+      SR path.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2"> When an endpoint receives the LSP echo request packet with the top FEC being the PSID, it <span class="bcp14">MUST</span> perform 
+  validity checks on the content of the PSID Target FEC Stack sub-TLV.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3"> If a malformed Target FEC Stack sub-TLV is received, then a return code of 1, "Malformed echo request received" as defined 
+  in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> <span class="bcp14">MUST</span> be sent. The section below is appended to step 4a of <span><a href="https://rfc-editor.org/rfc/rfc8287#section-7.4" class="relref">Section 7.4</a> of [<a href="#RFC8287" class="cite xref">RFC8287</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<section id="section-4.1">
+        <h3 id="name-psid-fec-validation-rules">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-psid-fec-validation-rules" class="section-name selfRef">PSID FEC Validation Rules</a>
+        </h3>
+<div class="breakable lang-pseudocode sourcecode" id="section-4.1-1">
+<pre>
+4b. Segment Routing PSID Validation:
+
+If the Label-stack-depth is 1 and the Target FEC Stack sub-TLV at
+FEC-stack-depth is 49 (SR Policy Associated PSID - IPv4 sub-TLV), {
+
+   Set the Best-return-code to 10 "Mapping for this FEC is not the
+   given label at stack-depth &lt;RSC&gt;" if any below conditions fail
+   (the notation &lt;RSC&gt; refers to the Return Subcode):
+
+   -  Validate that the PSID is signaled or provisioned for the SR
+      Policy {
+
+      *  Validate that the signaled or provisioned headend, color,
+         and endpoint for the PSID match with the corresponding
+         fields in the received SR Policy Associated PSID - IPv4
+         sub-TLV.
+
+      }
+
+   }
+
+   If all the above validations have passed, set the return code to 3
+   "Replying router is an egress for the FEC at stack-depth &lt;RSC&gt;".
+
+   Set the FEC-Status to 1 and return.
+
+}
+
+Else, if the Label-stack-depth is 1 and the Target FEC Stack sub-TLV
+at FEC-stack-depth is 50 (SR Candidate Path Associated PSID - IPv4
+sub-TLV), {
+
+   Set the Best-return-code to 10 "Mapping for this FEC is not the
+   given label at stack-depth &lt;RSC&gt;" if any below conditions fail:
+
+   -  Validate that the PSID is signaled or provisioned for the SR
+      Candidate Path {
+
+      *  Validate that the signaled or provisioned headend, color,
+         endpoint, originator, and discriminator for the PSID
+         match with the corresponding fields in the received SR
+         Candidate Path Associated PSID - IPv4 sub-TLV.
+
+      }
+
+   }
+
+   If all the above validations have passed, set the return code to 3
+   "Replying router is an egress for the FEC at stack-depth &lt;RSC&gt;".
+
+   Set the FEC-Status to 1 and return.
+
+}
+
+Else, if the Label-stack-depth is 1 and the Target FEC Stack sub-TLV
+at FEC-stack-depth is 51 (SR Segment List Associated PSID - IPv4
+sub-TLV), {
+
+   Set the Best-return-code to 10 "Mapping for this FEC is not the
+   given label at stack-depth &lt;RSC&gt;" if any below conditions fail:
+
+   -  Validate that the PSID is signaled or provisioned for the SR
+      Segment List {
+
+      *  Validate that the signaled or provisioned headend, color,
+         endpoint, originator, discriminator, and segment-list-id
+         for the PSID match with the corresponding fields in the
+         received SR Segment List Associated PSID - IPv4 sub-TLV.
+
+      }
+
+   }
+
+  If all the above validations have passed, set the return code to 3,
+  "Replying router is an egress for the FEC at stack-depth &lt;RSC&gt;".
+
+  Set the FEC-Status to 1 and return.
+
+}
+
+Else, if the Label-stack-depth is 1 and the Target FEC Stack sub-TLV
+at FEC-stack-depth is 52 (SR Policy Associated PSID - IPv6
+sub-TLV), {
+
+   Set the Best-return-code to 10 "Mapping for this FEC is not the
+   given label at stack-depth &lt;RSC&gt;" if any below conditions fail
+
+   -  Validate that the PSID is signaled or provisioned for the SR
+      Policy {
+
+      *  Validate that the signaled or provisioned headend, color,
+         and endpoint for the PSID match with the corresponding
+         fields in the received SR Policy Associated PSID - IPv6 sub-
+         TLV.
+
+      }
+
+   }
+
+   If all the above validations have passed, set the return code to 3
+   "Replying router is an egress for the FEC at stack-depth &lt;RSC&gt;".
+
+   Set the FEC-Status to 1 and return.
+
+}
+
+Else, if the Label-stack-depth is 1 and the Target FEC Stack sub-TLV
+at FEC-stack-depth is 53 (SR Candidate Path Associated PSID - IPv6
+sub-TLV), {
+
+   Set the Best-return-code to 10 "Mapping for this FEC is not the
+   given label at stack-depth &lt;RSC&gt;" if any below conditions fail:
+
+   -  Validate that the PSID is signaled or provisioned for the SR
+      Candidate Path {
+
+      *  Validate that the signaled or provisioned headend, color,
+         endpoint, originator, and discriminator for the PSID
+         match with the corresponding fields in the received SR
+         Candidate Path Associated PSID - IPv6 sub-TLV.
+
+      }
+
+   }
+
+   If all the above validations have passed, set the return code to 3
+   "Replying router is an egress for the FEC at stack-depth &lt;RSC&gt;".
+
+   Set the FEC-Status to 1 and return.
+
+}
+
+Else, if the Label-stack-depth is 1 and the Target FEC Stack sub-TLV
+at FEC-stack-depth is 54 (SR Segment List Associated PSID - IPv6
+sub-TLV), {
+
+   Set the Best-return-code to 10 "Mapping for this FEC is not the
+   given label at stack-depth &lt;RSC&gt;" if any below conditions fail:
+
+   -  Validate that the PSID is signaled or provisioned for the SR
+      Segment List {
+
+      *  Validate that the signaled or provisioned headend, color,
+         endpoint, originator, discriminator, and segment-list-id
+         for the PSID match with the corresponding fields in the
+         received SR Segment List Associated PSID - IPv6 sub-TLV.
+
+      }
+
+   }
+
+   If all the above validations have passed, set the return code to 3
+   "Replying router is an egress for the FEC at stack-depth &lt;RSC&gt;".
+
+   Set the FEC-Status to 1 and return.
+
+}</pre><a href="#section-4.1-1" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-2"> When any of the following is carried in a Reverse-Path Target FEC Stack TLV (Type 16) or Reply Path TLV (Type 21), it
+ <span class="bcp14">MUST</span> be sent by an endpoint in an echo reply.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-3.1">SR Policy Associated PSID - IPv4 sub-TLV,<a href="#section-4.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.2">SR Candidate Path Associated PSID - IPv4 sub-TLV,<a href="#section-4.1-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.3">SR Segment List Associated PSID - IPv4 sub-TLV,<a href="#section-4.1-3.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.4">SR Policy Associated PSID - IPv6 sub-TLV,<a href="#section-4.1-3.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.5">SR Candidate Path Associated PSID - IPv6 sub-TLV, or<a href="#section-4.1-3.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.1-3.6">SR Segment List Associated PSID - IPv6 sub-TLV<a href="#section-4.1-3.6" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.1-4">The headend <span class="bcp14">MUST</span> perform validity checks as described above without setting the return 
+ code. If any of the validations fail, then the headend <span class="bcp14">MUST</span> drop the echo reply and <span class="bcp14">SHOULD</span> log and/or report an error.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1"> This document defines additional MPLS LSP Ping sub-TLVs and follows the mechanisms defined in <span>[<a href="#RFC8029" class="cite xref">RFC8029</a>]</span>. 
+  All the security considerations defined in <span><a href="https://rfc-editor.org/rfc/rfc8029#section-5" class="relref">Section 5</a> of [<a href="#RFC8029" class="cite xref">RFC8029</a>]</span> apply to this document. The MPLS LSP Ping 
+  sub-TLVs defined in this document do not impose any additional security challenges to be considered.<a href="#section-5-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1"> IANA has assigned six Target FEC Stack sub-TLVs from the "Sub-TLVs for TLV Types 1, 16, and 21" registry 
+  <span>[<a href="#MPLS-LSP-PING" class="cite xref">MPLS-LSP-PING</a>]</span> within the "TLVs" registry of the "Multiprotocol Label Switching (MPLS) Label Switched Paths (LSPs) 
+  Ping Parameters" registry group. The Standards Action <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span> range that requires an error message to be returned if the sub-TLV is not 
+  recognized (range 0-16383) has been used.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<span id="name-sub-tlvs-for-tlv-types-1-16"></span><table class="center" id="table-2">
+        <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-sub-tlvs-for-tlv-types-1-16" class="selfRef">Sub-TLVs for TLV Types 1, 16, and 21 Registry</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Sub-Type</th>
+            <th class="text-left" rowspan="1" colspan="1">Sub-TLV Name</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">49</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Policy Associated PSID - IPv4</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <a href="#sect-3.1" class="auto internal xref">Section 3.1</a> of RFC 9884</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">50</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Candidate Path Associated PSID - IPv4</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <a href="#sect-3.2" class="auto internal xref">Section 3.2</a> of RFC 9884</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">51</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Segment List Associated PSID - IPv4</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <a href="#sect-3.3" class="auto internal xref">Section 3.3</a> of RFC 9884</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">52</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Policy Associated PSID - IPv6</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <a href="#sect-3.4" class="auto internal xref">Section 3.4</a> of RFC 9884</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">53</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Candidate Path Associated PSID - IPv6</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <a href="#sect-3.5" class="auto internal xref">Section 3.5</a> of RFC 9884</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">54</td>
+            <td class="text-left" rowspan="1" colspan="1">SR Segment List Associated PSID - IPv6</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <a href="#sect-3.6" class="auto internal xref">Section 3.6</a> of RFC 9884</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="MPLS-LSP-PING">[MPLS-LSP-PING]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Multiprotocol Label Switching (MPLS) Label Switched Paths (LSPs) Ping Parameters"</span>, <span>&lt;<a href="http://www.iana.org/assignments/mpls-lsp-ping-parameters">http://www.iana.org/assignments/mpls-lsp-ping-parameters</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="PROTOCOL-ORIGIN">[PROTOCOL-ORIGIN]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"SR Policy Protocol Origin"</span>, <span>&lt;<a href="https://www.iana.org/assignments/segment-routing">https://www.iana.org/assignments/segment-routing</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8029">[RFC8029]</dt>
+        <dd>
+<span class="refAuthor">Kompella, K.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, <span class="refAuthor">Kumar, N.</span>, <span class="refAuthor">Aldrin, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"Detecting Multiprotocol Label Switched (MPLS) Data-Plane Failures"</span>, <span class="seriesInfo">RFC 8029</span>, <span class="seriesInfo">DOI 10.17487/RFC8029</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8029">https://www.rfc-editor.org/info/rfc8029</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8287">[RFC8287]</dt>
+        <dd>
+<span class="refAuthor">Kumar, N., Ed.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, <span class="refAuthor">Swallow, G.</span>, <span class="refAuthor">Akiya, N.</span>, <span class="refAuthor">Kini, S.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"Label Switched Path (LSP) Ping/Traceroute for Segment Routing (SR) IGP-Prefix and IGP-Adjacency Segment Identifiers (SIDs) with MPLS Data Planes"</span>, <span class="seriesInfo">RFC 8287</span>, <span class="seriesInfo">DOI 10.17487/RFC8287</span>, <time datetime="2017-12" class="refDate">December 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8287">https://www.rfc-editor.org/info/rfc8287</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9256">[RFC9256]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refAuthor">Voyer, D.</span>, <span class="refAuthor">Bogdanov, A.</span>, and <span class="refAuthor">P. Mattes</span>, <span class="refTitle">"Segment Routing Policy Architecture"</span>, <span class="seriesInfo">RFC 9256</span>, <span class="seriesInfo">DOI 10.17487/RFC9256</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9256">https://www.rfc-editor.org/info/rfc9256</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9545">[RFC9545]</dt>
+      <dd>
+<span class="refAuthor">Cheng, W., Ed.</span>, <span class="refAuthor">Li, H.</span>, <span class="refAuthor">Li, C., Ed.</span>, <span class="refAuthor">Gandhi, R.</span>, and <span class="refAuthor">R. Zigler</span>, <span class="refTitle">"Path Segment Identifier in MPLS-Based Segment Routing Networks"</span>, <span class="seriesInfo">RFC 9545</span>, <span class="seriesInfo">DOI 10.17487/RFC9545</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9545">https://www.rfc-editor.org/info/rfc9545</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-pce-multipath">[PCE-MULTIPATH]</dt>
+        <dd>
+<span class="refAuthor">Koldychev, M.</span>, <span class="refAuthor">Sivabalan, S.</span>, <span class="refAuthor">Saad, T.</span>, <span class="refAuthor">Beeram, V. P.</span>, <span class="refAuthor">Bidgoli, H.</span>, <span class="refAuthor">Yadav, B.</span>, <span class="refAuthor">Peng, S.</span>, <span class="refAuthor">Mishra, G. S.</span>, and <span class="refAuthor">S. Sidor</span>, <span class="refTitle">"Path Computation Element Communication Protocol (PCEP) Extensions for Signaling Multipath Information"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-pce-multipath-16</span>, <time datetime="2025-10-17" class="refDate">17 October 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-pce-multipath-16">https://datatracker.ietf.org/doc/html/draft-ietf-pce-multipath-16</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3031">[RFC3031]</dt>
+        <dd>
+<span class="refAuthor">Rosen, E.</span>, <span class="refAuthor">Viswanathan, A.</span>, and <span class="refAuthor">R. Callon</span>, <span class="refTitle">"Multiprotocol Label Switching Architecture"</span>, <span class="seriesInfo">RFC 3031</span>, <span class="seriesInfo">DOI 10.17487/RFC3031</span>, <time datetime="2001-01" class="refDate">January 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3031">https://www.rfc-editor.org/info/rfc3031</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8402">[RFC8402]</dt>
+        <dd>
+<span class="refAuthor">Filsfils, C., Ed.</span>, <span class="refAuthor">Previdi, S., Ed.</span>, <span class="refAuthor">Ginsberg, L.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Litkowski, S.</span>, and <span class="refAuthor">R. Shakir</span>, <span class="refTitle">"Segment Routing Architecture"</span>, <span class="seriesInfo">RFC 8402</span>, <span class="seriesInfo">DOI 10.17487/RFC8402</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8402">https://www.rfc-editor.org/info/rfc8402</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8403">[RFC8403]</dt>
+        <dd>
+<span class="refAuthor">Geib, R., Ed.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Pignataro, C., Ed.</span>, and <span class="refAuthor">N. Kumar</span>, <span class="refTitle">"A Scalable and Topology-Aware MPLS Data-Plane Monitoring System"</span>, <span class="seriesInfo">RFC 8403</span>, <span class="seriesInfo">DOI 10.17487/RFC8403</span>, <time datetime="2018-07" class="refDate">July 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8403">https://www.rfc-editor.org/info/rfc8403</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9703">[RFC9703]</dt>
+        <dd>
+<span class="refAuthor">Hegde, S.</span>, <span class="refAuthor">Srivastava, M.</span>, <span class="refAuthor">Arora, K.</span>, <span class="refAuthor">Ninan, S.</span>, and <span class="refAuthor">X. Xu</span>, <span class="refTitle">"Label Switched Path (LSP) Ping/Traceroute for Segment Routing (SR) Egress Peer Engineering (EPE) Segment Identifiers (SIDs) with MPLS Data Plane"</span>, <span class="seriesInfo">RFC 9703</span>, <span class="seriesInfo">DOI 10.17487/RFC9703</span>, <time datetime="2024-12" class="refDate">December 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9703">https://www.rfc-editor.org/info/rfc9703</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9857">[RFC9857]</dt>
+        <dd>
+<span class="refAuthor">Previdi, S.</span>, <span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refAuthor">Dong, J.</span>, <span class="refAuthor">Gredler, H.</span>, and <span class="refAuthor">J. Tantsura</span>, <span class="refTitle">"Advertisement of Segment Routing Policies Using BGP - Link State"</span>, <span class="seriesInfo">RFC 9857</span>, <span class="seriesInfo">DOI 10.17487/RFC9857</span>, <time datetime="2025-10" class="refDate">October 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9857">https://www.rfc-editor.org/info/rfc9857</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-idr-sr-policy-seglist-id">[SR-SEGLIST-ID]</dt>
+      <dd>
+<span class="refAuthor">Lin, C.</span>, <span class="refAuthor">Cheng, W.</span>, <span class="refAuthor">Liu, Y.</span>, <span class="refAuthor">Talaulikar, K.</span>, and <span class="refAuthor">M. Chen</span>, <span class="refTitle">"BGP SR Policy Extensions for Segment List Identifier"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-idr-sr-policy-seglist-id-06</span>, <time datetime="2025-09-24" class="refDate">24 September 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-idr-sr-policy-seglist-id-06">https://datatracker.ietf.org/doc/html/draft-ietf-idr-sr-policy-seglist-id-06</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1"> The authors would like to acknowledge <span class="contact-name">Loa       Andersson</span>, <span class="contact-name">Detao Zhao</span>, <span class="contact-name">Ben       Niven-Jenkins</span>, <span class="contact-name">Greg Mirsky</span>, <span class="contact-name">Ketan Talaulikar</span>, <span class="contact-name">James Guichard</span>,
+      <span class="contact-name">Jon Geater</span>, <span class="contact-name">Gorry Fairhurst</span>,
+      <span class="contact-name">Bing Liu</span>, <span class="contact-name">Mohamed Boucadair</span>,
+      <span class="contact-name">Éric Vyncke</span>, <span class="contact-name">Gunter Van de       Velde</span>, <span class="contact-name">Mahesh Jethanandani</span>, and <span class="contact-name">Andy Smith</span> for their thorough review and very helpful
+      comments.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2"> The authors would like to acknowledge <span class="contact-name">Yao Liu</span>
+      and <span class="contact-name">Quan Xiong</span> for the very helpful face to face
+      discussion.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Xiao Min</span></div>
+<div dir="auto" class="left"><span class="org">ZTE Corp.</span></div>
+<div dir="auto" class="left"><span class="locality">Nanjing</span></div>
+<div dir="auto" class="left"><span class="country-name">China</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+86%2018061680168" class="tel">+86 18061680168</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:xiao.min2@zte.com.cn" class="email">xiao.min2@zte.com.cn</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Shaofu Peng</span></div>
+<div dir="auto" class="left"><span class="org">ZTE Corp.</span></div>
+<div dir="auto" class="left"><span class="locality">Nanjing</span></div>
+<div dir="auto" class="left"><span class="country-name">China</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:peng.shaofu@zte.com.cn" class="email">peng.shaofu@zte.com.cn</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Liyan Gong</span></div>
+<div dir="auto" class="left"><span class="org">China Mobile</span></div>
+<div dir="auto" class="left"><span class="locality">Beijing</span></div>
+<div dir="auto" class="left"><span class="country-name">China</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gongliyan@chinamobile.com" class="email">gongliyan@chinamobile.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Rakesh Gandhi</span></div>
+<div dir="auto" class="left"><span class="org">Cisco Systems, Inc.</span></div>
+<div dir="auto" class="left"><span class="country-name">Canada</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:rgandhi@cisco.com" class="email">rgandhi@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Carlos Pignataro</span></div>
+<div dir="auto" class="left"><span class="org">Blue Fern Consulting</span></div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:carlos@bluefern.consulting" class="email">carlos@bluefern.consulting</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
