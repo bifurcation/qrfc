@@ -1,0 +1,3213 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9898: Neighbor Discovery Considerations in IPv6 Deployments</title>
+<meta content="XiPeng Xiao" name="author">
+<meta content="Eduard Vasilenko" name="author">
+<meta content="Eduard Metz" name="author">
+<meta content="Gyan Mishra" name="author">
+<meta content="Nick Buraglio" name="author">
+<meta content="
+       The Neighbor Discovery (ND) protocol is a critical component of the
+   IPv6 architecture. The protocol uses multicast in many messages. It
+   also assumes a security model where all nodes on a link are trusted.
+   Such a design might be inefficient in some scenarios (e.g., use of
+   multicast in wireless networks) or when nodes are not trustworthy
+   (e.g., public access networks). These security and operational
+   issues and the associated mitigation solutions are documented in
+   more than twenty RFCs. There is a need to track these issues and
+   solutions in a single document. 
+       To that aim, this document summarizes the published ND issues and
+   then describes how all these issues originate from three causes.
+   Addressing the issues is made simpler by addressing the causes. This
+   document also analyzes the mitigation solutions and demonstrates
+   that isolating hosts into different subnets and links can help to
+   address the three causes. Guidance is provided for selecting a
+   suitable isolation method to prevent potential ND issues. 
+    " name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="ND" name="keyword">
+<meta content="NDP" name="keyword">
+<meta content="SLACC" name="keyword">
+<meta content="DHCPv6-PD" name="keyword">
+<meta content="host isolation" name="keyword">
+<meta content="9898" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9898.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-v6ops-nd-considerations-14" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9898" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9898</td>
+<td class="center">ND Considerations</td>
+<td class="right">November 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Xiao, et al.</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9898" class="eref">9898</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-11" class="published">November 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">X. Xiao</div>
+<div class="org">Huawei Technologies</div>
+</div>
+<div class="author">
+      <div class="author-name">E. Vasilenko</div>
+<div class="org">Huawei Technologies</div>
+</div>
+<div class="author">
+      <div class="author-name">E. Metz</div>
+<div class="org">KPN N.V.</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Mishra</div>
+<div class="org">Verizon Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">N. Buraglio</div>
+<div class="org">Energy Sciences Network</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9898</h1>
+<h1 id="title">Neighbor Discovery Considerations in IPv6 Deployments</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">The Neighbor Discovery (ND) protocol is a critical component of the
+   IPv6 architecture. The protocol uses multicast in many messages. It
+   also assumes a security model where all nodes on a link are trusted.
+   Such a design might be inefficient in some scenarios (e.g., use of
+   multicast in wireless networks) or when nodes are not trustworthy
+   (e.g., public access networks). These security and operational
+   issues and the associated mitigation solutions are documented in
+   more than twenty RFCs. There is a need to track these issues and
+   solutions in a single document.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">To that aim, this document summarizes the published ND issues and
+   then describes how all these issues originate from three causes.
+   Addressing the issues is made simpler by addressing the causes. This
+   document also analyzes the mitigation solutions and demonstrates
+   that isolating hosts into different subnets and links can help to
+   address the three causes. Guidance is provided for selecting a
+   suitable isolation method to prevent potential ND issues.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9898">https://www.rfc-editor.org/info/rfc9898</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-review-of-inventoried-nd-is" class="internal xref">Review of Inventoried ND Issues</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-multicast-may-cause-perform" class="internal xref">Multicast May Cause Performance and Reliability Issues</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-trusting-all-nodes-may-caus" class="internal xref">Trusting-All-Nodes May Cause On-Link Security Issues</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-router-nce-on-demand-may-ca" class="internal xref">Router-NCE-on-Demand May Cause Forwarding Delay, NCE Exhaustion, and Address Accountability Issues</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4">
+                <p id="section-toc.1-1.2.2.4.1"><a href="#section-2.4" class="auto internal xref">2.4</a>.  <a href="#name-summary-of-nd-issues" class="internal xref">Summary of ND Issues</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-review-of-nd-mitigation-sol" class="internal xref">Review of ND Mitigation Solutions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-mobile-broadband-ipv6-mbbv6" class="internal xref">Mobile Broadband IPv6 (MBBv6)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-fixed-broadband-ipv6-fbbv6" class="internal xref">Fixed Broadband IPv6 (FBBv6)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-unique-prefix-per-host-upph" class="internal xref">Unique Prefix per Host (UPPH)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-wireless-nd-wind" class="internal xref">Wireless ND (WiND)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-scalable-address-resolution" class="internal xref">Scalable Address Resolution Protocol (SARP)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.6">
+                <p id="section-toc.1-1.3.2.6.1"><a href="#section-3.6" class="auto internal xref">3.6</a>.  <a href="#name-nd-optimization-for-trill" class="internal xref">ND Optimization for TRILL</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.7">
+                <p id="section-toc.1-1.3.2.7.1"><a href="#section-3.7" class="auto internal xref">3.7</a>.  <a href="#name-proxy-nd-in-ethernet-virtua" class="internal xref">Proxy ND in Ethernet Virtual Private Networks (ND EVPN)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.8">
+                <p id="section-toc.1-1.3.2.8.1"><a href="#section-3.8" class="auto internal xref">3.8</a>.  <a href="#name-reducing-router-advertiseme" class="internal xref">Reducing Router Advertisements per RFC 7772</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.9">
+                <p id="section-toc.1-1.3.2.9.1"><a href="#section-3.9" class="auto internal xref">3.9</a>.  <a href="#name-gratuitous-neighbor-discove" class="internal xref">Gratuitous Neighbor Discovery (GRAND)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.10">
+                <p id="section-toc.1-1.3.2.10.1"><a href="#section-3.10" class="auto internal xref">3.10</a>. <a href="#name-source-address-validation-i" class="internal xref">Source Address Validation Improvement (SAVI) and Router
+        Advertisement Guard (RA-Guard)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.11">
+                <p id="section-toc.1-1.3.2.11.1"><a href="#section-3.11" class="auto internal xref">3.11</a>. <a href="#name-dealing-with-nce-exhaustion" class="internal xref">Dealing with NCE Exhaustion Attacks per RFC 6583</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.12">
+                <p id="section-toc.1-1.3.2.12.1"><a href="#section-3.12" class="auto internal xref">3.12</a>. <a href="#name-registering-self-generated-" class="internal xref">Registering Self-Generated IPv6 Addresses Using DHCPv6 per RFC 9686</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.13">
+                <p id="section-toc.1-1.3.2.13.1"><a href="#section-3.13" class="auto internal xref">3.13</a>. <a href="#name-enhanced-dad" class="internal xref">Enhanced DAD</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.14">
+                <p id="section-toc.1-1.3.2.14.1"><a href="#section-3.14" class="auto internal xref">3.14</a>. <a href="#name-nd-mediation-for-ip-interwo" class="internal xref">ND Mediation for IP Interworking of Layer 2 VPNs</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.15">
+                <p id="section-toc.1-1.3.2.15.1"><a href="#section-3.15" class="auto internal xref">3.15</a>. <a href="#name-nd-solutions-defined-before" class="internal xref">ND Solutions Defined Before the Latest Versions of ND</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.15.2.1">
+                    <p id="section-toc.1-1.3.2.15.2.1.1"><a href="#section-3.15.1" class="auto internal xref">3.15.1</a>.  <a href="#name-secure-neighbor-discovery-s" class="internal xref">Secure Neighbor Discovery (SEND)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.15.2.2">
+                    <p id="section-toc.1-1.3.2.15.2.2.1"><a href="#section-3.15.2" class="auto internal xref">3.15.2</a>.  <a href="#name-cryptographically-generated" class="internal xref">Cryptographically Generated Addresses (CGA)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.15.2.3">
+                    <p id="section-toc.1-1.3.2.15.2.3.1"><a href="#section-3.15.3" class="auto internal xref">3.15.3</a>.  <a href="#name-nd-proxy" class="internal xref">ND Proxy</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.15.2.4">
+                    <p id="section-toc.1-1.3.2.15.2.4.1"><a href="#section-3.15.4" class="auto internal xref">3.15.4</a>.  <a href="#name-optimistic-dad" class="internal xref">Optimistic DAD</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-guidelines-for-prevention-o" class="internal xref">Guidelines for Prevention of Potential ND Issues</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-learning-host-isolation-fro" class="internal xref">Learning Host Isolation from the Existing Solutions</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-applicability-of-various-is" class="internal xref">Applicability of Various Isolation Methods</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-applicability-of-l3l2-isola" class="internal xref">Applicability of L3+L2 Isolation</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-applicability-of-l3-isolati" class="internal xref">Applicability of L3 Isolation</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-applicability-of-partial-l2" class="internal xref">Applicability of Partial L2 Isolation</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-guidelines-for-applying-iso" class="internal xref">Guidelines for Applying Isolation Methods</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Neighbor Discovery (ND) <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span> specifies the mechanisms that IPv6
+   nodes (hosts and routers) on the same link use to communicate and
+   learn about each other. Stateless Address Autoconfiguration (SLAAC)
+   <span>[<a href="#RFC4862" class="cite xref">RFC4862</a>]</span> builds on those ND mechanisms to let nodes configure their
+   own IPv6 addresses. When analyzing the issues nodes may encounter
+   with ND, it helps to view the ND messages they exchange throughout
+   their life cycle, taking SLAAC into consideration.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">For a host, the overall procedure is as follows:<a href="#section-1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1-3">
+  <li id="section-1-3.1">LLA DAD: The host forms a Link-Local Address (LLA) and performs
+  Duplicate Address Detection (DAD) using multicast Neighbor Solicitations
+  (NSs).<a href="#section-1-3.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.2">Router discovery: The host sends multicast Router Solicitations (RSs) to
+  discover a router on the link. The router responds with Router
+  Advertisements (RAs), providing subnet prefixes and other information. The
+  host installs a Neighbor Cache Entry (NCE) for that router upon receiving
+  the RAs. In contrast, the router cannot install an NCE for the host at this
+  moment of the exchange because the host's global IP address is still
+  unknown.  When the router later needs to forward a packet to the host's
+  global address, it will perform address resolution and install an NCE for
+  the host.<a href="#section-1-3.2" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.3">GUA DAD: The host forms a Global Unicast Address (GUA) <span>[<a href="#RFC3587" class="cite xref">RFC3587</a>]</span> or a Unique Local Address (ULA) <span>[<a href="#RFC4193" class="cite xref">RFC4193</a>]</span>
+  and uses multicast NSs for DAD. For simplicity of description, this document
+  will not further distinguish GUA and ULA.<a href="#section-1-3.3" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.4">Next-hop determination and address resolution: When the host needs to
+  send a packet, it will first determine whether the next hop is a router or
+  an on-link host (which is the destination). If the next hop is a router, the
+  host already has the NCE for that router. If the next hop is an on-link
+  host, it will use multicast NSs to perform address resolution for the
+  destination host. As a result, the source host installs an NCE for the
+  destination host.<a href="#section-1-3.4" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.5">Node Unreachability Detection (NUD): The host uses unicast NSs to
+  determine whether another node with an NCE is still reachable.<a href="#section-1-3.5" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.6">Link-layer address change announcement: If a host's link-layer address
+  changes, it may use multicast Neighbor Advertisements (NAs) to announce its new
+  link-layer address to other nodes.<a href="#section-1-3.6" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-1-4">For a router, the procedure is similar except that there is no
+   router discovery. Instead, routers perform a Redirect procedure that
+   hosts do not have. A router sends a Redirect to inform a node of a
+   better next hop for the node's traffic.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">ND uses multicast in many messages and trusts messages from all nodes; 
+   in addition, routers may install NCEs for hosts on demand when they are to
+   forward packets to these hosts.  These may lead to issues.
+   Concretely, various ND issues and mitigation solutions have been
+   published in more than 20 RFCs, including:<a href="#section-1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-6.1">"IPv6 Neighbor Discovery (ND) Trust Models and Threats" <span>[<a href="#RFC3756" class="cite xref">RFC3756</a>]</span><a href="#section-1-6.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.2">"SEcure Neighbor Discovery (SEND)" <span>[<a href="#RFC3971" class="cite xref">RFC3971</a>]</span><a href="#section-1-6.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.3">"Cryptographically Generated Addresses (CGA)" <span>[<a href="#RFC3972" class="cite xref">RFC3972</a>]</span><a href="#section-1-6.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.4">"Neighbor Discovery Proxies (ND Proxy)" <span>[<a href="#RFC4389" class="cite xref">RFC4389</a>]</span><a href="#section-1-6.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.5">"Optimistic Duplicate Address Detection (DAD) for IPv6" <span>[<a href="#RFC4429" class="cite xref">RFC4429</a>]</span><a href="#section-1-6.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.6">"IPv6 in 3rd Generation Partnership Project (3GPP) Evolved Packet System (EPS)" <span>[<a href="#RFC6459" class="cite xref">RFC6459</a>]</span><a href="#section-1-6.6" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.7">"IPv6 for Third Generation Partnership Project (3GPP) Cellular Hosts" <span>[<a href="#RFC7066" class="cite xref">RFC7066</a>]</span><a href="#section-1-6.7" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.8">"IPv6 in the context of TR-101" <span>[<a href="#TR177" class="cite xref">TR177</a>]</span><a href="#section-1-6.8" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.9">"Address Resolution Protocol (ARP) Mediation for IP Interworking of Layer 2 VPNs" <span>[<a href="#RFC6575" class="cite xref">RFC6575</a>]</span><a href="#section-1-6.9" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.10">"Operational Neighbor Discovery Problems" <span>[<a href="#RFC6583" class="cite xref">RFC6583</a>]</span><a href="#section-1-6.10" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.11">"Neighbor Discovery Optimization for IPv6 over Low-Power Wireless Personal Area Networks (6LoWPANs)" <span>[<a href="#RFC6775" class="cite xref">RFC6775</a>]</span><a href="#section-1-6.11" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.12">"Registration Extensions for IPv6 over Low-Power Wireless Personal Area Network (6LoWPAN) Neighbor Discovery" <span>[<a href="#RFC8505" class="cite xref">RFC8505</a>]</span><a href="#section-1-6.12" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.13">"Address-Protected Neighbor Discovery for Low-Power and Lossy Networks" <span>[<a href="#RFC8928" class="cite xref">RFC8928</a>]</span><a href="#section-1-6.13" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.14">"IPv6 Backbone Router" <span>[<a href="#RFC8929" class="cite xref">RFC8929</a>]</span><a href="#section-1-6.14" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.15">"Architecture and Framework for IPv6 over Non-Broadcast Access" <span>[<a href="#I-D.ietf-6man-ipv6-over-wireless" class="cite xref">SND</a>]</span><a href="#section-1-6.15" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.16">"Duplicate Address Detection Proxy" <span>[<a href="#RFC6957" class="cite xref">RFC6957</a>]</span><a href="#section-1-6.16" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.17">"Source Address Validation Improvement (SAVI) Framework" <span>[<a href="#RFC7039" class="cite xref">RFC7039</a>]</span><a href="#section-1-6.17" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.18">"IPv6 Router Advertisement Guard" <span>[<a href="#RFC6105" class="cite xref">RFC6105</a>]</span><a href="#section-1-6.18" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.19">"Implementation Advice for IPv6 Router Advertisement Guard (RA-Guard)" <span>[<a href="#RFC7113" class="cite xref">RFC7113</a>]</span><a href="#section-1-6.19" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.20">"Enhanced Duplicate Address Detection" <span>[<a href="#RFC7527" class="cite xref">RFC7527</a>]</span><a href="#section-1-6.20" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.21">"The Scalable Address Resolution Protocol (SARP) for Large Data Centers" <span>[<a href="#RFC7586" class="cite xref">RFC7586</a>]</span><a href="#section-1-6.21" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.22">"Reducing Energy Consumption of Router Advertisements" <span>[<a href="#RFC7772" class="cite xref">RFC7772</a>]</span><a href="#section-1-6.22" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.23">"Unique IPv6 Prefix per Host" <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span><a href="#section-1-6.23" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.24">"Transparent Interconnection of Lots of Links (TRILL): ARP and Neighbor Discovery (ND) Optimization" <span>[<a href="#RFC8302" class="cite xref">RFC8302</a>]</span><a href="#section-1-6.24" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.25">"Gratuitous Neighbor Discovery: Creating Neighbor Cache Entries on First-Hop Routers" <span>[<a href="#RFC9131" class="cite xref">RFC9131</a>]</span><a href="#section-1-6.25" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.26">"Operational Aspects of Proxy ARP/ND in Ethernet Virtual Private Networks" <span>[<a href="#RFC9161" class="cite xref">RFC9161</a>]</span><a href="#section-1-6.26" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.27">"Using DHCPv6 Prefix Delegation (DHCPv6-PD) to Allocate Unique IPv6 Prefixes per Client in Large Broadcast Networks" <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span><a href="#section-1-6.27" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-7">This document summarizes these RFCs into a one-stop reference (as of
+   the time of writing) for easier access. This document also
+   identifies three causes of the issues and defines three host
+   isolation methods to address the causes and prevent potential ND
+   issues.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<div id="terminology">
+<section id="section-1.1">
+        <h3 id="name-terminology">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.1-1">This document uses the terms defined in <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span>. Additional terms are defined in this section.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-1.1-2">
+          <dt id="section-1.1-2.1">MAC:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.2">
+            <p id="section-1.1-2.2.1">Media Access Control. To avoid confusion with link-local addresses, link-layer
+          addresses are referred to as "MAC addresses" in this document.<a href="#section-1.1-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-2.3">Host Isolation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.4">Separating hosts into different subnets or links.<a href="#section-1.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-2.5">L3 Isolation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.6">Allocating a Unique Prefix per Host (UPPH) <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span> so that every host is in
+   a different subnet. Given that a unique prefix can be allocated per
+   host on shared media, hosts in different subnets may be on the same
+   link.<a href="#section-1.1-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-2.7">L2 Isolation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.8">Taking measures to prevent a host from reaching other hosts
+   directly in Layer 2 (L2) so that every host is in a different
+   link. Due to the existence of Multi-Link Subnet <span>[<a href="#RFC4903" class="cite xref">RFC4903</a>]</span>, hosts in different links may be in the same
+   subnet. Therefore, L2 Isolation does not imply L3 Isolation, and L3
+   Isolation does not imply L2 Isolation either.<a href="#section-1.1-2.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-2.9">L3+L2 Isolation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.10">Applying L3 Isolation and L2 Isolation simultaneously so that
+   every host is in a different subnet and on a different link.<a href="#section-1.1-2.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-2.11">Partial L2 Isolation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.12">Using an L3 ND Proxy <span>[<a href="#RFC4389" class="cite xref">RFC4389</a>]</span> device to
+   represent the hosts behind it to other hosts in the same
+   subnet. Within the subnet, ND multicast exchange is segmented into
+   multiple smaller scopes, each represented by an ND Proxy device.<a href="#section-1.1-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="review-of-inventoried-nd-issues">
+<section id="section-2">
+      <h2 id="name-review-of-inventoried-nd-is">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-review-of-inventoried-nd-is" class="section-name selfRef">Review of Inventoried ND Issues</a>
+      </h2>
+<div id="multicast-may-cause-performance-and-reliability-issues">
+<section id="section-2.1">
+        <h3 id="name-multicast-may-cause-perform">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-multicast-may-cause-perform" class="section-name selfRef">Multicast May Cause Performance and Reliability Issues</a>
+        </h3>
+<p id="section-2.1-1">In some cases, ND uses multicast for NSs, NAs, RSs, and RAs. While
+   multicast can be highly efficient in certain scenarios (e.g., in
+   wired networks), multicast can also be inefficient in other
+   scenarios (e.g., in large L2 networks or wireless networks).<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">Typically, multicast can create a large amount of protocol traffic
+   in large L2 networks. This can consume network bandwidth, increase
+   processing overhead, and degrade network performance <span>[<a href="#RFC7342" class="cite xref">RFC7342</a>]</span>.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3">In wireless networks, multicast can be inefficient or even
+   unreliable due to a higher probability of transmission interference,
+   lower data rate, and lack of acknowledgements (<span><a href="https://rfc-editor.org/rfc/rfc9119#section-3.1" class="relref">Section 3.1</a> of [<a href="#RFC9119" class="cite xref">RFC9119</a>]</span>).<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<p id="section-2.1-4">Multicast-related performance issues of the various ND messages are
+   summarized below:<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.1-5.1">
+            <p id="section-2.1-5.1.1">Issue 1: LLA DAD degrades performance<a href="#section-2.1-5.1.1" class="pilcrow">¶</a></p>
+<p id="section-2.1-5.1.2">In an L2 network of N addresses (which can be much larger than the
+       number of hosts, as each host can have multiple addresses), there can
+       be N such multicast messages. This may cause performance issues when N
+       is large.<a href="#section-2.1-5.1.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-5.2">
+            <p id="section-2.1-5.2.1">Issue 2: Router's periodic unsolicited RAs drain host's battery<a href="#section-2.1-5.2.1" class="pilcrow">¶</a></p>
+<p id="section-2.1-5.2.2">Multicast RAs are generally limited to one packet every
+       MIN_DELAY_BETWEEN_RAS (3 seconds), and there are usually only one or
+       two routers on the link, so it is unlikely to cause a performance
+       issue. However, for battery-powered hosts, such messages may wake them
+       up and drain their batteries <span>[<a href="#RFC7772" class="cite xref">RFC7772</a>]</span>.<a href="#section-2.1-5.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-5.3">
+            <p id="section-2.1-5.3.1">Issue 3: GUA DAD degrades performance<a href="#section-2.1-5.3.1" class="pilcrow">¶</a></p>
+<p id="section-2.1-5.3.2">This is the same as in Issue 1.<a href="#section-2.1-5.3.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-5.4">
+            <p id="section-2.1-5.4.1">Issue 4: Router's address resolution for hosts degrades performance<a href="#section-2.1-5.4.1" class="pilcrow">¶</a></p>
+<p id="section-2.1-5.4.2">This is the same as in Issue 1.<a href="#section-2.1-5.4.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-5.5">
+            <p id="section-2.1-5.5.1">Issue 5: Host's address resolution for hosts degrades performance<a href="#section-2.1-5.5.1" class="pilcrow">¶</a></p>
+<p id="section-2.1-5.5.2">This is the same as in Issue 1.<a href="#section-2.1-5.5.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-5.6">
+            <p id="section-2.1-5.6.1">Issue for further study: Multicast NAs for host's MAC address changes may degrade performance<a href="#section-2.1-5.6.1" class="pilcrow">¶</a></p>
+<p id="section-2.1-5.6.2">With randomized and changing MAC addresses <span>[<a href="#RFC9797" class="cite xref">MADINAS</a>]</span>,
+       there may be many such multicast messages.<a href="#section-2.1-5.6.2" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.1-6">In wireless networks, multicast is more likely to cause packet loss.
+    Because DAD treats no response as no duplicate address detected, packet
+    loss may cause duplicate addresses to be undetected.  Multicast
+    reliability issues are summarized below:<a href="#section-2.1-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.1-7.1">
+            <p id="section-2.1-7.1.1">Issue 6: LLA DAD not completely reliable in wireless networks<a href="#section-2.1-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-7.2">
+            <p id="section-2.1-7.2.1">Issue 7: GUA DAD not completely reliable in wireless networks<a href="#section-2.1-7.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.1-8">Note: IPv6 address collisions are extremely unlikely. As a result,
+        these two issues are largely theoretical rather than practical.<a href="#section-2.1-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="trusting-all-nodes-may-cause-on-link-security-issues">
+<section id="section-2.2">
+        <h3 id="name-trusting-all-nodes-may-caus">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-trusting-all-nodes-may-caus" class="section-name selfRef">Trusting-All-Nodes May Cause On-Link Security Issues</a>
+        </h3>
+<p id="section-2.2-1">In scenarios such as public access networks, some nodes may not be
+   trustworthy. An attacker on the link can cause the following on-link
+   security issues <span>[<a href="#RFC3756" class="cite xref">RFC3756</a>]</span> <span>[<a href="#RFC9099" class="cite xref">RFC9099</a>]</span>:<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.2-2.1">
+            <p id="section-2.2-2.1.1">Issue 8: Source IP address spoofing<a href="#section-2.2-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2.1.2">An attacker can use another node's IP address as the source address
+       of its ND message to pretend to be that node. The attacker can then
+       launch various Redirect or Denial-of-Service (DoS) attacks.<a href="#section-2.2-2.1.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.2">
+            <p id="section-2.2-2.2.1">Issue 9: Denial of DAD<a href="#section-2.2-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2.2.2">An attacker can repeatedly reply to a victim's DAD messages, causing
+       the victim's address configuration procedure to fail, resulting in a
+       DoS to the victim.<a href="#section-2.2-2.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.3">
+            <p id="section-2.2-2.3.1">Issue 10: Rogue RAs<a href="#section-2.2-2.3.1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2.3.2">An attacker can send RAs to victim hosts to pretend to be a
+       router. The attacker can then launch various Redirect or DoS
+       attacks.<a href="#section-2.2-2.3.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.4">
+            <p id="section-2.2-2.4.1">Issue 11: Spoofed redirects<a href="#section-2.2-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2.4.2">An attacker can send forged Redirects to victim hosts to redirect
+       their traffic to the legitimate router itself.<a href="#section-2.2-2.4.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.5">
+            <p id="section-2.2-2.5.1">Issue 12: Replay attacks<a href="#section-2.2-2.5.1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2.5.2">An attacker can capture valid ND messages and replay them later.<a href="#section-2.2-2.5.2" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="router-nce-on-demand-may-cause-forwarding-delay-nce-exhaustion-and-address-accountability-issues">
+<section id="section-2.3">
+        <h3 id="name-router-nce-on-demand-may-ca">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-router-nce-on-demand-may-ca" class="section-name selfRef">Router-NCE-on-Demand May Cause Forwarding Delay, NCE Exhaustion, and Address Accountability Issues</a>
+        </h3>
+<p id="section-2.3-1">When a router needs to forward a packet to a node but does not yet
+   have a Neighbor-Cache Entry (NCE) for that node, it first creates an
+   NCE in the INCOMPLETE state. The router then multicasts an NS to the
+   node's solicited-node multicast address. When the destination
+   replies with an NA containing its MAC address, the router updates
+   the NCE with that address and changes its state to REACHABLE,
+   thereby completing the entry. This process is referred to as "Router‑NCE‑on‑Demand" in this document.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<p id="section-2.3-2">Router-NCE-on-Demand can cause the following issues:<a href="#section-2.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.3-3.1">
+            <p id="section-2.3-3.1.1">Issue 13: NCE exhaustion<a href="#section-2.3-3.1.1" class="pilcrow">¶</a></p>
+<p id="section-2.3-3.1.2">An attacker can send a high volume of packets targeting
+     non-existent IP addresses, causing the router to create numerous
+     NCEs in the INCOMPLETE state. The resulting resource exhaustion
+     may cause the router to malfunction. This vulnerability, described
+     as "NCE exhaustion" in this document, does not require the
+     attacker to be on-link.<a href="#section-2.3-3.1.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-3.2">
+            <p id="section-2.3-3.2.1">Issue 14: Router forwarding delay<a href="#section-2.3-3.2.1" class="pilcrow">¶</a></p>
+<p id="section-2.3-3.2.2">When a packet arrives at a router, the router buffers it while
+     attempting to determine the host's MAC address. This buffering
+     delays forwarding and, depending on the router's buffer size, may
+     lead to packet loss.  This delay is referred to as
+     "Router‑NCE‑on‑Demand forwarding delay" in this document.<a href="#section-2.3-3.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-3.3">
+            <p id="section-2.3-3.3.1">Issue 15: Lack of address accountability<a href="#section-2.3-3.3.1" class="pilcrow">¶</a></p>
+<p id="section-2.3-3.3.2">With SLAAC, hosts generate their IP addresses. The router does
+     not become aware of a host's IP address until an NCE entry is
+     created. With DHCPv6 <span>[<a href="#RFC8415" class="cite xref">RFC8415</a>]</span>, the router may not
+     know the host's addresses unless it performs DHCPv6 snooping. In
+     public access networks, where subscriber management often relies
+     on IP address (or prefix) identification, this lack of address
+     accountability poses a challenge <span>[<a href="#I-D.ccc-v6ops-address-accountability" class="cite xref">AddrAcc</a>]</span>. Without knowledge
+     of the host's IP address, network administrators are unable to
+     effectively manage subscribers, which is particularly problematic
+     in public access networks. Moreover, once a router has created its
+     NCEs, ND <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span> provides no mechanism to
+     retrieve them for management or monitoring, as noted in <span><a href="https://rfc-editor.org/rfc/rfc9099#section-2.6.1" class="relref">Section 2.6.1</a> of [<a href="#RFC9099" class="cite xref">RFC9099</a>]</span>.<a href="#section-2.3-3.3.2" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="summary-of-nd-issues">
+<section id="section-2.4">
+        <h3 id="name-summary-of-nd-issues">
+<a href="#section-2.4" class="section-number selfRef">2.4. </a><a href="#name-summary-of-nd-issues" class="section-name selfRef">Summary of ND Issues</a>
+        </h3>
+<p id="section-2.4-1">The ND issues, as discussed in Sections <a href="#multicast-may-cause-performance-and-reliability-issues" class="auto internal xref">2.1</a>, <a href="#trusting-all-nodes-may-cause-on-link-security-issues" class="auto internal xref">2.2</a>, and <a href="#router-nce-on-demand-may-cause-forwarding-delay-nce-exhaustion-and-address-accountability-issues" class="auto internal xref">2.3</a>, are summarized
+   below. These issues stem from three primary causes: multicast,
+   Trusting-all-nodes, and Router-NCE-on-Demand. Eliminating any of
+   these causes would also mitigate the corresponding issues. These
+   observations provide guidance for addressing and preventing ND-
+   related issues.<a href="#section-2.4-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-2.4-2">
+  <li id="section-2.4-2.1">
+            <p id="section-2.4-2.1.1">Multicast-related issues:<a href="#section-2.4-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-2.1.2.1">
+                <p id="section-2.4-2.1.2.1.1">Performance issues:<a href="#section-2.4-2.1.2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-2.1.2.1.2.1">Issue 1: LLA DAD degrades performance<a href="#section-2.4-2.1.2.1.2.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-2.4-2.1.2.1.2.2">Issue 2: Router's periodic unsolicited RAs drain host's battery<a href="#section-2.4-2.1.2.1.2.2" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-2.4-2.1.2.1.2.3">Issue 3: GUA DAD degrades performance<a href="#section-2.4-2.1.2.1.2.3" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-2.4-2.1.2.1.2.4">Issue 4: Router's address resolution for hosts degrades performance<a href="#section-2.4-2.1.2.1.2.4" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-2.4-2.1.2.1.2.5">Issue 5: Host's address resolution for hosts degrades performance<a href="#section-2.4-2.1.2.1.2.5" class="pilcrow">¶</a>
+</li>
+                </ul>
+</li>
+              <li class="normal" id="section-2.4-2.1.2.2">
+                <p id="section-2.4-2.1.2.2.1">Reliability issues:<a href="#section-2.4-2.1.2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-2.1.2.2.2.1">Issue 6: LLA DAD not completely reliable in wireless networks<a href="#section-2.4-2.1.2.2.2.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-2.4-2.1.2.2.2.2">Issue 7: GUA DAD not completely reliable in wireless networks<a href="#section-2.4-2.1.2.2.2.2" class="pilcrow">¶</a>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li id="section-2.4-2.2">
+            <p id="section-2.4-2.2.1">Trusting-all-nodes related issues:<a href="#section-2.4-2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-2.2.2.1">Issue 8: Source IP address spoofing<a href="#section-2.4-2.2.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-2.4-2.2.2.2">Issue 9: Denial of DAD<a href="#section-2.4-2.2.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-2.4-2.2.2.3">Issue 10: Rogue RAs<a href="#section-2.4-2.2.2.3" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-2.4-2.2.2.4">Issue 11: Spoofed redirects<a href="#section-2.4-2.2.2.4" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-2.4-2.2.2.5">Issue 12: Replay attacks<a href="#section-2.4-2.2.2.5" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li id="section-2.4-2.3">
+            <p id="section-2.4-2.3.1">Router-NCE-on-Demand related issues:<a href="#section-2.4-2.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-2.3.2.1">Issue 13: NCE exhaustion<a href="#section-2.4-2.3.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-2.4-2.3.2.2">Issue 14: Router forwarding delay<a href="#section-2.4-2.3.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-2.4-2.3.2.3">Issue 15: Lack of address accountability<a href="#section-2.4-2.3.2.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+        </ol>
+<p id="section-2.4-3">These issues are potential vulnerabilities and may not manifest in
+   all usage scenarios.<a href="#section-2.4-3" class="pilcrow">¶</a></p>
+<p id="section-2.4-4">When these issues may occur in a specific deployment, it is
+   advisable to consider the mitigation solutions available. They are
+   described in the following section.<a href="#section-2.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="review-of-nd-mitigation-solutions">
+<section id="section-3">
+      <h2 id="name-review-of-nd-mitigation-sol">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-review-of-nd-mitigation-sol" class="section-name selfRef">Review of ND Mitigation Solutions</a>
+      </h2>
+<p id="section-3-1"><a href="#solutions-table" class="auto internal xref">Table 1</a> summarizes ND mitigation solutions available for Issues 1-15
+   described in <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>. Similar solutions are grouped, beginning
+   with those that address the most issues. Unrelated solutions are
+   ordered based on the issues (listed in <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>) they address.
+   Each solution in the table will be explained in a sub-section later,
+   where abbreviations in the table are described.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">In <a href="#solutions-table" class="auto internal xref">Table 1</a>, a letter code indicates the RFC category of the
+   mitigation solution (see BCP 9 <span>[<a href="#RFC2026" class="cite xref">RFC2026</a>]</span> for an explanation of these
+   categories):<a href="#section-3-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-3-3">
+        <dt id="section-3-3.1">S:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-3.2">Standards Track (Proposed Standard or Internet Standard)<a href="#section-3-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.3">E:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-3.4">Experimental<a href="#section-3-3.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.5">I:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-3.6">Informational<a href="#section-3-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.7">B:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-3.8">Best Current Practice<a href="#section-3-3.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.9">N/A:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-3.10">Not Applicable (not an RFC)<a href="#section-3-3.10" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-4">The abbreviations in <a href="#solutions-table" class="auto internal xref">Table 1</a> correspond to <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a> as follows:<a href="#section-3-4" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-3-5">
+        <dt id="section-3-5.1">On-link sec.:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-5.2">Trusting-all-nodes related issues<a href="#section-3-5.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-5.3">NCE exh.:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-5.4">NCE exhaustion<a href="#section-3-5.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-5.5">Fwd. delay:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-5.6">Router forwarding delay<a href="#section-3-5.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-5.7">No addr. acc.:</dt>
+        <dd style="margin-left: 2.5em" id="section-3-5.8">Lack of address accountability<a href="#section-3-5.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<span id="name-solutions-for-identified-is"></span><div id="solutions-table">
+<table class="center" id="table-1">
+        <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-solutions-for-identified-is" class="selfRef">Solutions for Identified Issues</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="2" colspan="1">ND solution</th>
+            <th class="text-left" rowspan="2" colspan="1">RFC cat.</th>
+            <th class="text-left" rowspan="1" colspan="5">Multicast performance</th>
+            <th class="text-left" rowspan="1" colspan="2">Reliability</th>
+            <th class="text-left" rowspan="1" colspan="1">On-link sec.</th>
+            <th class="text-left" rowspan="1" colspan="1">NCE exh.</th>
+            <th class="text-left" rowspan="1" colspan="1">Fwd. delay</th>
+            <th class="text-left" rowspan="1" colspan="1">No addr. acc.</th>
+          </tr>
+          <tr>
+            <th class="text-center" rowspan="1" colspan="1">1</th>
+            <th class="text-center" rowspan="1" colspan="1">2</th>
+            <th class="text-center" rowspan="1" colspan="1">3</th>
+            <th class="text-center" rowspan="1" colspan="1">4</th>
+            <th class="text-center" rowspan="1" colspan="1">5</th>
+            <th class="text-center" rowspan="1" colspan="1">6</th>
+            <th class="text-center" rowspan="1" colspan="1">7</th>
+            <th class="text-center" rowspan="1" colspan="1">8-12</th>
+            <th class="text-center" rowspan="1" colspan="1">13</th>
+            <th class="text-center" rowspan="1" colspan="1">14</th>
+            <th class="text-center" rowspan="1" colspan="1">15</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">MBBv6</td>
+            <td class="text-center" rowspan="1" colspan="1">I</td>
+            <td class="text-center" rowspan="1" colspan="11">All identified issues solved</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">FBBv6</td>
+            <td class="text-center" rowspan="1" colspan="1">N/A</td>
+            <td class="text-center" rowspan="1" colspan="11">All identified issues solved</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">UPPH</td>
+            <td class="text-center" rowspan="1" colspan="1">I</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">WiND</td>
+            <td class="text-center" rowspan="1" colspan="1">S</td>
+            <td class="text-center" rowspan="1" colspan="11">All issues solved for Low-Power and Lossy Networks (LLNs)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">SARP</td>
+            <td class="text-center" rowspan="1" colspan="1">E</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ND TRILL</td>
+            <td class="text-center" rowspan="1" colspan="1">S</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">ND EVPN</td>
+            <td class="text-center" rowspan="1" colspan="1">S</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">RFC 7772</td>
+            <td class="text-center" rowspan="1" colspan="1">B</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">GRAND</td>
+            <td class="text-center" rowspan="1" colspan="1">S</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">SAVI/RA-G</td>
+            <td class="text-center" rowspan="1" colspan="1">I</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">RFC 6583</td>
+            <td class="text-center" rowspan="1" colspan="1">I</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9686</td>
+            <td class="text-center" rowspan="1" colspan="1">S</td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-center" rowspan="1" colspan="1">X</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<div id="nd-solution-in-mobile-broadband-ipv6">
+<section id="section-3.1">
+        <h3 id="name-mobile-broadband-ipv6-mbbv6">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-mobile-broadband-ipv6-mbbv6" class="section-name selfRef">Mobile Broadband IPv6 (MBBv6)</a>
+        </h3>
+<p id="section-3.1-1">The IPv6 solution defined in "IPv6 in 3rd Generation Partnership
+        Project (3GPP) Evolved Packet System (EPS)" <span>[<a href="#RFC6459" class="cite xref">RFC6459</a>]</span>,
+        "IPv6 for Third Generation Partnership Project (3GPP) Cellular Hosts"
+        <span>[<a href="#RFC7066" class="cite xref">RFC7066</a>]</span>, and "Extending an IPv6 /64 Prefix from a
+        Third Generation Partnership Project (3GPP) Mobile Interface to a LAN
+        Link" <span>[<a href="#RFC7278" class="cite xref">RFC7278</a>]</span> is called Mobile Broadband IPv6
+        (MBBv6) in this document. They are Informational RFCs. The key points
+        are:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1">
+            <p id="section-3.1-2.1.1">Putting every host (e.g., the mobile User Equipment (UE)) in a
+     Point-to-Point (P2P) link with the router (e.g., the mobile
+     gateway) has the following outcomes:<a href="#section-3.1-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1.2.1">All multicast is effectively turned into unicast.<a href="#section-3.1-2.1.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.1-2.1.2.2">The P2P links do not have a MAC address. Therefore, Router-
+      NCE-on-Demand is not needed.<a href="#section-3.1-2.1.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.1-2.1.2.3">Trusting-all-nodes is only relevant to the router. By applying
+      filtering at the router (e.g., dropping RAs from the hosts), even
+      malicious hosts cannot cause harm.<a href="#section-3.1-2.1.2.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-3.1-2.2">Assigning a unique /64 prefix to each host. Together with the
+    P2P link, this puts each host on a separate link and subnet.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.3">Maintaining (prefix, interface) binding at the router for
+    forwarding purposes.<a href="#section-3.1-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.1-3">Since all the three causes of ND issues are addressed, all the
+   issues discussed in <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a> are addressed.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="nd-solution-in-fixed-broadband-ipv6">
+<section id="section-3.2">
+        <h3 id="name-fixed-broadband-ipv6-fbbv6">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-fixed-broadband-ipv6-fbbv6" class="section-name selfRef">Fixed Broadband IPv6 (FBBv6)</a>
+        </h3>
+<p id="section-3.2-1">The IPv6 solution defined in "IPv6 in the context of TR-101" <span>[<a href="#TR177" class="cite xref">TR177</a>]</span>
+   is called Fixed Broadband IPv6 (FBBv6) in this document. FBBv6 has
+   two flavors:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-2.1">P2P: Every host (e.g., the Residential Gateway (RG)) is in a
+    P2P link with the router (e.g., the Broadband Network Gateway
+    (BNG)). In this case, the solution is functionally similar to
+    MBBv6. All ND issues discussed in <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a> are solved.<a href="#section-3.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-2.2">Point to Multipoint (P2MP): All hosts (e.g., the RGs)
+    connected to an access device (e.g., the Optical Line Terminal
+    (OLT)) are in a P2MP link with the router (e.g., the BNG).  This
+    is achieved by placing all hosts in a single VLAN on the router
+    and configuring the OLT to block any frame from being forwarded
+    between its access ports; traffic from each host can travel
+    only up toward the router, not sideways to another host,
+    thereby preventing direct host-to-host communication.<a href="#section-3.2-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.2-3">The following list summarizes the two key aspects of the FBBv6-P2MP
+   architecture as described in <span>[<a href="#TR177" class="cite xref">TR177</a>]</span> and the associated benefits:<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-4.1">
+            <p id="section-3.2-4.1.1">Implementing DAD proxy <span>[<a href="#RFC6957" class="cite xref">RFC6957</a>]</span>:<a href="#section-3.2-4.1.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-4.1.2">In a P2MP architecture described above, the normal ND DAD procedure
+     will break down because hosts cannot exchange NSs with one another. To
+     address this, the router participates in the DAD process as a DAD Proxy
+     to resolve address duplication.<a href="#section-3.2-4.1.2" class="pilcrow">¶</a></p>
+<p id="section-3.2-4.1.3">The benefits are:<a href="#section-3.2-4.1.3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-4.1.4.1">Multicast traffic from all hosts to the router is effectively
+       converted into unicast, as hosts can only communicate directly with the
+       router.<a href="#section-3.2-4.1.4.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.2-4.1.4.2">The Trusting-all-nodes model is limited to the router. By applying
+       simple filtering (e.g., dropping RAs from hosts), the router can
+       mitigate security risks, even from malicious hosts.<a href="#section-3.2-4.1.4.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-3.2-4.2">
+            <p id="section-3.2-4.2.1">Assigning a unique /64 prefix to each host:<a href="#section-3.2-4.2.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-4.2.2">Assigning each host a unique /64 prefix results in several operational
+   improvements:<a href="#section-3.2-4.2.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-4.2.3.1">The router can proactively install a forwarding entry for that
+       prefix towards the host, eliminating the need for
+       Router-NCE-on-Demand.<a href="#section-3.2-4.2.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.2-4.2.3.2">Since each host resides in a different subnet, traffic between
+       hosts is routed through the router, eliminating the need for hosts to
+       perform address resolution for one another.<a href="#section-3.2-4.2.3.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.2-4.2.3.3">Without address resolution, router multicast to hosts is limited to
+       unsolicited RAs. As each host resides in its own subnet, these RAs are
+       sent as unicast packets to individual hosts. This follows the approach
+       specified in <span>[<a href="#RFC6085" class="cite xref">RFC6085</a>]</span>, where the host's MAC address replaces the
+       multicast MAC address in the RA.<a href="#section-3.2-4.2.3.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+        </ul>
+<p id="section-3.2-5">Since all three causes of ND issues are addressed, all ND issues
+   (<a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>) are also addressed.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="unique-ipv6-prefix-per-host-upph">
+<section id="section-3.3">
+        <h3 id="name-unique-prefix-per-host-upph">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-unique-prefix-per-host-upph" class="section-name selfRef">Unique Prefix per Host (UPPH)</a>
+        </h3>
+<p id="section-3.3-1">Unique Prefix per Host (UPPH) solutions are described in <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> and <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span>. Both are
+   Informational RFCs. <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> relies on SLAAC for unique prefix
+   allocation while <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span> relies on DHCPv6 Prefix Delegation (DHCPv6-PD). That difference in
+   allocation mechanism does not change the discussion on ND issues,
+   because every IPv6 node is still required to run SLAAC, even when it
+   receives its prefix via DHCPv6-PD. Therefore, discussing <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span>
+   alone is sufficient.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2"><span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> "improves host isolation and enhanced subscriber
+   management on shared network segments" such as Wi-Fi or Ethernet.
+   The key points are:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-3.1">When a prefix is allocated to the host, the router can proactively
+     install a forwarding entry for that prefix towards the host.  There is no
+     more Router-NCE-on-Demand.<a href="#section-3.3-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.3-3.2">Without address resolution, router multicast to hosts consists
+    only of unsolicited RAs. They will be sent to hosts one by one
+    in unicast because the prefix for every host is different.<a href="#section-3.3-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.3-3.3">Since different hosts are in different subnets, hosts will send
+    traffic to other hosts via the router. There is no host-to-host
+    address resolution.<a href="#section-3.3-3.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.3-4">Therefore, ND issues caused by Router-NCE-on-Demand and router
+   multicast to hosts are prevented.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+<p id="section-3.3-5"><span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> indicates that a "network implementing a
+        unique IPv6 prefix per host can simply ensure that devices cannot send
+        packets to each other except through the first-hop router". However,
+        when hosts are on a shared medium like Ethernet, ensuring "devices
+        cannot send packets to each other except through the first-hop router"
+        requires additional measures like Private VLAN <span>[<a href="#RFC5517" class="cite xref">RFC5517</a>]</span>. Without such additional measures, on a shared
+        medium, hosts can still reach each other in L2 as they belong to the
+        same Solicited-Node Multicast Group. Therefore, Trusting-all-nodes and
+        host multicast to routers may cause issues. Of the host multicast
+        issues (i.e., Issues 1, 3, 5, 6, and 7), UPPH prevents Issues 5 and 7,
+        because there is no need for address resolution among hosts (Issue 5),
+        and there is no possibility of GUA duplication (Issue 7). However,
+        Issues 1, 3, and 6 may occur.<a href="#section-3.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="wireless-nd-and-subnet-nd">
+<section id="section-3.4">
+        <h3 id="name-wireless-nd-wind">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-wireless-nd-wind" class="section-name selfRef">Wireless ND (WiND)</a>
+        </h3>
+<p id="section-3.4-1">The term "Wireless ND (WiND)" is used in this document to describe
+        the fundamentally different ND solution for Low-Power and Lossy
+        Networks (LLNs) <span>[<a href="#RFC7102" class="cite xref">RFC7102</a>]</span> that is defined in <span>[<a href="#RFC6775" class="cite xref">RFC6775</a>]</span>, <span>[<a href="#RFC8505" class="cite xref">RFC8505</a>]</span>, <span>[<a href="#RFC8928" class="cite xref">RFC8928</a>]</span>, and <span>[<a href="#RFC8929" class="cite xref">RFC8929</a>]</span> (Standards Track).
+        WiND changes host and router behaviors to use multicast only for
+        router discovery. The key points are:<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-2.1">Hosts use unicast to proactively register their addresses at
+    the routers. Routers use unicast to communicate with hosts and
+    become an abstract registrar and arbitrator for address
+    ownership.<a href="#section-3.4-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.4-2.2">The router also proactively installs NCEs for the hosts. This
+    avoids the need for address resolution for the hosts.<a href="#section-3.4-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.4-2.3">The router sets the Prefix Information Option (PIO) L-bit to 0.
+    Each host communicates only with the router (<span><a href="https://rfc-editor.org/rfc/rfc4861#section-6.3.4" class="relref">Section 6.3.4</a> of [<a href="#RFC4861" class="cite xref">RFC4861</a>]</span>).<a href="#section-3.4-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.4-2.4">Other functionalities that are relevant only to LLNs.<a href="#section-3.4-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.4-3">WiND addresses all ND issues (<a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>) in LLNs. However, WiND
+   support is not mandatory for general-purpose hosts. Therefore, it
+   cannot be relied upon as a deployment option without imposing
+   additional constraints on the participating nodes.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="scalable-address-resolution-protocol">
+<section id="section-3.5">
+        <h3 id="name-scalable-address-resolution">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-scalable-address-resolution" class="section-name selfRef">Scalable Address Resolution Protocol (SARP)</a>
+        </h3>
+<p id="section-3.5-1">The Scalable Address Resolution Protocol (SARP) <span>[<a href="#RFC7586" class="cite xref">RFC7586</a>]</span> was an Experimental solution. That experiment ended
+        in 2017, two years after the RFC was published. Because the idea has
+        been used in mitigation solutions for more specific scenarios
+        (described in Sections <a href="#arp-and-nd-optimization-for-trill" class="auto internal xref">3.6</a> and
+        <a href="#proxy-arpnd-in-ethernet-virtual-private-networks-evpn" class="auto internal xref">3.7</a>), it is worth describing here. The usage scenario
+        is Data Centers (DCs), where large L2 domains span across multiple
+        sites. In each site, multiple hosts are connected to a switch. The
+        hosts can be Virtual Machines (VMs), so the number can be large.  The
+        switches are interconnected by a pure or overlay L2 network.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">The switch will snoop and install a (IP, MAC address) proxy table for
+   the local hosts. The switch will also reply to address resolution
+   requests from other sites to its hosts with its own MAC address. In
+   doing so, all hosts within a site will appear to have a single MAC
+   address to other sites. As such, a switch only needs to build a MAC
+   address table for the local hosts and the remote switches, not for
+   all the hosts in the L2 domain. Consequently, the MAC address table
+   size of the switches is significantly reduced. A switch will also
+   add the (IP, MAC address) replies from remote switches to its proxy
+   ND table so that it can reply to future address resolution requests
+   from local hosts for such IPs directly. This greatly reduces the
+   number of address resolution multicast in the network.<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+<p id="section-3.5-3">Unlike MBBv6, FBBv6, and UPPH, which try to address all ND issues
+   discussed in <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>, SARP focuses on reducing address
+   resolution multicast to improve the performance and scalability of
+   large L2 domains in DCs.<a href="#section-3.5-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="arp-and-nd-optimization-for-trill">
+<section id="section-3.6">
+        <h3 id="name-nd-optimization-for-trill">
+<a href="#section-3.6" class="section-number selfRef">3.6. </a><a href="#name-nd-optimization-for-trill" class="section-name selfRef">ND Optimization for TRILL</a>
+        </h3>
+<p id="section-3.6-1">ARP and ND optimization for Transparent Interconnection of Lots of Links (TRILL) <span>[<a href="#RFC8302" class="cite xref">RFC8302</a>]</span>
+        (Standards Track) is similar to SARP (<a href="#scalable-address-resolution-protocol" class="auto internal xref">Section 3.5</a>). It
+        can be considered an application of SARP in the TRILL environment.<a href="#section-3.6-1" class="pilcrow">¶</a></p>
+<p id="section-3.6-2">Like SARP, ND optimization for TRILL focuses on reducing multicast address resolution. That is, it addresses Issue 5 (<a href="#multicast-may-cause-performance-and-reliability-issues" class="auto internal xref">Section 2.1</a>).<a href="#section-3.6-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="proxy-arpnd-in-ethernet-virtual-private-networks-evpn">
+<section id="section-3.7">
+        <h3 id="name-proxy-nd-in-ethernet-virtua">
+<a href="#section-3.7" class="section-number selfRef">3.7. </a><a href="#name-proxy-nd-in-ethernet-virtua" class="section-name selfRef">Proxy ND in Ethernet Virtual Private Networks (ND EVPN)</a>
+        </h3>
+<p id="section-3.7-1">Proxy ARP/ND in EVPN is specified in <span>[<a href="#RFC9161" class="cite xref">RFC9161</a>]</span> (Standards Track).
+   The usage scenario is DCs where large L2 domains span across
+   multiple sites. In each site, multiple hosts are connected to a
+   Provider Edge (PE) router.  The PEs are interconnected by EVPN
+   tunnels.<a href="#section-3.7-1" class="pilcrow">¶</a></p>
+<p id="section-3.7-2">The PE of each site snoops the local address resolution NAs to build
+   (IP, MAC address) Proxy ND table entries. PEs then propagate such
+   Proxy ND entries to other PEs via the Border Gateway Protocol (BGP).
+   Each PE also snoops local hosts' address resolution NSs for remote
+   hosts. If an entry exists in its Proxy ND table for the remote
+   hosts, the PE will reply directly.  Consequently, the number of
+   multicast address resolution messages is significantly reduced.<a href="#section-3.7-2" class="pilcrow">¶</a></p>
+<p id="section-3.7-3">Like SARP, Proxy ARP/ND in EVPN also focuses on reducing address
+   resolution multicast.<a href="#section-3.7-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="reducing-router-advertisements">
+<section id="section-3.8">
+        <h3 id="name-reducing-router-advertiseme">
+<a href="#section-3.8" class="section-number selfRef">3.8. </a><a href="#name-reducing-router-advertiseme" class="section-name selfRef">Reducing Router Advertisements per RFC 7772</a>
+        </h3>
+<p id="section-3.8-1">Maintaining IPv6 connectivity requires that hosts be able to receive
+   periodic multicast RAs <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span>.  Hosts that process unicast
+   packets while they are asleep must also process multicast RAs while
+   they are asleep. An excessive number of RAs can significantly reduce
+   the battery life of mobile hosts. <span>[<a href="#RFC7772" class="cite xref">RFC7772</a>]</span> (Best Current Practice)
+   specifies a solution to reduce RAs:<a href="#section-3.8-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.8-2.1">The router should respond to RS with unicast RA (rather than
+    the normal multicast RA) if the host's source IP address is
+    specified and the host's MAC address is valid. This way, other
+    hosts will not receive this RA.<a href="#section-3.8-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.8-2.2">The router should reduce the multicast RA frequency.<a href="#section-3.8-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.8-3"><span>[<a href="#RFC7772" class="cite xref">RFC7772</a>]</span> addresses Issue 2 (<a href="#multicast-may-cause-performance-and-reliability-issues" class="auto internal xref">Section 2.1</a>).<a href="#section-3.8-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="gratuitous-neighbor-discovery-grand">
+<section id="section-3.9">
+        <h3 id="name-gratuitous-neighbor-discove">
+<a href="#section-3.9" class="section-number selfRef">3.9. </a><a href="#name-gratuitous-neighbor-discove" class="section-name selfRef">Gratuitous Neighbor Discovery (GRAND)</a>
+        </h3>
+<p id="section-3.9-1">GRAND <span>[<a href="#RFC9131" class="cite xref">RFC9131</a>]</span> (Standards Track) changes ND in the following ways:<a href="#section-3.9-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.9-2.1">A node sends unsolicited NAs upon assigning a new IPv6 address
+   to its interface.<a href="#section-3.9-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.9-2.2">A router creates a new NCE for the node and sets its state to
+   STALE.<a href="#section-3.9-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.9-3">When a packet for the host later arrives, the router can use the
+        existing STALE NCE to forward it immediately (<span>[<a href="#RFC4861" class="cite xref">RFC4861</a>], <a href="https://rfc-editor.org/rfc/rfc4861#section-7.2.2" class="relref">Section 7.2.2</a></span>). It then verifies
+        reachability by sending a unicast NS rather than a multicast one for
+        address resolution. In this way, GRAND eliminates the router
+        forwarding delay, but it does not solve other Router-NCE-on-Demand
+        issues. For example, NCE exhaustion can still happen.<a href="#section-3.9-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="source-address-validation-improvement-savi-and-router-advertisement-guard">
+<section id="section-3.10">
+        <h3 id="name-source-address-validation-i">
+<a href="#section-3.10" class="section-number selfRef">3.10. </a><a href="#name-source-address-validation-i" class="section-name selfRef">Source Address Validation Improvement (SAVI) and Router
+        Advertisement Guard (RA-Guard)</a>
+        </h3>
+<p id="section-3.10-1">Source Address Validation Improvement (SAVI) <span>[<a href="#RFC7039" class="cite xref">RFC7039</a>]</span> (Informational) binds an address to a port on an L2
+   switch and rejects claims from other ports for that address.
+   Therefore, a node cannot spoof the IP address of another node.<a href="#section-3.10-1" class="pilcrow">¶</a></p>
+<p id="section-3.10-2">Router Advertisement Guard (RA-Guard) <span>[<a href="#RFC6105" class="cite xref">RFC6105</a>]</span> <span>[<a href="#RFC7113" class="cite xref">RFC7113</a>]</span>
+   (Informational) only allows RAs from a port that a router is
+   connected to. Therefore, nodes on other ports cannot pretend to be a
+   router.<a href="#section-3.10-2" class="pilcrow">¶</a></p>
+<p id="section-3.10-3">SAVI and RA-Guard address the on-link security issues.<a href="#section-3.10-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rfc-6583-dealing-with-nce-exhaustion-attacks">
+<section id="section-3.11">
+        <h3 id="name-dealing-with-nce-exhaustion">
+<a href="#section-3.11" class="section-number selfRef">3.11. </a><a href="#name-dealing-with-nce-exhaustion" class="section-name selfRef">Dealing with NCE Exhaustion Attacks per RFC 6583</a>
+        </h3>
+<p id="section-3.11-1"><span>[<a href="#RFC6583" class="cite xref">RFC6583</a>]</span> (Informational) deals with the NCE
+        exhaustion attack issue (<a href="#router-nce-on-demand-may-cause-forwarding-delay-nce-exhaustion-and-address-accountability-issues" class="auto internal xref">Section 2.3</a>). It recommends that:<a href="#section-3.11-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.11-2.1">
+            <p id="section-3.11-2.1.1">Operators should:<a href="#section-3.11-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.11-2.1.2.1">Filter unused address space so that messages to such
+              addresses can be dropped rather than triggering NCE
+              creation.<a href="#section-3.11-2.1.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-3.11-2.1.2.2">Implement rate-limiting mechanisms for ND message
+              processing to prevent CPU and memory resources from being
+              overwhelmed.<a href="#section-3.11-2.1.2.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-3.11-2.2">
+            <p id="section-3.11-2.2.1">Vendors should:<a href="#section-3.11-2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.11-2.2.2.1">Prioritize NDP processing for existing NCEs over creating
+              new NCEs.<a href="#section-3.11-2.2.2.1" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+        </ul>
+<p id="section-3.11-3"><span>[<a href="#RFC6583" class="cite xref">RFC6583</a>]</span> acknowledges that "some of these options are 'kludges',
+ and can be operationally difficult to manage". <span>[<a href="#RFC6583" class="cite xref">RFC6583</a>]</span> partially
+ addresses the Router NCE exhaustion issue. In practice, router
+ vendors cap the number of NCEs per interface to prevent cache
+ exhaustion. If the link has more addresses than that cap, the router
+ cannot keep an entry for every address, and packets destined for
+ addresses without an NCE are simply dropped <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span>.<a href="#section-3.11-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="registering-self-generated-ipv6-addresses-using-dhcpv6">
+<section id="section-3.12">
+        <h3 id="name-registering-self-generated-">
+<a href="#section-3.12" class="section-number selfRef">3.12. </a><a href="#name-registering-self-generated-" class="section-name selfRef">Registering Self-Generated IPv6 Addresses Using DHCPv6 per RFC 9686</a>
+        </h3>
+<p id="section-3.12-1">In IPv4, network administrators can retrieve a host's IP address
+ from the DHCP server and use it for subscriber management. In IPv6
+   and SLAAC, this is not possible (<a href="#router-nce-on-demand-may-cause-forwarding-delay-nce-exhaustion-and-address-accountability-issues" class="auto internal xref">Section 2.3</a>).<a href="#section-3.12-1" class="pilcrow">¶</a></p>
+<p id="section-3.12-2"><span>[<a href="#RFC9686" class="cite xref">RFC9686</a>]</span> (Standards Track) defines a method for informing a DHCPv6
+   server that a host has one or more self-generated or statically
+   configured addresses. This enables network administrators to
+   retrieve the IPv6 addresses for each host from the DHCPv6 server.
+   <span>[<a href="#RFC9686" class="cite xref">RFC9686</a>]</span> provides a solution for Issue 15 (<a href="#router-nce-on-demand-may-cause-forwarding-delay-nce-exhaustion-and-address-accountability-issues" class="auto internal xref">Section 2.3</a>).<a href="#section-3.12-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="enhanced-dad">
+<section id="section-3.13">
+        <h3 id="name-enhanced-dad">
+<a href="#section-3.13" class="section-number selfRef">3.13. </a><a href="#name-enhanced-dad" class="section-name selfRef">Enhanced DAD</a>
+        </h3>
+<p id="section-3.13-1">Enhanced DAD <span>[<a href="#RFC7527" class="cite xref">RFC7527</a>]</span> (Standards Track) addresses a DAD failure
+   issue in a specific situation: a looped-back interface. DAD will
+   fail in a looped-back interface because the sending host will
+   receive the DAD message back and will interpret it as another host
+   is trying to use the same address. The solution is to include a
+   Nonce option <span>[<a href="#RFC3971" class="cite xref">RFC3971</a>]</span> in each DAD message so that the sending host
+   can detect that the looped-back DAD message is sent by itself.<a href="#section-3.13-1" class="pilcrow">¶</a></p>
+<p id="section-3.13-2">Enhanced DAD does not solve any ND issue. It extends ND to work in a
+   new scenario: a looped-back interface. It is reviewed here only for
+   completeness.<a href="#section-3.13-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="nd-mediation-for-ip-interworking-of-layer-2-vpns">
+<section id="section-3.14">
+        <h3 id="name-nd-mediation-for-ip-interwo">
+<a href="#section-3.14" class="section-number selfRef">3.14. </a><a href="#name-nd-mediation-for-ip-interwo" class="section-name selfRef">ND Mediation for IP Interworking of Layer 2 VPNs</a>
+        </h3>
+<p id="section-3.14-1">ND mediation is specified in <span>[<a href="#RFC6575" class="cite xref">RFC6575</a>]</span> (Standards Track). When two
+   Attachment Circuits (ACs) are interconnected by a Virtual Private
+   Wired Service (VPWS), and the two ACs are of different media (e.g.,
+   one is Ethernet while the other is Frame Relay), the two PEs must
+   interwork to provide mediation service so that a Customer Edge (CE)
+   can resolve the MAC address of the remote end. <span>[<a href="#RFC6575" class="cite xref">RFC6575</a>]</span> specifies
+   such a solution.<a href="#section-3.14-1" class="pilcrow">¶</a></p>
+<p id="section-3.14-2">ND mediation does not address any ND issue. It extends ND to work in
+   a new scenario: two ACs of different media interconnected by a VPWS.
+   It is reviewed here only for completeness.<a href="#section-3.14-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="nd-solutions-defined-before-the-latest-versions-of-nd">
+<section id="section-3.15">
+        <h3 id="name-nd-solutions-defined-before">
+<a href="#section-3.15" class="section-number selfRef">3.15. </a><a href="#name-nd-solutions-defined-before" class="section-name selfRef">ND Solutions Defined Before the Latest Versions of ND</a>
+        </h3>
+<p id="section-3.15-1">The latest versions of ND and SLAAC are specified in <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span> and
+   <span>[<a href="#RFC4862" class="cite xref">RFC4862</a>]</span>. Several ND mitigation solutions were published before
+   <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span>. They are reviewed in this section only for completeness.<a href="#section-3.15-1" class="pilcrow">¶</a></p>
+<div id="secure-neighbor-discovery-send">
+<section id="section-3.15.1">
+          <h4 id="name-secure-neighbor-discovery-s">
+<a href="#section-3.15.1" class="section-number selfRef">3.15.1. </a><a href="#name-secure-neighbor-discovery-s" class="section-name selfRef">Secure Neighbor Discovery (SEND)</a>
+          </h4>
+<p id="section-3.15.1-1">The purpose of SEND <span>[<a href="#RFC3971" class="cite xref">RFC3971</a>]</span> (Standards Track) is
+          to ensure that hosts and routers are trustworthy.  SEND defined
+          three new ND options: Cryptographically Generated Addresses (CGA)
+          <span>[<a href="#RFC3972" class="cite xref">RFC3972</a>]</span> (Standards Track), RSA public-key
+          cryptosystem, and Timestamp/Nonce. In addition, SEND also defined an
+          authorization delegation discovery process, an address ownership
+          proof mechanism, and requirements for the use of these components in
+          the ND protocol.<a href="#section-3.15.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="cryptographically-generated-addresses-cga">
+<section id="section-3.15.2">
+          <h4 id="name-cryptographically-generated">
+<a href="#section-3.15.2" class="section-number selfRef">3.15.2. </a><a href="#name-cryptographically-generated" class="section-name selfRef">Cryptographically Generated Addresses (CGA)</a>
+          </h4>
+<p id="section-3.15.2-1">The purpose of CGA is to associate a cryptographic public key with
+   an IPv6 address in the SEND protocol. The key point is to generate
+   the Interface Identifier (IID) of an IPv6 address by computing a
+   cryptographic hash of the public key.  The resulting IPv6 address is
+   called a CGA.  The corresponding private key can then be used to
+   sign messages sent from the address.<a href="#section-3.15.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.15.2-2">CGA assumes that a legitimate host does not care about the bit
+   combination of the IID that would be created by some hash procedure.
+   The attacker needs an exact IID to impersonate the legitimate hosts,
+   but then the attacker is challenged to do a reverse hash calculation,
+   which is a strong mathematical challenge.<a href="#section-3.15.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.15.2-3">CGA is part of SEND. There is no reported deployment.<a href="#section-3.15.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="nd-proxy">
+<section id="section-3.15.3">
+          <h4 id="name-nd-proxy">
+<a href="#section-3.15.3" class="section-number selfRef">3.15.3. </a><a href="#name-nd-proxy" class="section-name selfRef">ND Proxy</a>
+          </h4>
+<p id="section-3.15.3-1">ND Proxy <span>[<a href="#RFC4389" class="cite xref">RFC4389</a>]</span> (Experimental) aims to enable multiple links
+   joined by an ND Proxy device to work as a single link.<a href="#section-3.15.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.15.3-2.1">When an ND Proxy receives an ND request from a host on a link,
+    it will proxy the message out the "best" (defined in the next
+    paragraph) outgoing interface. If there is no best interface,
+    the ND Proxy will proxy the message to all other links. Here,
+    proxy means acting as if the ND message originates from the ND
+    Proxy itself. That is, the ND Proxy will change the ND
+    message's source IP and source MAC address to the ND Proxy's
+    outgoing interface's IP and MAC address, and create an NCE
+    entry at the outgoing interface accordingly.<a href="#section-3.15.3-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-3.15.3-2.2">When ND Proxy receives an ND reply, it will act as if the ND
+    message is destined for itself, and update the NCE entry state
+    at the receiving interface. Based on such state information,
+    the ND Proxy can determine the "best" outgoing interface for
+    future ND requests. The ND Proxy then proxies the ND message
+    back to the requesting host.<a href="#section-3.15.3-2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-3.15.3-3">ND Proxy is widely used in SARP (<a href="#scalable-address-resolution-protocol" class="auto internal xref">Section 3.5</a>),
+          ND optimization for TRILL (<a href="#arp-and-nd-optimization-for-trill" class="auto internal xref">Section 3.6</a>), and
+          Proxy ARP/ND in EVPN (<a href="#proxy-arpnd-in-ethernet-virtual-private-networks-evpn" class="auto internal xref">Section 3.7</a>).<a href="#section-3.15.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="optimistic-dad">
+<section id="section-3.15.4">
+          <h4 id="name-optimistic-dad">
+<a href="#section-3.15.4" class="section-number selfRef">3.15.4. </a><a href="#name-optimistic-dad" class="section-name selfRef">Optimistic DAD</a>
+          </h4>
+<p id="section-3.15.4-1">Optimistic DAD <span>[<a href="#RFC4429" class="cite xref">RFC4429</a>]</span> (Standards Track) seeks to minimize address
+   configuration delays in the successful case and to reduce disruption
+   as far as possible in the failure case. That is, Optimistic DAD lets
+   hosts immediately use the newly formed address to communicate before
+   DAD completes, assuming that DAD will succeed anyway. If the address
+   turns out to be duplicate, Optimistic DAD provides a set of
+   mechanisms to minimize the impact. Optimistic DAD modified the
+   original ND <span>[<a href="#RFC2461" class="cite xref">RFC2461</a>]</span> and original SLAAC <span>[<a href="#RFC2462" class="cite xref">RFC2462</a>]</span> (both of which are obsolete), but the solution was not
+   incorporated into the latest specifications of ND <span>[<a href="#RFC4861" class="cite xref">RFC4861</a>]</span> and
+   SLAAC <span>[<a href="#RFC4862" class="cite xref">RFC4862</a>]</span>. However, implementations of Optimistic DAD exist.<a href="#section-3.15.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.15.4-2">Optimistic DAD does not solve any ND issue (<a href="#review-of-inventoried-nd-issues" class="auto internal xref">Section 2</a>). It is
+   reviewed here only for completeness.<a href="#section-3.15.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="guidelines-for-prevention-of-potential-nd-issues">
+<section id="section-4">
+      <h2 id="name-guidelines-for-prevention-o">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-guidelines-for-prevention-o" class="section-name selfRef">Guidelines for Prevention of Potential ND Issues</a>
+      </h2>
+<p id="section-4-1">By knowing the potential ND issues and associated mitigation
+   solutions, network administrators of existing IPv6 deployments can
+   assess whether these issues may occur in their networks and, if so,
+   whether to deploy the mitigation solutions proactively. Deploying
+   these solutions may take time and additional resources. Therefore,
+   it is advisable to plan.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Network administrators planning to start their IPv6 deployments can
+   use the issue-solution information to help plan their deployments.
+   Moreover, they can take proactive action to prevent potential ND
+   issues.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<div id="learning-host-isolation-from-the-existing-solutions">
+<section id="section-4.1">
+        <h3 id="name-learning-host-isolation-fro">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-learning-host-isolation-fro" class="section-name selfRef">Learning Host Isolation from the Existing Solutions</a>
+        </h3>
+<p id="section-4.1-1">While various ND solutions may initially appear unrelated,
+   categorizing them into four distinct groups highlights an important
+   observation: host isolation is an effective strategy for
+   mitigating ND-related issues.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-2.1">
+            <p id="section-4.1-2.1.1">Group 1: L3 and L2 Isolation<a href="#section-4.1-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2.1.2">This group includes MBBv6 and FBBv6, which isolate hosts at both L3 and
+  L2 by placing each host within its subnet and link. This prevents ND issues
+  caused by multicast and Trusting-all-nodes, as each host operates within its
+  isolated domain. Furthermore, since routers can route packets to a host
+  based on its unique prefix, the need for Router-NCE-on-Demand is also
+  eliminated. Therefore, L3 and L2 Isolation prevent all ND issues.<a href="#section-4.1-2.1.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-2.2">
+            <p id="section-4.1-2.2.1">Group 2: L3 Isolation<a href="#section-4.1-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2.2.2">This group includes UPPH solutions like <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> and
+  <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span>, which isolate hosts into separate subnets while
+  potentially leaving them on the same shared medium. This approach mitigates
+  ND issues caused by router multicast to hosts and eliminates the need for
+  Router-NCE-on-Demand, as detailed in <a href="#unique-ipv6-prefix-per-host-upph" class="auto internal xref">Section 3.3</a>.<a href="#section-4.1-2.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-2.3">
+            <p id="section-4.1-2.3.1">Group 3: Partial L2 Isolation<a href="#section-4.1-2.3.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2.3.2">This group encompasses solutions such as WiND, SARP, ND optimization for
+  TRILL, and Proxy ND in EVPN. These solutions use a proxy device to represent
+  the hosts behind it, effectively isolating those hosts into distinct
+  multicast domains. While hosts are still located within the same subnet,
+  their separation into different multicast domains reduces the scope of ND
+  issues related to multicast-based address resolution.<a href="#section-4.1-2.3.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-2.4">
+            <p id="section-4.1-2.4.1">Group 4: Non-Isolating Solutions<a href="#section-4.1-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2.4.2">The final group includes remaining solutions that do not implement host
+  isolation. These solutions do not prevent ND issues but instead focus on
+  addressing specific ND problems.<a href="#section-4.1-2.4.2" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.1-3">The analysis demonstrates that the stronger the isolation of hosts,
+   the more ND issues can be mitigated. This correlation is intuitive,
+   as isolating hosts reduces the multicast scope, minimizes the number
+   of nodes that must be trusted, and may eliminate the need for
+   Router-NCE-on-Demand, the three primary causes of ND issues.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">This understanding can be used to prevent ND issues.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="applicability-of-various-isolation-methods">
+<section id="section-4.2">
+        <h3 id="name-applicability-of-various-is">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-applicability-of-various-is" class="section-name selfRef">Applicability of Various Isolation Methods</a>
+        </h3>
+<div id="applicability-of-l3l2-isolation">
+<section id="section-4.2.1">
+          <h4 id="name-applicability-of-l3l2-isola">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-applicability-of-l3l2-isola" class="section-name selfRef">Applicability of L3+L2 Isolation</a>
+          </h4>
+<p id="section-4.2.1-1">Benefits:<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.1-2.1">
+              <p id="section-4.2.1-2.1.1">All ND issues (<a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>) can be effectively mitigated.<a href="#section-4.2.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4.2.1-3">Constraints:<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2.1-4">
+     <li id="section-4.2.1-4.1">
+              <p id="section-4.2.1-4.1.1">L2 Isolation:<a href="#section-4.2.1-4.1.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.1.2">Actions must be taken to isolate hosts in L2. The required
+              effort varies by the chosen method and deployment context. For
+              example, the P2P method <span>[<a href="#RFC7066" class="cite xref">RFC7066</a>]</span> is
+              heavyweight, while the Private VLAN method <span>[<a href="#RFC5517" class="cite xref">RFC5517</a>]</span> is more manageable.<a href="#section-4.2.1-4.1.2" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-4.2">
+              <p id="section-4.2.1-4.2.1">Unique prefix allocation:<a href="#section-4.2.1-4.2.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.2.2">A large number of prefixes will be required, with one prefix
+              assigned per host. This is generally not a limitation for
+              IPv6. For instance, members of a Regional Internet Registry
+              (RIR) can obtain a /29 prefix allocation <span>[<a href="#RIPE738" class="cite xref">RIPE738</a>]</span>, which provides 32 billion /64 prefixes --
+              sufficient for any foreseeable deployment scenarios.  Practical
+              implementations, such as MBBv6 assigning /64 prefixes to
+              billions of mobile UEs <span>[<a href="#RFC6459" class="cite xref">RFC6459</a>]</span>, and FBBv6
+              assigning /56 prefixes to hundreds of millions of routed RGs
+              <span>[<a href="#TR177" class="cite xref">TR177</a>]</span>, demonstrate the feasibility of this
+              approach.<a href="#section-4.2.1-4.2.2" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-4.3">
+              <p id="section-4.2.1-4.3.1">Privacy issue from unique prefix identifiability:<a href="#section-4.2.1-4.3.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.3.2">Assigning a unique prefix to each host may theoretically
+              reduce privacy, as hosts can be directly identified by their
+              assigned prefix. However, alternative host identification
+              methods, such as cookies, are commonly used. Therefore, unique
+              prefix identifiability may not make much difference. The actual
+              impact on privacy is therefore likely to be limited.<a href="#section-4.2.1-4.3.2" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-4.4">
+              <p id="section-4.2.1-4.4.1">Router support for L3 Isolation:<a href="#section-4.2.1-4.4.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.4.2">The router must support an L3 Isolation solution, e.g., <span>[<a href="#RFC8273" class="cite xref">RFC8273</a>]</span> or <span>[<a href="#RFC9663" class="cite xref">RFC9663</a>]</span>.<a href="#section-4.2.1-4.4.2" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-4.5">
+              <p id="section-4.2.1-4.5.1">A large number of router interfaces may be needed:<a href="#section-4.2.1-4.5.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.5.2">If the P2P method is used, the router must instantiate a
+              separate logical interface for every attached host. In this
+              case, a large number of interfaces will be needed at the
+              router.<a href="#section-4.2.1-4.5.2" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-4.6">
+              <p id="section-4.2.1-4.6.1">Router as a bottleneck:<a href="#section-4.2.1-4.6.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.6.2">Since all communication between hosts is routed through the
+              router, the router may become a performance bottleneck in
+              high-traffic scenarios.<a href="#section-4.2.1-4.6.2" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-4.7">
+              <p id="section-4.2.1-4.7.1">Incompatibility with host-based multicast services:<a href="#section-4.2.1-4.7.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4.7.2">Services that rely on multicast communication among hosts,
+              such as the Multicast Domain Name System <span>[<a href="#RFC6762" class="cite xref">RFC6762</a>]</span>,
+              will be disrupted.<a href="#section-4.2.1-4.7.2" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+</section>
+</div>
+<div id="applicability-of-l3-isolation">
+<section id="section-4.2.2">
+          <h4 id="name-applicability-of-l3-isolati">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-applicability-of-l3-isolati" class="section-name selfRef">Applicability of L3 Isolation</a>
+          </h4>
+<p id="section-4.2.2-1">Benefits:<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.2-2.1">
+              <p id="section-4.2.2-2.1.1">All ND issues (<a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>) are mitigated, with the exception
+    of:<a href="#section-4.2.2-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.2-2.1.2.1">LLA DAD multicast degrades performance,<a href="#section-4.2.2-2.1.2.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-4.2.2-2.1.2.2">LLA DAD not reliable in wireless networks, and<a href="#section-4.2.2-2.1.2.2" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-4.2.2-2.1.2.3">on-link security.<a href="#section-4.2.2-2.1.2.3" class="pilcrow">¶</a>
+</li>
+              </ul>
+<p id="section-4.2.2-2.1.3">
+   These remaining issues depend on the characteristics of the
+   shared medium:<a href="#section-4.2.2-2.1.3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.2-2.1.4.1">If the shared medium is Ethernet, the issues related to LLA
+         DAD multicast are negligible.<a href="#section-4.2.2-2.1.4.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-4.2.2-2.1.4.2">If nodes can be trusted, such as in private networks, on-link security concerns are not significant.<a href="#section-4.2.2-2.1.4.2" class="pilcrow">¶</a>
+</li>
+              </ul>
+</li>
+            <li class="normal" id="section-4.2.2-2.2">There is no need for L2 Isolation. Consequently, this method can be
+    applied in a wide range of scenarios, making it possibly the
+    most practical host isolation method.<a href="#section-4.2.2-2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.2.2-3">Constraints (as discussed in <a href="#applicability-of-l3l2-isolation" class="auto internal xref">Section 4.2.1</a>):<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2.2-4">
+<li id="section-4.2.2-4.1">
+              <p id="section-4.2.2-4.1.1">Unique prefix allocation<a href="#section-4.2.2-4.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.2-4.2">
+              <p id="section-4.2.2-4.2.1">Router support for L3 Isolation<a href="#section-4.2.2-4.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.2-4.3">
+              <p id="section-4.2.2-4.3.1">Router as a bottleneck<a href="#section-4.2.2-4.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.2-4.4">
+              <p id="section-4.2.2-4.4.1">Privacy issue from unique prefix identifiability<a href="#section-4.2.2-4.4.1" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+</section>
+</div>
+<div id="applicability-of-partial-l2-isolation">
+<section id="section-4.2.3">
+          <h4 id="name-applicability-of-partial-l2">
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-applicability-of-partial-l2" class="section-name selfRef">Applicability of Partial L2 Isolation</a>
+          </h4>
+<p id="section-4.2.3-1">Benefit:<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.3-2.1">Reduced multicast traffic: This method reduces multicast
+     traffic, particularly for address resolution, by dividing the
+     subnet into multiple multicast domains.<a href="#section-4.2.3-2.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.2.3-3">Constraint:<a href="#section-4.2.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.3-4.1">Router support for Partial L2 Isolation:
+          The router must implement a Partial L2 Isolation solution such as
+   WiND, SARP, ND optimization for TRILL, and Proxy ND in EVPN to
+   support this method.<a href="#section-4.2.3-4.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="guidelines-for-applying-isolation-methods">
+<section id="section-4.3">
+        <h3 id="name-guidelines-for-applying-iso">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-guidelines-for-applying-iso" class="section-name selfRef">Guidelines for Applying Isolation Methods</a>
+        </h3>
+<p id="section-4.3-1">Based on the applicability analysis provided in the preceding
+   sections, network administrators can determine whether to implement
+   an isolation method and, if so, which method is most appropriate for
+   their specific deployment.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">A simple guideline is to consider the isolation methods in the order
+   listed in the preceding sections, progressing from the strongest
+   isolation to the weakest:<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-3.1">Stronger isolation methods can prevent more ND issues, but may
+    also impose higher entry requirements.<a href="#section-4.3-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.3-3.2">Weaker isolation methods have fewer entry requirements but may
+    leave some ND issues unmitigated.<a href="#section-4.3-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.3-4">The choice between L3+L2 Isolation and L3 Isolation often depends on
+   the cost of implementing L2 Isolation:<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-5.1">If the cost is acceptable, L3+L2 Isolation is preferable
+    because it eliminates every ND issue listed in <a href="#summary-of-nd-issues" class="auto internal xref">Section 2.4</a>.<a href="#section-4.3-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.3-5.2">Otherwise, L3 Isolation addresses most of those issues while
+    keeping the implementation effort reasonable.<a href="#section-4.3-5.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.3-6">Selecting an isolation method that is either too strong or too weak
+   does not result in serious consequences:<a href="#section-4.3-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3-7.1">Choosing an overly strong isolation method may require the
+    network administrator to meet higher entry requirements
+    initially, such as measures for L2 Isolation, additional
+    prefixes, or additional router capabilities.<a href="#section-4.3-7.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.3-7.2">Choosing a weaker isolation method may necessitate deploying
+    supplemental ND mitigation techniques to address any unresolved
+    ND issues.<a href="#section-4.3-7.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.3-8">In either case, the resulting solution can be functional and
+   effective.<a href="#section-4.3-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">This document is a review of known ND issues and solutions,
+   including security. It does not introduce any new solutions.
+   Therefore, it does not introduce new security issues.<a href="#section-5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC4861">[RFC4861]</dt>
+        <dd>
+<span class="refAuthor">Narten, T.</span>, <span class="refAuthor">Nordmark, E.</span>, <span class="refAuthor">Simpson, W.</span>, and <span class="refAuthor">H. Soliman</span>, <span class="refTitle">"Neighbor Discovery for IP version 6 (IPv6)"</span>, <span class="seriesInfo">RFC 4861</span>, <span class="seriesInfo">DOI 10.17487/RFC4861</span>, <time datetime="2007-09" class="refDate">September 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4861">https://www.rfc-editor.org/info/rfc4861</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4862">[RFC4862]</dt>
+      <dd>
+<span class="refAuthor">Thomson, S.</span>, <span class="refAuthor">Narten, T.</span>, and <span class="refAuthor">T. Jinmei</span>, <span class="refTitle">"IPv6 Stateless Address Autoconfiguration"</span>, <span class="seriesInfo">RFC 4862</span>, <span class="seriesInfo">DOI 10.17487/RFC4862</span>, <time datetime="2007-09" class="refDate">September 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4862">https://www.rfc-editor.org/info/rfc4862</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ccc-v6ops-address-accountability">[AddrAcc]</dt>
+        <dd>
+<span class="refAuthor">Chown, T.</span>, <span class="refAuthor">Cummings, C.</span>, and <span class="refAuthor">D. W. Carder</span>, <span class="refTitle">"IPv6 Address Accountability Considerations"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ccc-v6ops-address-accountability-00</span>, <time datetime="2024-10-21" class="refDate">21 October 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ccc-v6ops-address-accountability-00">https://datatracker.ietf.org/doc/html/draft-ccc-v6ops-address-accountability-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9797">[MADINAS]</dt>
+        <dd>
+<span class="refAuthor">Henry, J.</span> and <span class="refAuthor">Y. Lee</span>, <span class="refTitle">"Randomized and Changing Media Access Control (MAC) Addresses: Context, Network Impacts, and Use Cases"</span>, <span class="seriesInfo">RFC 9797</span>, <span class="seriesInfo">DOI 10.17487/RFC9797</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9797">https://www.rfc-editor.org/info/rfc9797</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2026">[RFC2026]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"The Internet Standards Process -- Revision 3"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 2026</span>, <span class="seriesInfo">DOI 10.17487/RFC2026</span>, <time datetime="1996-10" class="refDate">October 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2026">https://www.rfc-editor.org/info/rfc2026</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2461">[RFC2461]</dt>
+        <dd>
+<span class="refAuthor">Narten, T.</span>, <span class="refAuthor">Nordmark, E.</span>, and <span class="refAuthor">W. Simpson</span>, <span class="refTitle">"Neighbor Discovery for IP Version 6 (IPv6)"</span>, <span class="seriesInfo">RFC 2461</span>, <span class="seriesInfo">DOI 10.17487/RFC2461</span>, <time datetime="1998-12" class="refDate">December 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2461">https://www.rfc-editor.org/info/rfc2461</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2462">[RFC2462]</dt>
+        <dd>
+<span class="refAuthor">Thomson, S.</span> and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"IPv6 Stateless Address Autoconfiguration"</span>, <span class="seriesInfo">RFC 2462</span>, <span class="seriesInfo">DOI 10.17487/RFC2462</span>, <time datetime="1998-12" class="refDate">December 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2462">https://www.rfc-editor.org/info/rfc2462</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3587">[RFC3587]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span>, <span class="refAuthor">Deering, S.</span>, and <span class="refAuthor">E. Nordmark</span>, <span class="refTitle">"IPv6 Global Unicast Address Format"</span>, <span class="seriesInfo">RFC 3587</span>, <span class="seriesInfo">DOI 10.17487/RFC3587</span>, <time datetime="2003-08" class="refDate">August 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3587">https://www.rfc-editor.org/info/rfc3587</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3756">[RFC3756]</dt>
+        <dd>
+<span class="refAuthor">Nikander, P., Ed.</span>, <span class="refAuthor">Kempf, J.</span>, and <span class="refAuthor">E. Nordmark</span>, <span class="refTitle">"IPv6 Neighbor Discovery (ND) Trust Models and Threats"</span>, <span class="seriesInfo">RFC 3756</span>, <span class="seriesInfo">DOI 10.17487/RFC3756</span>, <time datetime="2004-05" class="refDate">May 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3756">https://www.rfc-editor.org/info/rfc3756</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3971">[RFC3971]</dt>
+        <dd>
+<span class="refAuthor">Arkko, J., Ed.</span>, <span class="refAuthor">Kempf, J.</span>, <span class="refAuthor">Zill, B.</span>, and <span class="refAuthor">P. Nikander</span>, <span class="refTitle">"SEcure Neighbor Discovery (SEND)"</span>, <span class="seriesInfo">RFC 3971</span>, <span class="seriesInfo">DOI 10.17487/RFC3971</span>, <time datetime="2005-03" class="refDate">March 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3971">https://www.rfc-editor.org/info/rfc3971</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3972">[RFC3972]</dt>
+        <dd>
+<span class="refAuthor">Aura, T.</span>, <span class="refTitle">"Cryptographically Generated Addresses (CGA)"</span>, <span class="seriesInfo">RFC 3972</span>, <span class="seriesInfo">DOI 10.17487/RFC3972</span>, <time datetime="2005-03" class="refDate">March 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3972">https://www.rfc-editor.org/info/rfc3972</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4193">[RFC4193]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span> and <span class="refAuthor">B. Haberman</span>, <span class="refTitle">"Unique Local IPv6 Unicast Addresses"</span>, <span class="seriesInfo">RFC 4193</span>, <span class="seriesInfo">DOI 10.17487/RFC4193</span>, <time datetime="2005-10" class="refDate">October 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4193">https://www.rfc-editor.org/info/rfc4193</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4389">[RFC4389]</dt>
+        <dd>
+<span class="refAuthor">Thaler, D.</span>, <span class="refAuthor">Talwar, M.</span>, and <span class="refAuthor">C. Patel</span>, <span class="refTitle">"Neighbor Discovery Proxies (ND Proxy)"</span>, <span class="seriesInfo">RFC 4389</span>, <span class="seriesInfo">DOI 10.17487/RFC4389</span>, <time datetime="2006-04" class="refDate">April 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4389">https://www.rfc-editor.org/info/rfc4389</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4429">[RFC4429]</dt>
+        <dd>
+<span class="refAuthor">Moore, N.</span>, <span class="refTitle">"Optimistic Duplicate Address Detection (DAD) for IPv6"</span>, <span class="seriesInfo">RFC 4429</span>, <span class="seriesInfo">DOI 10.17487/RFC4429</span>, <time datetime="2006-04" class="refDate">April 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4429">https://www.rfc-editor.org/info/rfc4429</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4903">[RFC4903]</dt>
+        <dd>
+<span class="refAuthor">Thaler, D.</span>, <span class="refTitle">"Multi-Link Subnet Issues"</span>, <span class="seriesInfo">RFC 4903</span>, <span class="seriesInfo">DOI 10.17487/RFC4903</span>, <time datetime="2007-06" class="refDate">June 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4903">https://www.rfc-editor.org/info/rfc4903</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5517">[RFC5517]</dt>
+        <dd>
+<span class="refAuthor">HomChaudhuri, S.</span> and <span class="refAuthor">M. Foschiano</span>, <span class="refTitle">"Cisco Systems' Private VLANs: Scalable Security in a Multi-Client Environment"</span>, <span class="seriesInfo">RFC 5517</span>, <span class="seriesInfo">DOI 10.17487/RFC5517</span>, <time datetime="2010-02" class="refDate">February 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5517">https://www.rfc-editor.org/info/rfc5517</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6085">[RFC6085]</dt>
+        <dd>
+<span class="refAuthor">Gundavelli, S.</span>, <span class="refAuthor">Townsley, M.</span>, <span class="refAuthor">Troan, O.</span>, and <span class="refAuthor">W. Dec</span>, <span class="refTitle">"Address Mapping of IPv6 Multicast Packets on Ethernet"</span>, <span class="seriesInfo">RFC 6085</span>, <span class="seriesInfo">DOI 10.17487/RFC6085</span>, <time datetime="2011-01" class="refDate">January 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6085">https://www.rfc-editor.org/info/rfc6085</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6105">[RFC6105]</dt>
+        <dd>
+<span class="refAuthor">Levy-Abegnoli, E.</span>, <span class="refAuthor">Van de Velde, G.</span>, <span class="refAuthor">Popoviciu, C.</span>, and <span class="refAuthor">J. Mohacsi</span>, <span class="refTitle">"IPv6 Router Advertisement Guard"</span>, <span class="seriesInfo">RFC 6105</span>, <span class="seriesInfo">DOI 10.17487/RFC6105</span>, <time datetime="2011-02" class="refDate">February 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6105">https://www.rfc-editor.org/info/rfc6105</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6459">[RFC6459]</dt>
+        <dd>
+<span class="refAuthor">Korhonen, J., Ed.</span>, <span class="refAuthor">Soininen, J.</span>, <span class="refAuthor">Patil, B.</span>, <span class="refAuthor">Savolainen, T.</span>, <span class="refAuthor">Bajko, G.</span>, and <span class="refAuthor">K. Iisakkila</span>, <span class="refTitle">"IPv6 in 3rd Generation Partnership Project (3GPP) Evolved Packet System (EPS)"</span>, <span class="seriesInfo">RFC 6459</span>, <span class="seriesInfo">DOI 10.17487/RFC6459</span>, <time datetime="2012-01" class="refDate">January 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6459">https://www.rfc-editor.org/info/rfc6459</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6575">[RFC6575]</dt>
+        <dd>
+<span class="refAuthor">Shah, H., Ed.</span>, <span class="refAuthor">Rosen, E., Ed.</span>, <span class="refAuthor">Heron, G., Ed.</span>, and <span class="refAuthor">V. Kompella, Ed.</span>, <span class="refTitle">"Address Resolution Protocol (ARP) Mediation for IP Interworking of Layer 2 VPNs"</span>, <span class="seriesInfo">RFC 6575</span>, <span class="seriesInfo">DOI 10.17487/RFC6575</span>, <time datetime="2012-06" class="refDate">June 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6575">https://www.rfc-editor.org/info/rfc6575</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6583">[RFC6583]</dt>
+        <dd>
+<span class="refAuthor">Gashinsky, I.</span>, <span class="refAuthor">Jaeggli, J.</span>, and <span class="refAuthor">W. Kumari</span>, <span class="refTitle">"Operational Neighbor Discovery Problems"</span>, <span class="seriesInfo">RFC 6583</span>, <span class="seriesInfo">DOI 10.17487/RFC6583</span>, <time datetime="2012-03" class="refDate">March 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6583">https://www.rfc-editor.org/info/rfc6583</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6762">[RFC6762]</dt>
+        <dd>
+<span class="refAuthor">Cheshire, S.</span> and <span class="refAuthor">M. Krochmal</span>, <span class="refTitle">"Multicast DNS"</span>, <span class="seriesInfo">RFC 6762</span>, <span class="seriesInfo">DOI 10.17487/RFC6762</span>, <time datetime="2013-02" class="refDate">February 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6762">https://www.rfc-editor.org/info/rfc6762</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6775">[RFC6775]</dt>
+        <dd>
+<span class="refAuthor">Shelby, Z., Ed.</span>, <span class="refAuthor">Chakrabarti, S.</span>, <span class="refAuthor">Nordmark, E.</span>, and <span class="refAuthor">C. Bormann</span>, <span class="refTitle">"Neighbor Discovery Optimization for IPv6 over Low-Power Wireless Personal Area Networks (6LoWPANs)"</span>, <span class="seriesInfo">RFC 6775</span>, <span class="seriesInfo">DOI 10.17487/RFC6775</span>, <time datetime="2012-11" class="refDate">November 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6775">https://www.rfc-editor.org/info/rfc6775</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6957">[RFC6957]</dt>
+        <dd>
+<span class="refAuthor">Costa, F.</span>, <span class="refAuthor">Combes, J., Ed.</span>, <span class="refAuthor">Pougnard, X.</span>, and <span class="refAuthor">H. Li</span>, <span class="refTitle">"Duplicate Address Detection Proxy"</span>, <span class="seriesInfo">RFC 6957</span>, <span class="seriesInfo">DOI 10.17487/RFC6957</span>, <time datetime="2013-06" class="refDate">June 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6957">https://www.rfc-editor.org/info/rfc6957</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7039">[RFC7039]</dt>
+        <dd>
+<span class="refAuthor">Wu, J.</span>, <span class="refAuthor">Bi, J.</span>, <span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Baker, F.</span>, and <span class="refAuthor">C. Vogt, Ed.</span>, <span class="refTitle">"Source Address Validation Improvement (SAVI) Framework"</span>, <span class="seriesInfo">RFC 7039</span>, <span class="seriesInfo">DOI 10.17487/RFC7039</span>, <time datetime="2013-10" class="refDate">October 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7039">https://www.rfc-editor.org/info/rfc7039</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7066">[RFC7066]</dt>
+        <dd>
+<span class="refAuthor">Korhonen, J., Ed.</span>, <span class="refAuthor">Arkko, J., Ed.</span>, <span class="refAuthor">Savolainen, T.</span>, and <span class="refAuthor">S. Krishnan</span>, <span class="refTitle">"IPv6 for Third Generation Partnership Project (3GPP) Cellular Hosts"</span>, <span class="seriesInfo">RFC 7066</span>, <span class="seriesInfo">DOI 10.17487/RFC7066</span>, <time datetime="2013-11" class="refDate">November 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7066">https://www.rfc-editor.org/info/rfc7066</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7102">[RFC7102]</dt>
+        <dd>
+<span class="refAuthor">Vasseur, JP.</span>, <span class="refTitle">"Terms Used in Routing for Low-Power and Lossy Networks"</span>, <span class="seriesInfo">RFC 7102</span>, <span class="seriesInfo">DOI 10.17487/RFC7102</span>, <time datetime="2014-01" class="refDate">January 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7102">https://www.rfc-editor.org/info/rfc7102</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7113">[RFC7113]</dt>
+        <dd>
+<span class="refAuthor">Gont, F.</span>, <span class="refTitle">"Implementation Advice for IPv6 Router Advertisement Guard (RA-Guard)"</span>, <span class="seriesInfo">RFC 7113</span>, <span class="seriesInfo">DOI 10.17487/RFC7113</span>, <time datetime="2014-02" class="refDate">February 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7113">https://www.rfc-editor.org/info/rfc7113</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7278">[RFC7278]</dt>
+        <dd>
+<span class="refAuthor">Byrne, C.</span>, <span class="refAuthor">Drown, D.</span>, and <span class="refAuthor">A. Vizdal</span>, <span class="refTitle">"Extending an IPv6 /64 Prefix from a Third Generation Partnership Project (3GPP) Mobile Interface to a LAN Link"</span>, <span class="seriesInfo">RFC 7278</span>, <span class="seriesInfo">DOI 10.17487/RFC7278</span>, <time datetime="2014-06" class="refDate">June 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7278">https://www.rfc-editor.org/info/rfc7278</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7342">[RFC7342]</dt>
+        <dd>
+<span class="refAuthor">Dunbar, L.</span>, <span class="refAuthor">Kumari, W.</span>, and <span class="refAuthor">I. Gashinsky</span>, <span class="refTitle">"Practices for Scaling ARP and Neighbor Discovery (ND) in Large Data Centers"</span>, <span class="seriesInfo">RFC 7342</span>, <span class="seriesInfo">DOI 10.17487/RFC7342</span>, <time datetime="2014-08" class="refDate">August 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7342">https://www.rfc-editor.org/info/rfc7342</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7527">[RFC7527]</dt>
+        <dd>
+<span class="refAuthor">Asati, R.</span>, <span class="refAuthor">Singh, H.</span>, <span class="refAuthor">Beebee, W.</span>, <span class="refAuthor">Pignataro, C.</span>, <span class="refAuthor">Dart, E.</span>, and <span class="refAuthor">W. George</span>, <span class="refTitle">"Enhanced Duplicate Address Detection"</span>, <span class="seriesInfo">RFC 7527</span>, <span class="seriesInfo">DOI 10.17487/RFC7527</span>, <time datetime="2015-04" class="refDate">April 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7527">https://www.rfc-editor.org/info/rfc7527</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7586">[RFC7586]</dt>
+        <dd>
+<span class="refAuthor">Nachum, Y.</span>, <span class="refAuthor">Dunbar, L.</span>, <span class="refAuthor">Yerushalmi, I.</span>, and <span class="refAuthor">T. Mizrahi</span>, <span class="refTitle">"The Scalable Address Resolution Protocol (SARP) for Large Data Centers"</span>, <span class="seriesInfo">RFC 7586</span>, <span class="seriesInfo">DOI 10.17487/RFC7586</span>, <time datetime="2015-06" class="refDate">June 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7586">https://www.rfc-editor.org/info/rfc7586</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7772">[RFC7772]</dt>
+        <dd>
+<span class="refAuthor">Yourtchenko, A.</span> and <span class="refAuthor">L. Colitti</span>, <span class="refTitle">"Reducing Energy Consumption of Router Advertisements"</span>, <span class="seriesInfo">BCP 202</span>, <span class="seriesInfo">RFC 7772</span>, <span class="seriesInfo">DOI 10.17487/RFC7772</span>, <time datetime="2016-02" class="refDate">February 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7772">https://www.rfc-editor.org/info/rfc7772</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8273">[RFC8273]</dt>
+        <dd>
+<span class="refAuthor">Brzozowski, J.</span> and <span class="refAuthor">G. Van de Velde</span>, <span class="refTitle">"Unique IPv6 Prefix per Host"</span>, <span class="seriesInfo">RFC 8273</span>, <span class="seriesInfo">DOI 10.17487/RFC8273</span>, <time datetime="2017-12" class="refDate">December 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8273">https://www.rfc-editor.org/info/rfc8273</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8302">[RFC8302]</dt>
+        <dd>
+<span class="refAuthor">Li, Y.</span>, <span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Dunbar, L.</span>, <span class="refAuthor">Perlman, R.</span>, and <span class="refAuthor">M. Umair</span>, <span class="refTitle">"Transparent Interconnection of Lots of Links (TRILL): ARP and Neighbor Discovery (ND) Optimization"</span>, <span class="seriesInfo">RFC 8302</span>, <span class="seriesInfo">DOI 10.17487/RFC8302</span>, <time datetime="2018-01" class="refDate">January 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8302">https://www.rfc-editor.org/info/rfc8302</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8415">[RFC8415]</dt>
+        <dd>
+<span class="refAuthor">Mrugalski, T.</span>, <span class="refAuthor">Siodelski, M.</span>, <span class="refAuthor">Volz, B.</span>, <span class="refAuthor">Yourtchenko, A.</span>, <span class="refAuthor">Richardson, M.</span>, <span class="refAuthor">Jiang, S.</span>, <span class="refAuthor">Lemon, T.</span>, and <span class="refAuthor">T. Winters</span>, <span class="refTitle">"Dynamic Host Configuration Protocol for IPv6 (DHCPv6)"</span>, <span class="seriesInfo">RFC 8415</span>, <span class="seriesInfo">DOI 10.17487/RFC8415</span>, <time datetime="2018-11" class="refDate">November 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8415">https://www.rfc-editor.org/info/rfc8415</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8505">[RFC8505]</dt>
+        <dd>
+<span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Nordmark, E.</span>, <span class="refAuthor">Chakrabarti, S.</span>, and <span class="refAuthor">C. Perkins</span>, <span class="refTitle">"Registration Extensions for IPv6 over Low-Power Wireless Personal Area Network (6LoWPAN) Neighbor Discovery"</span>, <span class="seriesInfo">RFC 8505</span>, <span class="seriesInfo">DOI 10.17487/RFC8505</span>, <time datetime="2018-11" class="refDate">November 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8505">https://www.rfc-editor.org/info/rfc8505</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8928">[RFC8928]</dt>
+        <dd>
+<span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Sarikaya, B.</span>, <span class="refAuthor">Sethi, M.</span>, and <span class="refAuthor">R. Struik</span>, <span class="refTitle">"Address-Protected Neighbor Discovery for Low-Power and Lossy Networks"</span>, <span class="seriesInfo">RFC 8928</span>, <span class="seriesInfo">DOI 10.17487/RFC8928</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8928">https://www.rfc-editor.org/info/rfc8928</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8929">[RFC8929]</dt>
+        <dd>
+<span class="refAuthor">Thubert, P., Ed.</span>, <span class="refAuthor">Perkins, C.E.</span>, and <span class="refAuthor">E. Levy-Abegnoli</span>, <span class="refTitle">"IPv6 Backbone Router"</span>, <span class="seriesInfo">RFC 8929</span>, <span class="seriesInfo">DOI 10.17487/RFC8929</span>, <time datetime="2020-11" class="refDate">November 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8929">https://www.rfc-editor.org/info/rfc8929</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9099">[RFC9099]</dt>
+        <dd>
+<span class="refAuthor">Vyncke, É.</span>, <span class="refAuthor">Chittimaneni, K.</span>, <span class="refAuthor">Kaeo, M.</span>, and <span class="refAuthor">E. Rey</span>, <span class="refTitle">"Operational Security Considerations for IPv6 Networks"</span>, <span class="seriesInfo">RFC 9099</span>, <span class="seriesInfo">DOI 10.17487/RFC9099</span>, <time datetime="2021-08" class="refDate">August 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9099">https://www.rfc-editor.org/info/rfc9099</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9119">[RFC9119]</dt>
+        <dd>
+<span class="refAuthor">Perkins, C.</span>, <span class="refAuthor">McBride, M.</span>, <span class="refAuthor">Stanley, D.</span>, <span class="refAuthor">Kumari, W.</span>, and <span class="refAuthor">JC. Zúñiga</span>, <span class="refTitle">"Multicast Considerations over IEEE 802 Wireless Media"</span>, <span class="seriesInfo">RFC 9119</span>, <span class="seriesInfo">DOI 10.17487/RFC9119</span>, <time datetime="2021-10" class="refDate">October 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9119">https://www.rfc-editor.org/info/rfc9119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9131">[RFC9131]</dt>
+        <dd>
+<span class="refAuthor">Linkova, J.</span>, <span class="refTitle">"Gratuitous Neighbor Discovery: Creating Neighbor Cache Entries on First-Hop Routers"</span>, <span class="seriesInfo">RFC 9131</span>, <span class="seriesInfo">DOI 10.17487/RFC9131</span>, <time datetime="2021-10" class="refDate">October 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9131">https://www.rfc-editor.org/info/rfc9131</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9161">[RFC9161]</dt>
+        <dd>
+<span class="refAuthor">Rabadan, J., Ed.</span>, <span class="refAuthor">Sathappan, S.</span>, <span class="refAuthor">Nagaraj, K.</span>, <span class="refAuthor">Hankins, G.</span>, and <span class="refAuthor">T. King</span>, <span class="refTitle">"Operational Aspects of Proxy ARP/ND in Ethernet Virtual Private Networks"</span>, <span class="seriesInfo">RFC 9161</span>, <span class="seriesInfo">DOI 10.17487/RFC9161</span>, <time datetime="2022-01" class="refDate">January 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9161">https://www.rfc-editor.org/info/rfc9161</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9663">[RFC9663]</dt>
+        <dd>
+<span class="refAuthor">Colitti, L.</span>, <span class="refAuthor">Linkova, J., Ed.</span>, and <span class="refAuthor">X. Ma, Ed.</span>, <span class="refTitle">"Using DHCPv6 Prefix Delegation (DHCPv6-PD) to Allocate Unique IPv6 Prefixes per Client in Large Broadcast Networks"</span>, <span class="seriesInfo">RFC 9663</span>, <span class="seriesInfo">DOI 10.17487/RFC9663</span>, <time datetime="2024-10" class="refDate">October 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9663">https://www.rfc-editor.org/info/rfc9663</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9686">[RFC9686]</dt>
+        <dd>
+<span class="refAuthor">Kumari, W.</span>, <span class="refAuthor">Krishnan, S.</span>, <span class="refAuthor">Asati, R.</span>, <span class="refAuthor">Colitti, L.</span>, <span class="refAuthor">Linkova, J.</span>, and <span class="refAuthor">S. Jiang</span>, <span class="refTitle">"Registering Self-Generated IPv6 Addresses Using DHCPv6"</span>, <span class="seriesInfo">RFC 9686</span>, <span class="seriesInfo">DOI 10.17487/RFC9686</span>, <time datetime="2024-12" class="refDate">December 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9686">https://www.rfc-editor.org/info/rfc9686</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RIPE738">[RIPE738]</dt>
+        <dd>
+<span class="refAuthor">RIPE</span>, <span class="refTitle">"IPv6 Address Allocation and Assignment Policy"</span>, <span class="refContent">RIPE-738</span>, <time datetime="2020-03" class="refDate">March 2020</time>, <span>&lt;<a href="https://www.ripe.net/publications/docs/ripe-738">https://www.ripe.net/publications/docs/ripe-738</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-6man-ipv6-over-wireless">[SND]</dt>
+        <dd>
+<span class="refAuthor">Thubert, P.</span> and <span class="refAuthor">M. Richardson</span>, <span class="refTitle">"Architecture and Framework for IPv6 over Non-Broadcast Access"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-6man-ipv6-over-wireless-09</span>, <time datetime="2025-11-09" class="refDate">9 November 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-6man-ipv6-over-wireless-09">https://datatracker.ietf.org/doc/html/draft-ietf-6man-ipv6-over-wireless-09</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="TR177">[TR177]</dt>
+      <dd>
+<span class="refAuthor">Broadband Forum</span>, <span class="refTitle">"IPv6 in the context of TR-101"</span>, <span class="refContent">TR-177</span>, <time datetime="2017-11" class="refDate">November 2017</time>, <span>&lt;<a href="https://www.broadband-forum.org/pdfs/tr-177-1-0-1.pdf">https://www.broadband-forum.org/pdfs/tr-177-1-0-1.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">The authors would like to thank <span class="contact-name">Éric Vyncke</span>,
+      <span class="contact-name">Gunter Van de Velde</span>, <span class="contact-name">Lorenzo       Colitti</span>, <span class="contact-name">Erik Kline</span>, <span class="contact-name">Warren       Kumari</span>, <span class="contact-name">Mohamed Boucadair</span>, <span class="contact-name">Gorry Fairhurst</span>, <span class="contact-name">Pascal Thubert</span>,
+      <span class="contact-name">Jen Linkova</span>, <span class="contact-name">Brian       Carpenter</span>, <span class="contact-name">Mike Ackermann</span>, <span class="contact-name">Nalini Elkins</span>, <span class="contact-name">Ed Horley</span>, <span class="contact-name">Ole Troan</span>, <span class="contact-name">David Thaler</span>, <span class="contact-name">Chongfeng Xie</span>, <span class="contact-name">Chris Cummings</span>,
+      <span class="contact-name">Dale Carder</span>, <span class="contact-name">Tim Chown</span>,
+      <span class="contact-name">Priyanka Sinha</span>, <span class="contact-name">Aijun Wang</span>,
+      <span class="contact-name">Ines Robles</span>, <span class="contact-name">Magnus       Westerlund</span>, <span class="contact-name">Barry Leiba</span>, <span class="contact-name">Deb       Cooley</span>, and <span class="contact-name">Paul Wouters</span> for their reviews and
+      comments. The authors would also like to thank <span class="contact-name">Tim       Winters</span> for being the document shepherd.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">XiPeng Xiao</span></div>
+<div dir="auto" class="left"><span class="org">Huawei Technologies</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:xipengxiao@huawei.com" class="email">xipengxiao@huawei.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Eduard Vasilenko</span></div>
+<div dir="auto" class="left"><span class="org">Huawei Technologies</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:vasilenko.eduard@huawei.com" class="email">vasilenko.eduard@huawei.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Eduard Metz</span></div>
+<div dir="auto" class="left"><span class="org">KPN N.V.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:eduard.metz@kpn.com" class="email">eduard.metz@kpn.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gyan Mishra</span></div>
+<div dir="auto" class="left"><span class="org">Verizon Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gyan.s.mishra@verizon.com" class="email">gyan.s.mishra@verizon.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Nick Buraglio</span></div>
+<div dir="auto" class="left"><span class="org">Energy Sciences Network</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:buraglio@es.net" class="email">buraglio@es.net</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
