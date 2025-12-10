@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9887: Terminal Access Controller Access-Control System Plus (TACACS+) over TLS 1.3</title>
+<meta content="Thorsten Dahm" name="author">
+<meta content="John Heasley" name="author">
+<meta content="Douglas C. Medway Gash" name="author">
+<meta content="Andrej Ota" name="author">
+<meta content="
+        This document specifies the use of Transport Layer Security (TLS)
+        version 1.3 to secure the communication channel between a Terminal
+        Access Controller Access-Control System Plus (TACACS+) client and
+        server. TACACS+ is a protocol used for Authentication, Authorization,
+        and Accounting (AAA) in networked environments. The original TACACS+
+        protocol does not mandate the use of encryption or secure
+        transport. This specification defines a profile for using TLS 1.3 with
+        TACACS+, including guidance on authentication, connection
+        establishment, and operational considerations. The goal is to enhance
+        the confidentiality, integrity, and authenticity of TACACS+ traffic,
+        aligning the protocol with modern security best practices. 
+       This document updates RFC 8907. 
+    " name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="TACACS+" name="keyword">
+<meta content="9887" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9887.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-opsawg-tacacs-tls13-24" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9887" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9887</td>
+<td class="center">TACACS+ over TLS 1.3</td>
+<td class="right">December 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Dahm, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9887" class="eref">9887</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc8907" class="eref">8907</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-12" class="published">December 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">T. Dahm</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Heasley</div>
+<div class="org">NTT</div>
+</div>
+<div class="author">
+      <div class="author-name">D.C. Medway Gash</div>
+<div class="org">Cisco Systems, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Ota</div>
+<div class="org">Google Inc.</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9887</h1>
+<h1 id="title">Terminal Access Controller Access-Control System Plus (TACACS+) over TLS 1.3</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1"> This document specifies the use of Transport Layer Security (TLS)
+        version 1.3 to secure the communication channel between a Terminal
+        Access Controller Access-Control System Plus (TACACS+) client and
+        server. TACACS+ is a protocol used for Authentication, Authorization,
+        and Accounting (AAA) in networked environments. The original TACACS+
+        protocol does not mandate the use of encryption or secure
+        transport. This specification defines a profile for using TLS 1.3 with
+        TACACS+, including guidance on authentication, connection
+        establishment, and operational considerations. The goal is to enhance
+        the confidentiality, integrity, and authenticity of TACACS+ traffic,
+        aligning the protocol with modern security best practices.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document updates RFC 8907.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9887">https://www.rfc-editor.org/info/rfc9887</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-technical-definitions" class="internal xref">Technical Definitions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-tacacs-over-tls" class="internal xref">TACACS+ over TLS</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-separating-tls-connections" class="internal xref">Separating TLS Connections</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-tls-connection" class="internal xref">TLS Connection</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-tls-authentication-options" class="internal xref">TLS Authentication Options</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-tls-certificate-based-authe" class="internal xref">TLS Certificate-Based Authentication</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4.2.1">
+                    <p id="section-toc.1-1.3.2.4.2.1.1"><a href="#section-3.4.1" class="auto internal xref">3.4.1</a>.  <a href="#name-tls-certificate-path-verifi" class="internal xref">TLS Certificate Path Verification</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4.2.2">
+                    <p id="section-toc.1-1.3.2.4.2.2.1"><a href="#section-3.4.2" class="auto internal xref">3.4.2</a>.  <a href="#name-tls-certificate-identificat" class="internal xref">TLS Certificate Identification</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4.2.3">
+                    <p id="section-toc.1-1.3.2.4.2.3.1"><a href="#section-3.4.3" class="auto internal xref">3.4.3</a>.  <a href="#name-cipher-suites-requirements" class="internal xref">Cipher Suites Requirements</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-tls-psk-authentication" class="internal xref">TLS PSK Authentication</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.6">
+                <p id="section-toc.1-1.3.2.6.1"><a href="#section-3.6" class="auto internal xref">3.6</a>.  <a href="#name-tls-resumption" class="internal xref">TLS Resumption</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-obsolescence-of-tacacs-obfu" class="internal xref">Obsolescence of TACACS+ Obfuscation</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-tls" class="internal xref">TLS</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-tls-use" class="internal xref">TLS Use</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-tls-0-rtt" class="internal xref">TLS 0-RTT</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3">
+                    <p id="section-toc.1-1.5.2.1.2.3.1"><a href="#section-5.1.3" class="auto internal xref">5.1.3</a>.  <a href="#name-tls-options" class="internal xref">TLS Options</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4">
+                    <p id="section-toc.1-1.5.2.1.2.4.1"><a href="#section-5.1.4" class="auto internal xref">5.1.4</a>.  <a href="#name-unreachable-certificate-aut" class="internal xref">Unreachable Certificate Authority (CA)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.5">
+                    <p id="section-toc.1-1.5.2.1.2.5.1"><a href="#section-5.1.5" class="auto internal xref">5.1.5</a>.  <a href="#name-tls-server-name-indicator-s" class="internal xref">TLS Server Name Indicator (SNI)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.6">
+                    <p id="section-toc.1-1.5.2.1.2.6.1"><a href="#section-5.1.6" class="auto internal xref">5.1.6</a>.  <a href="#name-server-identity-wildcards" class="internal xref">Server Identity Wildcards</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-tacacs-configuration" class="internal xref">TACACS+ Configuration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-well-known-tcp-ip-port-numb" class="internal xref">Well-Known TCP/IP Port Number</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-migration" class="internal xref">Migration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-maintaining-non-tls-tacacs-" class="internal xref">Maintaining Non-TLS TACACS+ Clients</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-yang-model-for-tacacs-clien" class="internal xref">YANG Model for TACACS+ Clients</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">
+                "The Terminal Access Controller Access-Control System Plus (TACACS+) Protocol" 
+            <span>[<a href="#RFC8907" class="cite xref">RFC8907</a>]</span> provides device administration for routers, network access servers, and other networked computing
+                devices via one or more centralized TACACS+ servers.
+                The protocol provides authentication, authorization, and accounting services (AAA) for TACACS+ clients
+                within the device administration use case.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+   The content of the protocol is highly sensitive and requires 
+   secure transport to safeguard a deployment.  However, TACACS+ lacks
+   effective confidentiality, integrity, and authentication of the
+   connection and network traffic between the TACACS+ server and client. 
+   The security mechanisms as described in <span><a href="https://rfc-editor.org/rfc/rfc8907#section-4.5" class="relref">Section 4.5</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span> are 
+   extremely weak.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">
+                To address these deficiencies, this document updates the TACACS+ protocol to use
+                TLS 1.3
+            authentication and encryption <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, and obsoletes the use of TACACS+ obfuscation mechanisms. The maturity of TLS in version 1.3 and above makes it a suitable choice for the TACACS+ protocol.<a href="#section-1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="TLSTacacsServerDefinition">
+<section id="section-2">
+      <h2 id="name-technical-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-technical-definitions" class="section-name selfRef">Technical Definitions</a>
+      </h2>
+<p id="section-2-1">
+                The terms defined in 
+                <span><a href="https://rfc-editor.org/rfc/rfc8907#section-3" class="relref">Section 3</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>
+                are fully applicable here and will not be repeated.
+                The following terms are also used in this document.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-2">
+        <dt id="section-2-2.1">Obfuscation:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">TACACS+ was originally intended to incorporate a mechanism for securing the body of its packets.
+                    The algorithm is categorized as obfuscation in <span><a href="https://rfc-editor.org/rfc/rfc8907#section-10.5.2" class="relref">Section 10.5.2</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>. The term
+                    is used to ensure that the algorithm is not mistaken for encryption. It should not be considered secure.<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">Non-TLS connection:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">This term refers to the connection defined in <span>[<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>.
+                    It is a connection without TLS, using the unsecure TACACS+
+                    authentication and obfuscation (or the unobfuscated option for testing).
+                    The use of well-known TCP/IP host port number 49 is specified as the default for non-TLS
+                    connections.<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">
+                    TLS connection:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">A TLS connection is a TCP/IP connection with TLS authentication and encryption used by TACACS+ for
+                    transport. A TLS connection for TACACS+ is always between one TACACS+ client and one TACACS+ server.<a href="#section-2-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">
+                    TLS TACACS+ server:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">This document describes a variant of the TACACS+ server, introduced in <span><a href="https://rfc-editor.org/rfc/rfc8907#section-3.2" class="relref">Section 3.2</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>,  which
+                    utilizes TLS for transport, and makes some associated protocol optimizations. Both server variants respond to
+                    TACACS+ traffic, but this document specifically defines a TACACS+ server (whether TLS or non-TLS) as being bound to a specific port number
+                    on a particular IP address or hostname. This definition is important in the context of the configuration
+                    of TACACS+ clients to ensure they direct their traffic to the correct TACACS+ servers.<a href="#section-2-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.9">
+                    Peer:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.10">The peer of a TACACS+ client (or server) in the context of a TACACS+ connection, is a TACACS+ server (or
+                    client). Together, the ends of a TACACS+ connection are referred to as peers.<a href="#section-2-2.10" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<section id="section-2.1">
+        <h3 id="name-requirements-language">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<section id="section-3">
+      <h2 id="name-tacacs-over-tls">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-tacacs-over-tls" class="section-name selfRef">TACACS+ over TLS</a>
+      </h2>
+<p id="section-3-1">
+                TACACS+ over TLS takes the protocol defined in <span>[<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>, removes the option for                 obfuscation, and specifies that TLS 1.3 be used for transport (<a href="#TLSPort" class="auto internal xref">Section 3.1</a> elaborates on TLS version support). A new well-known default host port number is used.
+                The next sections provide further details and guidance.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">TLS is introduced into TACACS+ to fulfill the following requirements:<a href="#section-3-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3-3">
+                <li id="section-3-3.1">Confidentiality and Integrity: The MD5 algorithm underlying the obfuscation mechanism specified in <span>[<a href="#RFC8907" class="cite xref">RFC8907</a>]</span> has been shown
+                    to be insecure <span>[<a href="#RFC6151" class="cite xref">RFC6151</a>]</span> when used for encryption. This prevents TACACS+ from being used in a deployment compliant with <span>[<a href="#FIPS-140-3" class="cite xref">FIPS-140-3</a>]</span>. Securing the TACACS+ protocol with TLS is intended to provide confidentiality and
+                    integrity without requiring the provision of a secured network.<a href="#section-3-3.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-3-3.2">Peer authentication: The authentication capabilities of TLS replace the shared secrets of obfuscation for mutual authentication.<a href="#section-3-3.2" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-3-4">This document adheres to the recommendations in <span>[<a href="#I-D.ietf-uta-require-tls13" class="cite xref">REQ-TLS13</a>]</span>.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<div id="TLSPort">
+<section id="section-3.1">
+        <h3 id="name-separating-tls-connections">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-separating-tls-connections" class="section-name selfRef">Separating TLS Connections</a>
+        </h3>
+<p id="section-3.1-1">
+                    Peers implementing the TACACS+ protocol variant defined in this document <span class="bcp14">MUST</span> apply mutual
+                    authentication and encrypt all data exchanged between them. Therefore, when a TCP connection is
+                    established for the service, a TLS handshake begins immediately. Options that upgrade an initial non-TLS connection <span class="bcp14">MUST NOT</span> be used; see <a href="#wellknown" class="auto internal xref">Section 5.3</a>.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">
+                    To ensure clear separation between TACACS+ traffic using TLS and that which does not (see <a href="#wellknown" class="auto internal xref">Section 5.3</a>), servers supporting
+                    TACACS+ over TLS <span class="bcp14">MUST</span> listen on a TCP/IP port distinct from that used by non-TLS TACACS+ servers. It is further <span class="bcp14">RECOMMENDED</span>
+                    to deploy the TLS and non-TLS services on separate hosts, as discussed in <a href="#TLSUSE" class="auto internal xref">Section 5.1.1</a>.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">
+   Given the prevalence of default port usage in existing TACACS+ client
+   implementations, this specification assigns the well-known TCP port number
+   300 for TACACS+ over TLS (see <a href="#ICTBD" class="auto internal xref">Section 7</a>).<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">
+                    While the use of the designated port number is strongly encouraged, deployments with specific requirements <span class="bcp14">MAY</span> use alternative TCP port numbers.
+                    In such cases, operators must carefully consider the operational implications described in <a href="#wellknown" class="auto internal xref">Section 5.3</a>.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="TLSConn">
+<section id="section-3.2">
+        <h3 id="name-tls-connection">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-tls-connection" class="section-name selfRef">TLS Connection</a>
+        </h3>
+<p id="section-3.2-1">
+                    A TACACS+ client initiates a TLS connection by making a TCP connection to a configured TLS TACACS+ server on the
+                    TACACS+ TLS port number.
+                    Once the TCP connection is established, the client <span class="bcp14">MUST</span> immediately begin the TLS negotiation before
+                    sending any TACACS+ protocol data.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">
+                    A minimum of TLS 1.3 <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>
+          <span class="bcp14">MUST</span> be used for transport.  It is expected that TACACS+, as described in this document, will
+                    work
+                    with future versions of TLS. Earlier versions of TLS <span class="bcp14">MUST NOT</span> be used.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">
+                    Once the TLS connection has been successfully established, the exchange of TACACS+ data <span class="bcp14">MUST</span> proceed in
+                    accordance with the procedures defined in <span>[<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>. However, all TACACS+ messages <span class="bcp14">SHALL</span> be transmitted
+                    as TLS application data. The TACACS+ obfuscation mechanism defined in <span>[<a href="#RFC8907" class="cite xref">RFC8907</a>]</span> <span class="bcp14">MUST NOT</span> be applied
+                    when operating over TLS (<a href="#ObsolescenceOfTACACSObfuscation" class="auto internal xref">Section 4</a>).<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">  TLS TACACS+ connections are generally not long-lived.  The connection
+  will be closed by either a peer if it encounters an error
+  or an inactivity timeout.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5">For connections not operating in Single Connection Mode (as defined in
+<span><a href="https://rfc-editor.org/rfc/rfc8907#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span>), the TCP session <span class="bcp14">SHALL</span> be closed upon
+completion of the associated TACACS+ session.  Connections operating in Single
+Connection Mode <span class="bcp14">MAY</span> persist for a longer duration but are typically
+subject to timeout and closure after a brief period of inactivity.
+Consequently, support for transport-layer keepalive mechanisms is not
+required.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<p id="section-3.2-6">Why a connection is closed has no bearing on TLS resumption, unless
+closed by a TLS error, in which case it is possible that the ticket has been invalidated.<a href="#section-3.2-6" class="pilcrow">¶</a></p>
+<p id="section-3.2-7">
+                    TACACS+ clients and servers widely support IPv6 configuration in addition to IPv4. This document makes no changes to recommendations in this area.<a href="#section-3.2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-3.3">
+        <h3 id="name-tls-authentication-options">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-tls-authentication-options" class="section-name selfRef">TLS Authentication Options</a>
+        </h3>
+<p id="section-3.3-1">
+                    Implementations <span class="bcp14">MUST</span> support certificate-based mutual authentication, to provide a core option for interoperability between deployments.
+                    This authentication option is specified in <a href="#CertAuth" class="auto internal xref">Section 3.4</a>.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">
+                    In addition to certificate-based TLS authentication, implementations <span class="bcp14">MAY</span> support the following alternative authentication mechanisms:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-3.1">Pre-Shared Keys (PSKs) (<a href="#PSKAuth" class="auto internal xref">Section 3.5</a>), also known as external PSKs in TLS 1.3.<a href="#section-3.3-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.3-3.2">Raw Public Keys (RPKs). The details
+                        of RPKs are considered out of scope for this document. Refer to <span>[<a href="#RFC7250" class="cite xref">RFC7250</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc8446#section-4.4.2" class="relref">Section 4.4.2</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> for
+                        implementation, deployment, and security considerations.<a href="#section-3.3-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+<div id="CertAuth">
+<section id="section-3.4">
+        <h3 id="name-tls-certificate-based-authe">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-tls-certificate-based-authe" class="section-name selfRef">TLS Certificate-Based Authentication</a>
+        </h3>
+<p id="section-3.4-1">
+                    TLS certificate authentication is the primary authentication option for TACACS+ over TLS.
+                    This section covers certificate-based authentication only.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">Deploying TLS certificate-based authentication correctly will considerably improve the security of TACACS+
+                    deployments. It is essential for implementers and operators to understand the implications of a TLS
+                    certificate-based authentication solution, including the correct handling of certificates, Certificate Authorities (CAs), and all
+                    elements of TLS configuration. For guidance, start with <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">Each peer <span class="bcp14">MUST</span> validate the certificate path of its remote peer, including revocation checking,
+                    as
+                    described in <a href="#CertPV" class="auto internal xref">Section 3.4.1</a>.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+<p id="section-3.4-4">
+                    If the verification succeeds, the authentication is successful and the connection is permitted.
+                    Policy may impose further constraints upon the peer, allowing or denying the connection based on
+                    certificate fields or any other parameters exposed by the implementation.<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+<p id="section-3.4-5">
+                    Unless disabled by configuration, a peer <span class="bcp14">MUST NOT</span> permit connection of any peer that presents an
+                    invalid TLS certificate.<a href="#section-3.4-5" class="pilcrow">¶</a></p>
+<div id="CertPV">
+<section id="section-3.4.1">
+          <h4 id="name-tls-certificate-path-verifi">
+<a href="#section-3.4.1" class="section-number selfRef">3.4.1. </a><a href="#name-tls-certificate-path-verifi" class="section-name selfRef">TLS Certificate Path Verification</a>
+          </h4>
+<p id="section-3.4.1-1">
+                        The implementation of certificate-based mutual authentication <span class="bcp14">MUST</span> support certificate path
+                        validation as described in <span><a href="https://rfc-editor.org/rfc/rfc5280#section-6" class="relref">Section 6</a> of [<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>.<a href="#section-3.4.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.4.1-2">
+                        In some deployments, a peer may be isolated from a remote peer's CA.
+                        Implementations for these deployments <span class="bcp14">MUST</span> support certificate chains
+                        (aka bundles or chains of trust), where the entire chain of the remote peer's certificate is
+                        stored
+                        on the local peer.<a href="#section-3.4.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.4.1-3">
+                        TLS Cached Information Extension
+                        <span>[<a href="#RFC7924" class="cite xref">RFC7924</a>]</span>
+            <span class="bcp14">SHOULD</span> be implemented. This <span class="bcp14">MAY</span> be augmented with RPKs <span>[<a href="#RFC7250" class="cite xref">RFC7250</a>]</span>,
+                        though
+                        revocation must be handled as it is not part of that specification.<a href="#section-3.4.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.4.1-4">
+                        Other approaches may be used for loading the intermediate certificates onto the client, but
+                        they <span class="bcp14">MUST</span>
+                        include support for revocation checking. For example,
+                        <span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>
+                        details the Authority Information Access (AIA) extension to provide information about the
+                        issuer
+                        of the certificate in which the extension appears. It can be used to provide the address of
+                        the
+                        Online Certificate Status Protocol (OCSP) responder from where the revocation status of the
+                        certificate (which includes the extension) can be checked.<a href="#section-3.4.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-3.4.2">
+          <h4 id="name-tls-certificate-identificat">
+<a href="#section-3.4.2" class="section-number selfRef">3.4.2. </a><a href="#name-tls-certificate-identificat" class="section-name selfRef">TLS Certificate Identification</a>
+          </h4>
+<p id="section-3.4.2-1">For the client-side validation of presented TLS TACACS+ server identities, implementations <span class="bcp14">MUST</span> follow the validation techniques defined in 
+                        <span>[<a href="#RFC9525" class="cite xref">RFC9525</a>]</span>. 
+                        Identifier types DNS-ID, IP-ID, or SRV-ID
+                        are applicable for use with the TLS TACACS+ protocol; they are selected by operators depending upon
+                        the
+                        deployment design. TLS TACACS+ does not use URI-IDs for TLS TACACS+ server identity verification.<a href="#section-3.4.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.4.2-2">Wildcards in TLS TACACS+ server identities simplify certificate management by allowing a single
+                        certificate to secure multiple servers in a deployment. However, this introduces security risks,
+                        as compromising the private key of a wildcard certificate impacts all servers using it.
+                        To address these risks, the guidelines in <span><a href="https://rfc-editor.org/rfc/rfc9525#section-6.3" class="relref">Section 6.3</a> of [<a href="#RFC9525" class="cite xref">RFC9525</a>]</span> <span class="bcp14">MUST</span> be followed,
+                        and the wildcard <span class="bcp14">SHOULD</span> be confined to a subdomain dedicated solely to TACACS+ servers.<a href="#section-3.4.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.4.2-3">
+                        For the TLS TACACS+ server-side validation of client identities, implementations <span class="bcp14">MUST</span> support the
+                        ability to
+                        configure which fields of a certificate are used for client identification to verify that
+                        the
+                        client
+                        is a valid
+                        source for the received certificate and that it is permitted access
+                        to TACACS+. Implementations <span class="bcp14">MUST</span> support either:<a href="#section-3.4.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4.2-4.1">Network-address-based validation methods as described in <span><a href="https://rfc-editor.org/rfc/rfc5425#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC5425" class="cite xref">RFC5425</a>]</span> or<a href="#section-3.4.2-4.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-3.4.2-4.2">Client Identity validation of a shared identity in the certificate subjectAltName. This is
+                        applicable
+                        in deployments where the client securely supports an identity which is shared with the
+                        TLS TACACS+ server. Matching of dNSName and iPAddress <span class="bcp14">MUST</span> be supported. Other options defined
+                        in <span><a href="https://rfc-editor.org/rfc/rfc5280#section-4.2.1.6" class="relref">Section 4.2.1.6</a> of [<a href="#RFC5280" class="cite xref">RFC5280</a>]</span> <span class="bcp14">MAY</span> be supported.
+                        This approach allows a client's network location to be reconfigured without issuing a new
+                        client
+                        certificate.<a href="#section-3.4.2-4.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-3.4.2-5">
+                        Implementations <span class="bcp14">MUST</span> support the TLS Server Name Indication (SNI) extension  (<span><a href="https://rfc-editor.org/rfc/rfc6066#section-3" class="relref">Section 3</a> of [<a href="#RFC6066" class="cite xref">RFC6066</a>]</span>).
+                        TLS TACACS+ clients <span class="bcp14">MUST</span> support the ability to configure the TLS TACACS+ server's domain name, so that it may be
+                        included
+                        in
+                        the
+                        SNI "server_name" extension of the client hello (This is distinct from the IP Address or hostname configuration used for the TCP connection). Refer to
+                        <a href="#TLSSNISec" class="auto internal xref">Section 5.1.5</a>
+                        for security related operator considerations.<a href="#section-3.4.2-5" class="pilcrow">¶</a></p>
+<p id="section-3.4.2-6">Certificate provisioning is out of scope of this document.<a href="#section-3.4.2-6" class="pilcrow">¶</a></p>
+</section>
+<section id="section-3.4.3">
+          <h4 id="name-cipher-suites-requirements">
+<a href="#section-3.4.3" class="section-number selfRef">3.4.3. </a><a href="#name-cipher-suites-requirements" class="section-name selfRef">Cipher Suites Requirements</a>
+          </h4>
+<p id="section-3.4.3-1">
+                        Implementations <span class="bcp14">MUST</span> support the TLS 1.3 mandatory cipher suites (<span><a href="https://rfc-editor.org/rfc/rfc8446#section-9.1" class="relref">Section 9.1</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>).
+                        Readers should refer to <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>. The cipher suites offered or accepted <span class="bcp14">SHOULD</span> be configurable so that operators can adapt.<a href="#section-3.4.3-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="PSKAuth">
+<section id="section-3.5">
+        <h3 id="name-tls-psk-authentication">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-tls-psk-authentication" class="section-name selfRef">TLS PSK Authentication</a>
+        </h3>
+<p id="section-3.5-1">
+                    As an alternative to certificate-based authentication, implementations <span class="bcp14">MAY</span> support PSKs, also known as external PSKs in TLS 1.3 <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>. These should not be confused with resumption PSKs.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">
+                    The use of external PSKs is less well established than certificate-based authentication. It is
+                    <span class="bcp14">RECOMMENDED</span> that systems follow the directions of <span>[<a href="#RFC9257" class="cite xref">RFC9257</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc8446#section-4" class="relref">Section 4</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+<p id="section-3.5-3">
+                    Where PSK authentication is implemented, PSK lengths of at least 16 octets <span class="bcp14">MUST</span> be supported.<a href="#section-3.5-3" class="pilcrow">¶</a></p>
+<p id="section-3.5-4">
+                    PSK identity <span class="bcp14">MUST</span> follow recommendations of <span><a href="https://rfc-editor.org/rfc/rfc9257#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC9257" class="cite xref">RFC9257</a>]</span>. Implementations <span class="bcp14">MUST</span> support PSK identities
+                    of at least 16 octets.<a href="#section-3.5-4" class="pilcrow">¶</a></p>
+<p id="section-3.5-5">
+                    Although this document removes the option of obfuscation (<a href="#ObsolescenceOfTACACSObfuscation" class="auto internal xref">Section 4</a>), it is still possible that the TLS and non-TLS
+                    versions of TACACS+ exist in an organization, for example, during migration (<a href="#MIGRATION" class="auto internal xref">Section 6.1</a>).
+                    In such cases, the shared secrets configured for TACACS+ obfuscation clients <span class="bcp14">MUST NOT</span> be the same as the PSKs configured for TLS clients.<a href="#section-3.5-5" class="pilcrow">¶</a></p>
+<p id="section-3.5-6"></p>
+</section>
+</div>
+<div id="TLSResumption">
+<section id="section-3.6">
+        <h3 id="name-tls-resumption">
+<a href="#section-3.6" class="section-number selfRef">3.6. </a><a href="#name-tls-resumption" class="section-name selfRef">TLS Resumption</a>
+        </h3>
+<p id="section-3.6-1">
+                    TLS Resumption <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> can minimize the number of round trips required during the handshake process.
+                    If a TLS client holds a ticket previously extracted from a NewSessionTicket message from the TLS TACACS+ server, it can use the PSK identity tied to that ticket.
+                    If the TLS TACACS+ server consents, the resumed session is acknowledged as authenticated and securely linked to
+                    the initial session.<a href="#section-3.6-1" class="pilcrow">¶</a></p>
+<p id="section-3.6-2">The client <span class="bcp14">SHOULD</span> use resumption when it holds a valid unused ticket from the TLS TACACS+ server,
+                    as each ticket is intended for a single use only and will be refreshed during resumption. The TLS TACACS+ server can reject a resumption request,
+                    but the TLS TACACS+ server <span class="bcp14">SHOULD</span> allow resumption if the ticket in question has not expired and has not been used before.<a href="#section-3.6-2" class="pilcrow">¶</a></p>
+<p id="section-3.6-3">
+                    When a TLS TACACS+ server is presented with a resumption request from the TLS client, it <span class="bcp14">MAY</span> still choose to require a full handshake.
+                    In this case, the negotiation proceeds as if the session was a new authentication,
+                    and the resumption attempt is ignored.  As described in <span><a href="https://rfc-editor.org/rfc/rfc8446#appendix-C.4" class="relref">Appendix C.4</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, reuse of a ticket allows passive observers to correlate
+                    different connections. TLS TACACS+ clients and servers <span class="bcp14">SHOULD</span> follow the client tracking preventions in <span><a href="https://rfc-editor.org/rfc/rfc8446#appendix-C.4" class="relref">Appendix C.4</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-3.6-3" class="pilcrow">¶</a></p>
+<p id="section-3.6-4">
+                    When processing TLS resumption, certificates must be verified to check for revocation  during the period since the last NewSessionTicket Message.<a href="#section-3.6-4" class="pilcrow">¶</a></p>
+<p id="section-3.6-5">The resumption ticket_lifetime <span class="bcp14">SHOULD</span> be configurable, including a zero
+                    seconds lifetime. Refer to <span><a href="https://rfc-editor.org/rfc/rfc8446#section-4.6.1" class="relref">Section 4.6.1</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> for guidance on ticket lifetime.<a href="#section-3.6-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+<div id="ObsolescenceOfTACACSObfuscation">
+<section id="section-4">
+      <h2 id="name-obsolescence-of-tacacs-obfu">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-obsolescence-of-tacacs-obfu" class="section-name selfRef">Obsolescence of TACACS+ Obfuscation</a>
+      </h2>
+<p id="section-4-1">The obfuscation mechanism documented in <span><a href="https://rfc-editor.org/rfc/rfc8907#section-4.5" class="relref">Section 4.5</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span> is weak.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">
+                The introduction of TLS authentication and encryption to TACACS+ replaces
+                this former mechanism, so obfuscation is hereby obsoleted.
+                This section describes how the TACACS+ client and servers <span class="bcp14">MUST</span> operate regarding the obfuscation
+                mechanism.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">
+                Peers <span class="bcp14">MUST NOT</span> use obfuscation with TLS.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">
+                A TACACS+ client initiating a TACACS+ TLS connection <span class="bcp14">MUST</span> set the TAC_PLUS_UNENCRYPTED_FLAG bit, thereby
+                asserting that obfuscation is not used for the session.
+                All subsequent packets <span class="bcp14">MUST</span> have the TAC_PLUS_UNENCRYPTED_FLAG bit set to 1.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">
+                A TLS TACACS+ server that receives a packet with the TAC_PLUS_UNENCRYPTED_FLAG bit not set to 1 over a TLS
+                connection <span class="bcp14">MUST</span> return an error of TAC_PLUS_AUTHEN_STATUS_ERROR, TAC_PLUS_AUTHOR_STATUS_ERROR, or
+                TAC_PLUS_ACCT_STATUS_ERROR as appropriate for the TACACS+ message type, with the
+                TAC_PLUS_UNENCRYPTED_FLAG bit set to 1, and terminate the session.
+                This behavior corresponds to that defined in 
+                <span><a href="https://rfc-editor.org/rfc/rfc8907#section-4.5" class="relref">Section 4.5</a> of [<a href="#RFC8907" class="cite xref">RFC8907</a>]</span> regarding data obfuscation for TAC_PLUS_UNENCRYPTED_FLAG or key mismatches.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">
+                A TACACS+ client that receives a packet with the TAC_PLUS_UNENCRYPTED_FLAG bit not set to 1 <span class="bcp14">MUST</span>
+                terminate the session, and <span class="bcp14">SHOULD</span> log this error.<a href="#section-4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Security">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<section id="section-5.1">
+        <h3 id="name-tls">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-tls" class="section-name selfRef">TLS</a>
+        </h3>
+<p id="section-5.1-1">
+                    This document improves the confidentiality, integrity, and authentication of the connection and
+                    network traffic between TACACS+ peers by adding TLS support.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">
+                    Simply adding TLS support to the protocol does not guarantee the protection
+                    of the TLS TACACS+ server and clients. It is essential for the operators and equipment vendors
+                    to adhere to the latest best practices for ensuring the integrity of network devices
+                    and selecting secure TLS key and encryption algorithms.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">
+                    <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>
+                    offers substantial guidance for implementing and deploying protocols that use TLS. Those implementing and deploying Secure TACACS+
+                    must adhere to the recommendations relevant to TLS 1.3 outlined in <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>
+                    or its subsequent versions.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">
+                    This document outlines additional restrictions permissible under <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>.
+                    For example, any recommendations referring to TLS 1.2, including the mandatory
+                    support, are not relevant for Secure TACACS+, as TLS 1.3 or above is mandated.<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<p id="section-5.1-5">
+                    This document concerns the use of TLS as transport for TACACS+ and does not make any changes to the core TACACS+
+                    protocol, other than the direct implications of deprecating obfuscation. Operators <span class="bcp14">MUST</span> be cognizant of the security
+                    implications of the TACACS+ protocol itself. Further documents are planned, for example, to address the security implications of password-based authentication and enhance the protocol to accommodate alternative schemes.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
+<div id="TLSUSE">
+<section id="section-5.1.1">
+          <h4 id="name-tls-use">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-tls-use" class="section-name selfRef">TLS Use</a>
+          </h4>
+<p id="section-5.1.1-1">
+                        New TACACS+ production deployments <span class="bcp14">SHOULD</span> use TLS authentication and encryption. Also see <span>[<a href="#RFC3365" class="cite xref">RFC3365</a>]</span>.<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-2">
+                        TLS TACACS+ servers (as defined in <a href="#TLSTacacsServerDefinition" class="auto internal xref">Section 2</a>) <span class="bcp14">MUST NOT</span> allow non-TLS connections, because of the threat
+                        of downgrade attacks or misconfiguration described in <a href="#wellknown" class="auto internal xref">Section 5.3</a>. Instead, separate non-TLS TACACS+ servers
+                        <span class="bcp14">SHOULD</span> be set up to cater for these clients.<a href="#section-5.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-3">
+                        It is <span class="bcp14">NOT RECOMMENDED</span> that TLS TACACS+ servers and non-TLS TACACS+ servers be deployed
+                        on the same host, for reasons discussed in <a href="#wellknown" class="auto internal xref">Section 5.3</a>. Non-TLS connections would be better served by deploying the
+                        required non-TLS TACACS+ servers on separate hosts.<a href="#section-5.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1.1-4">
+                        TACACS+ clients <span class="bcp14">MUST NOT</span> fail back to a non-TLS connection if a TLS connection fails. This prohibition includes during the migration of a deployment (<a href="#MIGRATION" class="auto internal xref">Section 6.1</a>).<a href="#section-5.1.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-5.1.2">
+          <h4 id="name-tls-0-rtt">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-tls-0-rtt" class="section-name selfRef">TLS 0-RTT</a>
+          </h4>
+<p id="section-5.1.2-1">
+                        TLS 1.3 resumption and PSK techniques make it possible to send early data, aka 0-RTT data, data
+                        that is sent before the TLS handshake completes.
+                        Replay of this data is a risk.
+                        Given the sensitivity of TACACS+ data, clients <span class="bcp14">MUST NOT</span> send data until the full TLS handshake
+                        completes; that is, clients <span class="bcp14">MUST NOT</span> send 0-RTT data and TLS TACACS+ servers <span class="bcp14">MUST</span> abruptly disconnect
+                        clients that do.<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.2-2">TLS TACACS+ clients and servers <span class="bcp14">MUST NOT</span> include the "early_data" extension. See Sections <a href="https://rfc-editor.org/rfc/rfc8446#section-2.3" class="relref">2.3</a> and <a href="https://rfc-editor.org/rfc/rfc8446#section-4.2.10" class="relref">4.2.10</a> of <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>
+                        for security concerns.<a href="#section-5.1.2-2" class="pilcrow">¶</a></p>
+</section>
+<section id="section-5.1.3">
+          <h4 id="name-tls-options">
+<a href="#section-5.1.3" class="section-number selfRef">5.1.3. </a><a href="#name-tls-options" class="section-name selfRef">TLS Options</a>
+          </h4>
+<p id="section-5.1.3-1">Recommendations in
+                        <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>
+            <span class="bcp14">MUST</span> be followed to determine which TLS versions and algorithms should be supported,
+                        deprecated, obsoleted, or abandoned.<a href="#section-5.1.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.3-2">
+                        Also,
+                        <span><a href="https://rfc-editor.org/rfc/rfc8446#section-9" class="relref">Section 9</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>
+                        prescribes mandatory supported options.<a href="#section-5.1.3-2" class="pilcrow">¶</a></p>
+</section>
+<div id="CAcache">
+<section id="section-5.1.4">
+          <h4 id="name-unreachable-certificate-aut">
+<a href="#section-5.1.4" class="section-number selfRef">5.1.4. </a><a href="#name-unreachable-certificate-aut" class="section-name selfRef">Unreachable Certificate Authority (CA)</a>
+          </h4>
+<p id="section-5.1.4-1">
+                        Operators should be cognizant of the potential of TLS TACACS+ server and/or client isolation from their
+                        peer's CA by network failures.
+                        Isolation from a public key certificate's CA will cause the verification of the certificate to
+                        fail and thus TLS authentication of the peer to fail.
+                        The approach mentioned in
+                        <a href="#CertPV" class="auto internal xref">Section 3.4.1</a>
+                        can help address this and should be considered.<a href="#section-5.1.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="TLSSNISec">
+<section id="section-5.1.5">
+          <h4 id="name-tls-server-name-indicator-s">
+<a href="#section-5.1.5" class="section-number selfRef">5.1.5. </a><a href="#name-tls-server-name-indicator-s" class="section-name selfRef">TLS Server Name Indicator (SNI)</a>
+          </h4>
+<p id="section-5.1.5-1">
+                        Operators should be aware that the TLS SNI extension is part of the TLS client hello, which is sent in cleartext. It is,
+                        therefore, subject to eavesdropping. Also see <span><a href="https://rfc-editor.org/rfc/rfc6066#section-11.1" class="relref">Section 11.1</a> of [<a href="#RFC6066" class="cite xref">RFC6066</a>]</span>.<a href="#section-5.1.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="SIWildcards">
+<section id="section-5.1.6">
+          <h4 id="name-server-identity-wildcards">
+<a href="#section-5.1.6" class="section-number selfRef">5.1.6. </a><a href="#name-server-identity-wildcards" class="section-name selfRef">Server Identity Wildcards</a>
+          </h4>
+<p id="section-5.1.6-1">
+                        The use of wildcards in TLS server identities creates a single point of failure:
+                        a compromised private key of a wildcard certificate impacts all servers using it.
+                        Their use <span class="bcp14">MUST</span> follow the recommendations of <span><a href="https://rfc-editor.org/rfc/rfc9525#section-7.1" class="relref">Section 7.1</a> of [<a href="#RFC9525" class="cite xref">RFC9525</a>]</span>.
+                        Operators <span class="bcp14">MUST</span> ensure that the wildcard is limited to a subdomain dedicated solely to TLS TACACS+ servers.
+   Further, operators <span class="bcp14">MUST</span> ensure that the TLS TACACS+ servers covered
+   by a wildcard certificate are impervious to redirection of
+   traffic to a different server (for example, due to on-path attacks or
+   DNS cache poisoning).<a href="#section-5.1.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+<div id="TACACSConfiguration">
+<section id="section-5.2">
+        <h3 id="name-tacacs-configuration">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-tacacs-configuration" class="section-name selfRef">TACACS+ Configuration</a>
+        </h3>
+<p id="section-5.2-1">
+                    Implementors must ensure that the configuration scheme introduced
+                    for enabling TLS is straightforward and leaves no room for ambiguity regarding whether
+                    TLS or non-TLS will be used between the TACACS+ client and the TACACS+ server.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">
+                    This document recommends the use of a separate port number that TLS TACACS+ servers
+                    will listen to. Where deployments have not overridden the defaults explicitly,
+                    TACACS+ client implementations <span class="bcp14">MUST</span> use the correct port values:<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-3.1">49: for non-TLS connection TACACS+<a href="#section-5.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.2-3.2">300: for TLS connection TACACS+<a href="#section-5.2-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-5.2-4">
+                    Implementors may offer a single option for TACACS+ clients and servers to disable all
+                    non-TLS TACACS+ operations. When enabled on a TACACS+ server, it will
+                    not respond to any requests from non-TLS TACACS+ client connections. When enabled on
+                    a TACACS+ client, it will not establish any non-TLS TACACS+ server connections.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="wellknown">
+<section id="section-5.3">
+        <h3 id="name-well-known-tcp-ip-port-numb">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-well-known-tcp-ip-port-numb" class="section-name selfRef">Well-Known TCP/IP Port Number</a>
+        </h3>
+<p id="section-5.3-1">
+                    A new port number is considered appropriate (rather than a mechanism that negotiates an
+                    upgrade from an initial non-TLS TACACS+ connection) because it allows:<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.3-2.1">ease of blocking the unobfuscated or obfuscated connections by the TCP/IP port number,<a href="#section-5.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.3-2.2">passive Intrusion Detection Systems (IDSs) monitoring the unobfuscated to be unaffected by the
+                        introduction of TLS,<a href="#section-5.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.3-2.3">avoidance of on-path attacks that can interfere with upgrade, and<a href="#section-5.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-5.3-2.4">prevention of the accidental exposure of sensitive information due to misconfiguration.<a href="#section-5.3-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-5.3-3">
+                    However, the coexistence of inferior authentication and obfuscation, whether a non-TLS connection or
+                    deprecated parts that compose TLS, also presents an opportunity for downgrade attacks.
+                    Causing failure of connections to the TLS-enabled service or the negotiation of shared algorithm
+                    support are two such downgrade attacks.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-4">
+                    The simplest mitigation exposure from non-TLS connection methods is to refuse non-TLS
+                    connections at the host entirely, perhaps using separate hosts for non-TLS connections and TLS.<a href="#section-5.3-4" class="pilcrow">¶</a></p>
+<p id="section-5.3-5">
+                    Another approach is mutual configuration that requires TLS.
+                    TACACS+ clients and servers <span class="bcp14">SHOULD</span> support configuration that requires peers, globally and individually, to use
+                    TLS.
+                    Furthermore, peers <span class="bcp14">SHOULD</span> be configurable to limit offered or recognized TLS versions and algorithms
+                    to those recommended by standards bodies and implementers.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="OPSCONS">
+<section id="section-6">
+      <h2 id="name-operational-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<p id="section-6-1">
+                Operational and deployment considerations are spread throughout the
+                document. While avoiding repetition, it is useful for the impatient
+                to direct particular attention to Sections <a href="#TACACSConfiguration" class="auto internal xref">5.2</a> and <a href="#TLSSNISec" class="auto internal xref">5.1.5</a>.
+                However, it is important that the entire <a href="#Security" class="auto internal xref">Section 5</a> is observed.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">It is essential for operators to understand the implications of a TLS
+                    certificate-based authentication solution, including the correct handling of certificates, CAs, and all
+                    elements of TLS configuration. Refer to <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span> for guidance. Attention is drawn to the provisioning
+                of certificates to all peers, including TACACS+ TLS clients, to permit the mandatory mutual authentication.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<div id="MIGRATION">
+<section id="section-6.1">
+        <h3 id="name-migration">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-migration" class="section-name selfRef">Migration</a>
+        </h3>
+<p id="section-6.1-1">
+                    <a href="#TACACSConfiguration" class="auto internal xref">Section 5.2</a> mentions that for an optimal deployment of TLS TACACS+,
+                    TLS should be universally applied throughout the deployment. However, during
+                    the migration process from a non-TLS TACACS+ deployment, operators may need
+                    to support both TLS and non-TLS TACACS+ servers. This migration phase allows
+                    operators to gradually transition their deployments from an insecure state to
+                    a more secure one, but it is important to note that it is vulnerable to
+                    downgrade attacks. Therefore, the migration phase should be considered
+                    insecure until it is fully completed. To mitigate this hazard:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.1">The period where any client is configured with both TLS and non-TLS TACACS+ servers should be
+                        minimized.<a href="#section-6.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-6.1-2.2">The operator must consider the security impact of supporting both TLS and non-TLS connections, as mentioned above.<a href="#section-6.1-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="NONTLS">
+<section id="section-6.2">
+        <h3 id="name-maintaining-non-tls-tacacs-">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-maintaining-non-tls-tacacs-" class="section-name selfRef">Maintaining Non-TLS TACACS+ Clients</a>
+        </h3>
+<p id="section-6.2-1">
+                    Some TACACS+ client devices in a deployment may not implement TLS.
+                    These devices will require access to non-TLS TACACS+ servers.
+                    Operators must follow the recommendation of
+                    <a href="#TLSUSE" class="auto internal xref">Section 5.1.1</a>
+                    and deploy
+                    separate non-TLS TACACS+ servers for these non-TLS clients from those used
+                    for the TLS clients.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-6.3">
+        <h3 id="name-yang-model-for-tacacs-clien">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-yang-model-for-tacacs-clien" class="section-name selfRef">YANG Model for TACACS+ Clients</a>
+        </h3>
+<p id="section-6.3-1">
+                    <span>[<a href="#I-D.ietf-opsawg-secure-tacacs-yang" class="cite xref">TACACS-YANG</a>]</span> specifies a YANG model for managing TACACS+ clients, including TLS support.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<div id="ICTBD">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">
+   IANA has allocated the following new well-known system in the
+   "Service Name and Transport Protocol Port Number Registry" (see
+   <span>&lt;<a href="https://www.iana.org/assignments/service-names-port-numbers">https://www.iana.org/assignments/service-names-port-numbers</a>&gt;</span>).  The
+   service name "tacacss" follows the common practice of appending an
+   "s" to the name given to the non-TLS well-known port name.  See the
+   justification for the allocation in Section 5.3.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-7-2">
+        <dt id="section-7-2.1">Service Name:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.2">tacacss<a href="#section-7-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-2.3">Port Number:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.4">300<a href="#section-7-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-2.5">Transport Protocol:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.6">TCP<a href="#section-7-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-2.7">Description:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.8">TLS Secure Login Host Protocol (TACACSS)<a href="#section-7-2.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-2.9">Assignee:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.10">IESG<a href="#section-7-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-2.11">Contact:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.12">IETF Chair<a href="#section-7-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-2.13">Reference:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-2.14">RFC 9887<a href="#section-7-2.14" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-7-3">Considerations about service discovery are out of scope of
+            this document.<a href="#section-7-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-acknowledgments">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="section-8-1">
+                The author(s) would like to thank <span class="contact-name">Russ                 Housley</span>, <span class="contact-name">Steven M. Bellovin</span>, <span class="contact-name">Stephen Farrell</span>, <span class="contact-name">Alan                 DeKok</span>, <span class="contact-name">Warren Kumari</span>, <span class="contact-name">Tom Petch</span>, <span class="contact-name">Tirumal Reddy</span>,
+                <span class="contact-name">Valery Smyslov</span>, and <span class="contact-name">Mohamed Boucadair</span> for their support, insightful
+                review, and/or comments.  <span>[<a href="#RFC5425" class="cite xref">RFC5425</a>]</span> was also
+                used as a basis for the general approach to TLS.  <span>[<a href="#RFC9190" class="cite xref">RFC9190</a>]</span> was used as a basis for TLS resumption
+                recommendations.  Although still in draft form at the time of
+                writing, <span>[<a href="#RFC9813" class="cite xref">RFC9813</a>]</span> was used as
+                a model for PSK recommendations.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="BCP195">[BCP195]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 195, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp195">https://www.rfc-editor.org/info/bcp195</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC8996">
+            <span class="refAuthor">Moriarty, K.</span> and <span class="refAuthor">S. Farrell</span>, <span class="refTitle">"Deprecating TLS 1.0 and TLS 1.1"</span>, <span class="seriesInfo">BCP 195</span>, <span class="seriesInfo">RFC 8996</span>, <span class="seriesInfo">DOI 10.17487/RFC8996</span>, <time datetime="2021-03" class="refDate">March 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8996">https://www.rfc-editor.org/info/rfc8996</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9325">
+            <span class="refAuthor">Sheffer, Y.</span>, <span class="refAuthor">Saint-Andre, P.</span>, and <span class="refAuthor">T. Fossati</span>, <span class="refTitle">"Recommendations for Secure Use of Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)"</span>, <span class="seriesInfo">BCP 195</span>, <span class="seriesInfo">RFC 9325</span>, <span class="seriesInfo">DOI 10.17487/RFC9325</span>, <time datetime="2022-11" class="refDate">November 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9325">https://www.rfc-editor.org/info/rfc9325</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5280">[RFC5280]</dt>
+        <dd>
+<span class="refAuthor">Cooper, D.</span>, <span class="refAuthor">Santesson, S.</span>, <span class="refAuthor">Farrell, S.</span>, <span class="refAuthor">Boeyen, S.</span>, <span class="refAuthor">Housley, R.</span>, and <span class="refAuthor">W. Polk</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile"</span>, <span class="seriesInfo">RFC 5280</span>, <span class="seriesInfo">DOI 10.17487/RFC5280</span>, <time datetime="2008-05" class="refDate">May 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5280">https://www.rfc-editor.org/info/rfc5280</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5425">[RFC5425]</dt>
+        <dd>
+<span class="refAuthor">Miao, F., Ed.</span>, <span class="refAuthor">Ma, Y., Ed.</span>, and <span class="refAuthor">J. Salowey, Ed.</span>, <span class="refTitle">"Transport Layer Security (TLS) Transport Mapping for Syslog"</span>, <span class="seriesInfo">RFC 5425</span>, <span class="seriesInfo">DOI 10.17487/RFC5425</span>, <time datetime="2009-03" class="refDate">March 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5425">https://www.rfc-editor.org/info/rfc5425</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6066">[RFC6066]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refTitle">"Transport Layer Security (TLS) Extensions: Extension Definitions"</span>, <span class="seriesInfo">RFC 6066</span>, <span class="seriesInfo">DOI 10.17487/RFC6066</span>, <time datetime="2011-01" class="refDate">January 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6066">https://www.rfc-editor.org/info/rfc6066</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7250">[RFC7250]</dt>
+        <dd>
+<span class="refAuthor">Wouters, P., Ed.</span>, <span class="refAuthor">Tschofenig, H., Ed.</span>, <span class="refAuthor">Gilmore, J.</span>, <span class="refAuthor">Weiler, S.</span>, and <span class="refAuthor">T. Kivinen</span>, <span class="refTitle">"Using Raw Public Keys in Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)"</span>, <span class="seriesInfo">RFC 7250</span>, <span class="seriesInfo">DOI 10.17487/RFC7250</span>, <time datetime="2014-06" class="refDate">June 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7250">https://www.rfc-editor.org/info/rfc7250</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7924">[RFC7924]</dt>
+        <dd>
+<span class="refAuthor">Santesson, S.</span> and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"Transport Layer Security (TLS) Cached Information Extension"</span>, <span class="seriesInfo">RFC 7924</span>, <span class="seriesInfo">DOI 10.17487/RFC7924</span>, <time datetime="2016-07" class="refDate">July 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7924">https://www.rfc-editor.org/info/rfc7924</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8907">[RFC8907]</dt>
+        <dd>
+<span class="refAuthor">Dahm, T.</span>, <span class="refAuthor">Ota, A.</span>, <span class="refAuthor">Medway Gash, D.C.</span>, <span class="refAuthor">Carrel, D.</span>, and <span class="refAuthor">L. Grant</span>, <span class="refTitle">"The Terminal Access Controller Access-Control System Plus (TACACS+) Protocol"</span>, <span class="seriesInfo">RFC 8907</span>, <span class="seriesInfo">DOI 10.17487/RFC8907</span>, <time datetime="2020-09" class="refDate">September 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8907">https://www.rfc-editor.org/info/rfc8907</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9525">[RFC9525]</dt>
+      <dd>
+<span class="refAuthor">Saint-Andre, P.</span> and <span class="refAuthor">R. Salz</span>, <span class="refTitle">"Service Identity in TLS"</span>, <span class="seriesInfo">RFC 9525</span>, <span class="seriesInfo">DOI 10.17487/RFC9525</span>, <time datetime="2023-11" class="refDate">November 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9525">https://www.rfc-editor.org/info/rfc9525</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="FIPS-140-3">[FIPS-140-3]</dt>
+        <dd>
+<span class="refAuthor">NIST</span>, <span class="refTitle">"Security Requirements for Cryptographic Modules"</span>, <span class="seriesInfo">NIST FIPS 140-3</span>, <span class="seriesInfo">DOI 10.6028/NIST.FIPS.140-3</span>, <time datetime="2019-03" class="refDate">March 2019</time>, <span>&lt;<a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.140-3.pdf">https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.140-3.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-uta-require-tls13">[REQ-TLS13]</dt>
+        <dd>
+<span class="refAuthor">Salz, R.</span> and <span class="refAuthor">N. Aviram</span>, <span class="refTitle">"New Protocols Using TLS Must Require TLS 1.3"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-uta-require-tls13-12</span>, <time datetime="2025-04-14" class="refDate">14 April 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-uta-require-tls13-12">https://datatracker.ietf.org/doc/html/draft-ietf-uta-require-tls13-12</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3365">[RFC3365]</dt>
+        <dd>
+<span class="refAuthor">Schiller, J.</span>, <span class="refTitle">"Strong Security Requirements for Internet Engineering Task Force Standard Protocols"</span>, <span class="seriesInfo">BCP 61</span>, <span class="seriesInfo">RFC 3365</span>, <span class="seriesInfo">DOI 10.17487/RFC3365</span>, <time datetime="2002-08" class="refDate">August 2002</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3365">https://www.rfc-editor.org/info/rfc3365</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6151">[RFC6151]</dt>
+        <dd>
+<span class="refAuthor">Turner, S.</span> and <span class="refAuthor">L. Chen</span>, <span class="refTitle">"Updated Security Considerations for the MD5 Message-Digest and the HMAC-MD5 Algorithms"</span>, <span class="seriesInfo">RFC 6151</span>, <span class="seriesInfo">DOI 10.17487/RFC6151</span>, <time datetime="2011-03" class="refDate">March 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6151">https://www.rfc-editor.org/info/rfc6151</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9190">[RFC9190]</dt>
+        <dd>
+<span class="refAuthor">Preuß Mattsson, J.</span> and <span class="refAuthor">M. Sethi</span>, <span class="refTitle">"EAP-TLS 1.3: Using the Extensible Authentication Protocol with TLS 1.3"</span>, <span class="seriesInfo">RFC 9190</span>, <span class="seriesInfo">DOI 10.17487/RFC9190</span>, <time datetime="2022-02" class="refDate">February 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9190">https://www.rfc-editor.org/info/rfc9190</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9257">[RFC9257]</dt>
+        <dd>
+<span class="refAuthor">Housley, R.</span>, <span class="refAuthor">Hoyland, J.</span>, <span class="refAuthor">Sethi, M.</span>, and <span class="refAuthor">C. A. Wood</span>, <span class="refTitle">"Guidance for External Pre-Shared Key (PSK) Usage in TLS"</span>, <span class="seriesInfo">RFC 9257</span>, <span class="seriesInfo">DOI 10.17487/RFC9257</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9257">https://www.rfc-editor.org/info/rfc9257</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9813">[RFC9813]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refTitle">"Operational Considerations for Using TLS Pre-Shared Keys (TLS-PSKs) with RADIUS"</span>, <span class="seriesInfo">BCP 243</span>, <span class="seriesInfo">RFC 9813</span>, <span class="seriesInfo">DOI 10.17487/RFC9813</span>, <time datetime="2025-07" class="refDate">July 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9813">https://www.rfc-editor.org/info/rfc9813</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-opsawg-secure-tacacs-yang">[TACACS-YANG]</dt>
+      <dd>
+<span class="refAuthor">Boucadair, M.</span> and <span class="refAuthor">B. Wu</span>, <span class="refTitle">"A YANG Data Model for Terminal Access Controller Access-Control System Plus (TACACS+)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-opsawg-secure-tacacs-yang-13</span>, <time datetime="2025-07-07" class="refDate">7 July 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-secure-tacacs-yang-13">https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-secure-tacacs-yang-13</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="authors-addresses">
+<section id="appendix-A">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Thorsten Dahm</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:thorsten.dahm@gmail.com" class="email">thorsten.dahm@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">John Heasley</span></div>
+<div dir="auto" class="left"><span class="org">NTT</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:heas@shrubbery.net" class="email">heas@shrubbery.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Douglas C. Medway Gash</span></div>
+<div dir="auto" class="left"><span class="org">Cisco Systems, Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">170 West Tasman Dr.</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Jose</span>, <span class="region">CA</span> <span class="postal-code">95134</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:dcmgash@cisco.com" class="email">dcmgash@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Andrej Ota</span></div>
+<div dir="auto" class="left"><span class="org">Google Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">1600 Amphitheatre Parkway</span></div>
+<div dir="auto" class="left">
+<span class="locality">Mountain View</span>, <span class="region">CA</span> <span class="postal-code">94043</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:andrej@ota.si" class="email">andrej@ota.si</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
