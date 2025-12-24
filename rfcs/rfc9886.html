@@ -1,0 +1,2943 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9886: DRIP Entity Tags (DETs) in the Domain Name System</title>
+<meta content="Adam Wiethuechter" name="author">
+<meta content="Jim Reid" name="author">
+<meta content="
+       This document defines the Domain Name System (DNS) functionality of a Drone Remote Identification Protocol (DRIP) Identity Management Entity (DIME). It is built around DRIP Entity Tags (DETs) to standardize a hierarchical registry structure and associated processes to facilitate trustable and scalable registration and lookup of information related to Unmanned Aircraft Systems (UAS). The registry system supports issuance, discovery, and verification of DETs, enabling secure identification and association of UAS and their operators. It also defines the interactions between different classes of registries (root, organizational, and individual) and their respective roles in maintaining the integrity of the registration data. This architecture enables decentralized, federated operation while supporting privacy, traceability, and regulatory compliance requirements in the context of UAS Remote Identification and other services. 
+    " name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="drone" name="keyword">
+<meta content="trustworthy identification" name="keyword">
+<meta content="dns" name="keyword">
+<meta content="reverse lookup" name="keyword">
+<meta content="ipv6" name="keyword">
+<meta content="orchid" name="keyword">
+<meta content="public registry" name="keyword">
+<meta content="9886" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9886.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-drip-registries-33" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9886" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9886</td>
+<td class="center">DET in DNS</td>
+<td class="right">December 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Wiethuechter &amp; Reid</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9886" class="eref">9886</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-12" class="published">December 2025</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">A. Wiethuechter, <span class="editor">Ed.</span>
+</div>
+<div class="org">AX Enterprize, LLC</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Reid</div>
+<div class="org">RTFM llp</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9886</h1>
+<h1 id="title">DRIP Entity Tags (DETs) in the Domain Name System</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines the Domain Name System (DNS) functionality of a Drone Remote Identification Protocol (DRIP) Identity Management Entity (DIME). It is built around DRIP Entity Tags (DETs) to standardize a hierarchical registry structure and associated processes to facilitate trustable and scalable registration and lookup of information related to Unmanned Aircraft Systems (UAS). The registry system supports issuance, discovery, and verification of DETs, enabling secure identification and association of UAS and their operators. It also defines the interactions between different classes of registries (root, organizational, and individual) and their respective roles in maintaining the integrity of the registration data. This architecture enables decentralized, federated operation while supporting privacy, traceability, and regulatory compliance requirements in the context of UAS Remote Identification and other services.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9886">https://www.rfc-editor.org/info/rfc9886</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-general-concept" class="internal xref">General Concept</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-scope" class="internal xref">Scope</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-required-terminology" class="internal xref">Required Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-additional-definitions" class="internal xref">Additional Definitions</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-det-hierarchy-in-dns" class="internal xref">DET Hierarchy in DNS</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-use-of-existing-dns-models" class="internal xref">Use of Existing DNS Models</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.1">
+                    <p id="section-toc.1-1.3.2.1.2.1.1"><a href="#section-3.1.1" class="auto internal xref">3.1.1</a>.  <a href="#name-dns-model-considerations-fo" class="internal xref">DNS Model Considerations for DIMEs</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-public-information-registry" class="internal xref">Public Information Registry</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-resource-records" class="internal xref">Resource Records</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-hhit-resource-record" class="internal xref">HHIT Resource Record</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-text-representation" class="internal xref">Text Representation</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-field-descriptions" class="internal xref">Field Descriptions</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-uas-broadcast-rid-resource-" class="internal xref">UAS Broadcast RID Resource Record</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1">
+                    <p id="section-toc.1-1.5.2.2.2.1.1"><a href="#section-5.2.1" class="auto internal xref">5.2.1</a>.  <a href="#name-text-representation-2" class="internal xref">Text Representation</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2">
+                    <p id="section-toc.1-1.5.2.2.2.2.1"><a href="#section-5.2.2" class="auto internal xref">5.2.2</a>.  <a href="#name-field-descriptions-2" class="internal xref">Field Descriptions</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-det-prefix-delegation" class="internal xref">DET Prefix Delegation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-iana-drip-registry" class="internal xref">IANA DRIP Registry</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.1">
+                    <p id="section-toc.1-1.6.2.2.2.1.1"><a href="#section-6.2.1" class="auto internal xref">6.2.1</a>.  <a href="#name-drip-raa-allocations" class="internal xref">DRIP RAA Allocations</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.2">
+                    <p id="section-toc.1-1.6.2.2.2.2.1"><a href="#section-6.2.2" class="auto internal xref">6.2.2</a>.  <a href="#name-hhit-entity-types" class="internal xref">HHIT Entity Types</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-dns-operational-and-registr" class="internal xref">DNS Operational and Registration Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-det-and-public-key-exposure" class="internal xref">DET and Public Key Exposure</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-example-zone-files-and-rrty" class="internal xref">Example Zone Files and RRType Contents</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-example-raa" class="internal xref">Example RAA</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1.2.1">
+                    <p id="section-toc.1-1.9.2.1.2.1.1"><a href="#appendix-A.1.1" class="auto internal xref">A.1.1</a>.  <a href="#name-authentication-hhit" class="internal xref">Authentication HHIT</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1.2.2">
+                    <p id="section-toc.1-1.9.2.1.2.2.1"><a href="#appendix-A.1.2" class="auto internal xref">A.1.2</a>.  <a href="#name-delegation-of-hda" class="internal xref">Delegation of HDA</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-example-hda" class="internal xref">Example HDA</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2.2.1">
+                    <p id="section-toc.1-1.9.2.2.2.1.1"><a href="#appendix-A.2.1" class="auto internal xref">A.2.1</a>.  <a href="#name-authentication-and-issue-hh" class="internal xref">Authentication and Issue HHITs</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2.2.2">
+                    <p id="section-toc.1-1.9.2.2.2.2.1"><a href="#appendix-A.2.2" class="auto internal xref">A.2.2</a>.  <a href="#name-registrant-hhit-and-brid" class="internal xref">Registrant HHIT and BRID</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Registries are fundamental to Unmanned Aircraft System (UAS) Remote Identification (RID). Only very limited operational information can be sent via Broadcast RID, but extended information is sometimes needed. The most essential element of information from RID is the UAS ID, the unique key for lookup of extended information in relevant registries (see <a href="#rfc9434-fig4" class="auto internal xref">Figure 1</a>, which is the same as Figure 4 of <span>[<a href="#RFC9434" class="cite xref">RFC9434</a>]</span>).<a href="#section-1-1" class="pilcrow">¶</a></p>
+<span id="name-global-uas-rid-usage-scenar"></span><div id="rfc9434-fig4">
+<figure id="figure-1">
+        <div class="alignCenter art-text artwork" id="section-1-2.1">
+<pre>
+***************                                        ***************
+*    UAS1     *                                        *     UAS2    *
+*             *                                        *             *
+* +--------+  *                 DAA/V2V                *  +--------+ *
+* |   UA   o--*----------------------------------------*--o   UA   | *
+* +--o--o--+  *                                        *  +--o--o--+ *
+*    |  |     *   +------+      Lookups     +------+   *     |  |    *
+*    |  |     *   | GPOD o------.    .------o PSOD |   *     |  |    *
+*    |  |     *   +------+      |    |      +------+   *     |  |    *
+*    |  |     *                 |    |                 *     |  |    *
+* C2 |  |     *     V2I      ************     V2I      *     |  | C2 *
+*    |  '-----*--------------*          *--------------*-----'  |    *
+*    |        *              *          *              *        |    *
+*    |        o====Net-RID===*          *====Net-RID===o        |    *
+* +--o--+     *              * Internet *              *     +--o--+ *
+* | GCS o-----*--------------*          *--------------*-----o GCS | *
+* +-----+     * Registration *          * Registration *     +-----+ *
+*             * (and UTM)    *          * (and UTM)    *             *
+***************              ************              ***************
+                               |  |  |
+                +----------+   |  |  |   +----------+
+                | Public   o---'  |  '---o Private  |
+                | Registry |      |      | Registry |
+                +----------+      |      +----------+
+                               +--o--+
+                               | DNS |
+                               +-----+
+
+DAA:  Detect And Avoid
+GPOD: General Public Observer Device
+PSOD: Public Safety Observer Device
+V2I:  Vehicle-to-Infrastructure
+V2V:  Vehicle-to-Vehicle</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-global-uas-rid-usage-scenar" class="selfRef">Global UAS RID Usage Scenario (Figure 4 of RFC 9434)</a>
+        </figcaption></figure>
+</div>
+<p id="section-1-3">When a DRIP Entity Tag (DET) <span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span> is used as the UAS ID in RID, extended information can be retrieved from a DRIP Identity Management Entity (DIME), which manages registration of and associated lookups from DETs. In this document it is assumed the DIME is a function of UAS Service Suppliers (USS) (<span><a href="https://rfc-editor.org/rfc/rfc9434#appendix-A.2" class="relref">Appendix A.2</a> of [<a href="#RFC9434" class="cite xref">RFC9434</a>]</span>), but a DIME can be independent or handled by another entity as well.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<div id="general-concept">
+<section id="section-1.1">
+        <h3 id="name-general-concept">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-general-concept" class="section-name selfRef">General Concept</a>
+        </h3>
+<p id="section-1.1-1">DRIP Entity Tags (DETs) embed a hierarchy scheme that is mapped onto the Domain Name System (DNS) <span>[<a href="#STD13" class="cite xref">STD13</a>]</span>. DIMEs enforce registration and information access of data associated with a DET while also providing the trust inherited from being a member of the hierarchy. Other identifiers and their methods are out of scope for this document.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">Authoritative name servers of the DNS provide the public information such as the cryptographic keys, endorsements and certificates of DETs, and pointers to private information resources. Cryptographic (public) keys are used to authenticate anything signed by a DET, such as in the Authentication Messages defined in <span>[<a href="#RFC9575" class="cite xref">RFC9575</a>]</span> for Broadcast RID. Endorsements and certificates are used to endorse the claim of being part of the hierarchy.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">This document does not specify AAA mechanisms used by Private Information Registries to store and protect Personally Identifiable Information (PII).<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="scope">
+<section id="section-1.2">
+        <h3 id="name-scope">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-scope" class="section-name selfRef">Scope</a>
+        </h3>
+<p id="section-1.2-1">   The scope of this document is the DNS registration of DETs with the
+   DNS delegation of the reverse domain of the IPv6 prefix (<code>2001:30::/28</code>
+   for DETs) and RRsets used to handle DETs.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<div id="required-terminology">
+<section id="section-2.1">
+        <h3 id="name-required-terminology">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-required-terminology" class="section-name selfRef">Required Terminology</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="additional-definitions">
+<section id="section-2.2">
+        <h3 id="name-additional-definitions">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-additional-definitions" class="section-name selfRef">Additional Definitions</a>
+        </h3>
+<p id="section-2.2-1">This document makes use of the terms and abbreviations from previous DRIP documents. Below are subsets, grouped by original document, of terms used this document. Please see those documents for additional context, definitions, and any further referenced material.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2">From <span><a href="https://rfc-editor.org/rfc/rfc9153#section-2.2" class="relref">Section 2.2</a> of [<a href="#RFC9153" class="cite xref">RFC9153</a>]</span>, this document uses: AAA, CAA, GCS, ICAO, PII, Observer, Operator, UA, UAS, USS, and UTM.<a href="#section-2.2-2" class="pilcrow">¶</a></p>
+<p id="section-2.2-3">From <span><a href="https://rfc-editor.org/rfc/rfc9434#section-2" class="relref">Section 2</a> of [<a href="#RFC9434" class="cite xref">RFC9434</a>]</span>, this document uses: Certificate, DIME, and Endorsement.<a href="#section-2.2-3" class="pilcrow">¶</a></p>
+<p id="section-2.2-4">From <span><a href="https://rfc-editor.org/rfc/rfc9374#section-2" class="relref">Section 2</a> of [<a href="#RFC9374" class="cite xref">RFC9374</a>]</span>, this document uses: HDA, HID, and RAA.<a href="#section-2.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="det-hierarchy-in-dns">
+<section id="section-3">
+      <h2 id="name-det-hierarchy-in-dns">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-det-hierarchy-in-dns" class="section-name selfRef">DET Hierarchy in DNS</a>
+      </h2>
+<p id="section-3-1"><span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span> defines the Hierarchical Host Identity Tags (HHIT) and further specifies an instance of them used for UAS RID called DET. The DET is a 128-bit value that is an IPv6 address intended primarily as an identifier rather than locator. The format is shown in <a href="#hhit-fig" class="auto internal xref">Figure 2</a> and further information is in <span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span id="name-drip-entity-tag-breakdown"></span><div id="hhit-fig">
+<figure id="figure-2">
+        <div class="alignCenter art-text artwork" id="section-3-2.1">
+<pre>
++-------------+--------------+---------------+-------------+
+| IPv6 Prefix | Hierarchy ID | HHIT Suite ID | ORCHID Hash |
+| (28 bits)   | (28 bits)    | (8 bits)      | (64 bits)   |
++-------------+--------------+---------------+-------------+
+             /                \
+            /                  \
+           /                    \-----------------------------\
+          /                                                    \
+         /                                                      \
+        +--------------------------------+-----------------------+
+        | Registered Assigning Authority | HHIT Domain Authority |
+        | (14 bits)                      | (14 bits)             |
+        +--------------------------------+-----------------------+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-drip-entity-tag-breakdown" class="selfRef">DRIP Entity Tag Breakdown</a>
+        </figcaption></figure>
+</div>
+<p id="section-3-3"><span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span> assigns the IPv6 prefix <code>2001:30::/28</code> for DETs. Its corresponding domain name for reverse lookups is <code>3.0.0.1.0.0.2.ip6.arpa.</code>. The IAB has administrative control of this domain name.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">Due to the nature of the hierarchy split and its relationship to nibble reversing of the IPv6 address (Section <a href="https://rfc-editor.org/rfc/rfc3596#section-2.5" class="relref">2.5</a> of RFC 3596 <span>[<a href="#STD88" class="cite xref">STD88</a>]</span>), the upper level of the hierarchy (i.e., Registered Assigning Authority (RAA)) "borrows" the upper two bits of their respective HHIT Domain Authority (HDA) space for DNS delegation. As such, the IPv6 prefix of RAAs is <code>2001:3x:xxx0::/44</code> and HDAs is <code>2001:3x:xxxy:yy00::/56</code> with respective nibble reverse domains of <code>x.x.x.x.3.0.0.1.0.0.2.ip6.arpa.</code> and <code>y.y.y.x.x.x.x.3.0.0.1.0.0.2.ip6.arpa.</code>.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">This document preallocates a subset of RAAs based on the ISO 3166-1 Numeric Nation Code <span>[<a href="#ISO3166-1" class="cite xref">ISO3166-1</a>]</span>. This is to support the initial use case of DETs in UAS RID on an international level. See <a href="#iana-raa" class="auto internal xref">Section 6.2.1</a> for the RAA allocations.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">The HDA values of 0, 4096, 8192, and 12288 are reserved for operational use of an RAA (a by-product of the above mentioned borrowing of bits), in particular to specify when to register with the apex and endorse delegations of HDAs in their namespace.<a href="#section-3-6" class="pilcrow">¶</a></p>
+<p id="section-3-7">The administration, management, and policy for the operation of a DIME at any level in the hierarchy (Apex, RAA or HDA) is out of scope for this document. For RAAs or DETs allocated on a per-country basis, these considerations should be determined by the appropriate national authorities, presumably the Civil Aviation Authority (CAA).<a href="#section-3-7" class="pilcrow">¶</a></p>
+<div id="use-of-existing-dns-models">
+<section id="section-3.1">
+        <h3 id="name-use-of-existing-dns-models">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-use-of-existing-dns-models" class="section-name selfRef">Use of Existing DNS Models</a>
+        </h3>
+<p id="section-3.1-1">DRIP relies on the DNS and as such roughly follows the registrant-registrar-registry model. In the UAS ecosystem, the registrant would be the end user who owns/controls the Unmanned Aircraft. They are ultimately responsible for the DET and any other information that gets published in the DNS. Registrants use agents known as registrars to manage their interactions with the registry. Registrars typically provide optional additional services such as DNS hosting.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">The registry maintains a database of the registered domain names and their related metadata such as the contact details for domain name holder and the relevant registrar. The registry provides DNS service for the zone apex, which contains delegation information for domain names. Registries generally provide services such as the Registration Data Access Protocol (RDAP) <span>[<a href="#STD95" class="cite xref">STD95</a>]</span> or equivalent to publish metadata about the registered domain names and their registrants and registrars.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">Registrants have contracts with registrars who in turn have contracts with registries. Payments follow this model too: the registrant buys services from a registrar who pays for services provided by the registry.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">By definition, there can only be one registry for a domain name. A registry can have an arbitrary number of registrars who compete with each other on price, service, and customer support.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<div id="dns-model-considerations-for-dimes">
+<section id="section-3.1.1">
+          <h4 id="name-dns-model-considerations-fo">
+<a href="#section-3.1.1" class="section-number selfRef">3.1.1. </a><a href="#name-dns-model-considerations-fo" class="section-name selfRef">DNS Model Considerations for DIMEs</a>
+          </h4>
+<span id="name-example-drip-dns-model"></span><div id="dns-model-fig">
+<figure id="figure-3">
+            <div class="alignCenter art-text artwork" id="section-3.1.1-1.1">
+<pre>
+Apex
+Registry/Registrar
+(IANA)
+                         +=========================+
+                         | 3.0.0.1.0.0.2.ip6.arpa. |
+                         +============o============+
+                                      |
+--------------------------------------|-------------------------
+National                              |
+Registries/Registrars                 |
+(RAA)                                 |
+                                      |
+        +--------------+--------------o-+---------------+
+        |              |                |               |
+  +=====o====+    +====o=====+    +=====o====+    +=====o====+
+  | 0.0.0.0. |    | 1.0.0.0. |    | 2.0.0.0. |    | 3.0.0.0. |
+  +====o=====+    +====o=====+    +====o=====+    +====o=====+
+                                       |
+---------------------------------------|------------------------
+Local                                  |
+Registries/Registrars                  |
+(HDA)                                  |
+                                       |
+        +--------------+---------------o--------...-----+
+        |              |               |                |
+  +=====o====+    +====o=====+    +====o=====+    +=====o====+
+  |  1.0.0.  |    |  2.0.0.  |    |  3.0.0.  |    |  f.f.f.  |
+  +====o=====+    +=====o====+    +====o=====+    +====o=====+
+                                       |
+---------------------------------------|------------------------
+Local                                  |
+Registrants                            |
+                 +=====================o================+
+                 | x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.5.0. |
+                 +======================================+</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-example-drip-dns-model" class="selfRef">Example DRIP DNS Model</a>
+            </figcaption></figure>
+</div>
+<p id="section-3.1.1-2">While the registrant-registrar-registry model is mature and well understood, it may not be appropriate for DRIP registrations in some circumstances. It could add costs and complexity to develop policies and contracts as outlined above. On the other hand, registries and registrars offer customer service and support and can provide the supporting infrastructure for reliable DNS and RDAP service.<a href="#section-3.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-3">Another approach could be to handle DRIP registrations in a comparable way to how IP address space gets provisioned. Here, blocks of addresses get delegated to a "trusted" third party, typically an ISP, who then issues IP addresses to its customers. For DRIP, blocks of IP addresses could be delegated from the <code>3.0.0.1.0.0.2.ip6.arpa.</code> domain (reverse domain of prefix allocated by <span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span>) to an entity chosen by the appropriate Civil Aviation Authority (CAA). This third party would be responsible for the corresponding DNS and RDAP infrastructure for these IP address blocks. They would also provision the HHIT records <span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span> for these IP addresses. In principle, a manufacturer or vendor of UAS devices could provide that role. This is shown as an example in <a href="#dns-model-fig" class="auto internal xref">Figure 3</a>.<a href="#section-3.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-4">Dynamic DRIP registration is another possible solution, for example when the operator of a UAS device registers its corresponding HHIT record and other resources before a flight and deletes them afterwards. This may be feasible in controlled environments with well-behaved actors. However, this approach may not scale since each device is likely to need credentials for updating the IT infrastructure that provisions the DNS.<a href="#section-3.1.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-5">Registration policies (pricing, renewals, registrar, and registrant agreements, etc.) will need to be developed. These considerations should be determined by the CAA, perhaps in consultation with local stakeholders to assess the cost-benefits of these approaches (and others). All of these are out of scope for this document. The specifics for the UAS RID use case are detailed in the rest of document.<a href="#section-3.1.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="dns">
+<section id="section-4">
+      <h2 id="name-public-information-registry">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-public-information-registry" class="section-name selfRef">Public Information Registry</a>
+      </h2>
+<p id="section-4-1">Per <span>[<a href="#RFC9434" class="cite xref">RFC9434</a>]</span>, all information classified as public is stored in the DNS, specifically authoritative name servers, to satisfy REG-1 from <span>[<a href="#RFC9153" class="cite xref">RFC9153</a>]</span>.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Authoritative name servers use domain names as identifiers and data is stored in Resource Records (RRs) with associated RRTypes. This document defines two new RRTypes, one for HHIT metadata (HHIT, <a href="#hhit-rr" class="auto internal xref">Section 5.1</a>) and another for UAS Broadcast RID information (BRID, <a href="#bcast-rr" class="auto internal xref">Section 5.2</a>). The former RRType is particularly important as it contains a URI (as part of the certificate) that points to Private Information resources.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">DETs, being IPv6 addresses, are to be under <code>ip6.arpa.</code> (nibble reversed per Section <a href="https://rfc-editor.org/rfc/rfc3596#section-2.5" class="relref">2.5</a> of RFC 3596 <span>[<a href="#STD88" class="cite xref">STD88</a>]</span>) and <span class="bcp14">MUST</span> resolve to an HHIT RRType. Depending on local circumstances or additional use cases, other RRTypes <span class="bcp14">MAY</span> be present (for example the inclusion of the DS RRTypes or equivalent when using DNSSEC). For UAS RID, the BRID RRType <span class="bcp14">MUST</span> be present to provide the Broadcast Endorsements (BEs) defined in <span><a href="https://rfc-editor.org/rfc/rfc9575#section-3.1.2.1" class="relref">Section 3.1.2.1</a> of [<a href="#RFC9575" class="cite xref">RFC9575</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">DNSSEC <span class="bcp14">MUST</span> be used for apex entities (those which use a self-signed <code>Canonical Registration Certificate</code>) and is <span class="bcp14">RECOMMENDED</span> for other entities. When a DIME decides to use DNSSEC, they <span class="bcp14">SHOULD</span> define a framework for cryptographic algorithms and key management <span>[<a href="#RFC6841" class="cite xref">RFC6841</a>]</span>. This may be influenced by the frequency of updates, size of the zone, and policies.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">UAS-specific information, such as physical characteristics, may also be stored in DNS but is out of scope for this document.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<p id="section-4-6">A DET IPv6 address gets mapped into domain names using the scheme defined in Section <a href="https://rfc-editor.org/rfc/rfc3596#section-2.5" class="relref">2.5</a> of RFC 3596 <span>[<a href="#STD88" class="cite xref">STD88</a>]</span>. However, DNS lookups of these names query for HHIT and/or BRID resource records rather than the PTR resource records conventionally used in reverse lookups of IP addresses. For example, the HHIT resource record for the DET <code>2001:30::1</code> would be returned from a DNS lookup for the HHIT QTYPE for <code>1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.0.1.0.0.2.ip6.arpa.</code>.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">The HHIT RRType provides the public key for signature verification and URIs via the certificate. The BRID RRType provides static Broadcast RID information such as the Broadcast Endorsements sent as described in <span>[<a href="#RFC9575" class="cite xref">RFC9575</a>]</span>.<a href="#section-4-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="resource-records">
+<section id="section-5">
+      <h2 id="name-resource-records">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-resource-records" class="section-name selfRef">Resource Records</a>
+      </h2>
+<div id="hhit-rr">
+<section id="section-5.1">
+        <h3 id="name-hhit-resource-record">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-hhit-resource-record" class="section-name selfRef">HHIT Resource Record</a>
+        </h3>
+<p id="section-5.1-1">The HHIT Resource Record (HHIT, RRType 67) is a metadata record for various bits of HHIT-specific information that isn't available in the pre-existing HIP RRType. The HHIT RRType does not replace the HIP RRType <span>[<a href="#RFC8005" class="cite xref">RFC8005</a>]</span>. The primary advantage of the HHIT RRType over the existing RRType is the mandatory inclusion of the <code>Canonical Registration Certificate</code> containing an entity's public key signed by the registrar, or other trust anchor, to confirm registration.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">The data <span class="bcp14">MUST</span> be encoded in the Concise Binary Object Representation (CBOR) <span>[<a href="#RFC8949" class="cite xref">RFC8949</a>]</span> bytes. The Concise Data Definition Language (CDDL) <span>[<a href="#RFC8610" class="cite xref">RFC8610</a>]</span> of the data is provided in <a href="#hhit-wire-cddl" class="auto internal xref">Figure 4</a>.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<div id="hhit-rr-text">
+<section id="section-5.1.1">
+          <h4 id="name-text-representation">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-text-representation" class="section-name selfRef">Text Representation</a>
+          </h4>
+<p id="section-5.1.1-1">The data are represented in base64 <span>[<a href="#RFC4648" class="cite xref">RFC4648</a>]</span> and may be divided into any number of white-space-separated substrings, down to single base64 digits, which are concatenated to obtain the full object. These substrings can span lines using the standard parenthesis. Note that the data has internal subfields but these do not appear in the zone file representation; only a single logical base64 string will appear.<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+<div id="hhit-rr-presentation">
+<section id="section-5.1.1.1">
+            <h5 id="name-presentation-representation">
+<a href="#section-5.1.1.1" class="section-number selfRef">5.1.1.1. </a><a href="#name-presentation-representation" class="section-name selfRef">Presentation Representation</a>
+            </h5>
+<p id="section-5.1.1.1-1">The data <span class="bcp14">MAY</span>, for display purposes only, be represented using the Extended Diagnostic Notation as defined in <span><a href="https://rfc-editor.org/rfc/rfc8610#appendix-G" class="relref">Appendix G</a> of [<a href="#RFC8610" class="cite xref">RFC8610</a>]</span>.<a href="#section-5.1.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="hhit-rr-fields">
+<section id="section-5.1.2">
+          <h4 id="name-field-descriptions">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-field-descriptions" class="section-name selfRef">Field Descriptions</a>
+          </h4>
+<span id="name-hhit-wire-format-cddl"></span><div id="hhit-wire-cddl">
+<figure id="figure-4">
+            <div class="lang-cddl sourcecode" id="section-5.1.2-1.1">
+<pre>
+hhit-rr = [
+    hhit-entity-type: uint,
+    hid-abbreviation: tstr .size(15),
+    canonical-registration-cert: bstr
+]</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-hhit-wire-format-cddl" class="selfRef">HHIT Wire Format CDDL</a>
+            </figcaption></figure>
+</div>
+<p id="section-5.1.2-2">All fields of the HHIT RRType <span class="bcp14">MUST</span> be included to be properly formed.<a href="#section-5.1.2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.1.2-3">
+            <dt id="section-5.1.2-3.1">HHIT Entity Type:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.1.2-3.2">
+              <p id="section-5.1.2-3.2.1">The <code>HHIT Entity Type</code> field is a number with values defined in <a href="#iana-hhit-type" class="auto internal xref">Section 6.2.2</a>. It is envisioned that there may be many types of HHITs in use. In some cases, it may be helpful to understand the role of the HHITs in the ecosystem, like that described in <span>[<a href="#I-D.ietf-drip-dki" class="cite xref">drip-dki</a>]</span>. This field provides such context. This field <span class="bcp14">MAY</span> provide a signal of additional information and/or different handling of the data beyond what is defined in this document.<a href="#section-5.1.2-3.2.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5.1.2-3.3">HID Abbreviation:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.1.2-3.4">
+              <p id="section-5.1.2-3.4.1">The <code>HID Abbreviation</code> field is a string that provides an abbreviation to the HID (Hierarchy ID) structure of a DET for display devices. The convention for such abbreviations is a matter of local policy. Absent of such a policy, this field <span class="bcp14">MUST</span> be filled with the four character hexadecimal representations of the RAA and HDA (in that order) with a separator character, such as a space, in between. For example, a DET with an RAA value of 10 and HDA value of 20 would be abbreviated as: <code>000A 0014</code>.<a href="#section-5.1.2-3.4.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5.1.2-3.5">Canonical Registration Certificate:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.1.2-3.6">
+              <p id="section-5.1.2-3.6.1">The <code>Canonical Registration Certificate</code> field is for a certificate-endorsing registration of the DET. It <span class="bcp14">MUST</span> be encoded as X.509 DER <span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>. This certificate <span class="bcp14">MAY</span> be self-signed when the entity is acting as a root of trust (i.e., an apex). Such self-signed behavior is defined by policy, such as in <span>[<a href="#I-D.ietf-drip-dki" class="cite xref">drip-dki</a>]</span>, and is out of scope for this document. This certificate is part of a chain of certificates that can be used to validate inclusion in the hierarchy.<a href="#section-5.1.2-3.6.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="bcast-rr">
+<section id="section-5.2">
+        <h3 id="name-uas-broadcast-rid-resource-">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-uas-broadcast-rid-resource-" class="section-name selfRef">UAS Broadcast RID Resource Record</a>
+        </h3>
+<p id="section-5.2-1">The UAS Broadcast RID Resource Record (BRID, RRType 68) is a format to hold information typically sent over UAS Broadcast RID that is static. It can act as a data source if information is not received over Broadcast RID or for cross validation. The primary function for DRIP is to include of one or more Broadcast Endorsements as defined in <span>[<a href="#RFC9575" class="cite xref">RFC9575</a>]</span> in the <code>auth</code> field. These Endorsements are generated by the registrar upon successful registration and broadcast by the entity.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">The data <span class="bcp14">MUST</span> be encoded in CBOR <span>[<a href="#RFC8949" class="cite xref">RFC8949</a>]</span> bytes. The CDDL <span>[<a href="#RFC8610" class="cite xref">RFC8610</a>]</span> of the data is provided in <a href="#bcast-wire-cddl" class="auto internal xref">Figure 5</a>.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<div id="bcast-rr-text">
+<section id="section-5.2.1">
+          <h4 id="name-text-representation-2">
+<a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-text-representation-2" class="section-name selfRef">Text Representation</a>
+          </h4>
+<p id="section-5.2.1-1">The data are represented in base64 <span>[<a href="#RFC4648" class="cite xref">RFC4648</a>]</span> and may be divided into any number of white-space-separated substrings, down to single base64 digits, which are concatenated to obtain the full object. These substrings can span lines using the standard parenthesis. Note that the data has internal subfields but these do not appear in the zone file representation; only a single logical base64 string will appear.<a href="#section-5.2.1-1" class="pilcrow">¶</a></p>
+<div id="bcast-rr-presentation">
+<section id="section-5.2.1.1">
+            <h5 id="name-presentation-representation-2">
+<a href="#section-5.2.1.1" class="section-number selfRef">5.2.1.1. </a><a href="#name-presentation-representation-2" class="section-name selfRef">Presentation Representation</a>
+            </h5>
+<p id="section-5.2.1.1-1">The data <span class="bcp14">MAY</span>, for display purposes only, be represented using the Extended Diagnostic Notation as defined in <span><a href="https://rfc-editor.org/rfc/rfc8610#appendix-G" class="relref">Appendix G</a> of [<a href="#RFC8610" class="cite xref">RFC8610</a>]</span>. All byte strings longer than a length of 20 <span class="bcp14">SHOULD</span> be displayed as base64 when possible.<a href="#section-5.2.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="bcast-rr-fields">
+<section id="section-5.2.2">
+          <h4 id="name-field-descriptions-2">
+<a href="#section-5.2.2" class="section-number selfRef">5.2.2. </a><a href="#name-field-descriptions-2" class="section-name selfRef">Field Descriptions</a>
+          </h4>
+<span id="name-brid-wire-format-cddl"></span><div id="bcast-wire-cddl">
+<figure id="figure-5">
+            <div class="lang-cddl sourcecode" id="section-5.2.2-1.1">
+<pre>
+bcast-rr = {
+    uas_type =&gt; nibble-field,
+    uas_ids =&gt; [+ uas-id-grp],
+    ? auth =&gt; [+ auth-grp],
+    ? self_id =&gt; self-grp,
+    ? area =&gt; area-grp,
+    ? classification =&gt; classification-grp,
+    ? operator_id =&gt; operator-grp
+}
+uas-id-grp = [
+    id_type: &amp;uas-id-types,
+    uas_id: bstr .size(20)
+]
+auth-grp = [
+    a_type: &amp;auth-types,
+    a_data: bstr .size(1..362)
+]
+area-grp = [
+    area_count: 1..255,
+    area_radius: float,  # in decameters
+    area_floor: float,   # wgs84-hae in meters
+    area_ceiling: float  # wgs84-hae in meters
+]
+classification-grp = [
+    class_type: 0..8,
+    class: nibble-field,
+    category: nibble-field
+]
+self-grp = [
+    desc_type: 0..255,
+    description: tstr .size(23)
+]
+operator-grp = [
+    operator_id_type: 0..255,
+    operator_id: bstr .size(20)
+]
+uas-id-types = (none: 0, serial: 1, session_id: 4)
+auth-types = (none: 0, specific_method: 5)
+nibble-field = 0..15
+uas_type = 0
+uas_ids = 1
+auth = 2
+self_id = 3
+area = 4
+classification = 5
+operator_id = 6</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-brid-wire-format-cddl" class="selfRef">BRID Wire Format CDDL</a>
+            </figcaption></figure>
+</div>
+<p id="section-5.2.2-2">The field names and their general typing are taken from the ASTM data dictionary (Tables 1 and 2) <span>[<a href="#F3411" class="cite xref">F3411</a>]</span>. See that document for additional context and background information on aviation application-specific interpretation of the field semantics. The explicitly enumerated values included in the CDDL above are relevant to DRIP for its operation. Other values may be valid but are outside the scope of DRIP operation. Application-specific fields, such as UAS Type, are transported and authenticated by DRIP but are regarded as opaque user data to DRIP.<a href="#section-5.2.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="det-prefix-delegation">
+<section id="section-6.1">
+        <h3 id="name-det-prefix-delegation">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-det-prefix-delegation" class="section-name selfRef">DET Prefix Delegation</a>
+        </h3>
+<p id="section-6.1-1">The reverse domain for the DET Prefix, i.e., <code>3.0.0.1.0.0.2.ip6.arpa.</code>, is managed by IANA. IANA will liaise, as needed, with the International Civil Aviation Organization (ICAO) to verify the authenticity of delegations to CAAs (see <a href="#iso-range" class="auto internal xref">Section 6.2.1.4</a>).<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-drip-registry">
+<section id="section-6.2">
+        <h3 id="name-iana-drip-registry">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-iana-drip-registry" class="section-name selfRef">IANA DRIP Registry</a>
+        </h3>
+<div id="iana-raa">
+<section id="section-6.2.1">
+          <h4 id="name-drip-raa-allocations">
+<a href="#section-6.2.1" class="section-number selfRef">6.2.1. </a><a href="#name-drip-raa-allocations" class="section-name selfRef">DRIP RAA Allocations</a>
+          </h4>
+<p id="section-6.2.1-1">IANA has created the registry for RAA Allocations under the <a href="https://www.iana.org/assignments/drip">"Drone Remote ID Protocol" registry group</a>.<a href="#section-6.2.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6.2.1-2">
+            <dt id="section-6.2.1-2.1">RAA Allocations:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.2.1-2.2">
+              <p id="section-6.2.1-2.2.1">a 14-bit value used to represent RAAs. Future additions to this registry are to be made based on the following range and policy table:<a href="#section-6.2.1-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<span id="name-raa-ranges"></span><div id="raa-ranges">
+<table class="center" id="table-1">
+            <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-raa-ranges" class="selfRef">RAA Ranges</a>
+            </caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">RAA Range</th>
+                <th class="text-left" rowspan="1" colspan="1">Allocation</th>
+                <th class="text-left" rowspan="1" colspan="1">Policy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">0 - 3</td>
+                <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+                <td class="text-left" rowspan="1" colspan="1"></td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">4 - 3999</td>
+                <td class="text-left" rowspan="1" colspan="1">ISO 3166-1 Countries</td>
+                <td class="text-left" rowspan="1" colspan="1">IESG Approval (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.10" class="relref">Section 4.10</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>), <a href="#iso-range" class="auto internal xref">Section 6.2.1.4</a>
+</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">4000 - 8191</td>
+                <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+                <td class="text-left" rowspan="1" colspan="1"></td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">8192 - 15359</td>
+                <td class="text-left" rowspan="1" colspan="1">Unassigned</td>
+                <td class="text-left" rowspan="1" colspan="1">First Come First Served (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.4" class="relref">Section 4.4</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>)</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">15360 - 16383</td>
+                <td class="text-left" rowspan="1" colspan="1">Private Use</td>
+                <td class="text-left" rowspan="1" colspan="1">Private Use (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>), <a href="#experimental-range" class="auto internal xref">Section 6.2.1.5</a>
+</td>
+              </tr>
+            </tbody>
+          </table>
+</div>
+<div id="raa-allocation-fields">
+<section id="section-6.2.1.1">
+            <h5 id="name-raa-allocation-fields">
+<a href="#section-6.2.1.1" class="section-number selfRef">6.2.1.1. </a><a href="#name-raa-allocation-fields" class="section-name selfRef">RAA Allocation Fields</a>
+            </h5>
+<span class="break"></span><dl class="dlParallel" id="section-6.2.1.1-1">
+              <dt id="section-6.2.1.1-1.1">Value:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.1.1-1.2">
+                <p id="section-6.2.1.1-1.2.1">The RAA value delegated for this entry.<a href="#section-6.2.1.1-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2.1.1-1.3">Name:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.1.1-1.4">
+                <p id="section-6.2.1.1-1.4.1">Name of the delegated RAA. For the ISO 3166-1 Countries (<a href="#iso-range" class="auto internal xref">Section 6.2.1.4</a>), this should be the name of the country.<a href="#section-6.2.1.1-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2.1.1-1.5">Reference:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.1.1-1.6">
+                <p id="section-6.2.1.1-1.6.1">A publicly accessible link to the policy requirements for prospective HDA operators to register under this RAA. This field is <span class="bcp14">OPTIONAL</span>.<a href="#section-6.2.1.1-1.6.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2.1.1-1.7">Contact:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.1.1-1.8">
+                <p id="section-6.2.1.1-1.8.1">Contact details of the administrator of this RAA that prospective HDA operators can make informational queries to.<a href="#section-6.2.1.1-1.8.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="raa-registration-form">
+<section id="section-6.2.1.2">
+            <h5 id="name-raa-registration-form">
+<a href="#section-6.2.1.2" class="section-number selfRef">6.2.1.2. </a><a href="#name-raa-registration-form" class="section-name selfRef">RAA Registration Form</a>
+            </h5>
+<span id="name-raa-delegation-request-form"></span><div id="raa-form">
+<figure id="figure-6">
+              <div class="alignLeft art-text artwork" id="section-6.2.1.2-1.1">
+<pre>
+Value:
+Name:
+Reference:
+Contact:
+NS RRType Content (HDA=0):
+NS RRType Content (HDA=4096):
+NS RRType Content (HDA=8192):
+NS RRType Content (HDA=12288):</pre>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-raa-delegation-request-form" class="selfRef">RAA Delegation Request Form</a>
+              </figcaption></figure>
+</div>
+<p id="section-6.2.1.2-2">The <code>NS RRType Content (HDA=X)</code> fields are used by IANA to perform the DNS delegations under <code>3.0.0.1.0.0.2.ip6.arpa.</code>. See <a href="#nibble-split" class="auto internal xref">Section 6.2.1.3</a> for technical details.<a href="#section-6.2.1.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="nibble-split">
+<section id="section-6.2.1.3">
+            <h5 id="name-handling-nibble-split">
+<a href="#section-6.2.1.3" class="section-number selfRef">6.2.1.3. </a><a href="#name-handling-nibble-split" class="section-name selfRef">Handling Nibble Split</a>
+            </h5>
+<p id="section-6.2.1.3-1">To support DNS delegation in <code>3.0.0.1.0.0.2.ip6.arpa.</code>, a single RAA is given 4 delegations by borrowing the upper two bits of HDA space (see <a href="#raa-borrowing" class="auto internal xref">Figure 7</a> for an example). This enables a clean nibble boundary in the DNS to delegate from (i.e., the prefix <code>2001:3x:xxx0::/44</code>). These HDAs (0, 4096, 8192 and 12288) are reserved for the RAA.<a href="#section-6.2.1.3-1" class="pilcrow">¶</a></p>
+<span id="name-example-bit-borrowing-of-ra"></span><div id="raa-borrowing">
+<figure id="figure-7">
+              <div class="alignCenter art-text artwork" id="section-6.2.1.3-2.1">
+<pre>
+ 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 0 0 0 0 0 0 0 0 0 0
+ 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 9 8 7 6 5 4 3 2 1 0
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|           0           | x |         RAA=16376         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    0   |   0   |   0   |   0   |   E   |   F   |   F     HDA=0,x=00
+    0   |   0   |   0   |   1   |   E   |   F   |   F     HDA=4096,x=01
+    0   |   0   |   0   |   2   |   E   |   F   |   F     HDA=8192,x=10
+    0   |   0   |   0   |   3   |   E   |   F   |   F     HDA=12288,x=11</pre>
+</div>
+<figcaption><a href="#figure-7" class="selfRef">Figure 7</a>:
+<a href="#name-example-bit-borrowing-of-ra" class="selfRef">Example Bit Borrowing of RAA=16376</a>
+              </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="iso-range">
+<section id="section-6.2.1.4">
+            <h5 id="name-iso-3166-1-countries-range">
+<a href="#section-6.2.1.4" class="section-number selfRef">6.2.1.4. </a><a href="#name-iso-3166-1-countries-range" class="section-name selfRef">ISO 3166-1 Countries Range</a>
+            </h5>
+<p id="section-6.2.1.4-1">The mapping between ISO 3166-1 Numeric Nation Codes and RAAs is specified and documented by IANA. Each Nation is assigned 4 RAAs that are left to the national authority for their purpose. For RAAs under this range, a shorter prefix of <code>2001:3x:xx00::/40</code> <span class="bcp14">MAY</span> be delegated to each CAA, which covers all 4 RAAs (and reserved HDAs) assigned to them.<a href="#section-6.2.1.4-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.1.4-2">The registration policy for this range is set to IESG Approval (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.10" class="relref">Section 4.10</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>) and IANA will liaise with the ICAO to verify the authenticity of delegation requests (using <a href="#raa-form" class="auto internal xref">Figure 6</a>) by CAAs.<a href="#section-6.2.1.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="experimental-range">
+<section id="section-6.2.1.5">
+            <h5 id="name-private-range">
+<a href="#section-6.2.1.5" class="section-number selfRef">6.2.1.5. </a><a href="#name-private-range" class="section-name selfRef">Private Range</a>
+            </h5>
+<p id="section-6.2.1.5-1">If nibble-reversed lookup in DNS is desired, it can only be provided by private DNS servers as zone delegations from the global root will not be performed for this address range. Thus the RAAs (with its subordinate HDAs) in this range may be used in like manner and IANA will not delegate any value in this range to any party (as per Private Use, <span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-6.2.1.5-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.1.5-2">One anticipated acceptable use of the private range is for experimentation and testing prior to request allocation or assignment from IANA.<a href="#section-6.2.1.5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-hhit-type">
+<section id="section-6.2.2">
+          <h4 id="name-hhit-entity-types">
+<a href="#section-6.2.2" class="section-number selfRef">6.2.2. </a><a href="#name-hhit-entity-types" class="section-name selfRef">HHIT Entity Types</a>
+          </h4>
+<p id="section-6.2.2-1">This document requests a new registry for HHIT Entity Types under the <a href="https://www.iana.org/assignments/drip">"Drone Remote ID Protocol" registry group</a>.<a href="#section-6.2.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6.2.2-2">
+            <dt id="section-6.2.2-2.1">HHIT Entity Type:</dt>
+            <dd style="margin-left: 1.5em" id="section-6.2.2-2.2">
+              <p id="section-6.2.2-2.2.1">Numeric, field of the HHIT RRType to encode the HHIT Entity Type. All entries in this registry are under the First Come First Served policy (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.4" class="relref">Section 4.4</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-6.2.2-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<div id="hhit-type-registry-fields">
+<section id="section-6.2.2.1">
+            <h5 id="name-hhit-type-registry-fields">
+<a href="#section-6.2.2.1" class="section-number selfRef">6.2.2.1. </a><a href="#name-hhit-type-registry-fields" class="section-name selfRef">HHIT Type Registry Fields</a>
+            </h5>
+<span class="break"></span><dl class="dlParallel" id="section-6.2.2.1-1">
+              <dt id="section-6.2.2.1-1.1">Value:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.2.1-1.2">
+                <p id="section-6.2.2.1-1.2.1">HHIT Type value of the entry.<a href="#section-6.2.2.1-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2.2.1-1.3">HHIT Type:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.2.1-1.4">
+                <p id="section-6.2.2.1-1.4.1">Name of the entry and an optional abbreviation.<a href="#section-6.2.2.1-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-6.2.2.1-1.5">Reference:</dt>
+              <dd style="margin-left: 1.5em" id="section-6.2.2.1-1.6">
+                <p id="section-6.2.2.1-1.6.1">Public document allocating the value and any additional information such as semantics. This can be a URL pointing to an Internet-Draft, IETF RFC, or web page among others.<a href="#section-6.2.2.1-1.6.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="hhit-type-registration-form">
+<section id="section-6.2.2.2">
+            <h5 id="name-hhit-type-registration-form">
+<a href="#section-6.2.2.2" class="section-number selfRef">6.2.2.2. </a><a href="#name-hhit-type-registration-form" class="section-name selfRef">HHIT Type Registration Form</a>
+            </h5>
+<span id="name-hhit-type-registration-form-2"></span><div id="hhit-form">
+<figure id="figure-8">
+              <div class="alignLeft art-text artwork" id="section-6.2.2.2-1.1">
+<pre>
+Value:
+HHIT Type:
+Reference:</pre>
+</div>
+<figcaption><a href="#figure-8" class="selfRef">Figure 8</a>:
+<a href="#name-hhit-type-registration-form-2" class="selfRef">HHIT Type Registration Form</a>
+              </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="initial-values">
+<section id="section-6.2.2.3">
+            <h5 id="name-initial-values">
+<a href="#section-6.2.2.3" class="section-number selfRef">6.2.2.3. </a><a href="#name-initial-values" class="section-name selfRef">Initial Values</a>
+            </h5>
+<p id="section-6.2.2.3-1">The following values are defined by this document:<a href="#section-6.2.2.3-1" class="pilcrow">¶</a></p>
+<span id="name-hhit-entity-type-initial-va"></span><div id="hhit-initial">
+<table class="center" id="table-2">
+              <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-hhit-entity-type-initial-va" class="selfRef">HHIT Entity Type Initial Values</a>
+              </caption>
+<thead>
+                <tr>
+                  <th class="text-left" rowspan="1" colspan="1">Value</th>
+                  <th class="text-left" rowspan="1" colspan="1">HHIT Type</th>
+                  <th class="text-left" rowspan="1" colspan="1">Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">0</td>
+                  <td class="text-left" rowspan="1" colspan="1">Not Defined</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">1</td>
+                  <td class="text-left" rowspan="1" colspan="1">DRIP Identity Management Entity (DIME)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">5</td>
+                  <td class="text-left" rowspan="1" colspan="1">Apex</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">9</td>
+                  <td class="text-left" rowspan="1" colspan="1">Registered Assigning Authority (RAA)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">13</td>
+                  <td class="text-left" rowspan="1" colspan="1">HHIT Domain Authority (HDA)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">16</td>
+                  <td class="text-left" rowspan="1" colspan="1">Unmanned Aircraft (UA)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">17</td>
+                  <td class="text-left" rowspan="1" colspan="1">Ground Control Station (GCS)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">18</td>
+                  <td class="text-left" rowspan="1" colspan="1">Unmanned Aircraft System (UAS)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">19</td>
+                  <td class="text-left" rowspan="1" colspan="1">Remote Identification (RID) Module</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">20</td>
+                  <td class="text-left" rowspan="1" colspan="1">Pilot</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">21</td>
+                  <td class="text-left" rowspan="1" colspan="1">Operator</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">22</td>
+                  <td class="text-left" rowspan="1" colspan="1">Discovery &amp; Synchronization Service (DSS)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">23</td>
+                  <td class="text-left" rowspan="1" colspan="1">UAS Service Supplier (USS)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">24</td>
+                  <td class="text-left" rowspan="1" colspan="1">Network RID Service Provider (SP)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">25</td>
+                  <td class="text-left" rowspan="1" colspan="1">Network RID Display Provider (DP)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">26</td>
+                  <td class="text-left" rowspan="1" colspan="1">Supplemental Data Service Provider (SDSP)</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+                <tr>
+                  <td class="text-left" rowspan="1" colspan="1">27</td>
+                  <td class="text-left" rowspan="1" colspan="1">Crowd Sourced RID Finder</td>
+                  <td class="text-left" rowspan="1" colspan="1">RFC 9886</td>
+                </tr>
+              </tbody>
+            </table>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="dns-operational-registration-considerations">
+<section id="section-7.1">
+        <h3 id="name-dns-operational-and-registr">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-dns-operational-and-registr" class="section-name selfRef">DNS Operational and Registration Considerations</a>
+        </h3>
+<p id="section-7.1-1">The Registrar and Registry are commonly used concepts in the DNS. 
+   These components connect the DIME with the DNS hierarchy and thus
+   operation <span class="bcp14">SHOULD</span> follow best common practices, specifically in
+   security (such as running DNSSEC) as appropriate except when national
+   regulations prevent it. <span>[<a href="#BCP237" class="cite xref">BCP237</a>]</span> provides suitable guidance.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">If DNSSEC is used, a DNSSEC Practice Statement <span class="bcp14">SHOULD</span> be developed and published. It <span class="bcp14">SHOULD</span> explain how DNSSEC has been deployed and what security measures are in place. <span>[<a href="#RFC6841" class="cite xref">RFC6841</a>]</span> documents a framework for DNSSEC policies and DNSSEC Practice Statements. A self-signed entity (i.e., an entity that self-signed its certificate as part of the HHIT RRType) <span class="bcp14">MUST</span> use DNSSEC.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">The interfaces and protocol specifications for registry-registrar interactions are intentionally not specified in this document. These will depend on nationally defined policy and prevailing local circumstances. It is expected that registry-registrar activity will use the Extensible Provisioning Protocol (EPP) <span>[<a href="#STD69" class="cite xref">STD69</a>]</span> or equivalent. The registry <span class="bcp14">SHOULD</span> provide a lookup service such as RDAP <span>[<a href="#STD95" class="cite xref">STD95</a>]</span> or equivalent to publish public information about registered domain names.<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<p id="section-7.1-4">Decisions about DNS or registry best practices and other operational matters that influence security <span class="bcp14">SHOULD</span> be made by the CAA, ideally in consultation with local stakeholders.<a href="#section-7.1-4" class="pilcrow">¶</a></p>
+<p id="section-7.1-5">The guidance above is intended to reduce the likelihood of interoperability problems and minimize security and stability concerns. For instance, validation and authentication of DNS responses depends on DNSSEC. If this is not used, entities using DRIP will be vulnerable to DNS spoofing attacks and could be exposed to bogus data. DRIP DNS responses that have not been validated by DNSSEC could contain bogus data that have the potential to create serious security problems and operational concerns for DRIP entities. These threats include denial-of-service attacks, replay attacks, impersonation or cloning of UAVs, hijacking of DET registrations, injection of corrupt metadata, and compromising established trust architecture/relationships. Some regulatory and legal considerations are expected to be simplified by providing a lookup service for access to public information about registered domain names for DETs.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
+<p id="section-7.1-6">When DNSSEC is not in use, due to the length of the ORCHID hash selected for DETs (<span><a href="https://rfc-editor.org/rfc/rfc9374#section-3.5" class="relref">Section 3.5</a> of [<a href="#RFC9374" class="cite xref">RFC9374</a>]</span>), clients <span class="bcp14">MUST</span> "walk" the tree of certificates locating each certificate by performing DNS lookups of HHIT RRTypes for each DET verifying inclusion into the hierarchy. The collection of these certificates (which provide both signature protection from the parent entity and the public key of the entity) is the only way without DNSSEC to prove valid registration.<a href="#section-7.1-6" class="pilcrow">¶</a></p>
+<p id="section-7.1-7">The contents of the BRID RRType <code>auth</code> key, containing Endorsements as described in <span><a href="https://rfc-editor.org/rfc/rfc9575#section-4.2" class="relref">Section 4.2</a> of [<a href="#RFC9575" class="cite xref">RFC9575</a>]</span>, are a shadow of the X.509 certificate found in the HHIT RRType. The validation of these Endorsements follow the guidelines written in <span><a href="https://rfc-editor.org/rfc/rfc9575#section-6.4.2" class="relref">Section 6.4.2</a> of [<a href="#RFC9575" class="cite xref">RFC9575</a>]</span> for Broadcast RID Observers and when present <span class="bcp14">MUST</span> also be validated.<a href="#section-7.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="det-public-key-exposure">
+<section id="section-7.2">
+        <h3 id="name-det-and-public-key-exposure">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-det-and-public-key-exposure" class="section-name selfRef">DET and Public Key Exposure</a>
+        </h3>
+<p id="section-7.2-1">DETs are built upon asymmetric keys. As such the public key must be revealed to enable clients to perform signature verifications. <span>[<a href="#RFC9374" class="cite xref">RFC9374</a>]</span> security considerations cover various attacks on such keys. While unlikely, the forging of a corresponding private key is possible if given enough time (and computational power).<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">When practical, it is <span class="bcp14">RECOMMENDED</span> that no RRTypes under a DET's specific domain name be published unless and until it is required for use by other parties. Such action would cause at least the HHIT RRType to not be in the DNS, protecting the public key in the certificate from being exposed before its needed. The combination of this "just in time" publishing mechanism and DNSSEC is out of scope for this document.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<p id="section-7.2-3">Optimally this requires that the UAS somehow signal to the DIME that a flight using a Specific Session ID will soon be underway or complete. It may also be facilitated under UTM if the USS (which may or may not be a DIME) signals when a given operation using a Session ID goes active.<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="F3411">[F3411]</dt>
+        <dd>
+<span class="refAuthor">ASTM International</span>, <span class="refTitle">"Standard Specification for Remote ID and Tracking"</span>, <span class="seriesInfo">ASTM F3411-22A</span>, <span class="seriesInfo">DOI 10.1520/F3411-22A</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.astm.org/f3411-22a.html">https://www.astm.org/f3411-22a.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="ISO3166-1">[ISO3166-1]</dt>
+        <dd>
+<span class="refAuthor">ISO</span>, <span class="refTitle">"Codes for the representation of names of countries and their subdivisions - Part 1: Country code"</span>, <span class="seriesInfo">ISO 3166-1:2020</span>, <time datetime="2020-08" class="refDate">August 2020</time>, <span>&lt;<a href="https://www.iso.org/standard/72482.html">https://www.iso.org/standard/72482.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4648">[RFC4648]</dt>
+        <dd>
+<span class="refAuthor">Josefsson, S.</span>, <span class="refTitle">"The Base16, Base32, and Base64 Data Encodings"</span>, <span class="seriesInfo">RFC 4648</span>, <span class="seriesInfo">DOI 10.17487/RFC4648</span>, <time datetime="2006-10" class="refDate">October 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4648">https://www.rfc-editor.org/info/rfc4648</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8949">[RFC8949]</dt>
+        <dd>
+<span class="refAuthor">Bormann, C.</span> and <span class="refAuthor">P. Hoffman</span>, <span class="refTitle">"Concise Binary Object Representation (CBOR)"</span>, <span class="seriesInfo">STD 94</span>, <span class="seriesInfo">RFC 8949</span>, <span class="seriesInfo">DOI 10.17487/RFC8949</span>, <time datetime="2020-12" class="refDate">December 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8949">https://www.rfc-editor.org/info/rfc8949</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9374">[RFC9374]</dt>
+      <dd>
+<span class="refAuthor">Moskowitz, R.</span>, <span class="refAuthor">Card, S.</span>, <span class="refAuthor">Wiethuechter, A.</span>, and <span class="refAuthor">A. Gurtov</span>, <span class="refTitle">"DRIP Entity Tag (DET) for Unmanned Aircraft System Remote ID (UAS RID)"</span>, <span class="seriesInfo">RFC 9374</span>, <span class="seriesInfo">DOI 10.17487/RFC9374</span>, <time datetime="2023-03" class="refDate">March 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9374">https://www.rfc-editor.org/info/rfc9374</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="BCP237">[BCP237]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 237, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp237">https://www.rfc-editor.org/info/bcp237</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC9364">
+            <span class="refAuthor">Hoffman, P.</span>, <span class="refTitle">"DNS Security Extensions (DNSSEC)"</span>, <span class="seriesInfo">BCP 237</span>, <span class="seriesInfo">RFC 9364</span>, <span class="seriesInfo">DOI 10.17487/RFC9364</span>, <time datetime="2023-02" class="refDate">February 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9364">https://www.rfc-editor.org/info/rfc9364</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-drip-dki">[drip-dki]</dt>
+        <dd>
+<span class="refAuthor">Moskowitz, R.</span> and <span class="refAuthor">S. W. Card</span>, <span class="refTitle">"The DRIP DET public Key Infrastructure"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-drip-dki-09</span>, <time datetime="2025-10-20" class="refDate">20 October 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-drip-dki-09">https://datatracker.ietf.org/doc/html/draft-ietf-drip-dki-09</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5280">[RFC5280]</dt>
+        <dd>
+<span class="refAuthor">Cooper, D.</span>, <span class="refAuthor">Santesson, S.</span>, <span class="refAuthor">Farrell, S.</span>, <span class="refAuthor">Boeyen, S.</span>, <span class="refAuthor">Housley, R.</span>, and <span class="refAuthor">W. Polk</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile"</span>, <span class="seriesInfo">RFC 5280</span>, <span class="seriesInfo">DOI 10.17487/RFC5280</span>, <time datetime="2008-05" class="refDate">May 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5280">https://www.rfc-editor.org/info/rfc5280</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6841">[RFC6841]</dt>
+        <dd>
+<span class="refAuthor">Ljunggren, F.</span>, <span class="refAuthor">Eklund Lowinder, AM.</span>, and <span class="refAuthor">T. Okubo</span>, <span class="refTitle">"A Framework for DNSSEC Policies and DNSSEC Practice Statements"</span>, <span class="seriesInfo">RFC 6841</span>, <span class="seriesInfo">DOI 10.17487/RFC6841</span>, <time datetime="2013-01" class="refDate">January 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6841">https://www.rfc-editor.org/info/rfc6841</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8005">[RFC8005]</dt>
+        <dd>
+<span class="refAuthor">Laganier, J.</span>, <span class="refTitle">"Host Identity Protocol (HIP) Domain Name System (DNS) Extension"</span>, <span class="seriesInfo">RFC 8005</span>, <span class="seriesInfo">DOI 10.17487/RFC8005</span>, <time datetime="2016-10" class="refDate">October 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8005">https://www.rfc-editor.org/info/rfc8005</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8610">[RFC8610]</dt>
+        <dd>
+<span class="refAuthor">Birkholz, H.</span>, <span class="refAuthor">Vigano, C.</span>, and <span class="refAuthor">C. Bormann</span>, <span class="refTitle">"Concise Data Definition Language (CDDL): A Notational Convention to Express Concise Binary Object Representation (CBOR) and JSON Data Structures"</span>, <span class="seriesInfo">RFC 8610</span>, <span class="seriesInfo">DOI 10.17487/RFC8610</span>, <time datetime="2019-06" class="refDate">June 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8610">https://www.rfc-editor.org/info/rfc8610</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9153">[RFC9153]</dt>
+        <dd>
+<span class="refAuthor">Card, S., Ed.</span>, <span class="refAuthor">Wiethuechter, A.</span>, <span class="refAuthor">Moskowitz, R.</span>, and <span class="refAuthor">A. Gurtov</span>, <span class="refTitle">"Drone Remote Identification Protocol (DRIP) Requirements and Terminology"</span>, <span class="seriesInfo">RFC 9153</span>, <span class="seriesInfo">DOI 10.17487/RFC9153</span>, <time datetime="2022-02" class="refDate">February 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9153">https://www.rfc-editor.org/info/rfc9153</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9434">[RFC9434]</dt>
+        <dd>
+<span class="refAuthor">Card, S.</span>, <span class="refAuthor">Wiethuechter, A.</span>, <span class="refAuthor">Moskowitz, R.</span>, <span class="refAuthor">Zhao, S., Ed.</span>, and <span class="refAuthor">A. Gurtov</span>, <span class="refTitle">"Drone Remote Identification Protocol (DRIP) Architecture"</span>, <span class="seriesInfo">RFC 9434</span>, <span class="seriesInfo">DOI 10.17487/RFC9434</span>, <time datetime="2023-07" class="refDate">July 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9434">https://www.rfc-editor.org/info/rfc9434</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9575">[RFC9575]</dt>
+        <dd>
+<span class="refAuthor">Wiethuechter, A., Ed.</span>, <span class="refAuthor">Card, S.</span>, and <span class="refAuthor">R. Moskowitz</span>, <span class="refTitle">"DRIP Entity Tag (DET) Authentication Formats and Protocols for Broadcast Remote Identification (RID)"</span>, <span class="seriesInfo">RFC 9575</span>, <span class="seriesInfo">DOI 10.17487/RFC9575</span>, <time datetime="2024-06" class="refDate">June 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9575">https://www.rfc-editor.org/info/rfc9575</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="STD13">[STD13]</dt>
+        <dd>
+<div class="refInstance">Internet Standard 13, <span>&lt;<a href="https://www.rfc-editor.org/info/std13">https://www.rfc-editor.org/info/std13</a>&gt;</span>.<br><span>At the time of writing, this STD comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC1034">
+            <span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - concepts and facilities"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1034</span>, <span class="seriesInfo">DOI 10.17487/RFC1034</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1034">https://www.rfc-editor.org/info/rfc1034</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC1035">
+            <span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - implementation and specification"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1035</span>, <span class="seriesInfo">DOI 10.17487/RFC1035</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1035">https://www.rfc-editor.org/info/rfc1035</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="STD69">[STD69]</dt>
+        <dd>
+<div class="refInstance">Internet Standard 69, <span>&lt;<a href="https://www.rfc-editor.org/info/std69">https://www.rfc-editor.org/info/std69</a>&gt;</span>.<br><span>At the time of writing, this STD comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC5730">
+            <span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP)"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5730</span>, <span class="seriesInfo">DOI 10.17487/RFC5730</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5730">https://www.rfc-editor.org/info/rfc5730</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC5731">
+            <span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Domain Name Mapping"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5731</span>, <span class="seriesInfo">DOI 10.17487/RFC5731</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5731">https://www.rfc-editor.org/info/rfc5731</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC5732">
+            <span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Host Mapping"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5732</span>, <span class="seriesInfo">DOI 10.17487/RFC5732</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5732">https://www.rfc-editor.org/info/rfc5732</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC5733">
+            <span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Contact Mapping"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5733</span>, <span class="seriesInfo">DOI 10.17487/RFC5733</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5733">https://www.rfc-editor.org/info/rfc5733</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC5734">
+            <span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Transport over TCP"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5734</span>, <span class="seriesInfo">DOI 10.17487/RFC5734</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5734">https://www.rfc-editor.org/info/rfc5734</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="STD88">[STD88]</dt>
+        <dd>
+<div class="refInstance">Internet Standard 88, <span>&lt;<a href="https://www.rfc-editor.org/info/std88">https://www.rfc-editor.org/info/std88</a>&gt;</span>.<br><span>At the time of writing, this STD comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC3596">
+            <span class="refAuthor">Thomson, S.</span>, <span class="refAuthor">Huitema, C.</span>, <span class="refAuthor">Ksinant, V.</span>, and <span class="refAuthor">M. Souissi</span>, <span class="refTitle">"DNS Extensions to Support IP Version 6"</span>, <span class="seriesInfo">STD 88</span>, <span class="seriesInfo">RFC 3596</span>, <span class="seriesInfo">DOI 10.17487/RFC3596</span>, <time datetime="2003-10" class="refDate">October 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3596">https://www.rfc-editor.org/info/rfc3596</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="STD95">[STD95]</dt>
+      <dd>
+<div class="refInstance">Internet Standard 95, <span>&lt;<a href="https://www.rfc-editor.org/info/std95">https://www.rfc-editor.org/info/std95</a>&gt;</span>.<br><span>At the time of writing, this STD comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC7480">
+            <span class="refAuthor">Newton, A.</span>, <span class="refAuthor">Ellacott, B.</span>, and <span class="refAuthor">N. Kong</span>, <span class="refTitle">"HTTP Usage in the Registration Data Access Protocol (RDAP)"</span>, <span class="seriesInfo">STD 95</span>, <span class="seriesInfo">RFC 7480</span>, <span class="seriesInfo">DOI 10.17487/RFC7480</span>, <time datetime="2015-03" class="refDate">March 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7480">https://www.rfc-editor.org/info/rfc7480</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC7481">
+            <span class="refAuthor">Hollenbeck, S.</span> and <span class="refAuthor">N. Kong</span>, <span class="refTitle">"Security Services for the Registration Data Access Protocol (RDAP)"</span>, <span class="seriesInfo">STD 95</span>, <span class="seriesInfo">RFC 7481</span>, <span class="seriesInfo">DOI 10.17487/RFC7481</span>, <time datetime="2015-03" class="refDate">March 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7481">https://www.rfc-editor.org/info/rfc7481</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9082">
+            <span class="refAuthor">Hollenbeck, S.</span> and <span class="refAuthor">A. Newton</span>, <span class="refTitle">"Registration Data Access Protocol (RDAP) Query Format"</span>, <span class="seriesInfo">STD 95</span>, <span class="seriesInfo">RFC 9082</span>, <span class="seriesInfo">DOI 10.17487/RFC9082</span>, <time datetime="2021-06" class="refDate">June 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9082">https://www.rfc-editor.org/info/rfc9082</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9083">
+            <span class="refAuthor">Hollenbeck, S.</span> and <span class="refAuthor">A. Newton</span>, <span class="refTitle">"JSON Responses for the Registration Data Access Protocol (RDAP)"</span>, <span class="seriesInfo">STD 95</span>, <span class="seriesInfo">RFC 9083</span>, <span class="seriesInfo">DOI 10.17487/RFC9083</span>, <time datetime="2021-06" class="refDate">June 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9083">https://www.rfc-editor.org/info/rfc9083</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9224">
+            <span class="refAuthor">Blanchet, M.</span>, <span class="refTitle">"Finding the Authoritative Registration Data Access Protocol (RDAP) Service"</span>, <span class="seriesInfo">STD 95</span>, <span class="seriesInfo">RFC 9224</span>, <span class="seriesInfo">DOI 10.17487/RFC9224</span>, <time datetime="2022-03" class="refDate">March 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9224">https://www.rfc-editor.org/info/rfc9224</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="example-zone-files-rrtype-contents">
+<section id="appendix-A">
+      <h2 id="name-example-zone-files-and-rrty">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-example-zone-files-and-rrty" class="section-name selfRef">Example Zone Files and RRType Contents</a>
+      </h2>
+<p id="appendix-A-1">An example zone file <code>ip6.arpa.</code>, run by IANA, is not shown. It would contain NS RRTypes to delegate to a respective RAA. To avoid any future collisions with production deployments an apex of <code>ip6.example.com.</code> is used instead of <code>ip6.arpa.</code>. All hexadecimal strings in the examples are broken into the lengths of a word, for document formatting purposes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">An RAA with a HID of <code>RAA=16376, HDA=0</code> and HDA with a the HID <code>RAA=16376, HDA=10</code> were used in the examples.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<div id="example-raa">
+<section id="appendix-A.1">
+        <h3 id="name-example-raa">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-example-raa" class="section-name selfRef">Example RAA</a>
+        </h3>
+<div id="raa-hhits">
+<section id="appendix-A.1.1">
+          <h4 id="name-authentication-hhit">
+<a href="#appendix-A.1.1" class="section-number selfRef">A.1.1. </a><a href="#name-authentication-hhit" class="section-name selfRef">Authentication HHIT</a>
+          </h4>
+<span id="name-raa-auth-hhit-rrtype-exampl"></span><div id="raa-rr-zone">
+<figure id="figure-9">
+            <div class="sourcecode" id="appendix-A.1.1-1.1">
+<pre>
+$ORIGIN 5.0.0.0.0.0.e.f.f.3.0.0.1.0.0.2.ip6.example.com.
+7.b.0.a.1.9.e.1.7.5.1.a.0.6.e.5. IN HHIT (
+    gwppM2ZmOCAwMDAwWQFGMIIBQjCB9aAD
+    AgECAgE1MAUGAytlcDArMSkwJwYDVQQD
+    DCAyMDAxMDAzZmZlMDAwMDA1NWU2MGEx
+    NTcxZTkxYTBiNzAeFw0yNTA0MDkyMDU2
+    MjZaFw0yNTA0MDkyMTU2MjZaMB0xGzAZ
+    BgNVBAMMEkRSSVAtUkFBLUEtMTYzNzYt
+    MDAqMAUGAytlcAMhAJmQ1bBLcqGAZtQJ
+    K1LH1JlPt8Fr1+jB9ED/qNBP8eE/o0ww
+    SjAPBgNVHRMBAf8EBTADAQH/MDcGA1Ud
+    EQEB/wQtMCuHECABAD/+AAAFXmChVx6R
+    oLeGF2h0dHBzOi8vcmFhLmV4YW1wbGUu
+    Y29tMAUGAytlcANBALUPjhIB3rwqXQep
+    r9/VDB+hhtwuWZIw1OUkEuDrF6DCkgc7
+    5widXnXa5/uDfdKL7dZ83mPHm2Tf32Dv
+    b8AzEw8=
+)</pre>
+</div>
+<figcaption><a href="#figure-9" class="selfRef">Figure 9</a>:
+<a href="#name-raa-auth-hhit-rrtype-exampl" class="selfRef">RAA Auth HHIT RRType Example</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.1.1-2"><a href="#raa-rr-cbor" class="auto internal xref">Figure 10</a> shows the CBOR decoded RDATA in the HHIT RRType found in <a href="#raa-rr-zone" class="auto internal xref">Figure 9</a>.<a href="#appendix-A.1.1-2" class="pilcrow">¶</a></p>
+<span id="name-20013ffe0055e60a1571e91a0b7"></span><div id="raa-rr-cbor">
+<figure id="figure-10">
+            <div class="sourcecode" id="appendix-A.1.1-3.1">
+<pre>
+[
+    10,  # Reserved (RAA Auth from DKI)
+    "3ff8 0000",
+    h'308201423081F5A00302010202013530
+    0506032B6570302B312930270603550403
+    0C20323030313030336666653030303030
+    3535653630613135373165393161306237
+    301E170D3235303430393230353632365A
+    170D3235303430393231353632365A301D
+    311B301906035504030C12445249502D52
+    41412D412D31363337362D30302A300506
+    032B65700321009990D5B04B72A18066D4
+    092B52C7D4994FB7C16BD7E8C1F440FFA8
+    D04FF1E13FA34C304A300F0603551D1301
+    01FF040530030101FF30370603551D1101
+    01FF042D302B87102001003FFE0000055E
+    60A1571E91A0B7861768747470733A2F2F
+    7261612E6578616D706C652E636F6D3005
+    06032B6570034100B50F8E1201DEBC2A5D
+    07A9AFDFD50C1FA186DC2E599230D4E524
+    12E0EB17A0C292073BE7089D5E75DAE7FB
+    837DD28BEDD67CDE63C79B64DFDF60EF6F
+    C033130F'
+]</pre>
+</div>
+<figcaption><a href="#figure-10" class="selfRef">Figure 10</a>:
+<a href="#name-20013ffe0055e60a1571e91a0b7" class="selfRef">2001:3f:fe00:5:5e60:a157:1e91:a0b7 Decoded HHIT RRType CBOR</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.1.1-4"><a href="#raa-rr-cert" class="auto internal xref">Figure 11</a> shows the decoded DER X.509 found in <a href="#raa-rr-cbor" class="auto internal xref">Figure 10</a>.<a href="#appendix-A.1.1-4" class="pilcrow">¶</a></p>
+<span id="name-20013ffe0055e60a1571e91a0b7-"></span><div id="raa-rr-cert">
+<figure id="figure-11">
+            <div class="sourcecode" id="appendix-A.1.1-5.1">
+<pre>
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 53 (0x35)
+        Signature Algorithm: ED25519
+        Issuer: CN = 2001003ffe0000055e60a1571e91a0b7
+        Validity
+            Not Before: Apr  9 20:56:26 2025 GMT
+            Not After : Apr  9 21:56:26 2025 GMT
+        Subject: CN = DRIP-RAA-A-16376-0
+        Subject Public Key Info:
+            Public Key Algorithm: ED25519
+                ED25519 Public-Key:
+                pub:
+                    99:90:d5:b0:4b:72:a1:80:66:d4:09:2b:52:c7:d4:
+                    99:4f:b7:c1:6b:d7:e8:c1:f4:40:ff:a8:d0:4f:f1:
+                    e1:3f
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Subject Alternative Name: critical
+                IP Address:2001:3F:FE00:5:5E60:A157:1E91:A0B7,
+                URI:https://raa.example.com
+    Signature Algorithm: ED25519
+    Signature Value:
+        b5:0f:8e:12:01:de:bc:2a:5d:07:a9:af:df:d5:0c:1f:a1:86:
+        dc:2e:59:92:30:d4:e5:24:12:e0:eb:17:a0:c2:92:07:3b:e7:
+        08:9d:5e:75:da:e7:fb:83:7d:d2:8b:ed:d6:7c:de:63:c7:9b:
+        64:df:df:60:ef:6f:c0:33:13:0f</pre>
+</div>
+<figcaption><a href="#figure-11" class="selfRef">Figure 11</a>:
+<a href="#name-20013ffe0055e60a1571e91a0b7-" class="selfRef">2001:3f:fe00:5:5e60:a157:1e91:a0b7 Decoded Certificate</a>
+            </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="delegation-of-hda">
+<section id="appendix-A.1.2">
+          <h4 id="name-delegation-of-hda">
+<a href="#appendix-A.1.2" class="section-number selfRef">A.1.2. </a><a href="#name-delegation-of-hda" class="section-name selfRef">Delegation of HDA</a>
+          </h4>
+<span id="name-hda-delegation-example"></span><figure id="figure-12">
+            <div class="sourcecode" id="appendix-A.1.2-1.1">
+<pre>
+$ORIGIN c.d.f.f.3.0.0.1.0.0.2.ip6.example.com.
+a.0.0. IN NS ns1.hda-10.example.com</pre>
+</div>
+<figcaption><a href="#figure-12" class="selfRef">Figure 12</a>:
+<a href="#name-hda-delegation-example" class="selfRef">HDA Delegation Example</a>
+            </figcaption></figure>
+</section>
+</div>
+</section>
+</div>
+<div id="example-hda">
+<section id="appendix-A.2">
+        <h3 id="name-example-hda">
+<a href="#appendix-A.2" class="section-number selfRef">A.2. </a><a href="#name-example-hda" class="section-name selfRef">Example HDA</a>
+        </h3>
+<div id="hda-hhits">
+<section id="appendix-A.2.1">
+          <h4 id="name-authentication-and-issue-hh">
+<a href="#appendix-A.2.1" class="section-number selfRef">A.2.1. </a><a href="#name-authentication-and-issue-hh" class="section-name selfRef">Authentication and Issue HHITs</a>
+          </h4>
+<span id="name-hda-auth-issue-hhit-rrtype-"></span><div id="hda-rr-zone">
+<figure id="figure-13">
+            <div class="sourcecode" id="appendix-A.2.1-1.1">
+<pre>
+$ORIGIN 5.0.a.0.0.0.e.f.f.3.0.0.1.0.0.2.ip6.example.com.
+0.a.9.0.7.2.4.d.5.4.e.e.5.1.6.6.5.0. IN HHIT (
+    gw5pM2ZmOCAwMDBhWQFHMIIBQzCB9qAD
+    AgECAgFfMAUGAytlcDArMSkwJwYDVQQD
+    DCAyMDAxMDAzZmZlMDAwMDA1NWU2MGEx
+    NTcxZTkxYTBiNzAeFw0yNTA0MDkyMTAz
+    MTlaFw0yNTA0MDkyMjAzMTlaMB4xHDAa
+    BgNVBAMME0RSSVAtSERBLUEtMTYzNzYt
+    MTAwKjAFBgMrZXADIQDOaB424RQa61YN
+    bna8eWt7fLRU5GPMsfEt4wo4AQGAP6NM
+    MEowDwYDVR0TAQH/BAUwAwEB/zA3BgNV
+    HREBAf8ELTArhxAgAQA//gAKBWYV7kXU
+    JwmghhdodHRwczovL3JhYS5leGFtcGxl
+    LmNvbTAFBgMrZXADQQAhMpOSOmgMkJY1
+    f+B9nTgawUjK4YEERBtczMknHDkOowX0
+    ynbaLN60TYe9hqN6+CJ3SN8brJke3hpM
+    gorvhDkJ
+)
+8.2.e.6.5.2.b.6.7.3.4.d.e.0.6.2.5.0. IN HHIT (
+    gw9pM2ZmOCAwMDBhWQFHMIIBQzCB9qAD
+    AgECAgFYMAUGAytlcDArMSkwJwYDVQQD
+    DCAyMDAxMDAzZmZlMDAwYTA1NjYxNWVl
+    NDVkNDI3MDlhMDAeFw0yNTA0MDkyMTA1
+    MTRaFw0yNTA0MDkyMjA1MTRaMB4xHDAa
+    BgNVBAMME0RSSVAtSERBLUktMTYzNzYt
+    MTAwKjAFBgMrZXADIQCCM/2utQaLwUhZ
+    0ROg7fz43AeBTj3Sdl5rW4LgTQcFl6NM
+    MEowDwYDVR0TAQH/BAUwAwEB/zA3BgNV
+    HREBAf8ELTArhxAgAQA//gAKBSYO1Ddr
+    JW4ohhdodHRwczovL2hkYS5leGFtcGxl
+    LmNvbTAFBgMrZXADQQBa8lZyftxHJqDF
+    Vgv4Rt+cMUmc8aQwet4UZdO3yQOB9uq4
+    sLVAScaZCWjC0nmeRkgVRhize1esfyi3
+    RRU44IAE
+)</pre>
+</div>
+<figcaption><a href="#figure-13" class="selfRef">Figure 13</a>:
+<a href="#name-hda-auth-issue-hhit-rrtype-" class="selfRef">HDA Auth/Issue HHIT RRType Example</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.1-2"><a href="#hdaa-rr-cbor" class="auto internal xref">Figure 14</a> shows the CBOR decoded RDATA in the HHIT RRType found in <a href="#hda-rr-zone" class="auto internal xref">Figure 13</a>.<a href="#appendix-A.2.1-2" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a056615ee45d4279a"></span><div id="hdaa-rr-cbor">
+<figure id="figure-14">
+            <div class="sourcecode" id="appendix-A.2.1-3.1">
+<pre>
+[
+    14,  # Reserved (HDA Auth from DKI)
+    "3ff8 000a",
+    h'308201433081F6A00302010202015F30
+    0506032B6570302B312930270603550403
+    0C20323030313030336666653030303030
+    3535653630613135373165393161306237
+    301E170D3235303430393231303331395A
+    170D3235303430393232303331395A301E
+    311C301A06035504030C13445249502D48
+    44412D412D31363337362D3130302A3005
+    06032B6570032100CE681E36E1141AEB56
+    0D6E76BC796B7B7CB454E463CCB1F12DE3
+    0A380101803FA34C304A300F0603551D13
+    0101FF040530030101FF30370603551D11
+    0101FF042D302B87102001003FFE000A05
+    6615EE45D42709A0861768747470733A2F
+    2F7261612E6578616D706C652E636F6D30
+    0506032B6570034100213293923A680C90
+    96357FE07D9D381AC148CAE18104441B5C
+    CCC9271C390EA305F4CA76DA2CDEB44D87
+    BD86A37AF8227748DF1BAC991EDE1A4C82
+    8AEF843909'
+]</pre>
+</div>
+<figcaption><a href="#figure-14" class="selfRef">Figure 14</a>:
+<a href="#name-20013ffe00a056615ee45d4279a" class="selfRef">2001:3f:fe00:a05:6615:ee45:d427:9a0 Decoded HHIT RRType CBOR</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.1-4"><a href="#hdaa-rr-cert" class="auto internal xref">Figure 15</a> shows the decoded DER X.509 found in <a href="#hdaa-rr-cbor" class="auto internal xref">Figure 14</a>.<a href="#appendix-A.2.1-4" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a056615ee45d4279a0"></span><div id="hdaa-rr-cert">
+<figure id="figure-15">
+            <div class="sourcecode" id="appendix-A.2.1-5.1">
+<pre>
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 95 (0x5f)
+        Signature Algorithm: ED25519
+        Issuer: CN = 2001003ffe0000055e60a1571e91a0b7
+        Validity
+            Not Before: Apr  9 21:03:19 2025 GMT
+            Not After : Apr  9 22:03:19 2025 GMT
+        Subject: CN = DRIP-HDA-A-16376-10
+        Subject Public Key Info:
+            Public Key Algorithm: ED25519
+                ED25519 Public-Key:
+                pub:
+                    ce:68:1e:36:e1:14:1a:eb:56:0d:6e:76:bc:79:6b:
+                    7b:7c:b4:54:e4:63:cc:b1:f1:2d:e3:0a:38:01:01:
+                    80:3f
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Subject Alternative Name: critical
+                IP Address:2001:3F:FE00:A05:6615:EE45:D427:9A0,
+                URI:https://raa.example.com
+    Signature Algorithm: ED25519
+    Signature Value:
+        21:32:93:92:3a:68:0c:90:96:35:7f:e0:7d:9d:38:1a:c1:48:
+        ca:e1:81:04:44:1b:5c:cc:c9:27:1c:39:0e:a3:05:f4:ca:76:
+        da:2c:de:b4:4d:87:bd:86:a3:7a:f8:22:77:48:df:1b:ac:99:
+        1e:de:1a:4c:82:8a:ef:84:39:09</pre>
+</div>
+<figcaption><a href="#figure-15" class="selfRef">Figure 15</a>:
+<a href="#name-20013ffe00a056615ee45d4279a0" class="selfRef">2001:3f:fe00:a05:6615:ee45:d427:9a0 Decoded Certificate</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.1-6"><a href="#hdai-rr-cbor" class="auto internal xref">Figure 16</a> shows the CBOR decoded RDATA in the HHIT RRType found in <a href="#hda-rr-zone" class="auto internal xref">Figure 13</a>.<a href="#appendix-A.2.1-6" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a05260ed4376b256e"></span><div id="hdai-rr-cbor">
+<figure id="figure-16">
+            <div class="sourcecode" id="appendix-A.2.1-7.1">
+<pre>
+[
+    15,  # Reserved (HDA Issue from DKI)
+    "3ff8 000a",
+    h'308201433081F6A00302010202015830
+    0506032B6570302B312930270603550403
+    0C20323030313030336666653030306130
+    3536363135656534356434323730396130
+    301E170D3235303430393231303531345A
+    170D3235303430393232303531345A301E
+    311C301A06035504030C13445249502D48
+    44412D492D31363337362D3130302A3005
+    06032B65700321008233FDAEB5068BC148
+    59D113A0EDFCF8DC07814E3DD2765E6B5B
+    82E04D070597A34C304A300F0603551D13
+    0101FF040530030101FF30370603551D11
+    0101FF042D302B87102001003FFE000A05
+    260ED4376B256E28861768747470733A2F
+    2F6864612E6578616D706C652E636F6D30
+    0506032B65700341005AF256727EDC4726
+    A0C5560BF846DF9C31499CF1A4307ADE14
+    65D3B7C90381F6EAB8B0B54049C6990968
+    C2D2799E4648154618B37B57AC7F28B745
+    1538E08004'
+]</pre>
+</div>
+<figcaption><a href="#figure-16" class="selfRef">Figure 16</a>:
+<a href="#name-20013ffe00a05260ed4376b256e" class="selfRef">2001:3f:fe00:a05:260e:d437:6b25:6e28 Decoded HHIT RRType CBOR</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.1-8"><a href="#hdai-rr-cert" class="auto internal xref">Figure 17</a> shows the decoded DER X.509 found in <a href="#hdai-rr-cbor" class="auto internal xref">Figure 16</a>.<a href="#appendix-A.2.1-8" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a05260ed4376b256e2"></span><div id="hdai-rr-cert">
+<figure id="figure-17">
+            <div class="sourcecode" id="appendix-A.2.1-9.1">
+<pre>
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 88 (0x58)
+        Signature Algorithm: ED25519
+        Issuer: CN = 2001003ffe000a056615ee45d42709a0
+        Validity
+            Not Before: Apr  9 21:05:14 2025 GMT
+            Not After : Apr  9 22:05:14 2025 GMT
+        Subject: CN = DRIP-HDA-I-16376-10
+        Subject Public Key Info:
+            Public Key Algorithm: ED25519
+                ED25519 Public-Key:
+                pub:
+                    82:33:fd:ae:b5:06:8b:c1:48:59:d1:13:a0:ed:fc:
+                    f8:dc:07:81:4e:3d:d2:76:5e:6b:5b:82:e0:4d:07:
+                    05:97
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Subject Alternative Name: critical
+                IP Address:2001:3F:FE00:A05:260E:D437:6B25:6E28,
+                URI:https://hda.example.com
+    Signature Algorithm: ED25519
+    Signature Value:
+        5a:f2:56:72:7e:dc:47:26:a0:c5:56:0b:f8:46:df:9c:31:49:
+        9c:f1:a4:30:7a:de:14:65:d3:b7:c9:03:81:f6:ea:b8:b0:b5:
+        40:49:c6:99:09:68:c2:d2:79:9e:46:48:15:46:18:b3:7b:57:
+        ac:7f:28:b7:45:15:38:e0:80:04</pre>
+</div>
+<figcaption><a href="#figure-17" class="selfRef">Figure 17</a>:
+<a href="#name-20013ffe00a05260ed4376b256e2" class="selfRef">2001:3f:fe00:a05:260e:d437:6b25:6e28 Decoded Certificate</a>
+            </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="registrant-hhit-brid">
+<section id="appendix-A.2.2">
+          <h4 id="name-registrant-hhit-and-brid">
+<a href="#appendix-A.2.2" class="section-number selfRef">A.2.2. </a><a href="#name-registrant-hhit-and-brid" class="section-name selfRef">Registrant HHIT and BRID</a>
+          </h4>
+<span id="name-registrant-hhit-brid-rrtype"></span><div id="uas-rr-zone">
+<figure id="figure-18">
+            <div class="sourcecode" id="appendix-A.2.2-1.1">
+<pre>
+$ORIGIN 5.0.a.0.0.0.e.f.f.3.0.0.1.0.0.2.ip6.example.com.
+2.b.6.c.b.4.a.9.9.6.4.2.8.0.3.1. IN HHIT (
+    gxJpM2ZmOCAwMDBhWQEYMIIBFDCBx6AD
+    AgECAgFUMAUGAytlcDArMSkwJwYDVQQD
+    DCAyMDAxMDAzZmZlMDAwYTA1MjYwZWQ0
+    Mzc2YjI1NmUyODAeFw0yNTA0MDkyMTEz
+    MDBaFw0yNTA0MDkyMjEzMDBaMAAwKjAF
+    BgMrZXADIQDJLi+dl+iWD5tfFlT4sJA5
+    +drcW88GHqxPDOp56Oh3+qM7MDkwNwYD
+    VR0RAQH/BC0wK4cQIAEAP/4ACgUTCCRp
+    mkvGsoYXaHR0cHM6Ly9oZGEuZXhhbXBs
+    ZS5jb20wBQYDK2VwA0EA0DbcdngC7/BB
+    /aLjZmLieo0ZFCDbd/KIxAy+3X2KtT4J
+    todVxRMPAkN6o008gacbNfTG8p9npEcD
+    eYhesl2jBQ==
+)
+2.b.6.c.b.4.a.9.9.6.4.2.8.0.3.1. IN BRID (
+    owAAAYIEUQEgAQA//gAKBRMIJGmaS8ay
+    AogFWIkB+t72Zwrt9mcgAQA//gAABV5g
+    oVcekaC3mZDVsEtyoYBm1AkrUsfUmU+3
+    wWvX6MH0QP+o0E/x4T8gAQA//gAABV5g
+    oVcekaC3vC9m1JguvXt7W2o4wxPumaT1
+    IP3TQN3fQP28hpInSIlsSwq8UCNjm2ad
+    7pdTvm2EqfOJQNPKClvRZm4qTO5FDAVY
+    iQGX4PZnp+72ZyABAD/+AAoFZhXuRdQn
+    CaDOaB424RQa61YNbna8eWt7fLRU5GPM
+    sfEt4wo4AQGAPyABAD/+AAAFXmChVx6R
+    oLfv3q+mLRB3ya5TmjY8+3CzdoDZT9RZ
+    +XpN5hDiA6JyyxBJvUewxLzPNhTXQp8v
+    ED71XAE82tMmt3fB4zbzWNQLBViJAQrh
+    9mca7/ZnIAEAP/4ACgUmDtQ3ayVuKIIz
+    /a61BovBSFnRE6Dt/PjcB4FOPdJ2Xmtb
+    guBNBwWXIAEAP/4ACgVmFe5F1CcJoIjy
+    CriJCxAyAWTOHPmlHL02MKSpsHviiTze
+    qwBH9K/Rrz41CYix9HazAIOAZO8FcfU5
+    M+WLLJZoaQWBHnMbTQwFWIkB3OL2Z+zw
+    9mcgAQA//gAKBRMIJGmaS8ayyS4vnZfo
+    lg+bXxZU+LCQOfna3FvPBh6sTwzqeejo
+    d/ogAQA//gAKBSYO1DdrJW4ogOfc8jTi
+    mYLmTOOyFZoUx2jOOwtB1jnqUJr6bYaw
+    MoPrR3MlKGBGWsVz1yXNqUURoCqYdwsY
+    e61vd5i6YJqnAQ==
+)</pre>
+</div>
+<figcaption><a href="#figure-18" class="selfRef">Figure 18</a>:
+<a href="#name-registrant-hhit-brid-rrtype" class="selfRef">Registrant HHIT/BRID RRType Example</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.2-2"><a href="#uas-rr-cbor" class="auto internal xref">Figure 19</a> shows the CBOR decoded RDATA in the HHIT RRType found in <a href="#uas-rr-zone" class="auto internal xref">Figure 18</a>.<a href="#appendix-A.2.2-2" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a05130824699a4bc6"></span><div id="uas-rr-cbor">
+<figure id="figure-19">
+            <div class="sourcecode" id="appendix-A.2.2-3.1">
+<pre>
+[
+    18,  # Uncrewed Aircraft System (UAS)
+    "3ff8 000a",
+    h'308201143081C7A00302010202015430
+    0506032B6570302B312930270603550403
+    0C20323030313030336666653030306130
+    3532363065643433373662323536653238
+    301E170D3235303430393231313330305A
+    170D3235303430393232313330305A3000
+    302A300506032B6570032100C92E2F9D97
+    E8960F9B5F1654F8B09039F9DADC5BCF06
+    1EAC4F0CEA79E8E877FAA33B3039303706
+    03551D110101FF042D302B87102001003F
+    FE000A05130824699A4BC6B28617687474
+    70733A2F2F6864612E6578616D706C652E
+    636F6D300506032B6570034100D036DC76
+    7802EFF041FDA2E36662E27A8D191420DB
+    77F288C40CBEDD7D8AB53E09B68755C513
+    0F02437AA34D3C81A71B35F4C6F29F67A4
+    470379885EB25DA305'
+]</pre>
+</div>
+<figcaption><a href="#figure-19" class="selfRef">Figure 19</a>:
+<a href="#name-20013ffe00a05130824699a4bc6" class="selfRef">2001:3f:fe00:a05:1308:2469:9a4b:c6b2 Decoded HHIT RRType CBOR</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.2-4"><a href="#uas-rr-cert" class="auto internal xref">Figure 20</a> shows the decoded DER X.509 found in <a href="#uas-rr-cbor" class="auto internal xref">Figure 19</a>.<a href="#appendix-A.2.2-4" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a05130824699a4bc6b"></span><div id="uas-rr-cert">
+<figure id="figure-20">
+            <div class="sourcecode" id="appendix-A.2.2-5.1">
+<pre>
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 84 (0x54)
+        Signature Algorithm: ED25519
+        Issuer: CN = 2001003ffe000a05260ed4376b256e28
+        Validity
+            Not Before: Apr  9 21:13:00 2025 GMT
+            Not After : Apr  9 22:13:00 2025 GMT
+        Subject:
+        Subject Public Key Info:
+            Public Key Algorithm: ED25519
+                ED25519 Public-Key:
+                pub:
+                    c9:2e:2f:9d:97:e8:96:0f:9b:5f:16:54:f8:b0:90:
+                    39:f9:da:dc:5b:cf:06:1e:ac:4f:0c:ea:79:e8:e8:
+                    77:fa
+        X509v3 extensions:
+            X509v3 Subject Alternative Name: critical
+                IP Address:2001:3F:FE00:A05:1308:2469:9A4B:C6B2,
+                URI:https://hda.example.com
+    Signature Algorithm: ED25519
+    Signature Value:
+        d0:36:dc:76:78:02:ef:f0:41:fd:a2:e3:66:62:e2:7a:8d:19:
+        14:20:db:77:f2:88:c4:0c:be:dd:7d:8a:b5:3e:09:b6:87:55:
+        c5:13:0f:02:43:7a:a3:4d:3c:81:a7:1b:35:f4:c6:f2:9f:67:
+        a4:47:03:79:88:5e:b2:5d:a3:05</pre>
+</div>
+<figcaption><a href="#figure-20" class="selfRef">Figure 20</a>:
+<a href="#name-20013ffe00a05130824699a4bc6b" class="selfRef">2001:3f:fe00:a05:1308:2469:9a4b:c6b2 Decoded Certificate</a>
+            </figcaption></figure>
+</div>
+<p id="appendix-A.2.2-6"><a href="#uas-rr-brid" class="auto internal xref">Figure 21</a> shows the CBOR decoded RDATA of the BRID RRType in <a href="#uas-rr-zone" class="auto internal xref">Figure 18</a>.<a href="#appendix-A.2.2-6" class="pilcrow">¶</a></p>
+<span id="name-20013ffe00a05130824699a4bc6b2"></span><div id="uas-rr-brid">
+<figure id="figure-21">
+            <div class="sourcecode" id="appendix-A.2.2-7.1">
+<pre>
+{
+    0: 0,
+    1: [4, h'012001003FFE000A05130824699A4BC6B2'],
+    2: [
+        5,
+        h'01FADEF6670AEDF6672001003FFE0000
+        055E60A1571E91A0B79990D5B04B72A180
+        66D4092B52C7D4994FB7C16BD7E8C1F440
+        FFA8D04FF1E13F2001003FFE0000055E60
+        A1571E91A0B7BC2F66D4982EBD7B7B5B6A
+        38C313EE99A4F520FDD340DDDF40FDBC86
+        922748896C4B0ABC5023639B669DEE9753
+        BE6D84A9F38940D3CA0A5BD1666E2A4CEE
+        450C',
+        5,
+        h'0197E0F667A7EEF6672001003FFE000A
+        056615EE45D42709A0CE681E36E1141AEB
+        560D6E76BC796B7B7CB454E463CCB1F12D
+        E30A380101803F2001003FFE0000055E60
+        A1571E91A0B7EFDEAFA62D1077C9AE539A
+        363CFB70B37680D94FD459F97A4DE610E2
+        03A272CB1049BD47B0C4BCCF3614D7429F
+        2F103EF55C013CDAD326B777C1E336F358
+        D40B',
+        5,
+        h'010AE1F6671AEFF6672001003FFE000A
+        05260ED4376B256E288233FDAEB5068BC1
+        4859D113A0EDFCF8DC07814E3DD2765E6B
+        5B82E04D0705972001003FFE000A056615
+        EE45D42709A088F20AB8890B10320164CE
+        1CF9A51CBD3630A4A9B07BE2893CDEAB00
+        47F4AFD1AF3E350988B1F476B300838064
+        EF0571F53933E58B2C96686905811E731B
+        4D0C',
+        5,
+        h'01DCE2F667ECF0F6672001003FFE000A
+        05130824699A4BC6B2C92E2F9D97E8960F
+        9B5F1654F8B09039F9DADC5BCF061EAC4F
+        0CEA79E8E877FA2001003FFE000A05260E
+        D4376B256E2880E7DCF234E29982E64CE3
+        B2159A14C768CE3B0B41D639EA509AFA6D
+        86B03283EB4773252860465AC573D725CD
+        A94511A02A98770B187BAD6F7798BA609A
+        A701'
+    ]
+}</pre>
+</div>
+<figcaption><a href="#figure-21" class="selfRef">Figure 21</a>:
+<a href="#name-20013ffe00a05130824699a4bc6b2" class="selfRef">2001:3f:fe00:a05:1308:2469:9a4b:c6b2 Decoded BRID RRType CBOR</a>
+            </figcaption></figure>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="appendix-B">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-B-1">Thanks to <span class="contact-name">Stuart Card</span> (AX Enterprize, LLC) and <span class="contact-name">Bob Moskowitz</span> (HTT Consulting, LLC) for their early work on the DRIP registries concept. Their early contributions laid the foundation for the content and processes of this architecture and document. The authors would also like to thank the DRIP chairs and AD, the reviewers from the various Directorates, and the members of the IESG at time of publication.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Adam Wiethuechter (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">AX Enterprize, LLC</span></div>
+<div dir="auto" class="left"><span class="street-address">4947 Commercial Drive</span></div>
+<div dir="auto" class="left">
+<span class="locality">Yorkville</span>, <span class="region">NY</span> <span class="postal-code">13495</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:adam.wiethuechter@axenterprize.com" class="email">adam.wiethuechter@axenterprize.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jim Reid</span></div>
+<div dir="auto" class="left"><span class="org">RTFM llp</span></div>
+<div dir="auto" class="left"><span class="street-address">St Andrews House</span></div>
+<div dir="auto" class="left"><span class="locality">382 Hillington Road, Glasgow Scotland</span></div>
+<div dir="auto" class="left"><span class="postal-code">G51 4BL</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jim@rfc1035.com" class="email">jim@rfc1035.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
