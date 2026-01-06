@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9908: Clarification and Enhancement of the CSR Attributes Definition in RFC 7030</title>
+<meta content="Michael Richardson" name="author">
+<meta content="Owen Friel" name="author">
+<meta content="Dr. David von Oheimb" name="author">
+<meta content="Dan Harkins" name="author">
+<meta content='
+       This document updates RFC 7030, "Enrollment over Secure Transport" (EST), clarifying
+how the Certificate Signing Request (CSR) Attributes Response can be used by an EST server to specify both CSR attribute Object Identifiers (OIDs) and CSR attribute values, particularly X.509 extension values, that the server expects the client to include in a subsequent CSR request.
+RFC 9148 is derived from RFC 7030 and is also updated. 
+       RFC 7030 is ambiguous in its specification of the CSR Attributes Response. This has resulted in implementation challenges and implementor confusion because there was no universal understanding of what was specified. This document clarifies the encoding rules. 
+       This document also provides a new straightforward approach: using
+a template for CSR contents that may be partially filled in by the server.
+This also allows an EST server to specify a subject Distinguished Name (DN). 
+    ' name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="SubjectAltName" name="keyword">
+<meta content="SAN" name="keyword">
+<meta content="Certificate Extensions" name="keyword">
+<meta content="Certificate Signing Request" name="keyword">
+<meta content="9908" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.9.15
+    ConfigArgParse 1.5.3
+    google-i18n-address 3.0.0
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    lxml 5.3.0
+    platformdirs 3.8.0
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.28.0
+    wcwidth 0.2.5
+    weasyprint 65.0
+-->
+<link href="rfc9908.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-lamps-rfc7030-csrattrs-23" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9908" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9908</td>
+<td class="center">CSR Attributes</td>
+<td class="right">January 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Richardson, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9908" class="eref">9908</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc7030" class="eref">7030</a>, <a href="https://www.rfc-editor.org/rfc/rfc9148" class="eref">9148</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-01" class="published">January 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Richardson, <span class="editor">Ed.</span>
+</div>
+<div class="org">Sandelman Software Works</div>
+</div>
+<div class="author">
+      <div class="author-name">O. Friel</div>
+<div class="org">Cisco</div>
+</div>
+<div class="author">
+      <div class="author-name">D. von Oheimb</div>
+<div class="org">Siemens</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Harkins</div>
+<div class="org">The Industrial Lounge</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9908</h1>
+<h1 id="title">Clarification and Enhancement of the CSR Attributes Definition in RFC 7030</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document updates RFC 7030, "Enrollment over Secure Transport" (EST), clarifying
+how the Certificate Signing Request (CSR) Attributes Response can be used by an EST server to specify both CSR attribute Object Identifiers (OIDs) and CSR attribute values, particularly X.509 extension values, that the server expects the client to include in a subsequent CSR request.
+RFC 9148 is derived from RFC 7030 and is also updated.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">RFC 7030 is ambiguous in its specification of the CSR Attributes Response. This has resulted in implementation challenges and implementor confusion because there was no universal understanding of what was specified. This document clarifies the encoding rules.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+<p id="section-abstract-3">This document also provides a new straightforward approach: using
+a template for CSR contents that may be partially filled in by the server.
+This also allows an EST server to specify a subject Distinguished Name (DN).<a href="#section-abstract-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9908">https://www.rfc-editor.org/info/rfc9908</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-csr-attributes-handling" class="internal xref">CSR Attributes Handling</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-extensions-to-rfc-7030-sect" class="internal xref">Extensions to RFC 7030, Section 2.6</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-extensions-to-rfc-7030-secti" class="internal xref">Extensions to RFC 7030, Section 4.5.2</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-update-to-rfc-9148" class="internal xref">Update to RFC 9148</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-use-of-csr-templates" class="internal xref">Use of CSR Templates</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-coexistence-with-existing-i" class="internal xref">Coexistence with Existing Implementations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-examples-using-the-original" class="internal xref">Examples Using the Original Approach in RFC 7030</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-require-an-rfc-8994-acp-sub" class="internal xref">Require an RFC 8994 / ACP subjectAltName with Specific otherName</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-base64-encoded-example" class="internal xref">Base64-Encoded Example</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-asn1-dump-output" class="internal xref">ASN.1 DUMP Output</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-original-example-in-rfc-703" class="internal xref">Original Example in RFC 7030</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1">
+                    <p id="section-toc.1-1.5.2.2.2.1.1"><a href="#section-5.2.1" class="auto internal xref">5.2.1</a>.  <a href="#name-base64-encoded-example-2" class="internal xref">Base64-Encoded Example</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2">
+                    <p id="section-toc.1-1.5.2.2.2.2.1"><a href="#section-5.2.2" class="auto internal xref">5.2.2</a>.  <a href="#name-asn1-dump-output-2" class="internal xref">ASN.1 DUMP Output</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-require-a-specific-subjecta" class="internal xref">Require a Specific subjectAltName Extension</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.1">
+                    <p id="section-toc.1-1.5.2.3.2.1.1"><a href="#section-5.3.1" class="auto internal xref">5.3.1</a>.  <a href="#name-base64-encoded-example-3" class="internal xref">Base64-Encoded Example</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.2">
+                    <p id="section-toc.1-1.5.2.3.2.2.1"><a href="#section-5.3.2" class="auto internal xref">5.3.2</a>.  <a href="#name-asn1-dump-output-3" class="internal xref">ASN.1 DUMP Output</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-require-a-public-key-of-a-s" class="internal xref">Require a Public Key of a Specific Size</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4.2.1">
+                    <p id="section-toc.1-1.5.2.4.2.1.1"><a href="#section-5.4.1" class="auto internal xref">5.4.1</a>.  <a href="#name-base64-encoded-example-4" class="internal xref">Base64-Encoded Example</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4.2.2">
+                    <p id="section-toc.1-1.5.2.4.2.2.1"><a href="#section-5.4.2" class="auto internal xref">5.4.2</a>.  <a href="#name-asn1-dump-output-4" class="internal xref">ASN.1 DUMP Output</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-require-a-public-key-of-a-sp" class="internal xref">Require a Public Key of a Specific Curve</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5.2.1">
+                    <p id="section-toc.1-1.5.2.5.2.1.1"><a href="#section-5.5.1" class="auto internal xref">5.5.1</a>.  <a href="#name-base64-encoded-example-5" class="internal xref">Base64-Encoded Example</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5.2.2">
+                    <p id="section-toc.1-1.5.2.5.2.2.1"><a href="#section-5.5.2" class="auto internal xref">5.5.2</a>.  <a href="#name-asn1-dump-output-5" class="internal xref">ASN.1 DUMP Output</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
+                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-require-specific-extensions" class="internal xref">Require Specific Extensions and Attributes</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6.2.1">
+                    <p id="section-toc.1-1.5.2.6.2.1.1"><a href="#section-5.6.1" class="auto internal xref">5.6.1</a>.  <a href="#name-base64-encoded-example-6" class="internal xref">Base64-Encoded Example</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6.2.2">
+                    <p id="section-toc.1-1.5.2.6.2.2.1"><a href="#section-5.6.2" class="auto internal xref">5.6.2</a>.  <a href="#name-asn1-dump-output-6" class="internal xref">ASN.1 DUMP Output</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-identity-and-privacy-consid" class="internal xref">Identity and Privacy Considerations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-asn1-module" class="internal xref">ASN.1 Module</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document updates RFC 7030 and clarifies
+how the Certificate Signing Request (CSR) Attributes Response can be used by an EST server to specify both CSR attribute OIDs and CSR attribute values.
+In particular, the server needs to be able to specify X.509 extension values that it expects the client to include in the subsequent CSR.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">"Enrollment over Secure Transport" <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> has been used in a wide variety of applications.
+In particular, <span>[<a href="#RFC8994" class="cite xref">RFC8994</a>]</span> and <span>[<a href="#RFC8995" class="cite xref">RFC8995</a>]</span> describe a way to use it in order to build out an Autonomic Control Plane (ACP) <span>[<a href="#RFC8368" class="cite xref">RFC8368</a>]</span>.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">When bootstrapping the ACP, there is a requirement that each node be given a very specific subjectAltName. In <span>[<a href="#RFC8994" class="cite xref">RFC8994</a>]</span>, the ACP specification, the EST server is specified to make use
+of the CSR Attributes ("/csrattrs") Request (specified in <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>], <a href="https://rfc-editor.org/rfc/rfc7030#section-2.6" class="relref">Section 2.6</a></span>) to convey the actual subjectAltName to the EST client that needs to go
+into its CSR and thus ultimately into its End Entity (EE) certificate.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">As a result of some implementation challenges, it came to light that this particular way of using the CSR Attributes was not universally agreed upon, and it was suggested that it went contrary to <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>], <a href="https://rfc-editor.org/rfc/rfc7030#section-2.6" class="relref">Section 2.6</a></span>.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5"><span>[<a href="#RFC7030" class="cite xref">RFC7030</a>], <a href="https://rfc-editor.org/rfc/rfc7030#section-2.6" class="relref">Section 2.6</a></span> says that the CSR Attributes "can provide additional
+descriptive information that the EST server cannot access itself".
+This is extended to describe how the EST server can provide values that it demands be used.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">After significant discussion, it has been determined that
+<span><a href="https://rfc-editor.org/rfc/rfc7030#section-4.5" class="relref">Section 4.5</a> of [<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> is sufficiently difficult
+to read and ambiguous to interpret, so clarification is needed.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">Also, <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>], <a href="https://rfc-editor.org/rfc/rfc7030#section-4.5.2" class="relref">Section 4.5.2</a></span> is extended to clarify the use of the existing ASN.1 syntax <span>[<a href="#X.680" class="cite xref">X.680</a>]</span> <span>[<a href="#X.690" class="cite xref">X.690</a>]</span>.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">This covers all uses and is fully backward compatible with existing use,
+including addressing the needs of <span>[<a href="#RFC8994" class="cite xref">RFC8994</a>]</span> and <span>[<a href="#RFC8995" class="cite xref">RFC8995</a>]</span>.<a href="#section-1-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="csr-attributes-handling">
+<section id="section-3">
+      <h2 id="name-csr-attributes-handling">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-csr-attributes-handling" class="section-name selfRef">CSR Attributes Handling</a>
+      </h2>
+<div id="extensions-to-rfc-7030-section-26">
+<section id="section-3.1">
+        <h3 id="name-extensions-to-rfc-7030-sect">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-extensions-to-rfc-7030-sect" class="section-name selfRef">Extensions to RFC 7030, Section 2.6</a>
+        </h3>
+<p id="section-3.1-1">This document replaces the second paragraph in <span><a href="https://rfc-editor.org/rfc/rfc7030#section-2.6" class="relref">Section 2.6</a> of [<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> with the following text:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<blockquote id="section-3.1-2">These attributes can provide additional information that
+   the EST server cannot access itself, such as the Media Access Control
+   (MAC) address of an interface of the EST client. The EST server can
+   also provide concrete values that it tells the client to include in
+   the CSR, such as a specific X.509 Subject Alternative Name extension.
+   Moreover, these attributes can indicate the type of the included
+   public key or which crypto algorithms to use for the self-signature,
+   such as a specific elliptic curve or a specific hash function that
+   the client is expected to use when generating the CSR.<a href="#section-3.1-2" class="pilcrow">¶</a>
+</blockquote>
+</section>
+</div>
+<div id="csrattrs">
+<section id="section-3.2">
+        <h3 id="name-extensions-to-rfc-7030-secti">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-extensions-to-rfc-7030-secti" class="section-name selfRef">Extensions to RFC 7030, Section 4.5.2</a>
+        </h3>
+<p id="section-3.2-1">The ASN.1 syntax for CSR Attributes as defined in EST (<span>[<a href="#RFC7030" class="cite xref">RFC7030</a>], <a href="https://rfc-editor.org/rfc/rfc7030#section-4.5.2" class="relref">Section 4.5.2</a></span>) is as follows:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<div class="lang-asn.1 sourcecode" id="section-3.2-2">
+<pre>
+   CsrAttrs ::= SEQUENCE SIZE (0..MAX) OF AttrOrOID
+
+   AttrOrOID ::= CHOICE (oid OBJECT IDENTIFIER, attribute Attribute }
+
+   Attribute { ATTRIBUTE:IOSet } ::= SEQUENCE {
+        type   ATTRIBUTE.&amp;id({IOSet}),
+        values SET SIZE(1..MAX) OF ATTRIBUTE.&amp;Type({IOSet}{@type}) }</pre><a href="#section-3.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-3.2-3">This remains unchanged, such that bits-on-the-wire compatibility is maintained.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">Key parts that were unclear were which OID to use in the '<code>type</code>' field and
+that the '<code>values</code>' field can contain an entire sequence of X.509 extensions.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5">The OID to use for such attributes in the '<code>type</code>' field <span class="bcp14">MUST</span> be <code>id-ExtensionReq</code>,
+which has the value 1.2.840.113549.1.9.14.
+Note that this is the same as <code>pkcs-9-at-extensionRequest</code> defined in PKCS#9 <span>[<a href="#RFC2985" class="cite xref">RFC2985</a>]</span>.
+There <span class="bcp14">MUST</span> be only one such attribute.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<p id="section-3.2-6">The '<code>values</code>' field of this attribute <span class="bcp14">MUST</span> contain a set with exactly one element,
+and this element <span class="bcp14">MUST</span> be of type <code>Extensions</code>, as per <span><a href="https://rfc-editor.org/rfc/rfc5280#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>:<a href="#section-3.2-6" class="pilcrow">¶</a></p>
+<div class="lang-asn.1 sourcecode" id="section-3.2-7">
+<pre>
+   Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
+
+   Extension  ::=  SEQUENCE  {
+        extnID      OBJECT IDENTIFIER,
+        critical    BOOLEAN DEFAULT FALSE,
+        extnValue   OCTET STRING
+                    -- contains the DER encoding of an ASN.1 value
+                    -- corresponding to the extension type identified
+                    -- by extnID
+        }</pre><a href="#section-3.2-7" class="pilcrow">¶</a>
+</div>
+<p id="section-3.2-8">An Extension comprises the OID of the specific X.509 extension (extnID),
+optionally the 'critical' bit, and the extension value (extnValue).<a href="#section-3.2-8" class="pilcrow">¶</a></p>
+<p id="section-3.2-9">An Extensions structure, which is a sequence of elements of type Extension,
+<span class="bcp14">MUST NOT</span> include more than one element with a particular extnID.<a href="#section-3.2-9" class="pilcrow">¶</a></p>
+<p id="section-3.2-10">When not using the template-based approach of <a href="#csrtemplate" class="auto internal xref">Section 3.4</a>,
+specifying the requirement for a public key of a specific type
+and optionally its size and other parameters <span class="bcp14">MUST</span> be done as follows:
+Include exactly one Attribute with the <code>type</code> field being the OID specifying
+the type of the key, such as <code>ecPublicKey</code> or <code>rsaEncryption</code>.
+The '<code>values</code>' field <span class="bcp14">MAY</span> be empty to indicate no further requirements on the key. Otherwise, it <span class="bcp14">MUST</span> contain suitable parameters for the given key type, such as a singleton set containing the OID of an elliptic curve (EC) (e.g., <code>secp384r1</code>) or containing an integer value for the RSA key size (e.g., 4096). Many examples for this are given in <a href="#examples" class="auto internal xref">Section 5</a>.<a href="#section-3.2-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="update-to-rfc9148">
+<section id="section-3.3">
+        <h3 id="name-update-to-rfc-9148">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-update-to-rfc-9148" class="section-name selfRef">Update to RFC 9148</a>
+        </h3>
+<p id="section-3.3-1">The updates to EST in this document equally apply when using the 
+Constrained Application Protocol (CoAP) as a transport mechanism as described in <span>[<a href="#RFC9148" class="cite xref">RFC9148</a>]</span>.
+This document therefore adds the following paragraph after the second paragraph
+of <span>[<a href="#RFC9148" class="cite xref">RFC9148</a>], <a href="https://rfc-editor.org/rfc/rfc9148#section-1" class="relref">Section 1</a></span>:<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<blockquote id="section-3.3-2">EST over CoAP as specified in <span>[<a href="#RFC9148" class="cite xref">RFC9148</a>]</span>  applies unchanged to <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>]</span>, which is updated by RFC 9908.  Hence, all references to <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> in <span>[<a href="#RFC9148" class="cite xref">RFC9148</a>]</span> are assumed to indicate that <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> is updated by RFC 9908.<a href="#section-3.3-2" class="pilcrow">¶</a>
+</blockquote>
+</section>
+</div>
+<div id="csrtemplate">
+<section id="section-3.4">
+        <h3 id="name-use-of-csr-templates">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-use-of-csr-templates" class="section-name selfRef">Use of CSR Templates</a>
+        </h3>
+<p id="section-3.4-1">As an alternative to the unstructured inclusion of CSR Attributes
+        specified in <span><a href="https://rfc-editor.org/rfc/rfc7030#section-4.5.2" class="relref">Section 4.5.2</a> of [<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> with its limitations and ambiguities, <span><a href="https://rfc-editor.org/rfc/rfc8295#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC8295" class="cite xref">RFC8295</a>]</span> describes an
+        approach using a CSR template.  An entire CSR object is returned with
+        various fields filled out and other fields waiting to be filled in. In
+        that approach, a pKCS7PDU attribute includes a PKIData content type
+        <span>[<a href="#RFC5272" class="cite xref">RFC5272</a>]</span> and that, in turn, includes a CSR <span>[<a href="#RFC2986" class="cite xref">RFC2986</a>]</span> or a Certificate Request Message Format (CRMF)
+        formatted request (for details, see <a href="https://rfc-editor.org/rfc/rfc6268#section-5" class="relref">5</a> or <a href="https://rfc-editor.org/rfc/rfc6268#section-9" class="relref">9</a> of <span>[<a href="#RFC6268" class="cite xref">RFC6268</a>]</span>,
+        respectively).<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">One drawback to that approach, particularly for the CSR, is that some unused
+fields have to be included; specifically, the '<code>signature</code>' field on
+the CSR is faked with an empty bit string.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">A similar method has been defined in "Internet X.509 Public Key
+Infrastructure -- Certificate Management Protocol (CMP)" <span>[<a href="#RFC9810" class="cite xref">RFC9810</a>]</span>
+and "Lightweight Certificate Management Protocol (CMP) Profile"
+(<span>[<a href="#RFC9483" class="cite xref">RFC9483</a>], <a href="https://rfc-editor.org/rfc/rfc9483#section-4.3.3" class="relref">Section 4.3.3</a></span>) using a CSR template as defined for CRMF <span>[<a href="#RFC4211" class="cite xref">RFC4211</a>]</span>. Like the approach mentioned before,
+this method does not properly deal with absent Relative Distinguished Name (RDN) values, as it would encode them as invalid empty strings.
+Also, encoding an absent '<code>subjectPublicKey</code>' value as an empty <code>BIT STRING</code>
+and an absent X.509 extension value as an empty <code>OCTET STRING</code>
+can cause issues with strict ASN.1 parsing and decoding.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+<p id="section-3.4-4">These drawbacks are avoided as follows:<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+<p id="section-3.4-5">This specification defines a new Certificate Request Information Template attribute
+for <code>CsrAttrs</code> (as given in <a href="#csrattrs" class="auto internal xref">Section 3.2</a>) that is essentially
+a partially filled-in PKCS#10 CSR minus the signature wrapper:<a href="#section-3.4-5" class="pilcrow">¶</a></p>
+<div class="sourcecode" id="section-3.4-6">
+<pre>
+  CertificationRequestInfoTemplate ::= SEQUENCE {
+      version       INTEGER { v1(0) } (v1, ... ),
+      subject       NameTemplate OPTIONAL,
+      subjectPKInfo [0] SubjectPublicKeyInfoTemplate
+                                {{ PKInfoAlgorithms }} OPTIONAL,
+      attributes    [1] Attributes{{ CRIAttributes }}
+  }</pre><a href="#section-3.4-6" class="pilcrow">¶</a>
+</div>
+<p id="section-3.4-7"><a href="#app-asn1-module" class="auto internal xref">Appendix A</a> contains all details.<a href="#section-3.4-7" class="pilcrow">¶</a></p>
+<p id="section-3.4-8">The CertificationRequestInfoTemplate closely resembles the CertificationRequestInfo
+from <span>[<a href="#RFC5912" class="cite xref">RFC5912</a>], <a href="https://rfc-editor.org/rfc/rfc5912#section-5" class="relref">Section 5</a></span>:<a href="#section-3.4-8" class="pilcrow">¶</a></p>
+<div class="sourcecode" id="section-3.4-9">
+<pre>
+  CertificationRequestInfo ::= SEQUENCE {
+    version       INTEGER { v1(0) } (v1,...),
+    subject       Name,
+    subjectPKInfo SubjectPublicKeyInfo{{ PKInfoAlgorithms }},
+    attributes    [0] Attributes{{ CRIAttributes }}
+  }</pre><a href="#section-3.4-9" class="pilcrow">¶</a>
+</div>
+<p id="section-3.4-10">with the following differences:<a href="#section-3.4-10" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-11.1">
+            <p id="section-3.4-11.1.1">The '<code>subject</code>' field has been made <code><span class="bcp14">OPTIONAL</span></code>.
+It <span class="bcp14">MUST</span> be present if the server places any requirements on the RDNs of the subject name; otherwise, it <span class="bcp14">MUST</span> be absent.<a href="#section-3.4-11.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-11.2">
+            <p id="section-3.4-11.2.1">RDNs in the '<code>subject</code>' fields are allowed to have no value,
+which has been achieved by adding <code><span class="bcp14">OPTIONAL</span></code> to the '<code>value</code>' field of <code>SingleAttributeTemplate</code>.
+If the client is expected to provide an RDN of a certain type such as <code>commonName</code>,
+the respective RDN <span class="bcp14">MUST</span> be present in the '<code>subject</code>' field; otherwise, it <span class="bcp14">MUST</span> be absent.
+In addition, if the server gives an RDN value,
+this means that the client is expected to use this value for the RDN; otherwise, the client is expected to fill in a suitable value.
+The example at the end of this section has a '<code>subject</code>' field
+that contains both forms of RDN specifications.<a href="#section-3.4-11.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<div class="sourcecode" id="section-3.4-12">
+<pre>
+  SingleAttributeTemplate {ATTRIBUTE:AttrSet} ::= SEQUENCE {
+      type      ATTRIBUTE.&amp;id({AttrSet}),
+      value     ATTRIBUTE.&amp;Type({AttrSet}{@type}) OPTIONAL
+  }</pre><a href="#section-3.4-12" class="pilcrow">¶</a>
+</div>
+<ul class="normal">
+<li class="normal" id="section-3.4-13.1">
+            <p id="section-3.4-13.1.1">The '<code>subjectPKInfo</code>' field has been made <code><span class="bcp14">OPTIONAL</span></code>.
+The field <span class="bcp14">MUST</span> be absent if the server places no requirements on the key; otherwise, it <span class="bcp14">MUST</span> be present, and the '<code>algorithm</code>' field
+specifies the type of key pair the client is expected to use.<a href="#section-3.4-13.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-13.2">
+            <p id="section-3.4-13.2.1">The '<code>subjectPublicKey</code>' field contained in <code>SubjectPublicKeyInfoTemplate</code>
+has been made <code><span class="bcp14">OPTIONAL</span></code> because it is usually not needed.
+In case the server requires use of an RSA key and needs to specify its size, the field
+<span class="bcp14">MUST</span> be present and contain a placeholder public key value of the desired RSA modulus length; otherwise, the <code>subjectPublicKey</code> <span class="bcp14">MUST</span> be absent.<a href="#section-3.4-13.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<div class="sourcecode" id="section-3.4-14">
+<pre>
+  SubjectPublicKeyInfoTemplate{PUBLIC-KEY:IOSet} ::= SEQUENCE {
+      algorithm        AlgorithmIdentifier{PUBLIC-KEY, {IOSet}},
+      subjectPublicKey BIT STRING OPTIONAL
+  }</pre><a href="#section-3.4-14" class="pilcrow">¶</a>
+</div>
+<ul class="normal">
+<li class="normal" id="section-3.4-15.1">
+            <p id="section-3.4-15.1.1">A new OID <code>id-aa-extensionReqTemplate</code> and the related <code>ExtensionTemplate</code> structure
+is defined where the '<code>extnValue</code>' field has been made <code><span class="bcp14">OPTIONAL</span></code>.
+This is only needed to enable specifying partial extensions with values to be filled in
+by the client; otherwise, the <code>id-ExtensionReq</code> OID and the respective value of type
+<code>ExtensionReq</code> <span class="bcp14">MUST</span> be used for specifying requirements on X.509 extensions.<a href="#section-3.4-15.1.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.4-16">For each extension of type <code>Extension</code> or <code>ExtensionTemplate</code> provided by the server,
+the client is expected to include an extension of the type given by the <code>extnID</code>.
+If the '<code>critical</code>' field is present, the client <span class="bcp14">SHOULD</span> use it in the extension as well.
+If the '<code>extnValue</code>' is present (which is always the case when type <code>Extension</code> is used),
+the client <span class="bcp14">SHOULD</span> use the given extension value in its CSR.
+When the type <code>ExtensionTemplate</code> is used, the '<code>extnValue</code>' can be absent, and then the client <span class="bcp14">SHOULD</span> provide an extension value in an <code>Extension</code> with the given <code>extnID</code>.
+For instance, if the server includes an <code>ExtensionTemplate</code>
+with the <code>extnID</code> '<code>subjectAltName</code>' but without an <code>extnValue</code>,
+the client <span class="bcp14">SHOULD</span> include a SAN extension with a suitable value.<a href="#section-3.4-16" class="pilcrow">¶</a></p>
+<p id="section-3.4-17">In case the server includes an <code>ExtensionTemplate</code> with the <code>extnID</code> '<code>subjectAltName</code>'
+and a partially filled-in <code>extnValue</code>, such as a '<code>directoryName</code>' choice containing the <code>NULL-DN</code>
+(i.e., an empty sequence of RDNs) or the '<code>iPAddress</code>' choice with an empty <code>OCTET STRING</code>,
+it means that the client <span class="bcp14">SHOULD</span> fill in the respective <code>GeneralName</code> value.<a href="#section-3.4-17" class="pilcrow">¶</a></p>
+<div class="sourcecode" id="section-3.4-18">
+<pre>
+ExtensionTemplate {EXTENSION:ExtensionSet} ::= SEQUENCE {
+   extnID      EXTENSION.&amp;id({ExtensionSet}),
+   critical    BOOLEAN DEFAULT FALSE,
+   extnValue   OCTET STRING (CONTAINING
+               EXTENSION.&amp;ExtnType({ExtensionSet}{@extnID}) OPTIONAL
+               --  contains the DER encoding of the ASN.1 value
+               --  corresponding to the extension type identified
+               --  by extnID when present
+  }</pre><a href="#section-3.4-18" class="pilcrow">¶</a>
+</div>
+<p id="section-3.4-19">The '<code>version</code>' field of the <code>CertificationRequestInfoTemplate</code> <span class="bcp14">MUST</span> contain v1 (0).<a href="#section-3.4-19" class="pilcrow">¶</a></p>
+<p id="section-3.4-20">The '<code>attributes</code>' field <span class="bcp14">MUST NOT</span> contain multiple <code>id-aa-extensionReqTemplate</code> attributes
+and <span class="bcp14">MUST NOT</span> contain both <code>id-ExtensionReq</code> and <code>id-aa-extensionReqTemplate</code> attributes.<a href="#section-3.4-20" class="pilcrow">¶</a></p>
+<p id="section-3.4-21">The '<code>values</code>' field of an <code>id-aa-extensionReqTemplate</code> attribute
+<span class="bcp14">MUST</span> contain a set with exactly one element,
+and this element <span class="bcp14">MUST</span> be of type <code>ExtensionTemplate</code>.<a href="#section-3.4-21" class="pilcrow">¶</a></p>
+<p id="section-3.4-22">Suppose the server requires that the CSR will contain:<a href="#section-3.4-22" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-23.1">
+            <p id="section-3.4-23.1.1">the '<code>subject</code>' field with a common name to be filled in by the EE and
+two organizational unit names with given values "myDept" and "myGroup",<a href="#section-3.4-23.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-23.2">
+            <p id="section-3.4-23.2.1">the '<code>publicKey</code>' field with an
+Elliptic Curve Cryptography (ECC) public key on curve <code>secp256r1</code>,<a href="#section-3.4-23.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-23.3">
+            <p id="section-3.4-23.3.1">the 'subjectAltName' extension with two entries; one DNS entry with
+name "www.myServer.com" and IP entry that is empty for the IP address
+to be filled in,<a href="#section-3.4-23.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-23.4">
+            <p id="section-3.4-23.4.1">the '<code>keyUsage</code>' extension marked critical
+with the values digitalSignature and keyAgreement, and<a href="#section-3.4-23.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-23.5">
+            <p id="section-3.4-23.5.1">the '<code>extKeyUsage</code>' extension with the value to be filled in by the EE.<a href="#section-3.4-23.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.4-24">Then, the <code>CertificationRequestInfo</code> structure constructed by the server
+will be as follows:<a href="#section-3.4-24" class="pilcrow">¶</a></p>
+<div class="breakable sourcecode" id="section-3.4-25">
+<pre>
+SEQUENCE {
+  INTEGER 0
+  SEQUENCE {
+    SET {
+      SEQUENCE {
+        OBJECT IDENTIFIER commonName (2 5 4 3)
+        }
+      }
+    SET {
+      SEQUENCE {
+        OBJECT IDENTIFIER organizationalUnitName (2 5 4 11)
+        UTF8String "myDept"
+        }
+      }
+    SET {
+      SEQUENCE {
+        OBJECT IDENTIFIER organizationalUnitName (2 5 4 11)
+        UTF8String "myGroup"
+        }
+      }
+    }
+  [0] {
+    SEQUENCE {
+      OBJECT IDENTIFIER ecPublicKey (1 2 840 10045 2 1)
+      OBJECT IDENTIFIER secp256r1 (1 2 840 10045 3 1 7)
+      }
+    }
+  [1] {
+    SEQUENCE {
+      OBJECT IDENTIFIER id-aa-extensionReqTemplate
+                        (1 2 840 113549 1 9 62)
+      SET {
+        SEQUENCE {
+          SEQUENCE {
+            OBJECT IDENTIFIER subjectAltName (2 5 29 17)
+            OCTET STRING, encapsulates {
+              SEQUENCE {
+                [2] "www.myServer.com"
+                [7] ""
+                }
+              }
+            }
+          SEQUENCE {
+            OBJECT IDENTIFIER keyUsage (2 5 29 15)
+            BOOLEAN TRUE
+            OCTET STRING, encapsulates {
+              BIT STRING 3 unused bits
+                "10001"B
+              }
+            }
+          SEQUENCE {
+            OBJECT IDENTIFIER extKeyUsage (2 5 29 37)
+            }
+          }
+        }
+      }
+    }
+  }</pre><a href="#section-3.4-25" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="co-existence-with-existing-implementations">
+<section id="section-4">
+      <h2 id="name-coexistence-with-existing-i">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-coexistence-with-existing-i" class="section-name selfRef">Coexistence with Existing Implementations</a>
+      </h2>
+<p id="section-4-1">EST servers with legacy clients <span class="bcp14">MAY</span> continue to use the  unstructured list of attribute/value pairs as described in <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> and <span class="bcp14">MAY</span> also include the template style described in <a href="#csrtemplate" class="auto internal xref">Section 3.4</a> for newer clients.
+Clients that understand both <span class="bcp14">MUST</span> use the template only, and
+ignore all other <code>CsrAttrs</code> elements.
+Older clients will ignore the new CertificationRequestInfoTemplate element.<a href="#section-4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="examples">
+<section id="section-5">
+      <h2 id="name-examples-using-the-original">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-examples-using-the-original" class="section-name selfRef">Examples Using the Original Approach in RFC 7030</a>
+      </h2>
+<p id="section-5-1">Each example has a high-level (English) explanation of what is expected.
+Some mapping back to the Attribute and Extension definitions above are included.
+The base64 DER encoding is then shown.
+The output of "dumpasn1" <span>[<a href="#dumpasn1" class="cite xref">dumpasn1</a>]</span> is then provided to detail what the contents are.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="acpNodeName">
+<section id="section-5.1">
+        <h3 id="name-require-an-rfc-8994-acp-sub">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-require-an-rfc-8994-acp-sub" class="section-name selfRef">Require an RFC 8994 / ACP subjectAltName with Specific otherName</a>
+        </h3>
+<p id="section-5.1-1">A single subjectAltName extension is specified in a single <code>CsrAttrs</code>
+attribute <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>]</span> with an OID '<code>id-ExtensionReq</code>' indicating type <code>Extensions</code>.
+This is what might be created by a Registrar <span>[<a href="#RFC8995" class="cite xref">RFC8995</a>]</span> that is asking for AcpNodeName <span>[<a href="#RFC8994" class="cite xref">RFC8994</a>]</span> with format '<code>otherNames</code>'.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div id="base64-encoded-example">
+<section id="section-5.1.1">
+          <h4 id="name-base64-encoded-example">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-base64-encoded-example" class="section-name selfRef">Base64-Encoded Example</a>
+          </h4>
+<p id="section-5.1.1-1">The Base64:<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+<div class="lang-base64 sourcecode" id="section-5.1.1-2">
+<pre>
+MGgwZgYJKoZIhvcNAQkOMVkwVzBVBgNVHREBAf8ESzBJoEcG
+CCsGAQUFBwgKoDsWOXJmYzg5OTQrZmQ3MzlmYzIzYzM0NDAx
+MTIyMzM0NDU1MDAwMDAwMDArQGFjcC5leGFtcGxlLmNvbQ==</pre><a href="#section-5.1.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asn1-dump-output">
+<section id="section-5.1.2">
+          <h4 id="name-asn1-dump-output">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-asn1-dump-output" class="section-name selfRef">ASN.1 DUMP Output</a>
+          </h4>
+<p id="section-5.1.2-1">There is a single subjectAltName Extension with an Attribute with Extension type.<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
+<div class="lang-asn.1 sourcecode" id="section-5.1.2-2">
+<pre>
+    &lt;30 68&gt;
+  0 104: SEQUENCE {
+    &lt;30 66&gt;
+  2 102:   SEQUENCE {
+    &lt;06 09&gt;
+  4   9:     OBJECT IDENTIFIER
+       :       extensionRequest (1 2 840 113549 1 9 14)
+       :       (PKCS #9 via CRMF)
+    &lt;31 59&gt;
+ 15  89:     SET {
+    &lt;30 57&gt;
+ 17  87:       SEQUENCE {
+    &lt;30 55&gt;
+ 19  85:         SEQUENCE {
+    &lt;06 03&gt;
+ 21   3:           OBJECT IDENTIFIER
+       :             subjectAltName (2 5 29 17)
+       :             (X.509 extension)
+    &lt;01 01&gt;
+ 26   1:           BOOLEAN TRUE
+    &lt;04 4B&gt;
+ 29  75:           OCTET STRING, encapsulates {
+    &lt;30 49&gt;
+ 31  73:             SEQUENCE {
+    &lt;A0 47&gt;
+ 33  71:               [0] {
+    &lt;06 08&gt;
+ 35   8:                 OBJECT IDENTIFIER '1 3 6 1 5 5 7 8 10'
+    &lt;A0 3B&gt;
+ 45  59:                 [0] {
+    &lt;16 39&gt;
+ 47  57:                   IA5String
+       :                   'rfc8994+fd739fc23c34401122334455'
+       :                   '00000000+@acp.example.com'
+       :                   }
+       :                 }
+       :               }
+       :             }
+       :           }
+       :         }
+       :       }
+       :     }
+       :   }</pre><a href="#section-5.1.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="rfc7030-original-example">
+<section id="section-5.2">
+        <h3 id="name-original-example-in-rfc-703">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-original-example-in-rfc-703" class="section-name selfRef">Original Example in RFC 7030</a>
+        </h3>
+<p id="section-5.2-1">In this example, taken from <span><a href="https://rfc-editor.org/rfc/rfc7030#section-4.5.2" class="relref">Section 4.5.2</a> of [<a href="#RFC7030" class="cite xref">RFC7030</a>]</span>, a few different attributes are included.
+The original encoding of the '<code>macAddress</code>' part in the example is NOT CORRECT.
+It was not aligned with the definition of the Extension Request attribute as specified in <span><a href="https://rfc-editor.org/rfc/rfc2985#section-5.4.2" class="relref">Section 5.4.2</a> of [<a href="#RFC2985" class="cite xref">RFC2985</a>]</span>.
+The revised encoding given here does not use an '<code>id-ExtensionReq</code>' attribute
+because the MAC Address is not an X.509 certificate extension by itself
+and because the server provides its OID without a value,
+which is not allowed syntactically within a structure of type '<code>Extension</code>'.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<div id="base64-encoded-example-1">
+<section id="section-5.2.1">
+          <h4 id="name-base64-encoded-example-2">
+<a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-base64-encoded-example-2" class="section-name selfRef">Base64-Encoded Example</a>
+          </h4>
+<p id="section-5.2.1-1">The Base64:<a href="#section-5.2.1-1" class="pilcrow">¶</a></p>
+<div class="lang-base64 sourcecode" id="section-5.2.1-2">
+<pre>
+MDIGCSqGSIb3DQEJBzASBgcqhkjOPQIBMQcGBSuBBAAiBgcr
+BgEBAQEWBggqhkjOPQQDAw==</pre><a href="#section-5.2.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asn1-dump-output-1">
+<section id="section-5.2.2">
+          <h4 id="name-asn1-dump-output-2">
+<a href="#section-5.2.2" class="section-number selfRef">5.2.2. </a><a href="#name-asn1-dump-output-2" class="section-name selfRef">ASN.1 DUMP Output</a>
+          </h4>
+<p id="section-5.2.2-1">The CsrAttrs structure contains:<a href="#section-5.2.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2.2-2">
+<li id="section-5.2.2-2.1">
+              <p id="section-5.2.2-2.1.1">The challengePassword attribute to indicate that the
+CSR should include this value.<a href="#section-5.2.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.2.2-2.2">
+              <p id="section-5.2.2-2.2.1">An ecPublicKey OID with the value secp384r1 to
+indicate what kind of public key should be submitted.<a href="#section-5.2.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.2.2-2.3">
+              <p id="section-5.2.2-2.3.1">The  macAddress OID 1.3.6.1.1.1.1.22 to
+indicate that the CSR is expected to include
+(in a subjectDirectoryAttributes extension) a MAC address value.<a href="#section-5.2.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.2.2-2.4">
+              <p id="section-5.2.2-2.4.1">The ecdsaWithSHA384 OID to indicate what kind of hash
+is expected to be used for the self-signature in the PKCS#10 CSR.<a href="#section-5.2.2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+<div class="sourcecode" id="section-5.2.2-3">
+<pre>
+    &lt;30 32&gt;
+  0  50: SEQUENCE {
+    &lt;06 09&gt;
+  2   9:   OBJECT IDENTIFIER challengePassword (1 2 840 113549 1 9 7)
+       :     (PKCS #9)
+    &lt;30 12&gt;
+ 13  18:   SEQUENCE {
+    &lt;06 07&gt;
+ 15   7:     OBJECT IDENTIFIER ecPublicKey (1 2 840 10045 2 1)
+       :       (ANSI X9.62 public key type)
+    &lt;31 07&gt;
+ 24   7:     SET {
+    &lt;06 05&gt;
+ 26   5:       OBJECT IDENTIFIER secp384r1 (1 3 132 0 34)
+       :         (SECG (Certicom) named elliptic curve)
+       :       }
+       :     }
+    &lt;06 07&gt;
+ 33   7:   OBJECT IDENTIFIER '1 3 6 1 1 1 1 22'
+    &lt;06 08&gt;
+ 42   8:   OBJECT IDENTIFIER ecdsaWithSHA384 (1 2 840 10045 4 3 3)
+       :     (ANSI X9.62 ECDSA algorithm with SHA384)
+       :   }</pre><a href="#section-5.2.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="require-a-specific-subjectaltname-extension">
+<section id="section-5.3">
+        <h3 id="name-require-a-specific-subjecta">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-require-a-specific-subjecta" class="section-name selfRef">Require a Specific subjectAltName Extension</a>
+        </h3>
+<p id="section-5.3-1">This example is the same as the previous one except that instead of the OID
+for a macAddress, a subjectAltName is specified as the only Extension element.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<div id="base64-encoded-example-2">
+<section id="section-5.3.1">
+          <h4 id="name-base64-encoded-example-3">
+<a href="#section-5.3.1" class="section-number selfRef">5.3.1. </a><a href="#name-base64-encoded-example-3" class="section-name selfRef">Base64-Encoded Example</a>
+          </h4>
+<p id="section-5.3.1-1">The Base64:<a href="#section-5.3.1-1" class="pilcrow">¶</a></p>
+<div class="lang-base64 sourcecode" id="section-5.3.1-2">
+<pre>
+MEUGCSqGSIb3DQEJBzASBgcqhkjOPQIBMQcGBSuBBAAjBgkq
+hkiG9w0BCRQGCgmSJomT8ixkAQUGA1UEBQYIKoZIzj0EAwQ=</pre><a href="#section-5.3.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asn1-dump-output-2">
+<section id="section-5.3.2">
+          <h4 id="name-asn1-dump-output-3">
+<a href="#section-5.3.2" class="section-number selfRef">5.3.2. </a><a href="#name-asn1-dump-output-3" class="section-name selfRef">ASN.1 DUMP Output</a>
+          </h4>
+<p id="section-5.3.2-1">The CsrAttrs structure contains:<a href="#section-5.3.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.3.2-2">
+<li id="section-5.3.2-2.1">
+              <p id="section-5.3.2-2.1.1">The challengePassword attribute to indicate that the CSR should include this value.<a href="#section-5.3.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.3.2-2.2">
+              <p id="section-5.3.2-2.2.1">An ecPublicKey OID with the value secp521r1 to indicate what kind of public key should be submitted.<a href="#section-5.3.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.3.2-2.3">
+              <p id="section-5.3.2-2.3.1">An extensionRequest container with a subjectAltName value containing the name potato@example.com.<a href="#section-5.3.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.3.2-2.4">
+              <p id="section-5.3.2-2.4.1">The ecdsaWithSHA512 OID to indicate the SHA-512 hash is expected to be used for the self-signature in the PKCS#10 CSR.<a href="#section-5.3.2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+<div class="sourcecode" id="section-5.3.2-3">
+<pre>
+    &lt;30 45&gt;
+  0  69: SEQUENCE {
+    &lt;06 09&gt;
+  2   9:   OBJECT IDENTIFIER challengePassword (1 2 840 113549 1 9 7)
+       :     (PKCS #9)
+    &lt;30 12&gt;
+ 13  18:   SEQUENCE {
+    &lt;06 07&gt;
+ 15   7:     OBJECT IDENTIFIER ecPublicKey (1 2 840 10045 2 1)
+       :       (ANSI X9.62 public key type)
+    &lt;31 07&gt;
+ 24   7:     SET {
+    &lt;06 05&gt;
+ 26   5:       OBJECT IDENTIFIER secp521r1 (1 3 132 0 35)
+       :         (SECG (Certicom) named elliptic curve)
+       :       }
+       :     }
+    &lt;06 09&gt;
+ 33   9:   OBJECT IDENTIFIER friendlyName (for PKCS #12)
+                             (1 2 840 113549 1 9 20)
+       :     (PKCS #9 via PKCS #12)
+    &lt;06 0A&gt;
+ 44  10:   OBJECT IDENTIFIER '0 9 2342 19200300 100 1 5'
+    &lt;06 03&gt;
+ 56   3:   OBJECT IDENTIFIER serialNumber (2 5 4 5)
+       :     (X.520 DN component)
+    &lt;06 08&gt;
+ 61   8:   OBJECT IDENTIFIER ecdsaWithSHA512 (1 2 840 10045 4 3 4)
+       :     (ANSI X9.62 ECDSA algorithm with SHA512)
+       :   }</pre><a href="#section-5.3.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="require-a-public-key-of-a-specific-size">
+<section id="section-5.4">
+        <h3 id="name-require-a-public-key-of-a-s">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-require-a-public-key-of-a-s" class="section-name selfRef">Require a Public Key of a Specific Size</a>
+        </h3>
+<p id="section-5.4-1">The CSR requires an RSA public key of a specific size.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<div id="base64-encoded-example-3">
+<section id="section-5.4.1">
+          <h4 id="name-base64-encoded-example-4">
+<a href="#section-5.4.1" class="section-number selfRef">5.4.1. </a><a href="#name-base64-encoded-example-4" class="section-name selfRef">Base64-Encoded Example</a>
+          </h4>
+<p id="section-5.4.1-1">The Base64:<a href="#section-5.4.1-1" class="pilcrow">¶</a></p>
+<div class="lang-base64 sourcecode" id="section-5.4.1-2">
+<pre>
+MCkGCSqGSIb3DQEJBzARBgkqhkiG9w0BAQExBAICEAAGCSqG
+SIb3DQEBCw==</pre><a href="#section-5.4.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asn1-dump-output-3">
+<section id="section-5.4.2">
+          <h4 id="name-asn1-dump-output-4">
+<a href="#section-5.4.2" class="section-number selfRef">5.4.2. </a><a href="#name-asn1-dump-output-4" class="section-name selfRef">ASN.1 DUMP Output</a>
+          </h4>
+<p id="section-5.4.2-1">Provide a CSR with an RSA key that's 4096 bits and use SHA256 as the hash algorithm within the signature.<a href="#section-5.4.2-1" class="pilcrow">¶</a></p>
+<div class="lang-asn.1 sourcecode" id="section-5.4.2-2">
+<pre>
+    &lt;30 29&gt;
+  0  41: SEQUENCE {
+    &lt;06 09&gt;
+  2   9:   OBJECT IDENTIFIER challengePassword (1 2 840 113549 1 9 7)
+       :     (PKCS #9)
+    &lt;30 11&gt;
+ 13  17:   SEQUENCE {
+    &lt;06 09&gt;
+ 15   9:     OBJECT IDENTIFIER rsaEncryption (1 2 840 113549 1 1 1)
+       :       (PKCS #1)
+    &lt;31 04&gt;
+ 26   4:     SET {
+    &lt;02 02&gt;
+ 28   2:       INTEGER 4096
+       :       }
+       :     }
+    &lt;06 09&gt;
+ 32   9:   OBJECT IDENTIFIER sha256WithRSAEncryption
+                             (1 2 840 113549 1 1 11)
+       :     (PKCS #1)
+       :   }</pre><a href="#section-5.4.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="require-a-public-key-of-a-specific-curve">
+<section id="section-5.5">
+        <h3 id="name-require-a-public-key-of-a-sp">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-require-a-public-key-of-a-sp" class="section-name selfRef">Require a Public Key of a Specific Curve</a>
+        </h3>
+<p id="section-5.5-1">The CSR requires an ECC public key with a specific curve.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<div id="base64-encoded-example-4">
+<section id="section-5.5.1">
+          <h4 id="name-base64-encoded-example-5">
+<a href="#section-5.5.1" class="section-number selfRef">5.5.1. </a><a href="#name-base64-encoded-example-5" class="section-name selfRef">Base64-Encoded Example</a>
+          </h4>
+<p id="section-5.5.1-1">The Base64:<a href="#section-5.5.1-1" class="pilcrow">¶</a></p>
+<div class="lang-base64 sourcecode" id="section-5.5.1-2">
+<pre>
+MC4GCSqGSIb3DQEJBzASBgcqhkjOPQIBMQcGBSuBBAAiBgNV
+BAUGCCqGSM49BAMD</pre><a href="#section-5.5.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asn1-dump-output-4">
+<section id="section-5.5.2">
+          <h4 id="name-asn1-dump-output-5">
+<a href="#section-5.5.2" class="section-number selfRef">5.5.2. </a><a href="#name-asn1-dump-output-5" class="section-name selfRef">ASN.1 DUMP Output</a>
+          </h4>
+<p id="section-5.5.2-1">Provide a CSR with an ECC public key from p384, include your serial number, and
+use SHA384 as the hash algorithm within the signature.<a href="#section-5.5.2-1" class="pilcrow">¶</a></p>
+<div class="lang-asn.1 sourcecode" id="section-5.5.2-2">
+<pre>
+    &lt;30 2E&gt;
+  0  46: SEQUENCE {
+    &lt;06 09&gt;
+  2   9:   OBJECT IDENTIFIER challengePassword (1 2 840 113549 1 9 7)
+       :     (PKCS #9)
+    &lt;30 12&gt;
+ 13  18:   SEQUENCE {
+    &lt;06 07&gt;
+ 15   7:     OBJECT IDENTIFIER ecPublicKey (1 2 840 10045 2 1)
+       :       (ANSI X9.62 public key type)
+    &lt;31 07&gt;
+ 24   7:     SET {
+    &lt;06 05&gt;
+ 26   5:       OBJECT IDENTIFIER secp384r1 (1 3 132 0 34)
+       :         (SECG (Certicom) named elliptic curve)
+       :       }
+       :     }
+    &lt;06 03&gt;
+ 33   3:   OBJECT IDENTIFIER serialNumber (2 5 4 5)
+       :     (X.520 DN component)
+    &lt;06 08&gt;
+ 38   8:   OBJECT IDENTIFIER ecdsaWithSHA384 (1 2 840 10045 4 3 3)
+       :     (ANSI X9.62 ECDSA algorithm with SHA384)
+       :   }</pre><a href="#section-5.5.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="require-specific-extensions-and-attributes">
+<section id="section-5.6">
+        <h3 id="name-require-specific-extensions">
+<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-require-specific-extensions" class="section-name selfRef">Require Specific Extensions and Attributes</a>
+        </h3>
+<p id="section-5.6-1">The CSR is required to have an ECC public key, include a serial number, include a friendly name, include a favorite drink <span>[<a href="#favoritedrink" class="cite xref">favoritedrink</a>]</span> [OID 0.9.2342.19200300.100.1.5], and
+use SHA512 as the hash algorithm within the signature.<a href="#section-5.6-1" class="pilcrow">¶</a></p>
+<div id="base64-encoded-example-5">
+<section id="section-5.6.1">
+          <h4 id="name-base64-encoded-example-6">
+<a href="#section-5.6.1" class="section-number selfRef">5.6.1. </a><a href="#name-base64-encoded-example-6" class="section-name selfRef">Base64-Encoded Example</a>
+          </h4>
+<p id="section-5.6.1-1">The Base64:<a href="#section-5.6.1-1" class="pilcrow">¶</a></p>
+<div class="lang-base64 sourcecode" id="section-5.6.1-2">
+<pre>
+MEUGCSqGSIb3DQEJBzASBgcqhkjOPQIBMQcGBSuBBAAjBgkq
+hkiG9w0BCRQGCgmSJomT8ixkAQUGA1UEBQYIKoZIzj0EAwQ=</pre><a href="#section-5.6.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asn1-dump-output-5">
+<section id="section-5.6.2">
+          <h4 id="name-asn1-dump-output-6">
+<a href="#section-5.6.2" class="section-number selfRef">5.6.2. </a><a href="#name-asn1-dump-output-6" class="section-name selfRef">ASN.1 DUMP Output</a>
+          </h4>
+<p id="section-5.6.2-1">Provide a CSR with an ECC public key from sha521 and include your serial number,
+friendly name, and favorite drink, and hash it with SHA512.<a href="#section-5.6.2-1" class="pilcrow">¶</a></p>
+<div class="lang-asn.1 sourcecode" id="section-5.6.2-2">
+<pre>
+    &lt;30 45&gt;
+  0  69: SEQUENCE {
+    &lt;06 09&gt;
+  2   9:   OBJECT IDENTIFIER challengePassword (1 2 840 113549 1 9 7)
+       :     (PKCS #9)
+    &lt;30 12&gt;
+ 13  18:   SEQUENCE {
+    &lt;06 07&gt;
+ 15   7:     OBJECT IDENTIFIER ecPublicKey (1 2 840 10045 2 1)
+       :       (ANSI X9.62 public key type)
+    &lt;31 07&gt;
+ 24   7:     SET {
+    &lt;06 05&gt;
+ 26   5:       OBJECT IDENTIFIER secp521r1 (1 3 132 0 35)
+       :         (SECG (Certicom) named elliptic curve)
+       :       }
+       :     }
+    &lt;06 09&gt;
+ 33   9:   OBJECT IDENTIFIER friendlyName (for PKCS #12)
+                             (1 2 840 113549 1 9 20)
+       :     (PKCS #9 via PKCS #12)
+    &lt;06 0A&gt;
+ 44  10:   OBJECT IDENTIFIER '0 9 2342 19200300 100 1 5'
+    &lt;06 03&gt;
+ 56   3:   OBJECT IDENTIFIER serialNumber (2 5 4 5)
+       :     (X.520 DN component)
+    &lt;06 08&gt;
+ 61   8:   OBJECT IDENTIFIER ecdsaWithSHA512 (1 2 840 10045 4 3 4)
+       :     (ANSI X9.62 ECDSA algorithm with SHA512)
+       :   }</pre><a href="#section-5.6.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">The security considerations from <span>[<a href="#RFC7030" class="cite xref">RFC7030</a>], <a href="https://rfc-editor.org/rfc/rfc7030#section-6" class="relref">Section 6</a></span> are unchanged.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="identity-and-privacy-considerations">
+<section id="section-6.1">
+        <h3 id="name-identity-and-privacy-consid">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-identity-and-privacy-consid" class="section-name selfRef">Identity and Privacy Considerations</a>
+        </h3>
+<p id="section-6.1-1">An EST server may use this mechanism to instruct the EST client about the identities it should include in the CSR it sends as part of enrollment.
+The client may only be aware of its Initial Device
+   Identifier (IDevID) Subject, which includes a manufacturer serial number.
+The EST server can use this mechanism to tell the client to include a specific fully qualified domain name in the CSR in order to complete domain ownership proofs required by the CA.
+Additionally, the EST server may deem the manufacturer serial number in an IDevID as personally identifiable information and may want to specify a new random opaque identifier that the pledge should use in its CSR.
+This may be desirable if the CA and EST server have different operators.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">
+For the ASN.1 module in <a href="#app-asn1-module" class="auto internal xref">Appendix A</a>, IANA has assigned the following OID in the "SMI Security for S/MIME Module Identifier (1.2.840.113549.1.9.16.0)" registry:<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div id="table_1">
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Decimal</th>
+            <th class="text-left" rowspan="1" colspan="1">Description</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">82</td>
+            <td class="text-left" rowspan="1" colspan="1">id-mod-critemplate</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9908</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<p id="section-7-3">
+For the Certification Request Information Template and Extension Request Template attributes in <a href="#app-asn1-module" class="auto internal xref">Appendix A</a>, IANA has assigned the following OIDs in the "SMI Security for S/MIME Attributes (1.2.840.113549.1.9.16.2)" registry:<a href="#section-7-3" class="pilcrow">¶</a></p>
+<div id="table_2">
+<table class="center" id="table-2">
+        <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Decimal</th>
+            <th class="text-left" rowspan="1" colspan="1">Description</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">61</td>
+            <td class="text-left" rowspan="1" colspan="1">id-aa-certificationRequestInfoTemplate</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9908</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">62</td>
+            <td class="text-left" rowspan="1" colspan="1">id-aa-extensionReqTemplate</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 9908</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2986">[RFC2986]</dt>
+        <dd>
+<span class="refAuthor">Nystrom, M.</span> and <span class="refAuthor">B. Kaliski</span>, <span class="refTitle">"PKCS #10: Certification Request Syntax Specification Version 1.7"</span>, <span class="seriesInfo">RFC 2986</span>, <span class="seriesInfo">DOI 10.17487/RFC2986</span>, <time datetime="2000-11" class="refDate">November 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2986">https://www.rfc-editor.org/info/rfc2986</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5911">[RFC5911]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">J. Schaad</span>, <span class="refTitle">"New ASN.1 Modules for Cryptographic Message Syntax (CMS) and S/MIME"</span>, <span class="seriesInfo">RFC 5911</span>, <span class="seriesInfo">DOI 10.17487/RFC5911</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5911">https://www.rfc-editor.org/info/rfc5911</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5912">[RFC5912]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">J. Schaad</span>, <span class="refTitle">"New ASN.1 Modules for the Public Key Infrastructure Using X.509 (PKIX)"</span>, <span class="seriesInfo">RFC 5912</span>, <span class="seriesInfo">DOI 10.17487/RFC5912</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5912">https://www.rfc-editor.org/info/rfc5912</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6268">[RFC6268]</dt>
+        <dd>
+<span class="refAuthor">Schaad, J.</span> and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"Additional New ASN.1 Modules for the Cryptographic Message Syntax (CMS) and the Public Key Infrastructure Using X.509 (PKIX)"</span>, <span class="seriesInfo">RFC 6268</span>, <span class="seriesInfo">DOI 10.17487/RFC6268</span>, <time datetime="2011-07" class="refDate">July 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6268">https://www.rfc-editor.org/info/rfc6268</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7030">[RFC7030]</dt>
+        <dd>
+<span class="refAuthor">Pritikin, M., Ed.</span>, <span class="refAuthor">Yee, P., Ed.</span>, and <span class="refAuthor">D. Harkins, Ed.</span>, <span class="refTitle">"Enrollment over Secure Transport"</span>, <span class="seriesInfo">RFC 7030</span>, <span class="seriesInfo">DOI 10.17487/RFC7030</span>, <time datetime="2013-10" class="refDate">October 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7030">https://www.rfc-editor.org/info/rfc7030</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9148">[RFC9148]</dt>
+        <dd>
+<span class="refAuthor">van der Stok, P.</span>, <span class="refAuthor">Kampanakis, P.</span>, <span class="refAuthor">Richardson, M.</span>, and <span class="refAuthor">S. Raza</span>, <span class="refTitle">"EST-coaps: Enrollment over Secure Transport with the Secure Constrained Application Protocol"</span>, <span class="seriesInfo">RFC 9148</span>, <span class="seriesInfo">DOI 10.17487/RFC9148</span>, <time datetime="2022-04" class="refDate">April 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9148">https://www.rfc-editor.org/info/rfc9148</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="X.680">[X.680]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information technology -- Abstract Syntax Notation One (ASN.1): Specification of basic notation"</span>, <span class="seriesInfo">ITU-T Recommendation X.680</span>, <span class="seriesInfo">ISO/IEC 8824-1:2021</span>, <time datetime="2021-02" class="refDate">February 2021</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-X.680">https://www.itu.int/rec/T-REC-X.680</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="X.690">[X.690]</dt>
+      <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"Information technology -- ASN.1 encoding rules: Specification of Basic Encoding Rules (BER), Canonical Encoding Rules (CER) and Distinguished Encoding Rules (DER)"</span>, <span class="seriesInfo">ITU-T Recommendation X.690</span>, <span class="seriesInfo">ISO/IEC 8825-1:2021</span>, <time datetime="2021-02" class="refDate">February 2021</time>, <span>&lt;<a href="https://www.itu.int/rec/T-REC-X.690">https://www.itu.int/rec/T-REC-X.690</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="dumpasn1">[dumpasn1]</dt>
+        <dd>
+<span class="refAuthor">Gutmann, P.</span>, <span class="refTitle">"Dump ASN"</span>, <time datetime="2021-04-22" class="refDate">22 April 2021</time>, <span>&lt;<a href="https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.c">https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.c</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="favoritedrink">[favoritedrink]</dt>
+        <dd>
+<span class="refAuthor">OID Repository</span>, <span class="refTitle">"drink(5) [other identifier: favouriteDrink]"</span>, <span class="refContent">OID 0.9.2342.19200300.100.1.5</span>, <time datetime="2019-07-04" class="refDate">4 July 2019</time>, <span>&lt;<a href="https://oid-base.com/get/0.9.2342.19200300.100.1.5">https://oid-base.com/get/0.9.2342.19200300.100.1.5</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2985">[RFC2985]</dt>
+        <dd>
+<span class="refAuthor">Nystrom, M.</span> and <span class="refAuthor">B. Kaliski</span>, <span class="refTitle">"PKCS #9: Selected Object Classes and Attribute Types Version 2.0"</span>, <span class="seriesInfo">RFC 2985</span>, <span class="seriesInfo">DOI 10.17487/RFC2985</span>, <time datetime="2000-11" class="refDate">November 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2985">https://www.rfc-editor.org/info/rfc2985</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4211">[RFC4211]</dt>
+        <dd>
+<span class="refAuthor">Schaad, J.</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate Request Message Format (CRMF)"</span>, <span class="seriesInfo">RFC 4211</span>, <span class="seriesInfo">DOI 10.17487/RFC4211</span>, <time datetime="2005-09" class="refDate">September 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4211">https://www.rfc-editor.org/info/rfc4211</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5272">[RFC5272]</dt>
+        <dd>
+<span class="refAuthor">Schaad, J.</span> and <span class="refAuthor">M. Myers</span>, <span class="refTitle">"Certificate Management over CMS (CMC)"</span>, <span class="seriesInfo">RFC 5272</span>, <span class="seriesInfo">DOI 10.17487/RFC5272</span>, <time datetime="2008-06" class="refDate">June 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5272">https://www.rfc-editor.org/info/rfc5272</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5280">[RFC5280]</dt>
+        <dd>
+<span class="refAuthor">Cooper, D.</span>, <span class="refAuthor">Santesson, S.</span>, <span class="refAuthor">Farrell, S.</span>, <span class="refAuthor">Boeyen, S.</span>, <span class="refAuthor">Housley, R.</span>, and <span class="refAuthor">W. Polk</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile"</span>, <span class="seriesInfo">RFC 5280</span>, <span class="seriesInfo">DOI 10.17487/RFC5280</span>, <time datetime="2008-05" class="refDate">May 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5280">https://www.rfc-editor.org/info/rfc5280</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8295">[RFC8295]</dt>
+        <dd>
+<span class="refAuthor">Turner, S.</span>, <span class="refTitle">"EST (Enrollment over Secure Transport) Extensions"</span>, <span class="seriesInfo">RFC 8295</span>, <span class="seriesInfo">DOI 10.17487/RFC8295</span>, <time datetime="2018-01" class="refDate">January 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8295">https://www.rfc-editor.org/info/rfc8295</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8368">[RFC8368]</dt>
+        <dd>
+<span class="refAuthor">Eckert, T., Ed.</span> and <span class="refAuthor">M. Behringer</span>, <span class="refTitle">"Using an Autonomic Control Plane for Stable Connectivity of Network Operations, Administration, and Maintenance (OAM)"</span>, <span class="seriesInfo">RFC 8368</span>, <span class="seriesInfo">DOI 10.17487/RFC8368</span>, <time datetime="2018-05" class="refDate">May 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8368">https://www.rfc-editor.org/info/rfc8368</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8994">[RFC8994]</dt>
+        <dd>
+<span class="refAuthor">Eckert, T., Ed.</span>, <span class="refAuthor">Behringer, M., Ed.</span>, and <span class="refAuthor">S. Bjarnason</span>, <span class="refTitle">"An Autonomic Control Plane (ACP)"</span>, <span class="seriesInfo">RFC 8994</span>, <span class="seriesInfo">DOI 10.17487/RFC8994</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8994">https://www.rfc-editor.org/info/rfc8994</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8995">[RFC8995]</dt>
+        <dd>
+<span class="refAuthor">Pritikin, M.</span>, <span class="refAuthor">Richardson, M.</span>, <span class="refAuthor">Eckert, T.</span>, <span class="refAuthor">Behringer, M.</span>, and <span class="refAuthor">K. Watsen</span>, <span class="refTitle">"Bootstrapping Remote Secure Key Infrastructure (BRSKI)"</span>, <span class="seriesInfo">RFC 8995</span>, <span class="seriesInfo">DOI 10.17487/RFC8995</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8995">https://www.rfc-editor.org/info/rfc8995</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9483">[RFC9483]</dt>
+        <dd>
+<span class="refAuthor">Brockhaus, H.</span>, <span class="refAuthor">von Oheimb, D.</span>, and <span class="refAuthor">S. Fries</span>, <span class="refTitle">"Lightweight Certificate Management Protocol (CMP) Profile"</span>, <span class="seriesInfo">RFC 9483</span>, <span class="seriesInfo">DOI 10.17487/RFC9483</span>, <time datetime="2023-11" class="refDate">November 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9483">https://www.rfc-editor.org/info/rfc9483</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9810">[RFC9810]</dt>
+      <dd>
+<span class="refAuthor">Brockhaus, H.</span>, <span class="refAuthor">von Oheimb, D.</span>, <span class="refAuthor">Ounsworth, M.</span>, and <span class="refAuthor">J. Gray</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure -- Certificate Management Protocol (CMP)"</span>, <span class="seriesInfo">RFC 9810</span>, <span class="seriesInfo">DOI 10.17487/RFC9810</span>, <time datetime="2025-07" class="refDate">July 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9810">https://www.rfc-editor.org/info/rfc9810</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="app-asn1-module">
+<section id="appendix-A">
+      <h2 id="name-asn1-module">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-asn1-module" class="section-name selfRef">ASN.1 Module</a>
+      </h2>
+<p id="appendix-A-1">This appendix provides an ASN.1 module <span>[<a href="#X.680" class="cite xref">X.680</a>]</span> for the Certification Request Information Template attribute and its sub-template structures. It follows the conventions
+established in <span>[<a href="#RFC5911" class="cite xref">RFC5911</a>]</span>, <span>[<a href="#RFC5912" class="cite xref">RFC5912</a>]</span>, and <span>[<a href="#RFC6268" class="cite xref">RFC6268</a>]</span>.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div class="breakable lang-asn.1 sourcecode" id="appendix-A-2">
+<pre>
+CRITemplateModule
+  { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1)
+    pkcs-9(9) smime(16) modules(0) id-mod-critemplate(82) }
+
+DEFINITIONS IMPLICIT TAGS ::=
+
+BEGIN
+
+IMPORTS -- from [RFC5912]
+
+SupportedAttributes
+ FROM PKIX1Explicit-2009
+  { iso(1) identified-organization(3) dod(6) internet(1) security(5)
+    mechanisms(5) pkix(7) id-mod(0) id-mod-pkix1-explicit-02(51)}
+
+ATTRIBUTE, EXTENSION
+ FROM PKIX-CommonTypes-2009
+  { iso(1) identified-organization(3) dod(6) internet(1) security(5)
+    mechanisms(5) pkix(7) id-mod(0) id-mod-pkixCommon-02(57) }
+
+PUBLIC-KEY, AlgorithmIdentifier{}
+ FROM AlgorithmInformation-2009
+  { iso(1) identified-organization(3) dod(6) internet(1) security(5)
+    mechanisms(5) pkix(7) id-mod(0)
+    id-mod-algorithmInformation-02(58)}
+
+CertExtensions
+ FROM PKIX1Implicit-2009
+  { iso(1) identified-organization(3) dod(6) internet(1) security(5)
+    mechanisms(5) pkix(7) id-mod(0) id-mod-pkix1-implicit-02(59)}
+
+Attributes{}, CRIAttributes, PKInfoAlgorithms
+ FROM PKCS-10
+  { iso(1) identified-organization(3) dod(6) internet(1)
+    security(5) mechanisms(5) pkix(7)
+    id-mod(0) id-mod-pkcs10-2009(69) }
+;
+
+aa-certificationRequestInfoTemplate ATTRIBUTE ::=
+  { TYPE CertificationRequestInfoTemplate IDENTIFIED BY
+    id-aa-certificationRequestInfoTemplate }
+
+id-aa-certificationRequestInfoTemplate OBJECT IDENTIFIER ::=
+  { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs9(9)
+    smime(16) aa(2) id-aa-certificationRequestInfoTemplate(61) }
+
+--  like CertificationRequestInfo but OPTIONAL subject, subjectPKInfo
+CertificationRequestInfoTemplate ::= SEQUENCE {
+    version       INTEGER { v1(0) } (v1, ... ),
+    subject       NameTemplate OPTIONAL,
+    subjectPKInfo [0] SubjectPublicKeyInfoTemplate
+                              {{ PKInfoAlgorithms }} OPTIONAL,
+    attributes    [1] Attributes{{ CRIAttributes }}
+}
+
+
+--  like Name, but with OPTIONAL RDN values
+NameTemplate ::= CHOICE { -- only one possibility for now --
+    rdnSequence  RDNSequenceTemplate }
+
+RDNSequenceTemplate ::= SEQUENCE OF RelativeDistinguishedNameTemplate
+
+RelativeDistinguishedNameTemplate  ::= SET SIZE (1 .. MAX)
+    OF SingleAttributeTemplate { {SupportedAttributes} }
+
+--  like Attributes, but with OPTIONAL value
+SingleAttributeTemplates{ATTRIBUTE:AttrSet} ::= SEQUENCE OF
+    SingleAttributeTemplates{ {AttrSet} }
+
+--  like SingleAttribute, but with OPTIONAL value
+SingleAttributeTemplate{ATTRIBUTE:AttrSet} ::= SEQUENCE {
+    type      ATTRIBUTE.&amp;id({AttrSet}),
+    value     ATTRIBUTE.&amp;Type({AttrSet}{@type}) OPTIONAL
+}
+
+--  like SubjectPublicKeyInfo, but with OPTIONAL subjectPublicKey
+SubjectPublicKeyInfoTemplate{PUBLIC-KEY:IOSet} ::= SEQUENCE {
+    algorithm        AlgorithmIdentifier{PUBLIC-KEY, {IOSet}},
+    subjectPublicKey BIT STRING OPTIONAL
+}
+
+id-aa-extensionReqTemplate OBJECT IDENTIFIER ::=
+{ iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs9(9)
+  smime(16) aa(2) id-aa-extensionReqTemplate(62) }
+
+--  like extensionRequest, but with OPTIONAL Extension extnValues
+--  original definition was in PKCS#9 RFC 2985, Section 5.4.2
+at-extensionReqTemplate ATTRIBUTE ::= {
+    TYPE ExtensionReqTemplate IDENTIFIED BY
+                 id-aa-extensionReqTemplate }
+
+ExtensionReqTemplate ::= ExtensionTemplates{{CertExtensions}}
+
+--  like Extensions, but with OPTIONAL extnValue
+ExtensionTemplates{EXTENSION:ExtensionSet} ::=
+    SEQUENCE SIZE (1..MAX) OF ExtensionTemplate{{ExtensionSet}}
+
+--  like Extension, but with OPTIONAL extnValue
+ExtensionTemplate{EXTENSION:ExtensionSet} ::= SEQUENCE {
+    extnID    EXTENSION.&amp;id({ExtensionSet}),
+    critical  BOOLEAN
+  --                   (EXTENSION.&amp;Critical({ExtensionSet}{@extnID}))
+                     DEFAULT FALSE,
+    extnValue OCTET STRING (CONTAINING
+              EXTENSION.&amp;ExtnType({ExtensionSet}{@extnID})) OPTIONAL
+              --  contains the DER encoding of the ASN.1 value
+              --  corresponding to the extension type identified
+              --  by extnID when present
+}
+
+END</pre><a href="#appendix-A-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1"><span class="contact-name">Corey Bonnell</span> crafted Example 2 using a different tool, and    
+this helped debug other running code.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2"><span class="contact-name">Carl Wallace</span> provided major parts of the                       
+CertificationRequestInfoTemplate syntax declaration.<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+<p id="appendix-B-3"><span class="contact-name">Russ Housley</span> conducted many reviews of the ASN.1 module and suggested many 
+fixes.<a href="#appendix-B-3" class="pilcrow">¶</a></p>
+<p id="appendix-B-4"><span class="contact-name">Deb Cooley</span> conducted the usual Area Director Review.<a href="#appendix-B-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Michael Richardson (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Sandelman Software Works</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mcr+ietf@sandelman.ca" class="email">mcr+ietf@sandelman.ca</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Owen Friel</span></div>
+<div dir="auto" class="left"><span class="org">Cisco</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ofriel@cisco.com" class="email">ofriel@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Dr. David von Oheimb</span></div>
+<div dir="auto" class="left"><span class="org">Siemens</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:dev@ddvo.net" class="email">dev@ddvo.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Dan Harkins</span></div>
+<div dir="auto" class="left"><span class="org">The Industrial Lounge</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:dharkins@lounge.org" class="email">dharkins@lounge.org</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
