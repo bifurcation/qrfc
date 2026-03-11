@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9853: Return Routability Check for DTLS 1.2 and 1.3</title>
+<meta content="Hannes Tschofenig" name="author">
+<meta content="Achim Kraus" name="author">
+<meta content="Thomas Fossati" name="author">
+<meta content="
+       This document specifies a Return Routability Check (RRC) subprotocol for use in the context of the
+Connection ID (CID) construct for the Datagram Transport Layer Security (DTLS)
+protocol versions 1.2 and 1.3. 
+       Implementations offering the CID functionality described in RFCs 9146 and 9147 are encouraged to also provide the RRC functionality described in this document.
+For this reason, this document updates RFCs 9146 and 9147. 
+    " name="description">
+<meta content="xml2rfc 3.32.0" name="generator">
+<meta content="DTLS" name="keyword">
+<meta content="RRC" name="keyword">
+<meta content="CID" name="keyword">
+<meta content="9853" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.32.0
+    Python 3.14.3
+    ConfigArgParse 1.7.1
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.2
+    platformdirs 4.9.2
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.32.5
+    wcwidth 0.6.0
+    weasyprint 65.0
+-->
+<link href="rfc9853.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-tls-dtls-rrc-20" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9853" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9853</td>
+<td class="center">DTLS Return Routability Check</td>
+<td class="right">March 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Tschofenig, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9853" class="eref">9853</a></dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc9146" class="eref">9146</a>, <a href="https://www.rfc-editor.org/rfc/rfc9147" class="eref">9147</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-03" class="published">March 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">H. Tschofenig, <span class="editor">Ed.</span>
+</div>
+<div class="org">UniBw M.</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Kraus</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Fossati</div>
+<div class="org">Linaro</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9853</h1>
+<h1 id="title">Return Routability Check for DTLS 1.2 and 1.3</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document specifies a Return Routability Check (RRC) subprotocol for use in the context of the
+Connection ID (CID) construct for the Datagram Transport Layer Security (DTLS)
+protocol versions 1.2 and 1.3.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">Implementations offering the CID functionality described in RFCs 9146 and 9147 are encouraged to also provide the RRC functionality described in this document.
+For this reason, this document updates RFCs 9146 and 9147.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9853">https://www.rfc-editor.org/info/rfc9853</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-terminology" class="internal xref">Conventions and Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-rrc-extension" class="internal xref">RRC Extension</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-rrc-and-cid-interplay" class="internal xref">RRC and CID Interplay</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-return-routability-check-me" class="internal xref">Return Routability Check Message Types</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-path-validation-procedure" class="internal xref">Path Validation Procedure</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-basic" class="internal xref">Basic</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-enhanced" class="internal xref">Enhanced</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-path-challenge-requirements" class="internal xref">Path Challenge Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-path-response-drop-requirem" class="internal xref">Path Response/Drop Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-timer-choice" class="internal xref">Timer Choice</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-example" class="internal xref">Example</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-logging-anomalous-events" class="internal xref">Logging Anomalous Events</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-middlebox-interference" class="internal xref">Middlebox Interference</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-attacker-model" class="internal xref">Attacker Model</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.1">
+                    <p id="section-toc.1-1.8.2.1.2.1.1"><a href="#section-8.1.1" class="auto internal xref">8.1.1</a>.  <a href="#name-amplification" class="internal xref">Amplification</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.2">
+                    <p id="section-toc.1-1.8.2.1.2.2.1"><a href="#section-8.1.2" class="auto internal xref">8.1.2</a>.  <a href="#name-off-path-packet-forwarding" class="internal xref">Off-Path Packet Forwarding</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-new-tls-contenttype" class="internal xref">New TLS ContentType</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-new-tls-extensiontype" class="internal xref">New TLS ExtensionType</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.3">
+                <p id="section-toc.1-1.10.2.3.1"><a href="#section-10.3" class="auto internal xref">10.3</a>.  <a href="#name-new-tls-rrc-message-type-re" class="internal xref">New "TLS RRC Message Type" Registry</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.3.2.1">
+                    <p id="section-toc.1-1.10.2.3.2.1.1"><a href="#section-10.3.1" class="auto internal xref">10.3.1</a>.  <a href="#name-designated-expert-instructi" class="internal xref">Designated Expert Instructions</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">A Connection ID (CID) is an identifier carried in the record layer header of a DTLS datagram
+that gives the receiver additional information for selecting the appropriate
+security context.  The CID mechanism has been specified in <span>[<a href="#RFC9146" class="cite xref">RFC9146</a>]</span> for
+DTLS 1.2 and in <span>[<a href="#RFC9147" class="cite xref">RFC9147</a>]</span> for DTLS 1.3.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2"><span><a href="https://rfc-editor.org/rfc/rfc9146#section-6" class="relref">Section 6</a> of [<a href="#RFC9146" class="cite xref">RFC9146</a>]</span> describes how the use of CID increases the attack
+surface of DTLS 1.2 and 1.3 by providing both on-path and off-path attackers an opportunity for
+DoS or DDoS.  It also describes the steps a DTLS principal must take when a
+record with a CID is received that has a source address different
+from the one currently associated with the DTLS connection.  However, the
+actual mechanism for ensuring that the new peer address is willing to receive
+and process DTLS records is left open.  To address the gap, this document defines a Return
+Routability Check (RRC) subprotocol for DTLS 1.2 and 1.3, inspired by the path validation procedure defined in <span><a href="https://rfc-editor.org/rfc/rfc9000#section-8.2" class="relref">Section 8.2</a> of [<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>.
+As such, this document updates <span>[<a href="#RFC9146" class="cite xref">RFC9146</a>]</span> and <span>[<a href="#RFC9147" class="cite xref">RFC9147</a>]</span>.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The return routability check is performed by the receiving endpoint before the
+CID-address binding is updated in that endpoint's session state.
+This is done in order to give the receiving endpoint confidence
+that the sending peer is in fact reachable at the source address indicated in the received datagram.
+For an illustration of the handshake and address validation phases, see <a href="#overview" class="auto internal xref">Section 6</a>.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4"><a href="#regular" class="auto internal xref">Section 5.1</a> of this document explains the fundamental mechanism that aims to reduce the DDoS attack surface.
+Additionally, <a href="#enhanced" class="auto internal xref">Section 5.2</a> discusses a more advanced address validation mechanism.
+This mechanism is designed to counteract off-path attackers trying to place themselves on-path by racing packets that trigger address rebinding at the receiver.
+To gain a detailed understanding of the attacker model, please refer to <a href="#attacker" class="auto internal xref">Section 8.1</a>.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">Apart from of its use in the context of CID-address binding updates,
+the path validation capability offered by RRC can be used at any time by either endpoint. For
+instance, an endpoint might use RRC to check that a peer is still reachable at
+its last known address after a period of quiescence.<a href="#section-1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="conventions-and-terminology">
+<section id="section-2">
+      <h2 id="name-conventions-and-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-terminology" class="section-name selfRef">Conventions and Terminology</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">This document assumes familiarity with the CID format and protocol defined for
+DTLS 1.2 <span>[<a href="#RFC9146" class="cite xref">RFC9146</a>]</span> and for DTLS 1.3 <span>[<a href="#RFC9147" class="cite xref">RFC9147</a>]</span>.  The presentation language
+used in this document is described in <span><a href="https://rfc-editor.org/rfc/rfc8446#section-4" class="relref">Section 4</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">In this document, the term "anti-amplification limit" means three times the amount of data received from an unvalidated address.
+This includes all DTLS records originating from that source address, excluding those that have been discarded.
+This follows the pattern of <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>, applying a similar concept to DTLS.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4">The term "address" is defined in <span><a href="https://rfc-editor.org/rfc/rfc9000#section-1.2" class="relref">Section 1.2</a> of [<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>.<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5">The terms "client", "server", "peer", and "endpoint" are defined in <span><a href="https://rfc-editor.org/rfc/rfc8446#section-1.1" class="relref">Section 1.1</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rrc-extension">
+<section id="section-3">
+      <h2 id="name-rrc-extension">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-rrc-extension" class="section-name selfRef">RRC Extension</a>
+      </h2>
+<p id="section-3-1">The use of RRC is negotiated via the <code>rrc</code> extension.
+The <code>rrc</code> extension is only defined for DTLS 1.2 and 1.3.
+On connecting, a client wishing to use RRC includes the <code>rrc</code> extension in its ClientHello.
+If the server is capable of meeting this requirement, it responds with an
+<code>rrc</code> extension in its ServerHello.  The <code>extension_type</code> value for this
+extension is 61, and the <code>extension_data</code> field of this extension is empty.
+A client offering the <code>rrc</code> extension <span class="bcp14">MUST</span> also offer the <code>connection_id</code> extension <span>[<a href="#RFC9146" class="cite xref">RFC9146</a>]</span>.
+If the client includes the <code>rrc</code> extension in its ClientHello but omits the <code>connection_id</code> extension, the server <span class="bcp14">MUST NOT</span> include the <code>rrc</code> extension in its ServerHello.
+A client offering the <code>connection_id</code> extension <span class="bcp14">SHOULD</span> also offer the <code>rrc</code> extension, unless the application using DTLS has its own address validation mechanism.
+The client and server <span class="bcp14">MUST NOT</span> use RRC unless both sides have successfully exchanged <code>rrc</code> extensions.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="rrc-and-cid-interplay">
+<section id="section-3.1">
+        <h3 id="name-rrc-and-cid-interplay">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-rrc-and-cid-interplay" class="section-name selfRef">RRC and CID Interplay</a>
+        </h3>
+<p id="section-3.1-1">RRC offers an in-protocol mechanism to perform peer address validation that
+complements the "peer address update" procedure described in <span><a href="https://rfc-editor.org/rfc/rfc9146#section-6" class="relref">Section 6</a> of [<a href="#RFC9146" class="cite xref">RFC9146</a>]</span>.  Specifically, when both CID <span>[<a href="#RFC9146" class="cite xref">RFC9146</a>]</span> and RRC have been
+successfully negotiated for the session, if a record with CID is received that
+has the source address of the enclosing UDP datagram different from what is
+currently associated with that CID value, the receiver <span class="bcp14">SHOULD</span> perform a return
+routability check as described in <a href="#path-validation" class="auto internal xref">Section 5</a>, unless an application-specific
+address validation mechanism can be triggered instead (e.g., Constrained Application Protocol (CoAP) Echo <span>[<a href="#RFC9175" class="cite xref">RFC9175</a>]</span>).<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="return-routability-check-message-types">
+<section id="section-4">
+      <h2 id="name-return-routability-check-me">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-return-routability-check-me" class="section-name selfRef">Return Routability Check Message Types</a>
+      </h2>
+<p id="section-4-1">This document defines the <code>return_routability_check</code> content type
+(<a href="#fig-rrc-msg" class="auto internal xref">Figure 1</a>) to carry Return Routability Check messages.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">The RRC subprotocol consists of three message types: <code>path_challenge</code>, <code>path_response</code>,
+and <code>path_drop</code>. These message types are used for path validation and selection as described in
+<a href="#path-validation" class="auto internal xref">Section 5</a>.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">Each message carries a <code>Cookie</code>, an 8-byte field containing 64 bits of entropy (e.g., obtained from the cryptographically secure pseudorandom number generator (CSPRNG) used by the TLS implementation; see <span><a href="https://rfc-editor.org/rfc/rfc8446#appendix-C.1" class="relref">Appendix C.1</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>).<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">The <code>return_routability_check</code> message <span class="bcp14">MUST</span> be authenticated and encrypted
+using the currently active security context.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<span id="name-return-routability-check-mes"></span><div id="fig-rrc-msg">
+<figure id="figure-1">
+        <div class="lang-tls-presentation sourcecode" id="section-4-5.1">
+<pre>
+enum {
+    invalid(0),
+    change_cipher_spec(20),
+    alert(21),
+    handshake(22),
+    application_data(23),
+    heartbeat(24),  /* RFC 6520 */
+    tls12_cid(25),  /* RFC 9146, DTLS 1.2 only */
+    return_routability_check(27), /* NEW */
+    (255)
+} ContentType;
+
+uint64 Cookie;
+
+enum {
+    path_challenge(0),
+    path_response(1),
+    path_drop(2),
+    (255)
+} rrc_msg_type;
+
+struct {
+    rrc_msg_type msg_type;
+    select (return_routability_check.msg_type) {
+        case path_challenge: Cookie;
+        case path_response:  Cookie;
+        case path_drop:      Cookie;
+    };
+} return_routability_check;
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-return-routability-check-mes" class="selfRef">Return Routability Check Message and Content Type</a>
+        </figcaption></figure>
+</div>
+<p id="section-4-6">Future extensions to the RRC subprotocol may
+define new message types.
+Implementations <span class="bcp14">MUST</span> be able to parse and understand the three RRC message types defined in this document.
+In addition, implementations <span class="bcp14">MUST</span> be able to parse and gracefully ignore messages with an unknown <code>msg_type</code>.<a href="#section-4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="path-validation">
+<section id="section-5">
+      <h2 id="name-path-validation-procedure">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-path-validation-procedure" class="section-name selfRef">Path Validation Procedure</a>
+      </h2>
+<p id="section-5-1">A receiver that observes the peer's address change <span class="bcp14">MUST</span> stop sending
+any buffered application data or limit the data sent to the unvalidated
+address to the anti-amplification limit.
+It then initiates the return routability check.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">This document describes two kinds of checks: basic (<a href="#regular" class="auto internal xref">Section 5.1</a>) and enhanced (<a href="#enhanced" class="auto internal xref">Section 5.2</a>).
+The choice of one or the other depends on whether the off-path attacker scenario described in <a href="#off-path" class="auto internal xref">Section 8.1.2</a> is to be considered.
+(The decision on what strategy to choose depends mainly on the threat model but
+may also be influenced by other considerations.  Examples of impacting factors
+include the need to minimise implementation complexity, privacy concerns, and the
+need to reduce the time it takes to switch path.  The choice may be offered as
+a configuration option to the user of the TLS implementation.)<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">After the path validation procedure is complete, any pending send operation is
+resumed to the bound peer address.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">Sections <a href="#path-challenge-reqs" class="auto internal xref">5.3</a> and <a href="#path-response-reqs" class="auto internal xref">5.4</a> list the requirements for
+the initiator and responder roles, broken down per protocol phase.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">Please note that the presented algorithms are not designed to handle nested rebindings, i.e. rebindings that may occur while a path is being validated following a previous rebinding.
+This should rarely occur, but if it happens, the <code>path_response</code> message is dropped, the address validation times out, and the address will not be updated.
+A new path validation will start when new data is received.<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-5-6">Also, note that in the event of a NAT rebind, the initiator and responder will have different views of the path: The initiator will see a new path, while the responder will still see the old one.<a href="#section-5-6" class="pilcrow">¶</a></p>
+<div id="regular">
+<section id="section-5.1">
+        <h3 id="name-basic">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-basic" class="section-name selfRef">Basic</a>
+        </h3>
+<p id="section-5.1-1">The basic return routability check comprises the following steps:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.1-2">
+<li id="section-5.1-2.1">
+            <p id="section-5.1-2.1.1">The receiver (i.e., the initiator) creates a <code>return_routability_check</code> message of
+type <code>path_challenge</code> and places the unpredictable cookie into the message.<a href="#section-5.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-2.2">
+            <p id="section-5.1-2.2.1">The message is sent to the observed new address and a timer T (see
+<a href="#timer-choice" class="auto internal xref">Section 5.5</a>) is started.<a href="#section-5.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-2.3">
+            <p id="section-5.1-2.3.1">The peer (i.e., the responder) cryptographically verifies the received
+<code>return_routability_check</code> message of
+type <code>path_challenge</code> and responds by echoing the cookie value in a
+<code>return_routability_check</code> message of type <code>path_response</code>.<a href="#section-5.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-2.4">
+            <p id="section-5.1-2.4.1">When the initiator receives the <code>return_routability_check</code>
+message  of type <code>path_response</code> and verifies that it contains the sent cookie, it updates the peer
+address binding.<a href="#section-5.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-2.5">
+            <p id="section-5.1-2.5.1">If T expires, the peer address binding is not updated.<a href="#section-5.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="enhanced">
+<section id="section-5.2">
+        <h3 id="name-enhanced">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-enhanced" class="section-name selfRef">Enhanced</a>
+        </h3>
+<p id="section-5.2-1">The enhanced return routability check comprises the following steps:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2-2">
+<li id="section-5.2-2.1">
+            <p id="section-5.2-2.1.1">The receiver (i.e., the initiator) creates a <code>return_routability_check</code> message of
+type <code>path_challenge</code> and places the unpredictable cookie into the message.<a href="#section-5.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-2.2">
+            <p id="section-5.2-2.2.1">The message is sent to the previously valid address, which corresponds to the
+old path. Additionally, a timer T is started (see <a href="#timer-choice" class="auto internal xref">Section 5.5</a>).<a href="#section-5.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-2.3">
+            <p id="section-5.2-2.3.1">If the path is still functional, the peer (i.e., the responder) cryptographically verifies the received
+<code>return_routability_check</code> message of
+type <code>path_challenge</code>.
+The action to be taken depends on whether the path through which the message was received remains the preferred one.<a href="#section-5.2-2.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-2.3.2.1">
+                <p id="section-5.2-2.3.2.1.1">If the path through which the message was received is preferred,
+a <code>return_routability_check</code> message of type <code>path_response</code> <span class="bcp14">MUST</span> be returned. (Note that, from the responder's perspective, the preferred path and the old path coincide in the event of a NAT rebind.)<a href="#section-5.2-2.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-2.3.2.2">
+                <p id="section-5.2-2.3.2.2.1">If the path through which the message was received is no longer preferred,
+a <code>return_routability_check</code> message of type <code>path_drop</code> <span class="bcp14">MUST</span> be returned.  (Note that the responder must have initiated a voluntary path migration in order to know that this path is no longer the preferred one.)<a href="#section-5.2-2.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+<p id="section-5.2-2.3.3">
+In either case, the peer echoes the cookie value in the response.<a href="#section-5.2-2.3.3" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-2.4">
+            <p id="section-5.2-2.4.1">The initiator receives and verifies that the <code>return_routability_check</code>
+message contains the previously sent cookie. The actions taken by the
+initiator differ based on the received message:<a href="#section-5.2-2.4.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-2.4.2.1">
+                <p id="section-5.2-2.4.2.1.1">When a <code>return_routability_check</code> message of type <code>path_response</code> is received,
+the initiator <span class="bcp14">MUST</span> continue using the previously valid address, i.e., no switch
+to the new path takes place and the peer address binding is not updated.<a href="#section-5.2-2.4.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-2.4.2.2">
+                <p id="section-5.2-2.4.2.2.1">When a <code>return_routability_check</code> message of type <code>path_drop</code> is received,
+the initiator <span class="bcp14">MUST</span> perform a basic return routability check on the observed new
+address, as described in <a href="#regular" class="auto internal xref">Section 5.1</a>.<a href="#section-5.2-2.4.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li id="section-5.2-2.5">
+            <p id="section-5.2-2.5.1">If T expires, the peer address binding is not updated. In this case, the
+initiator <span class="bcp14">MUST</span> perform a basic return routability check on the observed new
+address, as described in <a href="#regular" class="auto internal xref">Section 5.1</a>.<a href="#section-5.2-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="path-challenge-reqs">
+<section id="section-5.3">
+        <h3 id="name-path-challenge-requirements">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-path-challenge-requirements" class="section-name selfRef">Path Challenge Requirements</a>
+        </h3>
+<ul class="normal">
+<li class="normal" id="section-5.3-1.1">
+            <p id="section-5.3-1.1.1">The initiator <span class="bcp14">MAY</span> send multiple <code>return_routability_check</code> messages of type
+<code>path_challenge</code> to account for packet loss on the probed path.<a href="#section-5.3-1.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.3-1.1.2.1">
+                <p id="section-5.3-1.1.2.1.1">Each <code>path_challenge</code> <span class="bcp14">SHOULD</span> go into different transport packets.  (Note that
+the DTLS implementation may not have control over the packetization done by
+the transport layer.)<a href="#section-5.3-1.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.3-1.1.2.2">
+                <p id="section-5.3-1.1.2.2.1">The transmission of subsequent <code>path_challenge</code> messages <span class="bcp14">SHOULD</span> be paced to
+decrease the chance of loss.<a href="#section-5.3-1.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.3-1.1.2.3">
+                <p id="section-5.3-1.1.2.3.1">Each <code>path_challenge</code> message <span class="bcp14">MUST</span> contain random data.<a href="#section-5.3-1.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.3-1.1.2.4">
+                <p id="section-5.3-1.1.2.4.1">In general, the number of "backup" <code>path_challenge</code> messages depends on the application, since some are more sensitive than others to latency caused by changes in the path.
+In the absence of application-specific requirements, the initiator can send a <code>path_challenge</code> message once per round-trip time (RTT), up to the anti-amplification limit.<a href="#section-5.3-1.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-5.3-1.2">
+            <p id="section-5.3-1.2.1">The initiator <span class="bcp14">MAY</span> use the record padding mechanism available in
+DTLS 1.3 (and in DTLS 1.2, when CID is enabled on the sending direction) to add padding up
+to the anti-amplification limit to probe if the Path MTU (PMTU) for the new
+path is still acceptable.<a href="#section-5.3-1.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="path-response-reqs">
+<section id="section-5.4">
+        <h3 id="name-path-response-drop-requirem">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-path-response-drop-requirem" class="section-name selfRef">Path Response/Drop Requirements</a>
+        </h3>
+<ul class="normal">
+<li class="normal" id="section-5.4-1.1">
+            <p id="section-5.4-1.1.1">The responder <span class="bcp14">MUST NOT</span> delay sending an elicited <code>path_response</code> or
+<code>path_drop</code> messages.<a href="#section-5.4-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.4-1.2">
+            <p id="section-5.4-1.2.1">The responder <span class="bcp14">MUST</span> send exactly one <code>path_response</code> or <code>path_drop</code> message
+for each valid <code>path_challenge</code> it received.<a href="#section-5.4-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.4-1.3">
+            <p id="section-5.4-1.3.1">The responder <span class="bcp14">MUST</span> send the <code>path_response</code> or the <code>path_drop</code> to the address from
+which the corresponding <code>path_challenge</code> was received.  This ensures that the
+path is functional in both directions.<a href="#section-5.4-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.4-1.4">
+            <p id="section-5.4-1.4.1">The initiator <span class="bcp14">MUST</span> silently discard any invalid <code>path_response</code> or
+<code>path_drop</code> it receives.<a href="#section-5.4-1.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.4-2">Note that RRC does not account for PMTU discovery on the reverse path.  If the
+responder wants to do PMTU discovery using RRC, it should initiate a new path
+validation procedure.<a href="#section-5.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="timer-choice">
+<section id="section-5.5">
+        <h3 id="name-timer-choice">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-timer-choice" class="section-name selfRef">Timer Choice</a>
+        </h3>
+<p id="section-5.5-1">When setting T, implementations are cautioned that the new path could have a
+ longer RTT than the original.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<p id="section-5.5-2">In settings where there is external information about the RTT of the active
+path (i.e., the old path), implementations <span class="bcp14">SHOULD</span> use T = 3xRTT.<a href="#section-5.5-2" class="pilcrow">¶</a></p>
+<p id="section-5.5-3">If an implementation has no way to obtain information regarding the RTT of the
+active path, T <span class="bcp14">SHOULD</span> be set to 1 second.<a href="#section-5.5-3" class="pilcrow">¶</a></p>
+<p id="section-5.5-4">Profiles for specific deployment environments -- for example, constrained
+networks <span>[<a href="#I-D.ietf-uta-tls13-iot-profile" class="cite xref">IOT-PROFILE</a>]</span> -- <span class="bcp14">MAY</span> specify a different, more
+suitable value for T.<a href="#section-5.5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="overview">
+<section id="section-6">
+      <h2 id="name-example">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-example" class="section-name selfRef">Example</a>
+      </h2>
+<p id="section-6-1"><a href="#fig-handshake" class="auto internal xref">Figure 2</a> shows an example of a DTLS 1.3 handshake in which a client and a server successfully negotiate support for both the CID and RRC extensions.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<span id="name-message-flow-for-full-dtls-"></span><div id="fig-handshake">
+<figure id="figure-2">
+        <div class="alignLeft art-text artwork" id="section-6-2.1">
+<pre>
+       Client                                           Server
+
+Key  ^ ClientHello
+Exch | + key_share
+     | + signature_algorithms
+     | + rrc
+     v + connection_id=empty
+                               --------&gt;
+                                                  ServerHello  ^ Key
+                                                 +  key_share  | Exch
+                                          + connection_id=100  |
+                                                        + rrc  v
+                                        {EncryptedExtensions}  ^  Server
+                                         {CertificateRequest}  v  Params
+                                                {Certificate}  ^
+                                          {CertificateVerify}  | Auth
+                               &lt;--------           {Finished}  v
+
+     ^ {Certificate}
+Auth | {CertificateVerify}
+     v {Finished}              --------&gt;
+       [Application Data]      &lt;-------&gt;  [Application Data]
+
+
+              +  Indicates noteworthy extensions sent in the
+                 previously noted message.
+
+              {} Indicates messages protected using keys
+                 derived from a [sender]_handshake_traffic_secret.
+
+              [] Indicates messages protected using keys
+                 derived from [sender]_application_traffic_secret_N.</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-message-flow-for-full-dtls-" class="selfRef">Message Flow for Full DTLS Handshake</a>
+        </figcaption></figure>
+</div>
+<p id="section-6-3">Once a connection has been established, the client and the server
+exchange application payloads protected by DTLS with a unilaterally used
+CID. In this case, the client is requested to use CID 100 for records
+sent to the server.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">At some point in the communication interaction, the address used by
+the client changes, and thanks to the CID usage, the security context to
+interpret the record is successfully located by the server.  However, the
+server wants to test the reachability of the client at its new address.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5"><a href="#fig-rrc-example" class="auto internal xref">Figure 3</a> shows the server initiating a basic RRC exchange
+(see <a href="#regular" class="auto internal xref">Section 5.1</a>) that establishes reachability of the client at the new
+address.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<span id="name-basic-return-routability-ex"></span><div id="fig-rrc-example">
+<figure id="figure-3">
+        <div class="alignLeft art-text artwork" id="section-6-6.1">
+<pre>
+      Client                                             Server
+      ------                                             ------
+
+      Application Data            ========&gt;
+      &lt;CID=100&gt;
+      Src-IP=A
+      Dst-IP=Z
+                                  &lt;========        Application Data
+                                                       Src-IP=Z
+                                                       Dst-IP=A
+
+                              &lt;&lt;-------------&gt;&gt;
+                              &lt;&lt;   Some      &gt;&gt;
+                              &lt;&lt;   Time      &gt;&gt;
+                              &lt;&lt;   Later     &gt;&gt;
+                              &lt;&lt;-------------&gt;&gt;
+
+
+      Application Data            ========&gt;
+      &lt;CID=100&gt;
+      Src-IP=B
+      Dst-IP=Z
+
+                                             &lt;&lt;&lt; Unverified IP
+                                                 Address B &gt;&gt;
+
+                                  &lt;--------  Return Routability Check
+                                             path_challenge(cookie)
+                                                    Src-IP=Z
+                                                    Dst-IP=B
+
+      Return Routability Check    --------&gt;
+      path_response(cookie)
+      Src-IP=B
+      Dst-IP=Z
+
+                                             &lt;&lt;&lt; IP Address B
+                                                 Verified &gt;&gt;
+
+
+                                  &lt;========        Application Data
+                                                       Src-IP=Z
+                                                       Dst-IP=B</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-basic-return-routability-ex" class="selfRef">Basic Return Routability Example</a>
+        </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="operational-considerations">
+<section id="section-7">
+      <h2 id="name-operational-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<div id="logging-anomalous-events">
+<section id="section-7.1">
+        <h3 id="name-logging-anomalous-events">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-logging-anomalous-events" class="section-name selfRef">Logging Anomalous Events</a>
+        </h3>
+<p id="section-7.1-1">Logging of RRC operations at both ends of the protocol can be generally useful for the users of an implementation.
+In particular, for Security Information and Event Management (SIEM) and troubleshooting purposes, it is strongly advised that implementations collect statistics about any unsuccessful RRC operations, as they could represent security-relevant events when they coincide with attempts by an attacker to interfere with the end-to-end path.
+It is also advisable to log instances where multiple responses to a single <code>path_challenge</code> are received, as this could suggest an off-path attack attempt.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">In some cases, the presence of frequent path probes could indicate a problem with the stability of the path.
+This information can be used to identify any issues with the underlying connectivity service.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="middlebox-interference">
+<section id="section-7.2">
+        <h3 id="name-middlebox-interference">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-middlebox-interference" class="section-name selfRef">Middlebox Interference</a>
+        </h3>
+<p id="section-7.2-1">Since the DTLS 1.3 encrypted packet's record type is opaque to on-path observers, RRC messages are immune to middlebox interference when using DTLS 1.3.
+In contrast, DTLS 1.2 RRC messages that are not wrapped in the <code>tls12_cid</code> record (e.g., in the server-to-client direction if the server negotiated a zero-length CID) have the <code>return_routability_check</code> content type in plain text, making them susceptible to interference (e.g., dropping of <code>path_challenge</code> messages), which would hinder the RRC functionality altogether.
+Therefore, when RRC is used in DTLS 1.2 and middlebox interference is a concern, it is recommended to enable CID in both directions.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">Note that the return routability checks do not protect against flooding of
+third parties if the attacker is on-path, as the attacker can redirect the
+return routability checks to the real peer (even if those datagrams are
+cryptographically authenticated).  On-path adversaries can, in general, pose a
+harm to connectivity.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">If the RRC challenger reuses a cookie that was previously used in the same connection and does not implement anti-replay protection (see <span><a href="https://rfc-editor.org/rfc/rfc9147#section-4.5.1" class="relref">Section 4.5.1</a> of [<a href="#RFC9147" class="cite xref">RFC9147</a>]</span> and <span><a href="https://rfc-editor.org/rfc/rfc6347#section-4.1.2.6" class="relref">Section 4.1.2.6</a> of [<a href="#RFC6347" class="cite xref">RFC6347</a>]</span>), an attacker could replay a previously sent <code>path_response</code> message containing the reused cookie to mislead the challenger into switching to a path of the attacker's choosing.
+To prevent this, RRC cookies must be <em>freshly</em> generated using a reliable source of entropy <span>[<a href="#RFC4086" class="cite xref">RFC4086</a>]</span>.
+See <span><a href="https://rfc-editor.org/rfc/rfc8446#appendix-C.1" class="relref">Appendix C.1</a> of [<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> for guidance.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<div id="attacker">
+<section id="section-8.1">
+        <h3 id="name-attacker-model">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-attacker-model" class="section-name selfRef">Attacker Model</a>
+        </h3>
+<p id="section-8.1-1">Two classes of attackers are considered, off-path and on-path, with increasing
+capabilities (see <a href="#fig-attacker-capabilities" class="auto internal xref">Figure 4</a>).  The following descriptions of these attackers are based on those
+introduced in QUIC (<span><a href="https://rfc-editor.org/rfc/rfc9000#section-21.1" class="relref">Section 21.1</a> of [<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>):<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.1-2.1">
+            <p id="section-8.1-2.1.1">An off-path attacker is not on the original path between the DTLS peers, but
+it is able to observe packets on the original path and has a faster forwarding path
+compared to the DTLS peers, which allows it to make copies of the observed
+packets, race its copies to either peer, and consistently win the race.<a href="#section-8.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-8.1-2.2">
+            <p id="section-8.1-2.2.1">An on-path attacker is on the original path between the DTLS peers and is
+therefore capable, compared to the off-path attacker, to also drop and delay
+records at will.<a href="#section-8.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-8.1-3">Note that, in general, attackers cannot craft DTLS records in a way that would
+successfully pass verification, due to the cryptographic protections applied by
+the DTLS record layer.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+<span id="name-attacker-capabilities"></span><div id="fig-attacker-capabilities">
+<figure id="figure-4">
+          <div id="section-8.1-4.1">
+            <div class="alignCenter art-svg artwork" id="section-8.1-4.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="272" width="448" viewBox="0 0 448 272" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                <path d="M 40,32 L 40,80" fill="none" stroke="black"></path>
+                <path d="M 40,112 L 40,160" fill="none" stroke="black"></path>
+                <path d="M 80,32 L 80,256" fill="none" stroke="black"></path>
+                <path d="M 376,32 L 376,256" fill="none" stroke="black"></path>
+                <path d="M 416,32 L 416,128" fill="none" stroke="black"></path>
+                <path d="M 416,160 L 416,256" fill="none" stroke="black"></path>
+                <path d="M 40,32 L 64,32" fill="none" stroke="black"></path>
+                <path d="M 80,32 L 376,32" fill="none" stroke="black"></path>
+                <path d="M 392,32 L 416,32" fill="none" stroke="black"></path>
+                <path d="M 80,64 L 376,64" fill="none" stroke="black"></path>
+                <path d="M 80,96 L 376,96" fill="none" stroke="black"></path>
+                <path d="M 80,128 L 376,128" fill="none" stroke="black"></path>
+                <path d="M 40,160 L 64,160" fill="none" stroke="black"></path>
+                <path d="M 80,160 L 376,160" fill="none" stroke="black"></path>
+                <path d="M 80,192 L 376,192" fill="none" stroke="black"></path>
+                <path d="M 80,224 L 376,224" fill="none" stroke="black"></path>
+                <path d="M 80,256 L 376,256" fill="none" stroke="black"></path>
+                <path d="M 392,256 L 416,256" fill="none" stroke="black"></path>
+                <polygon class="arrowhead" points="400,256 388,250.4 388,261.6" fill="black" transform="rotate(180,392,256)"></polygon>
+                <polygon class="arrowhead" points="400,32 388,26.4 388,37.6" fill="black" transform="rotate(180,392,32)"></polygon>
+                <polygon class="arrowhead" points="72,160 60,154.4 60,165.6" fill="black" transform="rotate(0,64,160)"></polygon>
+                <polygon class="arrowhead" points="72,32 60,26.4 60,37.6" fill="black" transform="rotate(0,64,32)"></polygon>
+                <g class="text">
+                  <text x="120" y="52">Inspect</text>
+                  <text x="204" y="52">unencrypted</text>
+                  <text x="292" y="52">portions</text>
+                  <text x="116" y="84">Inject</text>
+                  <text x="36" y="100">off-path</text>
+                  <text x="120" y="116">Reorder</text>
+                  <text x="116" y="148">Modify</text>
+                  <text x="212" y="148">unauthenticated</text>
+                  <text x="316" y="148">portions</text>
+                  <text x="416" y="148">on-path</text>
+                  <text x="112" y="180">Delay</text>
+                  <text x="108" y="212">Drop</text>
+                  <text x="132" y="244">Manipulate</text>
+                  <text x="192" y="244">the</text>
+                  <text x="264" y="244">packetization</text>
+                  <text x="344" y="244">layer</text>
+                </g>
+              </svg><a href="#section-8.1-4.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-attacker-capabilities" class="selfRef">Attacker Capabilities</a>
+          </figcaption></figure>
+</div>
+<p id="section-8.1-5">RRC is designed to defend against the following attacks:<a href="#section-8.1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.1-6.1">
+            <p id="section-8.1-6.1.1">On-path and off-path attackers that try to create an amplification attack by
+spoofing the source address of the victim (<a href="#sec-amplification" class="auto internal xref">Section 8.1.1</a>).<a href="#section-8.1-6.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-8.1-6.2">
+            <p id="section-8.1-6.2.1">Off-path attackers that try to put themselves on-path (<a href="#off-path" class="auto internal xref">Section 8.1.2</a>),
+provided that the enhanced path validation algorithm is used (<a href="#enhanced" class="auto internal xref">Section 5.2</a>).<a href="#section-8.1-6.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<div id="sec-amplification">
+<section id="section-8.1.1">
+          <h4 id="name-amplification">
+<a href="#section-8.1.1" class="section-number selfRef">8.1.1. </a><a href="#name-amplification" class="section-name selfRef">Amplification</a>
+          </h4>
+<p id="section-8.1.1-1">Both on-path and off-path attackers can send a packet (either by modifying it
+on the fly or by copying, injecting, and racing it, respectively) with the
+source address modified to that of a victim host.  If the traffic generated by
+the server in response is larger compared to the received packet (e.g., a CoAP
+server returning an MTU's worth of data from a 20-byte GET request <span>[<a href="#I-D.irtf-t2trg-amplification-attacks" class="cite xref">AMP-ATTACKS</a>]</span>), the
+attacker can use the server as a traffic amplifier toward the victim.<a href="#section-8.1.1-1" class="pilcrow">¶</a></p>
+<div id="mitigation-strategy">
+<section id="section-8.1.1.1">
+            <h5 id="name-mitigation-strategy">
+<a href="#section-8.1.1.1" class="section-number selfRef">8.1.1.1. </a><a href="#name-mitigation-strategy" class="section-name selfRef">Mitigation Strategy</a>
+            </h5>
+<p id="section-8.1.1.1-1">When receiving a packet with a known CID that has a source address different from the one currently associated with the DTLS connection, an
+RRC-capable endpoint will not send a (potentially large) response but instead a
+small <code>path_challenge</code> message to the victim host.  Since the host is not able
+to decrypt it and generate a valid <code>path_response</code>, the address validation
+fails, which in turn keeps the original address binding unaltered.<a href="#section-8.1.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.1-2">Note that in the case of an off-path attacker, the original packet still reaches
+the intended destination; therefore, an implementation could use a different
+strategy to mitigate the attack.<a href="#section-8.1.1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="off-path">
+<section id="section-8.1.2">
+          <h4 id="name-off-path-packet-forwarding">
+<a href="#section-8.1.2" class="section-number selfRef">8.1.2. </a><a href="#name-off-path-packet-forwarding" class="section-name selfRef">Off-Path Packet Forwarding</a>
+          </h4>
+<p id="section-8.1.2-1">An off-path attacker that can observe packets might forward copies of
+genuine packets to endpoints over a different path. If the copied packet arrives before
+the genuine packet, this will appear as a path change, like in a genuine NAT rebinding occurrence. Any genuine
+packet will be discarded as a duplicate. If the attacker is able to
+continue forwarding packets, it might be able to cause migration to a
+path via the attacker. This places the attacker on-path, giving it
+the ability to observe or drop all subsequent packets.<a href="#section-8.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-2">This style of attack relies on the attacker using a path that has
+the same or better characteristics (e.g., due to a more favourable service level agreements) as the direct path between
+endpoints. The attack is more effective if relatively few packets are
+sent or if packet loss coincides with the attempted attack.<a href="#section-8.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-3">A data packet received on the original path that increases the
+maximum received packet number will cause the endpoint to move back
+to that path. Therefore, eliciting packets on this path increases the
+likelihood that the attack is unsuccessful. However, note that, unlike QUIC,
+DTLS has no "non-probing" packets so this would require application-specific
+mechanisms.<a href="#section-8.1.2-3" class="pilcrow">¶</a></p>
+<div id="mitigation-strategy-1">
+<section id="section-8.1.2.1">
+            <h5 id="name-mitigation-strategy-2">
+<a href="#section-8.1.2.1" class="section-number selfRef">8.1.2.1. </a><a href="#name-mitigation-strategy-2" class="section-name selfRef">Mitigation Strategy</a>
+            </h5>
+<p id="section-8.1.2.1-1"><a href="#fig-off-path" class="auto internal xref">Figure 5</a> illustrates the case where a receiver receives a
+packet with a new source address. In order
+to determine that this path change was not triggered
+by an off-path attacker, the receiver will send an RRC message of type
+<code>path_challenge</code> (1) on the old path.<a href="#section-8.1.2.1-1" class="pilcrow">¶</a></p>
+<span id="name-off-path-packet-forwarding-"></span><div id="fig-off-path">
+<figure id="figure-5">
+              <div id="section-8.1.2.1-2.1">
+                <div class="alignCenter art-svg artwork" id="section-8.1.2.1-2.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="352" width="256" viewBox="0 0 256 352" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                    <path d="M 64,80 L 64,176" fill="none" stroke="black"></path>
+                    <path d="M 64,208 L 64,304" fill="none" stroke="black"></path>
+                    <path d="M 112,48 L 112,112" fill="none" stroke="black"></path>
+                    <path d="M 112,272 L 112,336" fill="none" stroke="black"></path>
+                    <path d="M 200,48 L 200,112" fill="none" stroke="black"></path>
+                    <path d="M 200,272 L 200,336" fill="none" stroke="black"></path>
+                    <path d="M 248,80 L 248,112" fill="none" stroke="black"></path>
+                    <path d="M 248,144 L 248,304" fill="none" stroke="black"></path>
+                    <path d="M 112,48 L 200,48" fill="none" stroke="black"></path>
+                    <path d="M 64,80 L 112,80" fill="none" stroke="black"></path>
+                    <path d="M 200,80 L 248,80" fill="none" stroke="black"></path>
+                    <path d="M 112,112 L 200,112" fill="none" stroke="black"></path>
+                    <path d="M 24,176 L 120,176" fill="none" stroke="black"></path>
+                    <path d="M 8,208 L 104,208" fill="none" stroke="black"></path>
+                    <path d="M 112,272 L 200,272" fill="none" stroke="black"></path>
+                    <path d="M 64,304 L 112,304" fill="none" stroke="black"></path>
+                    <path d="M 200,304 L 248,304" fill="none" stroke="black"></path>
+                    <path d="M 112,336 L 200,336" fill="none" stroke="black"></path>
+                    <path d="M 8,208 L 24,176" fill="none" stroke="black"></path>
+                    <path d="M 104,208 L 120,176" fill="none" stroke="black"></path>
+                    <polygon class="arrowhead" points="256,184 244,178.4 244,189.6" fill="black" transform="rotate(90,248,184)"></polygon>
+                    <g class="text">
+                      <text x="72" y="36">new</text>
+                      <text x="240" y="36">old</text>
+                      <text x="76" y="52">path</text>
+                      <text x="236" y="52">path</text>
+                      <text x="156" y="84">Receiver</text>
+                      <text x="248" y="132">1</text>
+                      <text x="64" y="196">Attacker?</text>
+                      <text x="156" y="308">Sender</text>
+                    </g>
+                  </svg><a href="#section-8.1.2.1-2.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-off-path-packet-forwarding-" class="selfRef">Off-Path Packet Forwarding Scenario</a>
+              </figcaption></figure>
+</div>
+<p id="section-8.1.2.1-3">Three cases need to be considered:<a href="#section-8.1.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-8.1.2.1-4">Case 1: The old path is dead (e.g., due to a NAT rebinding), which leads to a
+timeout of (1).<a href="#section-8.1.2.1-4" class="pilcrow">¶</a></p>
+<p id="section-8.1.2.1-5">As shown in <a href="#fig-old-path-dead" class="auto internal xref">Figure 6</a>, a <code>path_challenge</code> (2) needs to be sent on
+the new path.  If the sender replies with a <code>path_response</code> on the new path
+(3), the switch to the new path is considered legitimate.<a href="#section-8.1.2.1-5" class="pilcrow">¶</a></p>
+<span id="name-old-path-is-dead"></span><div id="fig-old-path-dead">
+<figure id="figure-6">
+              <div id="section-8.1.2.1-6.1">
+                <div class="alignCenter art-svg artwork" id="section-8.1.2.1-6.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="368" width="384" viewBox="0 0 384 368" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                    <path d="M 80,64 L 80,112" fill="none" stroke="black"></path>
+                    <path d="M 80,144 L 80,320" fill="none" stroke="black"></path>
+                    <path d="M 96,80 L 96,176" fill="none" stroke="black"></path>
+                    <path d="M 96,208 L 96,304" fill="none" stroke="black"></path>
+                    <path d="M 112,96 L 112,224" fill="none" stroke="black"></path>
+                    <path d="M 112,256 L 112,288" fill="none" stroke="black"></path>
+                    <path d="M 144,48 L 144,112" fill="none" stroke="black"></path>
+                    <path d="M 144,272 L 144,336" fill="none" stroke="black"></path>
+                    <path d="M 232,48 L 232,112" fill="none" stroke="black"></path>
+                    <path d="M 232,272 L 232,336" fill="none" stroke="black"></path>
+                    <path d="M 296,64 L 296,112" fill="none" stroke="black"></path>
+                    <path d="M 296,144 L 296,176" fill="none" stroke="black"></path>
+                    <path d="M 144,48 L 232,48" fill="none" stroke="black"></path>
+                    <path d="M 80,64 L 136,64" fill="none" stroke="black"></path>
+                    <path d="M 232,64 L 296,64" fill="none" stroke="black"></path>
+                    <path d="M 96,80 L 144,80" fill="none" stroke="black"></path>
+                    <path d="M 112,96 L 144,96" fill="none" stroke="black"></path>
+                    <path d="M 144,112 L 232,112" fill="none" stroke="black"></path>
+                    <path d="M 56,176 L 72,176" fill="none" stroke="black"></path>
+                    <path d="M 88,176 L 104,176" fill="none" stroke="black"></path>
+                    <path d="M 120,176 L 288,176" fill="none" stroke="black"></path>
+                    <path d="M 304,176 L 320,176" fill="none" stroke="black"></path>
+                    <path d="M 40,208 L 72,208" fill="none" stroke="black"></path>
+                    <path d="M 88,208 L 104,208" fill="none" stroke="black"></path>
+                    <path d="M 120,208 L 304,208" fill="none" stroke="black"></path>
+                    <path d="M 144,272 L 232,272" fill="none" stroke="black"></path>
+                    <path d="M 112,288 L 136,288" fill="none" stroke="black"></path>
+                    <path d="M 96,304 L 144,304" fill="none" stroke="black"></path>
+                    <path d="M 80,320 L 144,320" fill="none" stroke="black"></path>
+                    <path d="M 144,336 L 232,336" fill="none" stroke="black"></path>
+                    <path d="M 40,208 L 56,176" fill="none" stroke="black"></path>
+                    <path d="M 304,208 L 320,176" fill="none" stroke="black"></path>
+                    <polygon class="arrowhead" points="304,176 292,170.4 292,181.6" fill="black" transform="rotate(90,296,176)"></polygon>
+                    <polygon class="arrowhead" points="144,288 132,282.4 132,293.6" fill="black" transform="rotate(0,136,288)"></polygon>
+                    <polygon class="arrowhead" points="144,64 132,58.4 132,69.6" fill="black" transform="rotate(0,136,64)"></polygon>
+                    <g class="text">
+                      <text x="88" y="36">new</text>
+                      <text x="288" y="36">old</text>
+                      <text x="92" y="52">path</text>
+                      <text x="284" y="52">path</text>
+                      <text x="188" y="84">Receiver</text>
+                      <text x="260" y="84">......</text>
+                      <text x="280" y="100">.</text>
+                      <text x="280" y="116">.</text>
+                      <text x="24" y="132">path-</text>
+                      <text x="80" y="132">3</text>
+                      <text x="280" y="132">.</text>
+                      <text x="296" y="132">1</text>
+                      <text x="328" y="132">path-</text>
+                      <text x="36" y="148">response</text>
+                      <text x="280" y="148">.</text>
+                      <text x="344" y="148">challenge</text>
+                      <text x="280" y="164">.</text>
+                      <text x="184" y="196">NAT</text>
+                      <text x="296" y="196">X</text>
+                      <text x="352" y="196">timeout</text>
+                      <text x="280" y="228">.</text>
+                      <text x="112" y="244">2</text>
+                      <text x="144" y="244">path-</text>
+                      <text x="280" y="244">.</text>
+                      <text x="160" y="260">challenge</text>
+                      <text x="280" y="260">.</text>
+                      <text x="280" y="276">.</text>
+                      <text x="280" y="292">.</text>
+                      <text x="188" y="308">Sender</text>
+                      <text x="260" y="308">.....'</text>
+                    </g>
+                  </svg><a href="#section-8.1.2.1-6.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-old-path-is-dead" class="selfRef">Old Path Is Dead</a>
+              </figcaption></figure>
+</div>
+<p id="section-8.1.2.1-7">Case 2: The old path is alive but not preferred.<a href="#section-8.1.2.1-7" class="pilcrow">¶</a></p>
+<p id="section-8.1.2.1-8">This case is shown in <a href="#fig-old-path-not-preferred" class="auto internal xref">Figure 7</a> whereby the sender
+replies with a <code>path_drop</code> message (2) on the old path.  This triggers
+the receiver to send a <code>path_challenge</code> (3) on the new path. The sender
+will reply with a <code>path_response</code> (4) on the new path, thus providing
+confirmation for the path migration.<a href="#section-8.1.2.1-8" class="pilcrow">¶</a></p>
+<span id="name-old-path-is-not-preferred"></span><div id="fig-old-path-not-preferred">
+<figure id="figure-7">
+              <div id="section-8.1.2.1-9.1">
+                <div class="alignCenter art-svg artwork" id="section-8.1.2.1-9.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="352" width="424" viewBox="0 0 424 352" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                    <path d="M 104,64 L 104,112" fill="none" stroke="black"></path>
+                    <path d="M 104,144 L 104,320" fill="none" stroke="black"></path>
+                    <path d="M 120,80 L 120,176" fill="none" stroke="black"></path>
+                    <path d="M 120,216 L 120,304" fill="none" stroke="black"></path>
+                    <path d="M 136,96 L 136,224" fill="none" stroke="black"></path>
+                    <path d="M 136,256 L 136,288" fill="none" stroke="black"></path>
+                    <path d="M 168,48 L 168,112" fill="none" stroke="black"></path>
+                    <path d="M 168,272 L 168,336" fill="none" stroke="black"></path>
+                    <path d="M 256,48 L 256,112" fill="none" stroke="black"></path>
+                    <path d="M 256,272 L 256,336" fill="none" stroke="black"></path>
+                    <path d="M 288,96 L 288,112" fill="none" stroke="black"></path>
+                    <path d="M 288,144 L 288,288" fill="none" stroke="black"></path>
+                    <path d="M 304,80 L 304,176" fill="none" stroke="black"></path>
+                    <path d="M 304,208 L 304,304" fill="none" stroke="black"></path>
+                    <path d="M 320,64 L 320,224" fill="none" stroke="black"></path>
+                    <path d="M 320,256 L 320,320" fill="none" stroke="black"></path>
+                    <path d="M 168,48 L 256,48" fill="none" stroke="black"></path>
+                    <path d="M 104,64 L 160,64" fill="none" stroke="black"></path>
+                    <path d="M 264,64 L 320,64" fill="none" stroke="black"></path>
+                    <path d="M 120,80 L 168,80" fill="none" stroke="black"></path>
+                    <path d="M 256,80 L 304,80" fill="none" stroke="black"></path>
+                    <path d="M 136,96 L 168,96" fill="none" stroke="black"></path>
+                    <path d="M 256,96 L 288,96" fill="none" stroke="black"></path>
+                    <path d="M 168,112 L 256,112" fill="none" stroke="black"></path>
+                    <path d="M 24,176 L 96,176" fill="none" stroke="black"></path>
+                    <path d="M 112,176 L 128,176" fill="none" stroke="black"></path>
+                    <path d="M 144,176 L 176,176" fill="none" stroke="black"></path>
+                    <path d="M 264,176 L 280,176" fill="none" stroke="black"></path>
+                    <path d="M 296,176 L 312,176" fill="none" stroke="black"></path>
+                    <path d="M 328,176 L 416,176" fill="none" stroke="black"></path>
+                    <path d="M 8,208 L 96,208" fill="none" stroke="black"></path>
+                    <path d="M 112,208 L 128,208" fill="none" stroke="black"></path>
+                    <path d="M 144,208 L 160,208" fill="none" stroke="black"></path>
+                    <path d="M 248,208 L 280,208" fill="none" stroke="black"></path>
+                    <path d="M 296,208 L 312,208" fill="none" stroke="black"></path>
+                    <path d="M 328,208 L 400,208" fill="none" stroke="black"></path>
+                    <path d="M 168,272 L 256,272" fill="none" stroke="black"></path>
+                    <path d="M 136,288 L 160,288" fill="none" stroke="black"></path>
+                    <path d="M 264,288 L 288,288" fill="none" stroke="black"></path>
+                    <path d="M 120,304 L 168,304" fill="none" stroke="black"></path>
+                    <path d="M 256,304 L 304,304" fill="none" stroke="black"></path>
+                    <path d="M 104,320 L 168,320" fill="none" stroke="black"></path>
+                    <path d="M 256,320 L 320,320" fill="none" stroke="black"></path>
+                    <path d="M 168,336 L 256,336" fill="none" stroke="black"></path>
+                    <path d="M 8,208 L 24,176" fill="none" stroke="black"></path>
+                    <path d="M 160,208 L 176,176" fill="none" stroke="black"></path>
+                    <path d="M 248,208 L 264,176" fill="none" stroke="black"></path>
+                    <path d="M 400,208 L 416,176" fill="none" stroke="black"></path>
+                    <polygon class="arrowhead" points="272,288 260,282.4 260,293.6" fill="black" transform="rotate(180,264,288)"></polygon>
+                    <polygon class="arrowhead" points="272,64 260,58.4 260,69.6" fill="black" transform="rotate(180,264,64)"></polygon>
+                    <polygon class="arrowhead" points="168,288 156,282.4 156,293.6" fill="black" transform="rotate(0,160,288)"></polygon>
+                    <polygon class="arrowhead" points="168,64 156,58.4 156,69.6" fill="black" transform="rotate(0,160,64)"></polygon>
+                    <g class="text">
+                      <text x="112" y="36">new</text>
+                      <text x="312" y="36">old</text>
+                      <text x="116" y="52">path</text>
+                      <text x="308" y="52">path</text>
+                      <text x="212" y="84">Receiver</text>
+                      <text x="48" y="132">path-</text>
+                      <text x="104" y="132">4</text>
+                      <text x="224" y="132">path-</text>
+                      <text x="288" y="132">1</text>
+                      <text x="60" y="148">response</text>
+                      <text x="240" y="148">challenge</text>
+                      <text x="64" y="196">NAT</text>
+                      <text x="88" y="196">A</text>
+                      <text x="344" y="196">NAT</text>
+                      <text x="368" y="196">B</text>
+                      <text x="136" y="244">3</text>
+                      <text x="168" y="244">path-</text>
+                      <text x="320" y="244">2</text>
+                      <text x="352" y="244">path-</text>
+                      <text x="184" y="260">challenge</text>
+                      <text x="348" y="260">drop</text>
+                      <text x="212" y="308">Sender</text>
+                    </g>
+                  </svg><a href="#section-8.1.2.1-9.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-7" class="selfRef">Figure 7</a>:
+<a href="#name-old-path-is-not-preferred" class="selfRef">Old Path Is Not Preferred</a>
+              </figcaption></figure>
+</div>
+<p id="section-8.1.2.1-10">Case 3: The old path is alive and preferred.<a href="#section-8.1.2.1-10" class="pilcrow">¶</a></p>
+<p id="section-8.1.2.1-11">This is most likely the result of an off-path attacker trying to place itself
+on-path.  As shown in         
+<a href="#fig-old-path-preferred" class="auto internal xref">Figure 8</a>, the receiver sends a <code>path_challenge</code> (1) on the old path, and the sender
+replies with a <code>path_response</code> (2) on the old path. This results in the connection not being migrated
+to the new path, thus thwarting the attack.<a href="#section-8.1.2.1-11" class="pilcrow">¶</a></p>
+<span id="name-old-path-is-preferred"></span><div id="fig-old-path-preferred">
+<figure id="figure-8">
+              <div id="section-8.1.2.1-12.1">
+                <div class="alignCenter art-svg artwork" id="section-8.1.2.1-12.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="384" width="352" viewBox="0 0 352 384" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                    <path d="M 64,80 L 64,176" fill="none" stroke="black"></path>
+                    <path d="M 64,224 L 64,320" fill="none" stroke="black"></path>
+                    <path d="M 112,48 L 112,112" fill="none" stroke="black"></path>
+                    <path d="M 112,288 L 112,352" fill="none" stroke="black"></path>
+                    <path d="M 200,48 L 200,112" fill="none" stroke="black"></path>
+                    <path d="M 200,288 L 200,352" fill="none" stroke="black"></path>
+                    <path d="M 232,96 L 232,240" fill="none" stroke="black"></path>
+                    <path d="M 232,272 L 232,304" fill="none" stroke="black"></path>
+                    <path d="M 248,80 L 248,176" fill="none" stroke="black"></path>
+                    <path d="M 248,208 L 248,320" fill="none" stroke="black"></path>
+                    <path d="M 264,64 L 264,112" fill="none" stroke="black"></path>
+                    <path d="M 264,144 L 264,336" fill="none" stroke="black"></path>
+                    <path d="M 112,48 L 200,48" fill="none" stroke="black"></path>
+                    <path d="M 200,64 L 264,64" fill="none" stroke="black"></path>
+                    <path d="M 64,80 L 112,80" fill="none" stroke="black"></path>
+                    <path d="M 200,80 L 248,80" fill="none" stroke="black"></path>
+                    <path d="M 208,96 L 232,96" fill="none" stroke="black"></path>
+                    <path d="M 112,112 L 200,112" fill="none" stroke="black"></path>
+                    <path d="M 32,176 L 120,176" fill="none" stroke="black"></path>
+                    <path d="M 208,176 L 224,176" fill="none" stroke="black"></path>
+                    <path d="M 240,176 L 256,176" fill="none" stroke="black"></path>
+                    <path d="M 272,176 L 312,176" fill="none" stroke="black"></path>
+                    <path d="M 192,208 L 224,208" fill="none" stroke="black"></path>
+                    <path d="M 240,208 L 256,208" fill="none" stroke="black"></path>
+                    <path d="M 272,208 L 296,208" fill="none" stroke="black"></path>
+                    <path d="M 8,224 L 96,224" fill="none" stroke="black"></path>
+                    <path d="M 112,288 L 200,288" fill="none" stroke="black"></path>
+                    <path d="M 200,304 L 232,304" fill="none" stroke="black"></path>
+                    <path d="M 64,320 L 112,320" fill="none" stroke="black"></path>
+                    <path d="M 200,320 L 248,320" fill="none" stroke="black"></path>
+                    <path d="M 208,336 L 264,336" fill="none" stroke="black"></path>
+                    <path d="M 112,352 L 200,352" fill="none" stroke="black"></path>
+                    <path d="M 8,224 L 32,176" fill="none" stroke="black"></path>
+                    <path d="M 96,224 L 120,176" fill="none" stroke="black"></path>
+                    <path d="M 192,208 L 208,176" fill="none" stroke="black"></path>
+                    <path d="M 296,208 L 312,176" fill="none" stroke="black"></path>
+                    <polygon class="arrowhead" points="216,336 204,330.4 204,341.6" fill="black" transform="rotate(180,208,336)"></polygon>
+                    <polygon class="arrowhead" points="216,96 204,90.4 204,101.6" fill="black" transform="rotate(180,208,96)"></polygon>
+                    <g class="text">
+                      <text x="72" y="36">new</text>
+                      <text x="256" y="36">old</text>
+                      <text x="76" y="52">path</text>
+                      <text x="252" y="52">path</text>
+                      <text x="156" y="84">Receiver</text>
+                      <text x="264" y="132">1</text>
+                      <text x="296" y="132">path-</text>
+                      <text x="312" y="148">challenge</text>
+                      <text x="68" y="196">off-path</text>
+                      <text x="248" y="196">NAT</text>
+                      <text x="60" y="212">attacker</text>
+                      <text x="176" y="260">path-</text>
+                      <text x="232" y="260">2</text>
+                      <text x="188" y="276">response</text>
+                      <text x="156" y="324">Sender</text>
+                    </g>
+                  </svg><a href="#section-8.1.2.1-12.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-8" class="selfRef">Figure 8</a>:
+<a href="#name-old-path-is-preferred" class="selfRef">Old Path Is Preferred</a>
+              </figcaption></figure>
+</div>
+<p id="section-8.1.2.1-13">Note that this defense is imperfect, but this is not considered a serious
+problem. If the path via the attacker is reliably faster than the
+old path despite multiple attempts to use that old path, it
+is not possible to distinguish between an attack and an improvement
+in routing.<a href="#section-8.1.2.1-13" class="pilcrow">¶</a></p>
+<p id="section-8.1.2.1-14">An endpoint could also use heuristics to improve detection of this
+style of attack. For instance, NAT rebinding is improbable if
+packets were recently received on the old path.
+Endpoints can also look for duplicated
+packets. Conversely, a change in CID is more likely to
+indicate an intentional migration rather than an attack. Note that
+changes in CIDs are supported in DTLS 1.3 but not in
+DTLS 1.2.<a href="#section-8.1.2.1-14" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-9">
+      <h2 id="name-privacy-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<p id="section-9-1">When using DTLS 1.3, peers <span class="bcp14">SHOULD</span> avoid using the same CID on multiple network
+paths, in particular when initiating connection migration or when probing a new
+network path, as described in <a href="#path-validation" class="auto internal xref">Section 5</a>, as an adversary can otherwise
+correlate the communication interaction across those different paths.  DTLS 1.3
+provides mechanisms to ensure that a new CID can always be used.  In
+general, an endpoint should proactively send a RequestConnectionId message to ask for new
+CIDs as soon as the pool of spare CIDs is depleted (or goes below a threshold).
+Also, in case a peer might have exhausted available CIDs, a migrating endpoint
+could include NewConnectionId in packets sent on the new path to make sure that
+the subsequent path validation can use fresh CIDs.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<p id="section-9-2">Note that DTLS 1.2 does not offer the ability to request new CIDs during the session lifetime since CIDs have the same lifespan
+of the connection.  Therefore, deployments that use DTLS in multihoming
+environments <span class="bcp14">SHOULD</span> refuse to use CIDs with DTLS 1.2
+and switch to DTLS 1.3 if the correlation privacy threat is a concern.<a href="#section-9-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="new-tls-contenttype">
+<section id="section-10.1">
+        <h3 id="name-new-tls-contenttype">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-new-tls-contenttype" class="section-name selfRef">New TLS ContentType</a>
+        </h3>
+<p id="section-10.1-1">IANA has allocated an entry in the "TLS ContentType" registry within the "Transport Layer Security (TLS) Parameters" registry group <span>[<a href="#IANA.tls-parameters" class="cite xref">IANA.tls-parameters</a>]</span> for the <code>return_routability_check</code> (27) message defined in this document.
+IANA set the DTLS_OK column to "Y" and added the following note to the registry:<a href="#section-10.1-1" class="pilcrow">¶</a></p>
+<blockquote id="section-10.1-2">
+          <p id="section-10.1-2.1">Note: The return_routability_check content type is only applicable
+to DTLS 1.2 and 1.3.<a href="#section-10.1-2.1" class="pilcrow">¶</a></p>
+</blockquote>
+</section>
+</div>
+<div id="new-tls-extensiontype">
+<section id="section-10.2">
+        <h3 id="name-new-tls-extensiontype">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-new-tls-extensiontype" class="section-name selfRef">New TLS ExtensionType</a>
+        </h3>
+<p id="section-10.2-1">IANA has allocated the extension code point (61) for <code>rrc</code>
+in the "TLS ExtensionType Values" registry as described in
+<a href="#tbl-ext" class="auto internal xref">Table 1</a>.<a href="#section-10.2-1" class="pilcrow">¶</a></p>
+<span id="name-new-entry-in-the-tls-extens"></span><div id="tbl-ext">
+<table class="left" id="table-1">
+          <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-new-entry-in-the-tls-extens" class="selfRef">New Entry in the TLS ExtensionType Values Registry</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Extension Name</th>
+              <th class="text-left" rowspan="1" colspan="1">TLS 1.3</th>
+              <th class="text-left" rowspan="1" colspan="1">DTLS-Only</th>
+              <th class="text-left" rowspan="1" colspan="1">Recommended</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+              <th class="text-left" rowspan="1" colspan="1">Comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">61</td>
+              <td class="text-left" rowspan="1" colspan="1">rrc</td>
+              <td class="text-left" rowspan="1" colspan="1">CH, SH</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">N</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9853</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+<div id="new-tls-rrc-message-type-registry">
+<section id="section-10.3">
+        <h3 id="name-new-tls-rrc-message-type-re">
+<a href="#section-10.3" class="section-number selfRef">10.3. </a><a href="#name-new-tls-rrc-message-type-re" class="section-name selfRef">New "TLS RRC Message Type" Registry</a>
+        </h3>
+<p id="section-10.3-1">IANA has created the "TLS RRC Message Types" registry within the "Transport Layer Security (TLS) Parameters" registry group <span>[<a href="#IANA.tls-parameters" class="cite xref">IANA.tls-parameters</a>]</span>.
+This registration procedure is "Expert Review" (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.5" class="relref">Section 4.5</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-10.3-1" class="pilcrow">¶</a></p>
+<p id="section-10.3-2">To submit registration requests, follow the procedures in <span><a href="https://rfc-editor.org/rfc/rfc9847#section-16" class="relref">Section 16</a> of [<a href="#RFC9847" class="cite xref">RFC9847</a>]</span>.<a href="#section-10.3-2" class="pilcrow">¶</a></p>
+<p id="section-10.3-3">Each entry in the registry must include the following fields:<a href="#section-10.3-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-10.3-4">
+          <dt id="section-10.3-4.1">Value:</dt>
+          <dd style="margin-left: 1.5em" id="section-10.3-4.2">
+            <p id="section-10.3-4.2.1">A (decimal) number in the range 0 to 253.<a href="#section-10.3-4.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-10.3-4.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-10.3-4.4">
+            <p id="section-10.3-4.4.1">A brief description of the RRC message.<a href="#section-10.3-4.4.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-10.3-4.5">DTLS-Only:</dt>
+          <dd style="margin-left: 1.5em" id="section-10.3-4.6">
+            <p id="section-10.3-4.6.1">Indication of whether the message only applies to DTLS.
+Since RRC is only available in DTLS, this column is set to "Y" for all the initial entries in this registry.
+Future work may define new RRC message types that also apply to TLS.<a href="#section-10.3-4.6.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-10.3-4.7">Recommended:</dt>
+          <dd style="margin-left: 1.5em" id="section-10.3-4.8">
+            <p id="section-10.3-4.8.1">Indication of whether the message is recommended for implementations to support.
+The semantics for this field is defined in <span><a href="https://rfc-editor.org/rfc/rfc8447#section-5" class="relref">Section 5</a> of [<a href="#RFC8447" class="cite xref">RFC8447</a>]</span> and updated in <span><a href="https://rfc-editor.org/rfc/rfc9847#section-3" class="relref">Section 3</a> of [<a href="#RFC9847" class="cite xref">RFC9847</a>]</span>.<a href="#section-10.3-4.8.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-10.3-4.9">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-10.3-4.10">
+            <p id="section-10.3-4.10.1">A reference to a publicly available specification for the value.<a href="#section-10.3-4.10.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-10.3-4.11">Comment:</dt>
+          <dd style="margin-left: 1.5em" id="section-10.3-4.12">
+            <p id="section-10.3-4.12.1">Any relevant notes or comments that relate to this entry.<a href="#section-10.3-4.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-10.3-5"><a href="#tbl-rrc-mt" class="auto internal xref">Table 2</a> shows the initial contents of this registry:<a href="#section-10.3-5" class="pilcrow">¶</a></p>
+<span id="name-initial-entries-in-tls-rrc-"></span><div id="tbl-rrc-mt">
+<table class="left" id="table-2">
+          <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-initial-entries-in-tls-rrc-" class="selfRef">Initial Entries in TLS RRC Message Type Registry</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">DTLS-Only</th>
+              <th class="text-left" rowspan="1" colspan="1">Recommended</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+              <th class="text-left" rowspan="1" colspan="1">Comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">0</td>
+              <td class="text-left" rowspan="1" colspan="1">path_challenge</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9853</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">1</td>
+              <td class="text-left" rowspan="1" colspan="1">path_response</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9853</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">2</td>
+              <td class="text-left" rowspan="1" colspan="1">path_drop</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9853</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">3-253</td>
+              <td class="text-left" rowspan="1" colspan="1">Unassigned</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">254-255</td>
+              <td class="text-left" rowspan="1" colspan="1">Reserved for Private Use</td>
+              <td class="text-left" rowspan="1" colspan="1">Y</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 9853</td>
+              <td class="text-left" rowspan="1" colspan="1"></td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-10.3-7">IANA added the following note to provide additional information regarding the use of RRC message codepoints in experiments:<a href="#section-10.3-7" class="pilcrow">¶</a></p>
+<blockquote id="section-10.3-8">
+          <p id="section-10.3-8.1">Note: As specified in <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>, assignments
+made in the Private Use space are not generally useful for broad
+interoperability.  Those making use of the Private Use range are responsible
+for ensuring that no conflicts occur within the intended scope of use.  For
+widespread experiments, provisional registrations (<span><a href="https://rfc-editor.org/rfc/rfc8126#section-4.13" class="relref">Section 4.13</a> of [<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>) are available.<a href="#section-10.3-8.1" class="pilcrow">¶</a></p>
+</blockquote>
+<div id="designated-expert-instructions">
+<section id="section-10.3.1">
+          <h4 id="name-designated-expert-instructi">
+<a href="#section-10.3.1" class="section-number selfRef">10.3.1. </a><a href="#name-designated-expert-instructi" class="section-name selfRef">Designated Expert Instructions</a>
+          </h4>
+<p id="section-10.3.1-1">To enable a broadly informed review of registration decisions, it is recommended that multiple designated experts be appointed to represent the perspectives of both the transport and security areas.<a href="#section-10.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-10.3.1-2">In cases where a registration decision could be perceived as creating a conflict of interest for a particular expert, that expert <span class="bcp14">SHOULD</span> defer to the judgment of the other experts.<a href="#section-10.3.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="IANA.tls-parameters">[IANA.tls-parameters]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Transport Layer Security (TLS) Parameters"</span>, <span>&lt;<a href="https://www.iana.org/assignments/tls-parameters">https://www.iana.org/assignments/tls-parameters</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6347">[RFC6347]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span> and <span class="refAuthor">N. Modadugu</span>, <span class="refTitle">"Datagram Transport Layer Security Version 1.2"</span>, <span class="seriesInfo">RFC 6347</span>, <span class="seriesInfo">DOI 10.17487/RFC6347</span>, <time datetime="2012-01" class="refDate">January 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6347">https://www.rfc-editor.org/info/rfc6347</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8447">[RFC8447]</dt>
+        <dd>
+<span class="refAuthor">Salowey, J.</span> and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"IANA Registry Updates for TLS and DTLS"</span>, <span class="seriesInfo">RFC 8447</span>, <span class="seriesInfo">DOI 10.17487/RFC8447</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8447">https://www.rfc-editor.org/info/rfc8447</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9146">[RFC9146]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E., Ed.</span>, <span class="refAuthor">Tschofenig, H., Ed.</span>, <span class="refAuthor">Fossati, T.</span>, and <span class="refAuthor">A. Kraus</span>, <span class="refTitle">"Connection Identifier for DTLS 1.2"</span>, <span class="seriesInfo">RFC 9146</span>, <span class="seriesInfo">DOI 10.17487/RFC9146</span>, <time datetime="2022-03" class="refDate">March 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9146">https://www.rfc-editor.org/info/rfc9146</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9147">[RFC9147]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refAuthor">Tschofenig, H.</span>, and <span class="refAuthor">N. Modadugu</span>, <span class="refTitle">"The Datagram Transport Layer Security (DTLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 9147</span>, <span class="seriesInfo">DOI 10.17487/RFC9147</span>, <time datetime="2022-04" class="refDate">April 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9147">https://www.rfc-editor.org/info/rfc9147</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9847">[RFC9847]</dt>
+      <dd>
+<span class="refAuthor">Salowey, J.</span> and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"IANA Registry Updates for TLS and DTLS"</span>, <span class="seriesInfo">RFC 9847</span>, <span class="seriesInfo">DOI 10.17487/RFC9847</span>, <time datetime="2025-12" class="refDate">December 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9847">https://www.rfc-editor.org/info/rfc9847</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.irtf-t2trg-amplification-attacks">[AMP-ATTACKS]</dt>
+        <dd>
+<span class="refAuthor">Preuß Mattsson, J.</span>, <span class="refAuthor">Selander, G.</span>, and <span class="refAuthor">C. Amsüss</span>, <span class="refTitle">"Amplification Attacks Using the Constrained Application Protocol (CoAP)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-t2trg-amplification-attacks-05</span>, <time datetime="2025-06-18" class="refDate">18 June 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-irtf-t2trg-amplification-attacks-05">https://datatracker.ietf.org/doc/html/draft-irtf-t2trg-amplification-attacks-05</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-uta-tls13-iot-profile">[IOT-PROFILE]</dt>
+        <dd>
+<span class="refAuthor">Tschofenig, H.</span>, <span class="refAuthor">Fossati, T.</span>, <span class="refAuthor">Richardson, M.</span>, and <span class="refAuthor">D. Migault</span>, <span class="refTitle">"TLS/DTLS 1.3 Profiles for the Internet of Things"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-uta-tls13-iot-profile-19</span>, <time datetime="2026-02-20" class="refDate">20 February 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-uta-tls13-iot-profile-19">https://datatracker.ietf.org/doc/html/draft-ietf-uta-tls13-iot-profile-19</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4086">[RFC4086]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span>, <span class="refAuthor">Schiller, J.</span>, and <span class="refAuthor">S. Crocker</span>, <span class="refTitle">"Randomness Requirements for Security"</span>, <span class="seriesInfo">BCP 106</span>, <span class="seriesInfo">RFC 4086</span>, <span class="seriesInfo">DOI 10.17487/RFC4086</span>, <time datetime="2005-06" class="refDate">June 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4086">https://www.rfc-editor.org/info/rfc4086</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9000">https://www.rfc-editor.org/info/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9175">[RFC9175]</dt>
+      <dd>
+<span class="refAuthor">Amsüss, C.</span>, <span class="refAuthor">Preuß Mattsson, J.</span>, and <span class="refAuthor">G. Selander</span>, <span class="refTitle">"Constrained Application Protocol (CoAP): Echo, Request-Tag, and Token Processing"</span>, <span class="seriesInfo">RFC 9175</span>, <span class="seriesInfo">DOI 10.17487/RFC9175</span>, <time datetime="2022-02" class="refDate">February 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9175">https://www.rfc-editor.org/info/rfc9175</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">We would like to thank
+<span class="contact-name">Colin Perkins</span>,
+<span class="contact-name">Deb Cooley</span>,
+<span class="contact-name">Eric Rescorla</span>,
+<span class="contact-name">Éric Vyncke</span>,
+<span class="contact-name">Erik Kline</span>,
+<span class="contact-name">Hanno Becker</span>,
+<span class="contact-name">Hanno Böck</span>,
+<span class="contact-name">Joe Clarke</span>,
+<span class="contact-name">Manuel Pégourié-Gonnard</span>,
+<span class="contact-name">Marco Tiloca</span>,
+<span class="contact-name">Martin Thomson</span>,
+<span class="contact-name">Mike Bishop</span>,
+<span class="contact-name">Mike Ounsworth</span>,
+<span class="contact-name">Mohamed Boucadair</span>,
+<span class="contact-name">Mohit Sahni</span>,
+<span class="contact-name">Rich Salz</span>,
+<span class="contact-name">Russ Housley</span>,
+<span class="contact-name">Sean Turner</span>, and
+<span class="contact-name">Yaron Sheffer</span>
+for their input to this document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Hannes Tschofenig (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">University of the Bundeswehr Munich</span></div>
+<div dir="auto" class="left"><span class="extended-address">Institute of Distributed Intelligent Systems</span></div>
+<div dir="auto" class="left"><span class="street-address">Werner-Heisenberg-Weg 39</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">85577</span> <span class="locality">Neubiberg</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:Hannes.Tschofenig@gmx.net" class="email">Hannes.Tschofenig@gmx.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Achim Kraus</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:achimkraus@gmx.net" class="email">achimkraus@gmx.net</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Thomas Fossati</span></div>
+<div dir="auto" class="left"><span class="org">Linaro</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:thomas.fossati@linaro.org" class="email">thomas.fossati@linaro.org</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
