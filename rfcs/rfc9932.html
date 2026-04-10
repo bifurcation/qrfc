@@ -1,0 +1,2842 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9932: Mutually Authenticating TLS in the Context of Federations</title>
+<meta content="Stefan Halén" name="author">
+<meta content="Jakob Schlyter" name="author">
+<meta content="
+       This Informational Independent Submission to the RFC Series describes a means to use TLS 1.3 to perform machine-to-machine mutual authentication within federations. This memo is not a standard. It does not modify the TLS protocol in any way, nor does it require changes to common TLS libraries. TLS is specified and standardized by the IETF's TLS Working Group. 
+       The framework enables interoperable trust management for federated machine-to-machine communication. It introduces a centrally managed trust anchor and a controlled metadata publication process, ensuring that only authorized members are identifiable within the federation. These mechanisms support unambiguous entity identification and reduce the risk of impersonation, promoting secure and policy-aligned interaction across organizational boundaries. 
+    " name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="machine-to-machine" name="keyword">
+<meta content="trust framework" name="keyword">
+<meta content="mutual TLS" name="keyword">
+<meta content="mTLS" name="keyword">
+<meta content="public key pinning" name="keyword">
+<meta content="SPKI" name="keyword">
+<meta content="federation metadata" name="keyword">
+<meta content="federation" name="keyword">
+<meta content="9932" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.14.3
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.3
+    platformdirs 4.9.6
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.6.0
+    weasyprint 68.0
+-->
+<link href="rfc9932.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-halen-fedae-03" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9932" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9932</td>
+<td class="center">MATF</td>
+<td class="right">April 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Halén &amp; Schlyter</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Independent Submission</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9932" class="eref">9932</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-04" class="published">April 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Halén</div>
+<div class="org">The Swedish Internet Foundation</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Schlyter</div>
+<div class="org">Kirei AB</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9932</h1>
+<h1 id="title">Mutually Authenticating TLS in the Context of Federations</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This Informational Independent Submission to the RFC Series describes a means to use TLS 1.3 to perform machine-to-machine mutual authentication within federations. This memo is not a standard. It does not modify the TLS protocol in any way, nor does it require changes to common TLS libraries. TLS is specified and standardized by the IETF's TLS Working Group.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">The framework enables interoperable trust management for federated machine-to-machine communication. It introduces a centrally managed trust anchor and a controlled metadata publication process, ensuring that only authorized members are identifiable within the federation. These mechanisms support unambiguous entity identification and reduce the risk of impersonation, promoting secure and policy-aligned interaction across organizational boundaries.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This is a contribution to the RFC Series, independently of any
+            other RFC stream.  The RFC Editor has chosen to publish this
+            document at its discretion and makes no statement about its value
+            for implementation or deployment.  Documents approved for
+            publication by the RFC Editor are not candidates for any level of
+            Internet Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9932">https://www.rfc-editor.org/info/rfc9932</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-reserved-words" class="internal xref">Reserved Words</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-diverse-design-patterns" class="internal xref">Diverse Design Patterns</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-trust-model" class="internal xref">Trust Model</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-role-of-the-federation-oper" class="internal xref">Role of the Federation Operator</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-federation-members-responsi" class="internal xref">Federation Members' Responsibilities</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-chain-of-trust" class="internal xref">Chain of Trust</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-member-vetting" class="internal xref">Member Vetting</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-metadata-authenticity" class="internal xref">Metadata Authenticity</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-metadata-repository" class="internal xref">Metadata Repository</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-metadata-submission" class="internal xref">Metadata Submission</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-maintaining-up-to-date-meta" class="internal xref">Maintaining Up-to-Date Metadata</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-authentication" class="internal xref">Authentication</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-public-key-pinning" class="internal xref">Public Key Pinning</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-benefits-of-public-key-pinn" class="internal xref">Benefits of Public Key Pinning</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-pin-discovery-and-preloadin" class="internal xref">Pin Discovery and Preloading</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-verification-of-received-ce" class="internal xref">Verification of Received Certificates</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-failure-to-validate" class="internal xref">Failure to Validate</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-certificate-rotation" class="internal xref">Certificate Rotation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
+                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-implementation-guidelines" class="internal xref">Implementation Guidelines</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-federation-metadata" class="internal xref">Federation Metadata</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-federation-metadata-claims" class="internal xref">Federation Metadata Claims</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1.2.1">
+                    <p id="section-toc.1-1.6.2.1.2.1.1"><a href="#section-6.1.1" class="auto internal xref">6.1.1</a>.  <a href="#name-entities" class="internal xref">Entities</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-metadata-schema" class="internal xref">Metadata Schema</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-example-metadata" class="internal xref">Example Metadata</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-metadata-signing" class="internal xref">Metadata Signing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5">
+                <p id="section-toc.1-1.6.2.5.1"><a href="#section-6.5" class="auto internal xref">6.5</a>.  <a href="#name-example-signature-protected" class="internal xref">Example Signature Protected Header</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-example-usage-scenarios" class="internal xref">Example Usage Scenarios</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-client-behavior" class="internal xref">Client Behavior</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-server-behavior" class="internal xref">Server Behavior</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-spki-generation" class="internal xref">SPKI Generation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
+                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-curl-and-public-key-pinning" class="internal xref">Curl and Public Key Pinning</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-deployments-of-the-matf-fra" class="internal xref">Deployments of the MATF Framework</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-skolfederation-moa" class="internal xref">Skolfederation Moa</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-swedish-national-agency-for" class="internal xref">Swedish National Agency for Education</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-sambruks-egil" class="internal xref">Sambruk's EGIL</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-security-risks-and-trust-ma" class="internal xref">Security Risks and Trust Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-tls" class="internal xref">TLS</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3">
+                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-federation-metadata-updates" class="internal xref">Federation Metadata Updates</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.4">
+                <p id="section-toc.1-1.9.2.4.1"><a href="#section-9.4" class="auto internal xref">9.4</a>.  <a href="#name-verifying-the-federation-me" class="internal xref">Verifying the Federation Metadata Signature</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.5">
+                <p id="section-toc.1-1.9.2.5.1"><a href="#section-9.5" class="auto internal xref">9.5</a>.  <a href="#name-time-synchronization" class="internal xref">Time Synchronization</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-json-schema-for-matf-metada" class="internal xref">JSON Schema for MATF Metadata</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document describes the Mutually Authenticating TLS in Federations (MATF) framework, developed to complement multilateral Security Assertion Markup Language (SAML) federations within the education sector. These federations often rely on just-in-time provisioning, where user accounts are created at first login based on information from the SAML assertion. However, educators need to be able to manage resources and classes before students access the service. MATF bridges this gap by using secure machine-to-machine communication, enabling pre-provisioning of user information with a trust model and metadata structure inspired by SAML federations.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">MATF is designed specifically for secure authentication in machine-
+to-machine contexts, such as RESTful APIs (where "RESTful" refers to the
+Representational State Transfer (REST) architecture) and service-to-service
+interactions, and is not intended for browser-based authentication. Because its applicability in a
+browser environment has not been studied, using MATF within browsers is not
+recommended. Doing so may introduce risks that differ from those typically
+addressed by standard browser security models.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">This work is not a product of the IETF, does not represent a standard, and has not achieved community consensus. It aims to address specific federation challenges and provide a framework for secure communication.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">TLS is specified by the IETF TLS Working Group. TLS 1.3 is defined in <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>. Additional information about the TLS Working Group is available at <span>&lt;<a href="https://datatracker.ietf.org/wg/tls/about/">https://datatracker.ietf.org/wg/tls/about/</a>&gt;</span>.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<div id="reserved-words">
+<section id="section-1.1">
+        <h3 id="name-reserved-words">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-reserved-words" class="section-name selfRef">Reserved Words</a>
+        </h3>
+<p id="section-1.1-1">This document is an Informational RFC, which means it offers information and guidance but does not specify mandatory standards. Therefore, the keywords used throughout this document are for informational purposes only and do not imply any specific requirements.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-1.2">
+        <h3 id="name-terminology">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-1.2-1">
+          <dt id="section-1.2-1.1">Federation:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.2">A trusted network of entities that adhere to common security policies and standards, using MATF for secure communication.<a href="#section-1.2-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.3">Federation Member:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.4">An entity that has been approved to join the federation and can leverage MATF for secure communication with other members.<a href="#section-1.2-1.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.5">Federation Operator:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.6">The entity responsible for the overall operation and management of the federation, including managing the federation metadata, enforcing security policies, and onboarding new members.<a href="#section-1.2-1.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.7">Federation Metadata:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.8">A cryptographically signed document containing information about all entities within the federation.<a href="#section-1.2-1.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.9">Metadata Repository:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.10">A centralized repository storing information about all entities within the federation.<a href="#section-1.2-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.11">Member Metadata:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.12">Information about entities associated with a specific member within the federation.<a href="#section-1.2-1.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.13">Member Vetting:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.14">The process of verifying and approving applicants to join the federation, ensuring they meet security and trustworthiness requirements.<a href="#section-1.2-1.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-1.15">Trust Anchor:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-1.16">The federation's root of trust is established by the public key used to verify federation metadata signatures, which allows participants to confidently rely on the information it contains.<a href="#section-1.2-1.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="diverse-design-patterns">
+<section id="section-2">
+      <h2 id="name-diverse-design-patterns">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-diverse-design-patterns" class="section-name selfRef">Diverse Design Patterns</a>
+      </h2>
+<p id="section-2-1">MATF is designed to be flexible and adaptable to the varying needs of different federations. Federations can differ significantly in terms of size, scope, and security requirements, which makes it challenging to prescribe a one-size-fits-all trust framework and security measures.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">For instance, in the European Union, Regulation (EU) No 910/2014 (the electronic identification, authentication, and trust services (eIDAS) Regulation) <span>[<a href="#eIDAS" class="cite xref">eIDAS</a>]</span> establishes a regulatory framework for electronic identification and trust services for electronic transactions in the internal market. The eIDAS Regulation provides a basis for cross-border recognition of notified electronic identification schemes and for regulated trust services.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">Similarly, national federations, such as those found in education or healthcare sectors, often have their own specific trust frameworks and security measures tailored to their unique needs. These federations may leverage existing national identification systems or other trusted credentials to establish member identities and ensure secure interactions.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4">Organizations may also set up their own federations, tailored to the specific security requirements and trust models relevant to their context. For example, a private business federation might establish its own vetting processes and trust framework based on the nature of its business and the sensitivity of the data being exchanged.<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5">By allowing federations the flexibility to tailor their trust frameworks and security measures, MATF can support a wide range of use cases. This flexibility is crucial for accommodating the diverse requirements and challenges faced by different federations, ensuring a secure and adaptable system for establishing trust and facilitating secure communication.<a href="#section-2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="trust-model">
+<section id="section-3">
+      <h2 id="name-trust-model">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-trust-model" class="section-name selfRef">Trust Model</a>
+      </h2>
+<p id="section-3-1">The MATF framework operates on a trust model that is central to its design and functionality. This section outlines the key components of this trust model and its implications for federation members and the federation operator.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="role-of-the-federation-operator">
+<section id="section-3.1">
+        <h3 id="name-role-of-the-federation-oper">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-role-of-the-federation-oper" class="section-name selfRef">Role of the Federation Operator</a>
+        </h3>
+<p id="section-3.1-1">The federation operator plays a critical role in the MATF framework. This entity is responsible for:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1">Managing the central trust anchor, which is used to establish trust across different domains within the federation.<a href="#section-3.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.2">Vetting federation members to ensure they meet the required standards and policies.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.3">Maintaining and securing the federation metadata, which includes public key pins <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span>, issuer certificates, and other essential information.<a href="#section-3.1-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.1-3">Additionally, the federation operator <span class="bcp14">SHOULD</span> develop their own threat models to proactively identify potential risks and threats. This process involves examining the operating environment, evaluating both internal and external threats, and understanding how vulnerabilities can be exploited. The goal of the threat model is to enable the federation operator to establish mitigation strategies that address the identified risks.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">The security and stability of the federation rely on the integrity and competence of the federation operator. Members must be able to fully trust this central authority, as its role is essential to maintaining the federation's reliability and security.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="federation-members-responsibilities">
+<section id="section-3.2">
+        <h3 id="name-federation-members-responsi">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-federation-members-responsi" class="section-name selfRef">Federation Members' Responsibilities</a>
+        </h3>
+<p id="section-3.2-1">Federation members share the responsibility of maintaining trust and security within the federation.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">Their responsibilities include:<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-3.1">Adhering to the federation's security policies and procedures.<a href="#section-3.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-3.2">Ensuring the accuracy and timeliness of their metadata submissions.<a href="#section-3.2-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-3.3">Cooperating with the federation operator's vetting and security measures.<a href="#section-3.2-3.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.2-4">By fulfilling these responsibilities, federation members help sustain the trust framework that enables secure and reliable communication within the federation.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5">Federation members submit member metadata to the federation. As part of federation operations, the federation <span class="bcp14">MUST</span> ensure the authenticity and integrity of submitted member metadata and the authenticity of the submitting member.<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="chain-of-trust">
+<section id="section-3.3">
+        <h3 id="name-chain-of-trust">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-chain-of-trust" class="section-name selfRef">Chain of Trust</a>
+        </h3>
+<p id="section-3.3-1">Each federation operates within a trust framework that encompasses its own security policies and procedures. This framework is designed to ensure the integrity, authenticity, and confidentiality of communications within the federation. Key components of this framework include:<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-2.1">Public key pinning <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span> and preloading to thwart on-path attacks by rejecting peers whose public key in the presented certificate does not match a pin published in the federation metadata.<a href="#section-3.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.3-2.2">Regular updates and verification of federation metadata to prevent the use of outdated or compromised information.<a href="#section-3.3-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.3-3">The federation operator aggregates, signs, and publishes the federation metadata, which combines all members' member metadata along with additional federation-specific information. By placing trust in the federation and its associated federation metadata signature verification key, federation members trust the information contained within the federation metadata.<a href="#section-3.3-3" class="pilcrow">¶</a></p>
+<p id="section-3.3-4">The trust anchor for the federation is established through the federation metadata signature verification key, a critical component requiring secure distribution and verification. To achieve this, the signature verification key material is distributed using a JSON Web Key (JWK) Set <span>[<a href="#RFC7517" class="cite xref">RFC7517</a>]</span>, providing a flexible framework for exposing multiple public keys, including the current signature verification key and keys for rollover. This structured approach ensures members can readily access the necessary keys for verification purposes.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+<p id="section-3.3-5">An additional layer of security is introduced through thumbprint verification <span>[<a href="#RFC7638" class="cite xref">RFC7638</a>]</span>, where federation members can independently verify the key's authenticity. This involves comparing the calculated cryptographic thumbprint of the key with a trusted value, ensuring its integrity. Importantly, this verification process can be conducted through channels separate from the JWK Set itself, enhancing security by eliminating reliance on a single distribution mechanism.<a href="#section-3.3-5" class="pilcrow">¶</a></p>
+<p id="section-3.3-6">This trust framework is essential for enabling seamless and secure interoperability across different trust domains within the federation.<a href="#section-3.3-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="member-vetting">
+<section id="section-3.4">
+        <h3 id="name-member-vetting">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-member-vetting" class="section-name selfRef">Member Vetting</a>
+        </h3>
+<p id="section-3.4-1">To ensure the security and integrity of the MATF framework, a member vetting process is essential. Detailed vetting processes are beyond the scope of this document but can be guided by established frameworks such as eIDAS and eduGAIN.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">The following are non-normative references to established frameworks:<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-3.1">
+            <p id="section-3.4-3.1.1">eIDAS: The eIDAS regulation can provide guidance for member vetting and identity assurance practices.<a href="#section-3.4-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-3.2">
+            <p id="section-3.4-3.2.1">eduGAIN: eduGAIN is an interfederation service connecting identity federations worldwide, primarily within the research and education sector. eduGAIN documentation on participation requirements and federation practices can inform member vetting processes <span>[<a href="#eduGAIN" class="cite xref">eduGAIN</a>]</span>.<a href="#section-3.4-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="metadata-authenticity">
+<section id="section-3.5">
+        <h3 id="name-metadata-authenticity">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-metadata-authenticity" class="section-name selfRef">Metadata Authenticity</a>
+        </h3>
+<p id="section-3.5-1">Ensuring the authenticity of metadata is necessary for maintaining the security and trustworthiness of the MATF framework. This document specifies mechanisms for protecting and verifying the authenticity of federation metadata, including JWS signing. Operational procedures for authenticating member metadata submissions are outside the scope of this document and are defined by the federation operator or applicable regulatory bodies.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="metadata-repository">
+<section id="section-4">
+      <h2 id="name-metadata-repository">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-metadata-repository" class="section-name selfRef">Metadata Repository</a>
+      </h2>
+<p id="section-4-1">The MATF metadata repository acts as a central vault, securely storing all information about all participating federation members and their respective entities. This information, known as federation metadata, is presented as a JSON Web Signature (JWS) <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span> to ensure its authenticity and integrity.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">The metadata repository is subject to stringent security measures to safeguard the integrity of the stored information. This <span class="bcp14">MAY</span> involve:<a href="#section-4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-3.1">Member management: The federation operator can centrally enforce security policies and vet new members before they are added to the repository.<a href="#section-4-3.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-3.2">Access controls: Access to repository management functions and member metadata submission endpoints <span class="bcp14">SHOULD</span> be restricted to authorized federation members.<a href="#section-4-3.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-3.3">Regular backups: Robust backup procedures ensure data recovery in case of unforeseen circumstances.<a href="#section-4-3.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-4">Before member metadata is added to the federation's repository, the submitted metadata <span class="bcp14">MUST</span> undergo a validation process. This process verifies the accuracy, completeness, and validity of the information provided by a member. Metadata that does not pass validation <span class="bcp14">MUST</span> be rejected. The validation process <span class="bcp14">MUST</span> include, at a minimum, the following checks:<a href="#section-4-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-5.1">Format validation: The submitted metadata is checked to ensure that it conforms to the schema and format specifications defined in <a href="#metadata-schema" class="auto internal xref">Section 6.2</a> and <a href="#json-schema-for-matf-metadata" class="auto internal xref">Appendix A</a>.<a href="#section-4-5.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-5.2">Unique entity identifier: The submitted metadata is checked to ensure that the <code>entity_id</code> value, as defined in <a href="#entities" class="auto internal xref">Section 6.1.1</a>, is not already registered by another member.<a href="#section-4-5.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-5.3">Unique public key pin digests: The submitted metadata is checked to ensure that <code>pins</code> entries, as defined in <a href="#servers-clients" class="auto internal xref">Section 6.1.1.1</a>, do not introduce a <code>digest</code> value that is already registered to a different <code>entity_id</code>. While reuse of the same <code>digest</code> value within the same <code>entity_id</code> is permitted, uniqueness across different entities is <span class="bcp14">REQUIRED</span> to prevent identity collisions and to support the resolution of a unique <code>entity_id</code> from a derived pin, as specified in <a href="#pin-discovery-and-preloading" class="auto internal xref">Section 5.2</a>.<a href="#section-4-5.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-5.4">Issuer certificate checks: The issuer certificates in <code>issuers</code>, as defined in <a href="#entities" class="auto internal xref">Section 6.1.1</a>, are checked to ensure that they are syntactically valid, not expired, and use algorithms that meet the federation's security requirements.<a href="#section-4-5.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-5.5">Tag validation: Tags, as defined in <a href="#servers-clients" class="auto internal xref">Section 6.1.1.1</a>, are checked to ensure that they conform to the defined tag syntax. If the federation defines an approved set of tag values, submitted tags are checked to ensure that they are members of that set.<a href="#section-4-5.5" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-6">The metadata repository provides a controlled location for storing member metadata and for producing federation metadata for distribution to federation members.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<div id="metadata-submission">
+<section id="section-4.1">
+        <h3 id="name-metadata-submission">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-metadata-submission" class="section-name selfRef">Metadata Submission</a>
+        </h3>
+<p id="section-4.1-1">It is up to the federation, through its governance and operational processes, to determine which channels are provided to members for submitting their metadata to the metadata repository. Members typically have the option to upload the metadata directly to the repository, provided such functionality exists, or to send it to the federation operator through a designated secure channel. If an insecure channel is used, additional measures <span class="bcp14">MUST</span> be taken to verify the authenticity and integrity of the metadata. Such measures may include verifying the checksum of the metadata through another channel. The choice of submission channel may depend on factors such as the federation's guidelines and the preferences of the member.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="maintaining-up-to-date-metadata">
+<section id="section-4.2">
+        <h3 id="name-maintaining-up-to-date-meta">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-maintaining-up-to-date-meta" class="section-name selfRef">Maintaining Up-to-Date Metadata</a>
+        </h3>
+<p id="section-4.2-1">In a MATF federation, accurate and current metadata is essential for ensuring secure and reliable communication between members. This necessitates maintaining up-to-date metadata accessible by all members.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2-2.1">Federation metadata: The federation operator publishes a JWS containing an aggregate of all entity metadata. This JWS serves as the source of truth for information about all members within the federation. Outdated information in the JWS can lead to issues such as failed connections, discovery challenges, and potential security risks.<a href="#section-4.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.2-2.2">Local metadata: Each member maintains a local metadata store containing information about other members within the federation. This information is retrieved from the federation's publicly accessible JWS. Outdated data in the local store can hinder a member's ability to discover and connect with other relevant entities.<a href="#section-4.2-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.2-3">The following outlines the procedures for keeping metadata up to date:<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2-4.1">
+            <p id="section-4.2-4.1.1">Federation Operator Role: The federation operator plays a crucial role in maintaining data integrity within the federation. Their responsibilities include:<a href="#section-4.2-4.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2-4.1.2.1">Defining rules for metadata management that <span class="bcp14">MUST</span> include, at a minimum, expiration and cache time management.<a href="#section-4.2-4.1.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-4.2-4.1.2.2">Implementing mechanisms to update the published federation metadata, ensuring it adheres to the expiration time (<code>exp</code> as defined in <a href="#federation-metadata-claims" class="auto internal xref">Section 6.1</a>) and cache TTL (<code>cache_ttl</code> as defined in <a href="#federation-metadata-claims" class="auto internal xref">Section 6.1</a>) specifications.<a href="#section-4.2-4.1.2.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-4.2-4.2">
+            <p id="section-4.2-4.2.1">Member Responsibility: Members must follow the federation's metadata management rules and refresh their local metadata store according to the defined expiration and cache regulations.<a href="#section-4.2-4.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.2-5">By adhering to these responsibilities, the federation ensures that information remains valid for the defined timeframe and that caching mechanisms utilize up-to-date data effectively.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="authentication">
+<section id="section-5">
+      <h2 id="name-authentication">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-authentication" class="section-name selfRef">Authentication</a>
+      </h2>
+<p id="section-5-1">All communication established within the federation uses TLS 1.3 <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> with mutual authentication. This mechanism ensures the authenticity of both communicating parties, establishing a robust foundation for secure data exchange.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="public-key-pinning">
+<section id="section-5.1">
+        <h3 id="name-public-key-pinning">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-public-key-pinning" class="section-name selfRef">Public Key Pinning</a>
+        </h3>
+<p id="section-5.1-1">MATF implements public key pinning based on <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span>. Public key pinning associates one or more public key pins with each federation endpoint. These pins are published in the federation metadata. During a connection, clients and servers extract the public key from the presented certificate and verify that it matches the preconfigured public key pins retrieved from the federation metadata.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div id="benefits-of-public-key-pinning">
+<section id="section-5.1.1">
+          <h4 id="name-benefits-of-public-key-pinn">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-benefits-of-public-key-pinn" class="section-name selfRef">Benefits of Public Key Pinning</a>
+          </h4>
+<p id="section-5.1.1-1">The decision to utilize public key pinning in the MATF framework was driven by several critical factors aimed at enhancing security and ensuring trust.<a href="#section-5.1.1-1" class="pilcrow">¶</a></p>
+<div id="interfederation-trust">
+<section id="section-5.1.1.1">
+            <h5 id="name-interfederation-trust">
+<a href="#section-5.1.1.1" class="section-number selfRef">5.1.1.1. </a><a href="#name-interfederation-trust" class="section-name selfRef">Interfederation Trust</a>
+            </h5>
+<p id="section-5.1.1.1-1">In interfederation environments, where multiple federations need to trust each other, public key pinning remains effective. Members can validate entities in other federations using pins published through shared metadata, ensuring trust across boundaries. Unlike private certificate chains, which can become complex and difficult to manage across multiple federations, public key pinning provides a straightforward mechanism for establishing trust. MATF interfederation addresses this challenge by aggregating metadata from all participating federations into a unified metadata repository. This shared metadata enables secure communication between entities in different federations, ensuring consistent key validation and robust cross-federation trust and security.<a href="#section-5.1.1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="fortifying-security-against-threats">
+<section id="section-5.1.1.2">
+            <h5 id="name-fortifying-security-against">
+<a href="#section-5.1.1.2" class="section-number selfRef">5.1.1.2. </a><a href="#name-fortifying-security-against" class="section-name selfRef">Fortifying Security Against Threats</a>
+            </h5>
+<p id="section-5.1.1.2-1">Public key pinning provides a robust defense mechanism by directly binding a peer to a specific public key. This ensures that only the designated key is trusted, preventing attackers from exploiting fraudulent certificates. By eliminating reliance on external trust intermediaries, this approach significantly enhances resilience against potential threats.<a href="#section-5.1.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="use-of-self-signed-certificates">
+<section id="section-5.1.1.3">
+            <h5 id="name-use-of-self-signed-certific">
+<a href="#section-5.1.1.3" class="section-number selfRef">5.1.1.3. </a><a href="#name-use-of-self-signed-certific" class="section-name selfRef">Use of Self-Signed Certificates</a>
+            </h5>
+<p id="section-5.1.1.3-1">The use of self-signed certificates within the federation leverages public key pinning to establish trust. By bypassing external Certificate Authorities (CAs), servers and clients rely on the federation's mechanisms to validate trust. Public key pinning ensures that only the specific self-signed public keys, identified by key pins in the metadata, are trusted.<a href="#section-5.1.1.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="revocation">
+<section id="section-5.1.1.4">
+            <h5 id="name-revocation">
+<a href="#section-5.1.1.4" class="section-number selfRef">5.1.1.4. </a><a href="#name-revocation" class="section-name selfRef">Revocation</a>
+            </h5>
+<p id="section-5.1.1.4-1">In deployments that rely on certificate chains and certificate revocation mechanisms, revocation can be complex and slow. This complexity arises because a certificate that can no longer be trusted, and potentially
+other certificates within the chain, may need to be revoked and reissued. Public key pinning mitigates this complexity by allowing clients to base trust decisions on pinned public keys rather than on certificate chains.<a href="#section-5.1.1.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.1.1.4-2">If a public key can no longer be trusted within a MATF federation, the associated pin is removed. Updated metadata is published. The updated metadata includes a new pin corresponding to the public key in the replacement certificate. This approach reduces reliance on certificate revocation mechanisms and shifts the trust relationship to the specific, updated public key identified by its pin.<a href="#section-5.1.1.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="pin-discovery-and-preloading">
+<section id="section-5.2">
+        <h3 id="name-pin-discovery-and-preloadin">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-pin-discovery-and-preloadin" class="section-name selfRef">Pin Discovery and Preloading</a>
+        </h3>
+<p id="section-5.2-1">Peers in the federation obtain public key pins from the federation metadata. These pins serve as preconfigured trust parameters used for validation, as specified in <a href="#verification-of-received-certificates" class="auto internal xref">Section 5.3</a>.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">The federation <span class="bcp14">MUST</span> define discovery rules.  These rules describe how peers use federation metadata claims such as organization and tags to identify relevant endpoints and their pins.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">Before initiating or accepting a connection, a peer <span class="bcp14">MUST</span> preload the pins for the selected or authorized endpoints from its local metadata store. Maintenance of the local metadata store, including refresh behavior and expiry handling, is specified in <a href="#maintaining-up-to-date-metadata" class="auto internal xref">Section 4.2</a>.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">To support peer identification, the preloaded state <span class="bcp14">MUST</span> enable mapping from a derived pin to the corresponding entity_id. This may be achieved by maintaining a local index that maps each preloaded pin value to its associated <code>entity_id</code>.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2-5">A server <span class="bcp14">MAY</span> preload only the pins for clients that satisfy the server's connection policy (for example, based on <code>organization</code> or <code>tags</code>). Pin validation enforces the resulting policy as specified in <a href="#verification-of-received-certificates" class="auto internal xref">Section 5.3</a>.<a href="#section-5.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="verification-of-received-certificates">
+<section id="section-5.3">
+        <h3 id="name-verification-of-received-ce">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-verification-of-received-ce" class="section-name selfRef">Verification of Received Certificates</a>
+        </h3>
+<p id="section-5.3-1">Upon connection establishment, both endpoints <span class="bcp14">MUST</span> verify that the public key in the presented peer certificate matches a pin published in the federation metadata. This validation <span class="bcp14">MAY</span> be performed by the TLS stack or by application logic.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">In architectures where an intermediary terminates the TLS session, pin validation <span class="bcp14">MUST</span> be performed by either the intermediary or the application. If the application performs pin validation, the intermediary <span class="bcp14">MUST</span> forward the peer certificate or a derived pin to the application. The application <span class="bcp14">MUST</span> be able to determine the peer <code>entity_id</code> from the forwarded information and the federation metadata. This resolution relies on the client pin digest uniqueness property specified in <a href="#servers-clients" class="auto internal xref">Section 6.1.1.1</a>.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">If the intermediary performs pin validation, it <span class="bcp14">MUST</span> propagate the peer certificate, the derived pin, or the <code>entity_id</code> to the application to enable authorization.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-4">The channel between the intermediary and the application <span class="bcp14">MUST</span> be integrity protected and <span class="bcp14">MUST</span> provide endpoint authentication.<a href="#section-5.3-4" class="pilcrow">¶</a></p>
+<p id="section-5.3-5">Any conveyed certificate, pin, or identity used for this purpose <span class="bcp14">MUST</span> be derived directly from the TLS session. Implementations <span class="bcp14">MUST NOT</span> accept these values from peer-supplied application data.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
+<p id="section-5.3-6">If the implementation permits disabling default CA-based certificate chain validation, it <span class="bcp14">SHOULD</span> do so while still enforcing pin validation. If chain validation is required, the trust anchors used for certificate chain validation <span class="bcp14">MUST</span> be selected from the issuers listed in the federation metadata.<a href="#section-5.3-6" class="pilcrow">¶</a></p>
+<p id="section-5.3-7">If no matching pin is found for a peer, the connection <span class="bcp14">MUST</span> be handled according to <a href="#failure-to-validate" class="auto internal xref">Section 5.4</a>.<a href="#section-5.3-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="failure-to-validate">
+<section id="section-5.4">
+        <h3 id="name-failure-to-validate">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-failure-to-validate" class="section-name selfRef">Failure to Validate</a>
+        </h3>
+<p id="section-5.4-1">A received certificate that fails validation <span class="bcp14">MUST</span> result in the immediate termination of the connection. This includes scenarios where the derived pin does not match any preloaded pin or where the peer identity cannot be resolved. This strict enforcement ensures that only authorized and secure communication channels are established within the federation.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="certificate-rotation">
+<section id="section-5.5">
+        <h3 id="name-certificate-rotation">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-certificate-rotation" class="section-name selfRef">Certificate Rotation</a>
+        </h3>
+<p id="section-5.5-1">To replace a certificate, whether due to expiration or other reasons, the following procedure <span class="bcp14">MUST</span> be followed:<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.5-2">
+<li id="section-5.5-2.1">Submitting updated metadata: When a certificate is scheduled for rotation, the federation member submits updated metadata that adds the <code>pin</code> for the new public key alongside the already published <code>pins</code>. The federation operator republishes the signed federation metadata aggregate, making the new pin available to all federation members.<a href="#section-5.5-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.5-2.2">Propagation period: Federation members <span class="bcp14">MUST</span> refresh their local metadata stores as specified in <a href="#maintaining-up-to-date-metadata" class="auto internal xref">Section 4.2</a>. The rotating member <span class="bcp14">MUST</span> allow sufficient time for peers to refresh and preload the new pin before switching to the new certificate.<a href="#section-5.5-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.5-2.3">Switching to the new certificate: After the propagation period has elapsed, the rotating member updates its TLS stack to present the new certificate. This allows peers that have preloaded the new pin to validate the rotated certificate.<a href="#section-5.5-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.5-2.4">Removing the old pin: Following a successful transition, the rotating member <span class="bcp14">MUST</span> submit updated metadata excluding the old pin. The federation operator republishes the aggregate, ensuring that only current public keys remain trusted within the federation.<a href="#section-5.5-2.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="implementation-guidelines">
+<section id="section-5.6">
+        <h3 id="name-implementation-guidelines">
+<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-implementation-guidelines" class="section-name selfRef">Implementation Guidelines</a>
+        </h3>
+<p id="section-5.6-1">The placement of pin validation depends on the deployment architecture. For clients, validation is typically performed by the component initiating the TLS connection. For servers using an intermediary, the communication channel between the intermediary and the application <span class="bcp14">MUST</span> be integrity protected to prevent tampering with forwarded peer identity material.<a href="#section-5.6-1" class="pilcrow">¶</a></p>
+<p id="section-5.6-2">When an intermediary propagates peer identity material (for example, the peer certificate, a derived pin, or the <code>entity_id</code>) using HTTP header fields, those header fields are the mechanism used to fulfill the requirements specified in <a href="#verification-of-received-certificates" class="auto internal xref">Section 5.3</a>. For each header field name used for this purpose, the intermediary <span class="bcp14">MUST</span> remove any instance of that header field received from the peer and then set the header field value itself. This ensures that the application only processes identity material derived directly from the TLS session, enabling the application to match the peer to the federation metadata and apply authorization policy based on federation metadata claims. Header fields that are not used to convey identity material are unaffected by this requirement. The communication channel between the intermediary and the application <span class="bcp14">MUST</span> provide integrity protection and endpoint authentication to prevent tampering with forwarded peer identity material.<a href="#section-5.6-2" class="pilcrow">¶</a></p>
+<p id="section-5.6-3">Implementations <span class="bcp14">SHOULD</span>, when possible, rely on libraries with built-in support for pinning. libcurl, for example, supports pinning via the CURLOPT_PINNEDPUBLICKEY option. In Python, the cryptography library can extract public keys, and application code can compare the derived pin to a configured value. Go provides crypto/tls and crypto/x509 for certificate inspection and public key extraction. In Java, java.security.cert.X509Certificate enables public key extraction, while java.net.http.HttpClient allows pinning enforcement using a custom SSLContext and TrustManager. The choice of library is left to the discretion of each implementation.<a href="#section-5.6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="federation-metadata">
+<section id="section-6">
+      <h2 id="name-federation-metadata">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-federation-metadata" class="section-name selfRef">Federation Metadata</a>
+      </h2>
+<p id="section-6-1">Federation metadata is published as a JSON Web Signature (JWS) <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>. The payload contains statements about entities of federation members.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">Metadata is used for authentication and service discovery. A client selects a server based on metadata claims such as <code>organization</code> and <code>tags</code>. To establish a connection, the client uses the <code>base_uri</code>, <code>pins</code>, and, if needed, <code>issuers</code> of the selected server.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<div id="federation-metadata-claims">
+<section id="section-6.1">
+        <h3 id="name-federation-metadata-claims">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-federation-metadata-claims" class="section-name selfRef">Federation Metadata Claims</a>
+        </h3>
+<p id="section-6.1-1">This section defines the set of claims that can be included in metadata.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.1">
+            <p id="section-6.1-2.1.1">iat (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2.1.2">Identifies the time at which the federation metadata was issued.<a href="#section-6.1-2.1.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.1.3.1">Data Type: Integer<a href="#section-6.1-2.1.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.1.3.2">Syntax: NumericDate as defined in <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>], <a href="https://rfc-editor.org/rfc/rfc7519#section-4.1.6" class="relref">Section 4.1.6</a></span>.<a href="#section-6.1-2.1.3.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.1.3.3">Example: <code>1755514949</code><a href="#section-6.1-2.1.3.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-6.1-2.2">
+            <p id="section-6.1-2.2.1">exp (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2.2.2">Identifies the expiration time on or after which the federation metadata is
+no longer valid.  Once the <code>exp</code> time has passed, the metadata
+<span class="bcp14">MUST</span> be rejected regardless of cache state.<a href="#section-6.1-2.2.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.2.3.1">Data Type: Integer<a href="#section-6.1-2.2.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.2.3.2">Syntax: NumericDate as defined in <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>], <a href="https://rfc-editor.org/rfc/rfc7519#section-4.1.4" class="relref">Section 4.1.4</a></span>.<a href="#section-6.1-2.2.3.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.2.3.3">Example: <code>1756119888</code><a href="#section-6.1-2.2.3.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-6.1-2.3">
+            <p id="section-6.1-2.3.1">iss (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1-2.3.1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2.3.2">A URI uniquely identifying the
+issuing federation.  This value differentiates federations, prevents
+ambiguity, and ensures that entities are recognized within their intended
+context.  Verification of the <code>iss</code> claim enables recipients to determine the
+origin of the information and to establish trust with entities within the
+identified federation.<a href="#section-6.1-2.3.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.3.3.1">Data Type: String<a href="#section-6.1-2.3.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.3.3.2">Syntax: StringOrURI as defined in <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>], <a href="https://rfc-editor.org/rfc/rfc7519#section-4.1.1" class="relref">Section 4.1.1</a></span>. In MATF, this value <span class="bcp14">MUST</span> be a URI.<a href="#section-6.1-2.3.3.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.3.3.3">Example: <code>"https://federation.example.org"</code><a href="#section-6.1-2.3.3.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-6.1-2.4">
+            <p id="section-6.1-2.4.1">version (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2.4.2">Indicates the schema version of the federation metadata. This ensures compatibility between members of the federation by defining a clear versioning mechanism for interpreting metadata.<a href="#section-6.1-2.4.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.4.3.1">Data Type: String<a href="#section-6.1-2.4.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.4.3.2">Syntax: The value <span class="bcp14">MUST</span> follow Semantic Versioning (see <span>&lt;<a href="https://semver.org">https://semver.org</a>&gt;</span>).<a href="#section-6.1-2.4.3.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.4.3.3">Example: <code>"1.0.0"</code><a href="#section-6.1-2.4.3.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-6.1-2.5">
+            <p id="section-6.1-2.5.1">cache_ttl (<span class="bcp14">OPTIONAL</span>)<a href="#section-6.1-2.5.1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2.5.2">
+Specifies the duration in seconds for caching downloaded federation metadata, allowing for independent caching outside of specific HTTP configurations. This is particularly useful when the communication mechanism is not based on HTTP. In the event of a metadata publication outage, members can rely on cached metadata until it expires, as indicated by the <code>exp</code> claim in the JWS payload, defined in <a href="#federation-metadata-claims" class="auto internal xref">Section 6.1</a>. Once expired, metadata <span class="bcp14">MUST</span> no longer be trusted. If omitted, a mechanism to refresh metadata <span class="bcp14">MUST</span> still exist to ensure the metadata remains valid.<a href="#section-6.1-2.5.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.5.3.1">Data Type: Integer<a href="#section-6.1-2.5.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.5.3.2">Syntax: Integer representing the duration in seconds.<a href="#section-6.1-2.5.3.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.5.3.3">Example: <code>3600</code><a href="#section-6.1-2.5.3.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-6.1-2.6">
+            <p id="section-6.1-2.6.1">entities (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1-2.6.1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2.6.2">Contains the list of entities within the federation.<a href="#section-6.1-2.6.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-2.6.3.1">Data Type: Array of Objects<a href="#section-6.1-2.6.3.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-6.1-2.6.3.2">Syntax: Each object <span class="bcp14">MUST</span> conform to the entity definition, as specified in <a href="#entities" class="auto internal xref">Section 6.1.1</a>.<a href="#section-6.1-2.6.3.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+        </ul>
+<div id="entities">
+<section id="section-6.1.1">
+          <h4 id="name-entities">
+<a href="#section-6.1.1" class="section-number selfRef">6.1.1. </a><a href="#name-entities" class="section-name selfRef">Entities</a>
+          </h4>
+<p id="section-6.1.1-1">Metadata contains a list of entities that may be used for communication within the federation. Each entity describes one or more endpoints owned by a member. An entity has the following properties:<a href="#section-6.1.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.1">
+              <p id="section-6.1.1-2.1.1">entity_id (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1.1-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1-2.1.2">A URI that uniquely identifies the entity. This identifier <span class="bcp14">MUST NOT</span> collide with any other <code>entity_id</code> within the federation or within any other federation that the entity interacts with.<a href="#section-6.1.1-2.1.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.1.3.1">Data Type: String<a href="#section-6.1.1-2.1.3.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.1.3.2">Syntax: URI as defined in <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-6.1.1-2.1.3.2" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.1.3.3">Example: <code>"https://example.com"</code><a href="#section-6.1.1-2.1.3.3" class="pilcrow">¶</a>
+</li>
+              </ul>
+</li>
+            <li class="normal" id="section-6.1.1-2.2">
+              <p id="section-6.1.1-2.2.1">organization (<span class="bcp14">OPTIONAL</span>)<a href="#section-6.1.1-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1-2.2.2">A name identifying the organization that the entity's metadata represents. The federation operator <span class="bcp14">MUST</span> ensure that a mechanism is in place to verify that the <code>organization</code> claim corresponds to the rightful owner of the information exchanged between nodes. This is crucial for the trust model, ensuring certainty about the identities of the involved parties. The federation operator <span class="bcp14">SHOULD</span> choose an approach that best suits the specific needs and trust model of the federation.<a href="#section-6.1.1-2.2.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.2.3.1">Data Type: String<a href="#section-6.1.1-2.2.3.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.2.3.2">Syntax: A name identifying the organization represented by the entity.<a href="#section-6.1.1-2.2.3.2" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.2.3.3">Example: <code>"Example Org"</code><a href="#section-6.1.1-2.2.3.3" class="pilcrow">¶</a>
+</li>
+              </ul>
+</li>
+            <li class="normal" id="section-6.1.1-2.3">
+              <p id="section-6.1.1-2.3.1">issuers (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1.1-2.3.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1-2.3.2">A list of certificate issuers allowed to issue certificates for the entity's endpoints. For each issuer, the issuer's root CA certificate <span class="bcp14">MUST</span> be included in the <code>x509certificate</code> property and be encoded using the Privacy-Enhanced Mail (PEM) format. Certificate verification relies on public key pinning, with the list of allowed issuers used only when a certificate chain validation mechanism is unavoidable. For self-signed certificates, the certificate itself acts as its own issuer and <span class="bcp14">MUST</span> be listed as such in the metadata.<a href="#section-6.1.1-2.3.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.3.3.1">Data Type: Array of Objects<a href="#section-6.1.1-2.3.3.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.3.3.2">Syntax: Each object contains an issuer certificate encoded as PEM, as specified in <span>[<a href="#RFC7468" class="cite xref">RFC7468</a>]</span>. The Base64 content <span class="bcp14">MUST</span> be wrapped so that each line consists of exactly 64 characters, except for the final line. In JSON text, line breaks in the PEM value are represented using the "\n" escape sequence.<a href="#section-6.1.1-2.3.3.2" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.3.3.3">
+                  <p id="section-6.1.1-2.3.3.3.1">Example: Issuer truncated for readability.<a href="#section-6.1.1-2.3.3.3.1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.1.1-2.3.3.3.2">
+<pre>
+"issuers": [{
+  "x509certificate": "-----BEGIN CERTIFICATE-----\nMIIDDD"
+}]</pre><a href="#section-6.1.1-2.3.3.3.2" class="pilcrow">¶</a>
+</div>
+</li>
+              </ul>
+</li>
+            <li class="normal" id="section-6.1.1-2.4">
+              <p id="section-6.1.1-2.4.1">servers (<span class="bcp14">OPTIONAL</span>)<a href="#section-6.1.1-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1-2.4.2">Contains the list of servers within the entity.<a href="#section-6.1.1-2.4.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.4.3.1">Data Type: Array of Objects<a href="#section-6.1.1-2.4.3.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.4.3.2">Syntax: Each object <span class="bcp14">MUST</span> conform to the server definition, as specified in <a href="#servers-clients" class="auto internal xref">Section 6.1.1.1</a>.<a href="#section-6.1.1-2.4.3.2" class="pilcrow">¶</a>
+</li>
+              </ul>
+</li>
+            <li class="normal" id="section-6.1.1-2.5">
+              <p id="section-6.1.1-2.5.1">clients (<span class="bcp14">OPTIONAL</span>)<a href="#section-6.1.1-2.5.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1-2.5.2">Contains the list of clients within the entity.<a href="#section-6.1.1-2.5.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.5.3.1">Data Type: Array of Objects<a href="#section-6.1.1-2.5.3.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-6.1.1-2.5.3.2">Syntax: Each object <span class="bcp14">MUST</span> conform to the client definition, as specified in <a href="#servers-clients" class="auto internal xref">Section 6.1.1.1</a>.<a href="#section-6.1.1-2.5.3.2" class="pilcrow">¶</a>
+</li>
+              </ul>
+</li>
+          </ul>
+<div id="servers-clients">
+<section id="section-6.1.1.1">
+            <h5 id="name-servers-clients">
+<a href="#section-6.1.1.1" class="section-number selfRef">6.1.1.1. </a><a href="#name-servers-clients" class="section-name selfRef">Servers / Clients</a>
+            </h5>
+<p id="section-6.1.1.1-1">The entity's servers and clients are listed below.<a href="#section-6.1.1.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.1">
+                <p id="section-6.1.1.1-2.1.1">description (<span class="bcp14">OPTIONAL</span>)<a href="#section-6.1.1.1-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1.1-2.1.2">A human-readable text describing the server or client.<a href="#section-6.1.1.1-2.1.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.1.3.1">Data Type: String<a href="#section-6.1.1.1-2.1.3.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.1.3.2">Syntax: Free-form text describing the server or client.<a href="#section-6.1.1.1-2.1.3.2" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.1.3.3">Example: <code>"SCIM Server 1"</code><a href="#section-6.1.1.1-2.1.3.3" class="pilcrow">¶</a>
+</li>
+                </ul>
+</li>
+              <li class="normal" id="section-6.1.1.1-2.2">
+                <p id="section-6.1.1.1-2.2.1">base_uri (<span class="bcp14">REQUIRED</span> for servers, <span class="bcp14">OPTIONAL</span> for clients)<a href="#section-6.1.1.1-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1.1-2.2.2">The base URL of the server. This claim is <span class="bcp14">REQUIRED</span> for server endpoints. The value <span class="bcp14">MUST</span> be an absolute URI as defined in <span><a href="https://rfc-editor.org/rfc/rfc3986#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>. The value serves as the base URI for resolving relative references to server resources, as described in <span><a href="https://rfc-editor.org/rfc/rfc3986#section-5" class="relref">Section 5</a> of [<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-6.1.1.1-2.2.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.2.3.1">Data Type: String<a href="#section-6.1.1.1-2.2.3.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.2.3.2">Syntax: An absolute URI as defined in <span><a href="https://rfc-editor.org/rfc/rfc3986#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC3986" class="cite xref">RFC3986</a>]</span> that is used as a URL.<a href="#section-6.1.1.1-2.2.3.2" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.2.3.3">Example: <code>"https://scim.example.com/"</code><a href="#section-6.1.1.1-2.2.3.3" class="pilcrow">¶</a>
+</li>
+                </ul>
+</li>
+              <li class="normal" id="section-6.1.1.1-2.3">
+                <p id="section-6.1.1.1-2.3.1">pins (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1.1.1-2.3.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1.1-2.3.2">A list of objects representing public key pins <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span>.<a href="#section-6.1.1.1-2.3.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.3.3.1">Data Type: Array of Objects<a href="#section-6.1.1.1-2.3.3.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.3.3.2">
+                    <p id="section-6.1.1.1-2.3.3.2.1">Syntax: A list of objects, where each object represents a single public key pin with the following properties:<a href="#section-6.1.1.1-2.3.3.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.3.3.2.2.1">
+                        <p id="section-6.1.1.1-2.3.3.2.2.1.1">alg (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1.1.1-2.3.3.2.2.1.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1.1-2.3.3.2.2.1.2">The name of the cryptographic hash algorithm. Currently, the <span class="bcp14">RECOMMENDED</span> value is 'sha256'. As more secure algorithms are developed over time, federations should be ready to adopt these newer options for enhanced security.<a href="#section-6.1.1.1-2.3.3.2.2.1.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.3.3.2.2.1.3.1">Data Type: String<a href="#section-6.1.1.1-2.3.3.2.2.1.3.1" class="pilcrow">¶</a>
+</li>
+                          <li class="normal" id="section-6.1.1.1-2.3.3.2.2.1.3.2">Syntax: The name of the algorithm.<a href="#section-6.1.1.1-2.3.3.2.2.1.3.2" class="pilcrow">¶</a>
+</li>
+                          <li class="normal" id="section-6.1.1.1-2.3.3.2.2.1.3.3">Example: <code>"sha256"</code><a href="#section-6.1.1.1-2.3.3.2.2.1.3.3" class="pilcrow">¶</a>
+</li>
+                        </ul>
+</li>
+                      <li class="normal" id="section-6.1.1.1-2.3.3.2.2.2">
+                        <p id="section-6.1.1.1-2.3.3.2.2.2.1">digest (<span class="bcp14">REQUIRED</span>)<a href="#section-6.1.1.1-2.3.3.2.2.2.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1.1-2.3.3.2.2.2.2">The public key of the end-entity certificate, converted to a Subject Public Key Information (SPKI) fingerprint, as specified in <span><a href="https://rfc-editor.org/rfc/rfc7469#section-2.4" class="relref">Section 2.4</a> of [<a href="#RFC7469" class="cite xref">RFC7469</a>]</span>. For clients, the <code>digest</code> value <span class="bcp14">MUST</span> be unique across entities in the federation metadata to enable unambiguous identification of the peer. Within the same entity, the same <code>digest</code> value <span class="bcp14">MAY</span> be assigned to multiple clients.<a href="#section-6.1.1.1-2.3.3.2.2.2.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.3.3.2.2.2.3.1">Data Type: String<a href="#section-6.1.1.1-2.3.3.2.2.2.3.1" class="pilcrow">¶</a>
+</li>
+                          <li class="normal" id="section-6.1.1.1-2.3.3.2.2.2.3.2">Syntax: SPKI fingerprint.<a href="#section-6.1.1.1-2.3.3.2.2.2.3.2" class="pilcrow">¶</a>
+</li>
+                          <li class="normal" id="section-6.1.1.1-2.3.3.2.2.2.3.3">Example: <code>"+hcmCjJEtLq4BRPhrILyhgn98Lhy6DaWdpmsBAgOLCQ="</code><a href="#section-6.1.1.1-2.3.3.2.2.2.3.3" class="pilcrow">¶</a>
+</li>
+                        </ul>
+</li>
+                    </ul>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.3.3.3">
+                    <p id="section-6.1.1.1-2.3.3.3.1">Example:<a href="#section-6.1.1.1-2.3.3.3.1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.1.1.1-2.3.3.3.2">
+<pre>
+"pins": [{
+  "alg": "sha256",
+  "digest": "+hcmCjJEtLq4BRPhrILyhgn98Lhy6DaWdpmsBAgOLCQ="
+}]</pre><a href="#section-6.1.1.1-2.3.3.3.2" class="pilcrow">¶</a>
+</div>
+</li>
+                </ul>
+</li>
+              <li class="normal" id="section-6.1.1.1-2.4">
+                <p id="section-6.1.1.1-2.4.1">tags (<span class="bcp14">OPTIONAL</span>)<a href="#section-6.1.1.1-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1.1-2.4.2">A list of strings that describe the endpoint's capabilities.<a href="#section-6.1.1.1-2.4.2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.4.3.1">Data Type: Array of Strings<a href="#section-6.1.1.1-2.4.3.1" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.4.3.2">Syntax: Strings describing endpoint capabilities.<a href="#section-6.1.1.1-2.4.3.2" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.4.3.3">Pattern: <code>^[a-z0-9]{1,64}$</code><a href="#section-6.1.1.1-2.4.3.3" class="pilcrow">¶</a>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.4.3.4">Example: <code>["scim", "xyzzy"]</code><a href="#section-6.1.1.1-2.4.3.4" class="pilcrow">¶</a>
+</li>
+                </ul>
+<p id="section-6.1.1.1-2.4.4">Tags are fundamental for discovery within a federation, aiding both servers and clients in identifying appropriate connections.<a href="#section-6.1.1.1-2.4.4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.4.5.1">
+                    <p id="section-6.1.1.1-2.4.5.1.1">Server Tags: Tags associated with servers are used by clients to discover servers offering the services they require. Clients can search for servers based on tags that indicate supported protocols or the type of data they handle, enabling discovery of compatible servers.<a href="#section-6.1.1.1-2.4.5.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.4.5.2">
+                    <p id="section-6.1.1.1-2.4.5.2.1">Client Tags: Tags associated with clients are used by servers to identify clients with specific characteristics or capabilities. For instance, a server might only accept connections from clients that support particular protocols. By filtering incoming requests based on these tags, servers can identify suitable clients.<a href="#section-6.1.1.1-2.4.5.2.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+<p id="section-6.1.1.1-2.4.6">Federation-Specific Considerations: While tags are tied to individual federations and serve distinct purposes within each, several key considerations are crucial to ensure clarity and promote consistent tag usage:<a href="#section-6.1.1.1-2.4.6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1.1.1-2.4.7.1">
+                    <p id="section-6.1.1.1-2.4.7.1.1">Well-Defined Scope: Each federation <span class="bcp14">MUST</span> establish a clear scope for its tags, detailing their intended use, allowed tag values, associated meanings, and any relevant restrictions. Maintaining a well-defined and readily accessible registry of approved tags is essential for the federation.<a href="#section-6.1.1.1-2.4.7.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-6.1.1.1-2.4.7.2">
+                    <p id="section-6.1.1.1-2.4.7.2.1">Validation Mechanisms: Implementing validation mechanisms for tags is highly recommended. This can involve a dedicated operation or service verifying tag validity and compliance with the federation's regulations. Such validation ensures consistency within the federation by preventing the use of unauthorized or irrelevant tags.<a href="#section-6.1.1.1-2.4.7.2.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="metadata-schema">
+<section id="section-6.2">
+        <h3 id="name-metadata-schema">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-metadata-schema" class="section-name selfRef">Metadata Schema</a>
+        </h3>
+<p id="section-6.2-1">The MATF metadata schema is defined in <a href="#json-schema-for-matf-metadata" class="auto internal xref">Appendix A</a>. This schema specifies the format for describing entities involved in MATF and their associated information.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<aside id="section-6.2-2">
+          <p id="section-6.2-2.1">Note: The schema in <a href="#json-schema-for-matf-metadata" class="auto internal xref">Appendix A</a> is folded due to line length limitations as specified in <span>[<a href="#RFC8792" class="cite xref">RFC8792</a>]</span>.<a href="#section-6.2-2.1" class="pilcrow">¶</a></p>
+</aside>
+</section>
+</div>
+<div id="example-metadata">
+<section id="section-6.3">
+        <h3 id="name-example-metadata">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-example-metadata" class="section-name selfRef">Example Metadata</a>
+        </h3>
+<p id="section-6.3-1">The following is a non-normative example of a metadata statement. Line breaks in the <code>issuers</code> claim example are for readability only.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<div class="breakable lang-json sourcecode" id="section-6.3-2">
+<pre>
+{
+  "iat": 1755514949,
+  "exp": 1756119888,
+  "iss": "https://federation.example.org",
+  "version": "1.0.0",
+  "cache_ttl": 3600,
+  "entities": [{
+    "entity_id": "https://example.com",
+    "organization": "Example Org",
+    "issuers": [{
+      "x509certificate": "-----BEGIN CERTIFICATE-----\nMIIDDDCCAf
+      SgAwIBAgIJAIOsfJBStJQhMA0GCSqGSIb3DQEBCwUAMBsxGTAXBgNV\nBAM
+      MEHNjaW0uZXhhbXBsZS5jb20wHhcNMTcwNDA2MDc1MzE3WhcNMTcwNTA2MD
+      c1\nMzE3WjAbMRkwFwYDVQQDDBBzY2ltLmV4YW1wbGUuY29tMIIBIjANBgk
+      qhkiG9w0B\nAQEFAAOCAQ8AMIIBCgKCAQEAyr+3dXTC8YXoi0LDJTH0lTfv
+      8omQivWFOr3+/PBE\n6hmpLSNXK/EZJBD6ZT4Q+tY8dPhyhzT5RFZCVlrDs
+      e/kY00F4yoflKiqx9WSuCrq\nZFr1AUtIfGR/LvRUvDFtuHo1MzFttiK8Wr
+      wskMYZrw1zLHTIVwBkfMw1qr2XzxFK\njt0CcDmFxNdY5Q8kuBojH9+xt5s
+      ZbrJ9AVH/OI8JamSqDjk9ODyGg+GrEZFClP/B\nxa4Fsl04En/9GfaJnCU1
+      NpU0cqvWbVUlLOy8DaQMN14HIdkTdmegEsg2LR/XrJkt\nho16diAXrgS25
+      3xbkdD3T5d6lHiZCL6UxkBh4ZHRcoftSwIDAQABo1MwUTAdBgNV\nHQ4EFg
+      QUs1dXuhGhGc2UNb7ikn3t6cBuU34wHwYDVR0jBBgwFoAUs1dXuhGhGc2U\
+      nNb7ikn3t6cBuU34wDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAA
+      OCAQEA\nrR9wxPhUa2XfQ0agAC0oC8TFf8wbTYb0ElP5Ej834xMMW/wWTSA
+      N8/3WqOWNQJ23\nf0vEeYQwfvbD2fjLvYTyM2tSPOWrtQpKuvulIrxV7Zz8
+      A61NIjblE3rfea1eC8my\nTkDOlMKV+wlXXgUxirride+6ubOWRGf92fgze
+      DGJWkmm/a9tj0L/3e0xIXeujxC7\nMIt3p99teHjvnZQ7FiIBlvGc1o8FD1
+      FKmFYd74s7RxrAusBEAAmBo3xyB89cFU0d\nKB2fkH2lkqiqkyOtjrlHPoy
+      6ws6g1S6U/Jx9n0NEeEqCfzXnh9jEpxisSO+fBZER\npCwj2LMNPQxZBqBF
+      oxbFPw==\n-----END CERTIFICATE-----"
+    }],
+    "servers": [{
+      "description": "SCIM Server 1",
+      "base_uri": "https://scim.example.com/",
+      "pins": [{
+        "alg": "sha256",
+        "digest": "+hcmCjJEtLq4BRPhrILyhgn98Lhy6DaWdpmsBAgOLCQ="
+      }],
+      "tags": [
+        "scim"
+      ]
+    }],
+    "clients": [{
+      "description": "SCIM Client 1",
+      "pins": [{
+        "alg": "sha256",
+        "digest": "+hcmCjJEtLq4BRPhrILyhgn98Lhy6DaWdpmsBAgOLCQ="
+      }]
+    }]
+  }]
+}</pre><a href="#section-6.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="metadata-signing">
+<section id="section-6.4">
+        <h3 id="name-metadata-signing">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-metadata-signing" class="section-name selfRef">Metadata Signing</a>
+        </h3>
+<p id="section-6.4-1">Federation metadata is signed using JWS and published using JWS JSON Serialization according to the general JWS JSON Serialization syntax defined in <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>. Federation metadata signatures are <span class="bcp14">RECOMMENDED</span> to be created using the algorithm ECDSA using P-256 and SHA-256 ("ES256") as defined in <span>[<a href="#RFC7518" class="cite xref">RFC7518</a>]</span>. However, to accommodate evolving cryptographic standards, alternative algorithms <span class="bcp14">MAY</span> be used, provided they meet the security requirements of the federation.<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<p id="section-6.4-2">Federations may need to transition to post-quantum cryptographic algorithms for federation metadata signatures and for endpoint certificate public key types. MATF can accommodate such transitions through key rollover and by updating published pins as new key types are deployed.<a href="#section-6.4-2" class="pilcrow">¶</a></p>
+<p id="section-6.4-3">The following JWS Protected Header parameters are <span class="bcp14">REQUIRED</span>:<a href="#section-6.4-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.4-4.1">
+            <p id="section-6.4-4.1.1"><code>alg</code> (Algorithm)<a href="#section-6.4-4.1.1" class="pilcrow">¶</a></p>
+<p id="section-6.4-4.1.2">Identifies the algorithm used to generate the JWS signature <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>], <a href="https://rfc-editor.org/rfc/rfc7515#section-4.1.1" class="relref">Section 4.1.1</a></span>.<a href="#section-6.4-4.1.2" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.4-4.2">
+            <p id="section-6.4-4.2.1"><code>kid</code> (Key Identifier)<a href="#section-6.4-4.2.1" class="pilcrow">¶</a></p>
+<p id="section-6.4-4.2.2">Identifies the key in the issuer's key set that was used to generate the JWS signature <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>], <a href="https://rfc-editor.org/rfc/rfc7515#section-4.1.4" class="relref">Section 4.1.4</a></span>.<a href="#section-6.4-4.2.2" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="example-signature-protected-header">
+<section id="section-6.5">
+        <h3 id="name-example-signature-protected">
+<a href="#section-6.5" class="section-number selfRef">6.5. </a><a href="#name-example-signature-protected" class="section-name selfRef">Example Signature Protected Header</a>
+        </h3>
+<p id="section-6.5-1">The following is a non-normative example of a signature protected header.<a href="#section-6.5-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-6.5-2">
+<pre>
+{
+    "alg": "ES256",
+    "kid": "c2fb760e-f4b6-4f7e-b17a-7115d2826d51"
+}</pre><a href="#section-6.5-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="example-usage-scenarios">
+<section id="section-7">
+      <h2 id="name-example-usage-scenarios">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-example-usage-scenarios" class="section-name selfRef">Example Usage Scenarios</a>
+      </h2>
+<p id="section-7-1">The examples in this section are not normative and illustrate the procedures described in Sections <a href="#pin-discovery-and-preloading" class="auto internal xref">5.2</a> and <a href="#verification-of-received-certificates" class="auto internal xref">5.3</a>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">The following example describes a scenario within the federation "Skolfederation" where MATF is deployed. Both clients and servers are registered members of the federation. In this scenario, clients manage cross-domain user accounts using SS 12000:2018, which is a System for Cross-domain Identity Management (SCIM) extension.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7-3">
+<pre>
++------------------------------------------------------+
+|                                                      |
+|                  Federation Metadata                 |
+|                                                      |
++-----+-------------------------------+----------------+
+      |                               |
+     (A)                             (A)
+      |                               |
+      v                               v
++-----------+         +--------------------------------+
+| Local MD  |         |            Local MD            |
++-----+-----+         +------+---------------------+---+
+      |                      |                     |
+     (B)                    (C)                   (F)
+      |                      |                     |
+      v                      v                     v
++-----------+         +--------------+         +-------+
+|           |         |              |         |       |
+|  Client   +---(D)--&gt;+ Intermediary +---(E)--&gt;+  App  |
+|           |         |              |         |       |
++-----------+         +--------------+         +-------+</pre><a href="#section-7-3" class="pilcrow">¶</a>
+</div>
+<ol start="1" type="A" class="normal type-A" id="section-7-4">
+<li id="section-7-4.1">Clients and servers retrieve federation metadata and update their local metadata stores as described in <a href="#maintaining-up-to-date-metadata" class="auto internal xref">Section 4.2</a>.<a href="#section-7-4.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-4.2">The client selects a server endpoint based on metadata claims and preloads the pins published for that endpoint.<a href="#section-7-4.2" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-4.3">If certificate chain validation is performed, the TLS client or intermediary configures its trust store using the <code>issuers</code> listed in the federation metadata for the selected entity.<a href="#section-7-4.3" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-4.4">The client initiates a TLS connection to the selected <code>base_uri</code> and presents its client certificate.<a href="#section-7-4.4" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-4.5">If an intermediary terminates the TLS session, it forwards identity material derived from the TLS session to the application as described in Sections <a href="#verification-of-received-certificates" class="auto internal xref">5.3</a> and <a href="#implementation-guidelines" class="auto internal xref">5.6</a>.<a href="#section-7-4.5" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-4.6">The application maps the derived pin to a matching metadata entry and uses the associated <code>entity_id</code> for identification and authorization.<a href="#section-7-4.6" class="pilcrow">¶</a>
+</li>
+      </ol>
+<div id="client-behavior">
+<section id="section-7.1">
+        <h3 id="name-client-behavior">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-client-behavior" class="section-name selfRef">Client Behavior</a>
+        </h3>
+<p id="section-7.1-1">A certificate is issued for the client. The client's certificate issuer and public key <code>pins</code> are published in the federation metadata.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">When a client initiates a connection to a remote server (identified by the server's <code>entity_id</code>), the following steps are performed:<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-7.1-3">
+<li id="section-7.1-3.1">The client selects a server endpoint from the identified entity's <code>servers</code> list whose <code>tags</code> match the required service capabilities.<a href="#section-7.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-3.2">The client preloads the selected endpoint's <code>pins</code> from its local metadata store. If certificate chain validation is performed, the client also loads the <code>issuers</code> listed for the entity.<a href="#section-7.1-3.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-3.3">The client initiates a TLS connection to the selected endpoint using the <code>base_uri</code> and presents its client certificate.<a href="#section-7.1-3.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-3.4">The client performs pin validation for the server certificate as described in <a href="#verification-of-received-certificates" class="auto internal xref">Section 5.3</a>. This validation may be performed by the TLS stack during the handshake or by application logic after the connection is established, but it completes before any application data is exchanged.<a href="#section-7.1-3.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-3.5">If validation succeeds, the client proceeds with application transactions.<a href="#section-7.1-3.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="server-behavior">
+<section id="section-7.2">
+        <h3 id="name-server-behavior">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-server-behavior" class="section-name selfRef">Server Behavior</a>
+        </h3>
+<p id="section-7.2-1">To accept inbound connections from a client, the server uses federation metadata to perform pin validation of the public key in the presented client certificate. The federation metadata publishes client public key <code>pins</code>, and for deployments that perform certificate chain validation, the allowed <code>issuers</code>.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">When the server receives a TLS connection attempt from a remote client, the following steps are performed:<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-7.2-3">
+<li id="section-7.2-3.1">The server is configured to request or require a client certificate. If certificate chain validation is performed, the trust store is populated using the <code>issuers</code> published in the federation metadata. Otherwise, the server requests a client certificate without issuer validation (for example, <code>optional_no_ca</code>).<a href="#section-7.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.2-3.2">The server can prefilter the federation metadata to identify the set of clients it is willing to communicate with and preload only the <code>pins</code> for those clients, as described in <a href="#pin-discovery-and-preloading" class="auto internal xref">Section 5.2</a>.<a href="#section-7.2-3.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.2-3.3">After the TLS handshake completes, the server derives the client's pin from the presented certificate and matches it against the preloaded pins. When a match is found, the server determines the client's <code>entity_id</code> from the corresponding metadata entry.<a href="#section-7.2-3.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.2-3.4">If pin validation succeeds, the server proceeds with application transactions. If pin validation fails, the server terminates the connection.<a href="#section-7.2-3.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="spki-generation">
+<section id="section-7.3">
+        <h3 id="name-spki-generation">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-spki-generation" class="section-name selfRef">SPKI Generation</a>
+        </h3>
+<p id="section-7.3-1">The following is an example of how to use OpenSSL to generate a SPKI fingerprint from a PEM-encoded certificate.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<div class="lang-bash sourcecode" id="section-7.3-2">
+<pre>
+  openssl x509 -in &lt;certificate.pem&gt; -pubkey -noout | \
+  openssl pkey -pubin -outform der | \
+  openssl dgst -sha256 -binary | \
+  openssl enc -base64</pre><a href="#section-7.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="curl-and-public-key-pinning">
+<section id="section-7.4">
+        <h3 id="name-curl-and-public-key-pinning">
+<a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-curl-and-public-key-pinning" class="section-name selfRef">Curl and Public Key Pinning</a>
+        </h3>
+<p id="section-7.4-1">The following is an example of public key pinning with curl.<a href="#section-7.4-1" class="pilcrow">¶</a></p>
+<div class="lang-bash sourcecode" id="section-7.4-2">
+<pre>
+  curl --cert client.pem --key client.key \
+  --pinnedpubkey \
+  'sha256//0Ok2aNfcrCNDMhC2uXIdxBFOvMfEVtzlNVUT5pur0Dk=' \
+  https://host.example.com</pre><a href="#section-7.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="deployments-of-the-matf-framework">
+<section id="section-8">
+      <h2 id="name-deployments-of-the-matf-fra">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-deployments-of-the-matf-fra" class="section-name selfRef">Deployments of the MATF Framework</a>
+      </h2>
+<p id="section-8-1">The MATF framework has proven its practical value and robustness through successful deployments in several environments.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<div id="skolfederation-moa">
+<section id="section-8.1">
+        <h3 id="name-skolfederation-moa">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-skolfederation-moa" class="section-name selfRef">Skolfederation Moa</a>
+        </h3>
+<p id="section-8.1-1">Skolfederation Moa <span>[<a href="#Moa" class="cite xref">Moa</a>]</span> is a federation designed to secure communication between digital educational resources and schools. MATF was developed to meet Moa's needs and enables secure data exchange for schools, municipalities, educational platforms, and services across Sweden.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1-2">The community plays a crucial role in this type of federation. Members are active participants, and the federation operator ensures the federation runs smoothly and serves their needs. Moa's success highlights the importance of collaboration, with members and the federation operator working together to maintain trust, security, and interoperability in the education sector.<a href="#section-8.1-2" class="pilcrow">¶</a></p>
+<p id="section-8.1-3">The deployment of MATF in the Swedish education sector has provided several key insights. Maintaining an accurate registry of metadata ownership with reliable contact information is essential for troubleshooting and ensuring accountability. The deployment also demonstrated the importance of setting reasonable expiration times for metadata. Too short an expiration can hinder the ability to implement contingency plans for publishing new metadata during outages.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+<p id="section-8.1-4">Metadata validation is necessary to maintain a stable federation. While manual validation may be sufficient in the early stages of a federation, it becomes unmanageable as the federation scales. Without an automated validation process, incorrect metadata uploaded by members is likely to go undetected, leading to publication of incorrect metadata.<a href="#section-8.1-4" class="pilcrow">¶</a></p>
+<p id="section-8.1-5">The federation metadata signing private key is required to publish signed federation metadata. In fallback scenarios, federation metadata may be retrieved from an alternate location, but publishing updated federation metadata requires access to the signing private key. Therefore, secure and redundant management of the signing private key is necessary to support fallback mechanisms and reliable publication. Recipients <span class="bcp14">MUST</span> validate the JWS signature using the federation signature verification key before using federation metadata, regardless of where it is obtained.<a href="#section-8.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="swedish-national-agency-for-education">
+<section id="section-8.2">
+        <h3 id="name-swedish-national-agency-for">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-swedish-national-agency-for" class="section-name selfRef">Swedish National Agency for Education</a>
+        </h3>
+<p id="section-8.2-1">The Swedish National Agency for Education <span>[<a href="#SkolverketMATF" class="cite xref">SkolverketMATF</a>]</span> leverages MATF within its digital national test platform to establish a robust authentication mechanism. The platform utilizes an API for client verification prior to secure data transfer to the agency's test service, ensuring the integrity and confidentiality of educational data.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sambruk-s-egil">
+<section id="section-8.3">
+        <h3 id="name-sambruks-egil">
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-sambruks-egil" class="section-name selfRef">Sambruk's EGIL</a>
+        </h3>
+<p id="section-8.3-1">Sambruk's EGIL <span>[<a href="#EGIL" class="cite xref">EGIL</a>]</span>, a platform providing digital services to municipalities, has successfully integrated the MATF framework. This deployment demonstrates the framework's adaptability to support a wide range of digital service infrastructures.<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.3-2">These deployments highlight the effectiveness of the MATF framework in enhancing security and interoperability within the educational sector.<a href="#section-8.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="security-risks-and-trust-management">
+<section id="section-9.1">
+        <h3 id="name-security-risks-and-trust-ma">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-security-risks-and-trust-ma" class="section-name selfRef">Security Risks and Trust Management</a>
+        </h3>
+<p id="section-9.1-1">The security risks associated with the MATF framework are confined to each individual federation. Both the federation operator and federation members share the responsibility of maintaining trust and security. Proper handling of metadata and thorough vetting of members are crucial to sustaining this trust.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.1-2">Deployments that terminate a session at an intermediary and convey identity material to an application introduce a critical trust boundary. If the intermediary is compromised or fails to properly sanitize inbound headers, an attacker could spoof a peer's <code>entity_id</code>. Therefore, intermediaries that convey identity material to an application <span class="bcp14">MUST</span> comply with the requirements in <a href="#implementation-guidelines" class="auto internal xref">Section 5.6</a>.<a href="#section-9.1-2" class="pilcrow">¶</a></p>
+<p id="section-9.1-3">Implementations <span class="bcp14">SHOULD</span> avoid logging conveyed certificates, pins, or identity values unless required for diagnostics to prevent the accidental exposure of session-specific identity material.<a href="#section-9.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="tls">
+<section id="section-9.2">
+        <h3 id="name-tls">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-tls" class="section-name selfRef">TLS</a>
+        </h3>
+<p id="section-9.2-1">The security considerations for TLS 1.3 are detailed in Section <a href="https://rfc-editor.org/rfc/rfc8446#section-10" class="relref">10</a> and Appendices <a href="https://rfc-editor.org/rfc/rfc8446#appendix-C" class="relref">C</a>, <a href="https://rfc-editor.org/rfc/rfc8446#appendix-D" class="relref">D</a>, and <a href="https://rfc-editor.org/rfc/rfc8446#appendix-E" class="relref">E</a> of <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-9.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="federation-metadata-updates">
+<section id="section-9.3">
+        <h3 id="name-federation-metadata-updates">
+<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-federation-metadata-updates" class="section-name selfRef">Federation Metadata Updates</a>
+        </h3>
+<p id="section-9.3-1">Regularly updating the local copy of federation metadata is essential for accessing the latest information about active entities, current public key pins <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span>, and valid issuer certificates. The use of outdated metadata may expose systems to security risks, such as interaction with revoked entities or acceptance of manipulated data.<a href="#section-9.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="verifying-the-federation-metadata-signature">
+<section id="section-9.4">
+        <h3 id="name-verifying-the-federation-me">
+<a href="#section-9.4" class="section-number selfRef">9.4. </a><a href="#name-verifying-the-federation-me" class="section-name selfRef">Verifying the Federation Metadata Signature</a>
+        </h3>
+<p id="section-9.4-1">Ensuring data integrity and security within the MATF framework relies on verifying the signature of downloaded federation metadata. This verification confirms the origin of the metadata by validating the JWS signature using the federation signature verification key trusted by the recipient. It also confirms that the signed content has not been altered by unauthorized parties. By verifying the signature, trust is maintained in the integrity of the information used for validation, including member public key pins and issuer certificates. To achieve a robust implementation, it is important to consider the security aspects outlined in <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>, which describes security considerations related to algorithm selection, key compromise, and signature integrity.<a href="#section-9.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="time-synchronization">
+<section id="section-9.5">
+        <h3 id="name-time-synchronization">
+<a href="#section-9.5" class="section-number selfRef">9.5. </a><a href="#name-time-synchronization" class="section-name selfRef">Time Synchronization</a>
+        </h3>
+<p id="section-9.5-1">Maintaining synchronized clocks across all federation members is critical for the security of the MATF framework. Inaccurate timestamps can compromise the validity of digital signatures and certificates, hinder reliable log analysis, and potentially expose the system to time-based attacks. Therefore, all federation members <span class="bcp14">MUST</span> employ methods to ensure their system clocks are synchronized with a reliable time source.<a href="#section-9.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-10-1">This document has no IANA actions.<a href="#section-10-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3986">[RFC3986]</dt>
+        <dd>
+<span class="refAuthor">Berners-Lee, T.</span>, <span class="refAuthor">Fielding, R.</span>, and <span class="refAuthor">L. Masinter</span>, <span class="refTitle">"Uniform Resource Identifier (URI): Generic Syntax"</span>, <span class="seriesInfo">STD 66</span>, <span class="seriesInfo">RFC 3986</span>, <span class="seriesInfo">DOI 10.17487/RFC3986</span>, <time datetime="2005-01" class="refDate">January 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3986">https://www.rfc-editor.org/info/rfc3986</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7468">[RFC7468]</dt>
+        <dd>
+<span class="refAuthor">Josefsson, S.</span> and <span class="refAuthor">S. Leonard</span>, <span class="refTitle">"Textual Encodings of PKIX, PKCS, and CMS Structures"</span>, <span class="seriesInfo">RFC 7468</span>, <span class="seriesInfo">DOI 10.17487/RFC7468</span>, <time datetime="2015-04" class="refDate">April 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7468">https://www.rfc-editor.org/info/rfc7468</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7469">[RFC7469]</dt>
+        <dd>
+<span class="refAuthor">Evans, C.</span>, <span class="refAuthor">Palmer, C.</span>, and <span class="refAuthor">R. Sleevi</span>, <span class="refTitle">"Public Key Pinning Extension for HTTP"</span>, <span class="seriesInfo">RFC 7469</span>, <span class="seriesInfo">DOI 10.17487/RFC7469</span>, <time datetime="2015-04" class="refDate">April 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7469">https://www.rfc-editor.org/info/rfc7469</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7515">[RFC7515]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Signature (JWS)"</span>, <span class="seriesInfo">RFC 7515</span>, <span class="seriesInfo">DOI 10.17487/RFC7515</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7515">https://www.rfc-editor.org/info/rfc7515</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7517">[RFC7517]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refTitle">"JSON Web Key (JWK)"</span>, <span class="seriesInfo">RFC 7517</span>, <span class="seriesInfo">DOI 10.17487/RFC7517</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7517">https://www.rfc-editor.org/info/rfc7517</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7518">[RFC7518]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refTitle">"JSON Web Algorithms (JWA)"</span>, <span class="seriesInfo">RFC 7518</span>, <span class="seriesInfo">DOI 10.17487/RFC7518</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7518">https://www.rfc-editor.org/info/rfc7518</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7519">[RFC7519]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <span class="seriesInfo">DOI 10.17487/RFC7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7519">https://www.rfc-editor.org/info/rfc7519</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7638">[RFC7638]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span> and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Key (JWK) Thumbprint"</span>, <span class="seriesInfo">RFC 7638</span>, <span class="seriesInfo">DOI 10.17487/RFC7638</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7638">https://www.rfc-editor.org/info/rfc7638</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+      <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="eduGAIN">[eduGAIN]</dt>
+        <dd>
+<span class="refAuthor">eduGAIN</span>, <span class="refTitle">"eduGAIN: Interfederation service connecting research and education identity federations worldwide"</span>, <span>&lt;<a href="https://edugain.org">https://edugain.org</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="EGIL">[EGIL]</dt>
+        <dd>
+<span class="refAuthor">Sambruk</span>, <span class="refTitle">"EGIL - smidig hantering av skolans digitala användarkonton" [EGIL - manage your school's digital user accounts efficiently]</span>, <span>&lt;<a href="https://sambruk.se/egil-dnp/">https://sambruk.se/egil-dnp/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="eIDAS">[eIDAS]</dt>
+        <dd>
+<span class="refAuthor">European Union</span>, <span class="refTitle">"Consolidated text: Regulation (EU) No 910/2014 of the European Parliament and of the Council of 23 July 2014 on electronic identification and trust services for electronic transactions in the internal market and repealing Directive 1999/93/EC"</span>, <time datetime="2024-10-18" class="refDate">18 October 2024</time>, <span>&lt;<a href="https://eur-lex.europa.eu/eli/reg/2014/910">https://eur-lex.europa.eu/eli/reg/2014/910</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Moa">[Moa]</dt>
+        <dd>
+<span class="refAuthor">Internetstiftelsens Federationer [The Swedish Internet Foundation]</span>, <span class="refTitle">"Machine and Organization Authentication"</span>, <time datetime="2025-10-06" class="refDate">6 October 2025</time>, <span>&lt;<a href="https://wiki.federationer.internetstiftelsen.se/x/LYA5AQ">https://wiki.federationer.internetstiftelsen.se/x/LYA5AQ</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8792">[RFC8792]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refAuthor">Auerswald, E.</span>, <span class="refAuthor">Farrel, A.</span>, and <span class="refAuthor">Q. Wu</span>, <span class="refTitle">"Handling Long Lines in Content of Internet-Drafts and RFCs"</span>, <span class="seriesInfo">RFC 8792</span>, <span class="seriesInfo">DOI 10.17487/RFC8792</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8792">https://www.rfc-editor.org/info/rfc8792</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SkolverketMATF">[SkolverketMATF]</dt>
+      <dd>
+<span class="refAuthor">Skolverket [Swedish National Agency for Education]</span>, <span class="refTitle">"API för autentisering" [Authentication API for User Management]</span>, <span class="refContent">commit f8c2e93</span>, <time datetime="2025-09-04" class="refDate">4 September 2025</time>, <span>&lt;<a href="https://github.com/skolverket/dnp-usermanagement/blob/main/authentication-api/README.md">https://github.com/skolverket/dnp-usermanagement/blob/main/authentication-api/README.md</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="json-schema-for-matf-metadata">
+<section id="appendix-A">
+      <h2 id="name-json-schema-for-matf-metada">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-json-schema-for-matf-metada" class="section-name selfRef">JSON Schema for MATF Metadata</a>
+      </h2>
+<p id="appendix-A-1">The following JSON Schema defines the structure of MATF metadata. It conforms to draft 2020-12 of the JSON Schema standard.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">Version: 1.0.0<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<div class="breakable lang-json sourcecode" id="appendix-A-3">
+<pre>
+=============== NOTE: '\\' line wrapping per RFC 8792 ===============
+
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://mtlsfed.se/schema/matf-metadata-schema.json",
+    "title": "JSON Schema for Mutually Authenticating TLS in the con\
+\text of Federations",
+    "description": "Version: 1.0.0",
+    "type": "object",
+    "additionalProperties": true,
+    "required": [
+        "iat",
+        "exp",
+        "iss",
+        "version",
+        "entities"
+    ],
+    "properties": {
+        "iat": {
+            "title": "Issued at",
+            "description": "Time at which the metadata was issued (U\
+\NIX timestamp)",
+            "type": "integer",
+            "minimum": 0,
+            "examples": [
+                1755514949
+            ]
+        },
+        "exp": {
+            "title": "Expiration time",
+            "description": "Time at which the metadata expires (UNIX\
+\ timestamp)",
+            "type": "integer",
+            "minimum": 0,
+            "examples": [
+                1756119888
+            ]
+        },
+        "iss": {
+            "title": "The federation issuing the metadata",
+            "description": "A URI that uniquely identifies the feder\
+\ation that issued the metadata",
+            "type": "string",
+            "format": "uri",
+            "minLength": 1,
+            "examples": [
+                "https://example.com/federation"
+            ]
+        },
+        "version": {
+            "title": "Metadata schema version",
+            "description": "Schema version follows semantic versioni\
+\ng (https://semver.org)",
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "examples": [
+                "1.0.0"
+            ]
+        },
+        "cache_ttl": {
+            "title": "Metadata cache TTL",
+            "description": "How long in seconds to cache metadata. T\
+\he effective maximum is bounded by the exp claim.",
+            "type": "integer",
+            "minimum": 0,
+            "examples": [
+                3600
+            ]
+        },
+        "entities": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "$ref": "#/$defs/entity"
+            }
+        }
+    },
+    "$defs": {
+        "entity": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+                "entity_id",
+                "issuers"
+            ],
+            "properties": {
+                "entity_id": {
+                    "title": "Entity identifier",
+                    "description": "Globally unique identifier for t\
+\he entity.",
+                    "type": "string",
+                    "format": "uri",
+                    "examples": [
+                        "https://example.com"
+                    ]
+                },
+                "organization": {
+                    "title": "Name of entity organization",
+                    "description": "Name identifying the organizatio\
+\n that the entity's metadata represents.",
+                    "type": "string",
+                    "examples": [
+                        "Example Org"
+                    ]
+                },
+                "issuers": {
+                    "title": "Entity certificate issuers",
+                    "description": "A list of certificate issuers th\
+\at are allowed to issue certificates for the entity's endpoints. Fo\
+\r each issuer, the issuer's root CA certificate is included in the \
+\x509certificate property (PEM-encoded).",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/$defs/cert_issuers"
+                    }
+                },
+                "servers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/endpoint"
+                    }
+                },
+                "clients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/endpoint"
+                    }
+                }
+            }
+        },
+        "endpoint": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+                "pins"
+            ],
+            "properties": {
+                "description": {
+                    "title": "Endpoint description",
+                    "type": "string",
+                    "examples": [
+                        "SCIM Server 1"
+                    ]
+                },
+                "tags": {
+                    "title": "Endpoint tags",
+                    "description": "A list of strings that describe \
+\the endpoint's capabilities.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]{1,64}$",
+                        "examples": [
+                            "xyzzy"
+                        ]
+                    }
+                },
+                "base_uri": {
+                    "title": "Endpoint base URI",
+                    "type": "string",
+                    "format": "uri",
+                    "examples": [
+                        "https://scim.example.com"
+                    ]
+                },
+                "pins": {
+                    "title": "Certificate pin set",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/$defs/pin_directive"
+                    }
+                }
+            }
+        },
+        "cert_issuers": {
+            "title": "Certificate issuers",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "x509certificate"
+            ],
+            "properties": {
+                "x509certificate": {
+                    "title": "X.509 Certificate (PEM)",
+                    "type": "string",
+                    "pattern": "^-----BEGIN CERTIFICATE-----(?:\\r?\\
+\\n)(?:[A-Za-z0-9+/=]{64}\\r?\\n)*(?:[A-Za-z0-9+/=]{1,64}\\r?\\n)---\
+\--END CERTIFICATE-----(?:\\r?\\n)?$"
+                }
+            }
+        },
+        "pin_directive": {
+            "title": "RFC 7469 pin directive",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "alg",
+                "digest"
+            ],
+            "properties": {
+                "alg": {
+                    "title": "Directive name",
+                    "type": "string",
+                    "enum": [
+                        "sha256"
+                    ],
+                    "examples": [
+                        "sha256"
+                    ]
+                },
+                "digest": {
+                    "title": "Directive value (Base64)",
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9+/]{43}=$",
+                    "examples": [
+                        "HiMkrb4phPSP+OvGqmZd6sGvy7AUn4k3XEe8OMBrzt8\
+\="
+                    ]
+                }
+            }
+        }
+    }
+}</pre><a href="#appendix-A-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="appendix-B">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-B-1">This project was funded through the NGI0 PET Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825310.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">The authors thank the following people for the detailed review and suggestions:<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-B-3.1">
+          <p id="appendix-B-3.1.1"><span class="contact-name">Rasmus Larsson</span><a href="#appendix-B-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-B-3.2">
+          <p id="appendix-B-3.2.1"><span class="contact-name">Mats Dufberg</span><a href="#appendix-B-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-B-3.3">
+          <p id="appendix-B-3.3.1"><span class="contact-name">Joe Siltberg</span><a href="#appendix-B-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-B-3.4">
+          <p id="appendix-B-3.4.1"><span class="contact-name">Stefan Norberg</span><a href="#appendix-B-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-B-3.5">
+          <p id="appendix-B-3.5.1"><span class="contact-name">Petter Blomberg</span><a href="#appendix-B-3.5.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="appendix-B-4">The authors would also like to thank participants in the EGIL working group for their comments on this specification.<a href="#appendix-B-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Stefan Halén</span></div>
+<div dir="auto" class="left"><span class="org">The Swedish Internet Foundation</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:stefan.halen@internetstiftelsen.se" class="email">stefan.halen@internetstiftelsen.se</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jakob Schlyter</span></div>
+<div dir="auto" class="left"><span class="org">Kirei AB</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jakob@kirei.se" class="email">jakob@kirei.se</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
