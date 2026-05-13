@@ -1,0 +1,2874 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9957: The DOCSIS Queue Protection Algorithm to Preserve Low Latency</title>
+<meta content="Bob Briscoe" name="author">
+<meta content="Greg White" name="author">
+<meta content='
+       This Informational RFC explains the specification of the queue
+      protection algorithm introduced into Data-Over-Cable Service Interface Specification (DOCSIS) technology at version 3.1. A
+      shared low-latency queue relies on the non-queue-building behaviour of
+      every traffic flow using it. However, some flows might not take such
+      care, either accidentally or maliciously. If a queue is about to exceed
+      a threshold level of delay, the Queue Protection algorithm can rapidly
+      detect the flows most likely to be responsible. It can then prevent harm
+      to other traffic in the low-latency queue by ejecting selected packets
+      (or all packets) of these flows. This document is designed for four audiences: a) congestion control designers who need to understand how
+ to keep on the "good" side of the algorithm; b) implementers of the
+ algorithm who want to understand it in more depth; c) designers of
+ algorithms with similar goals, perhaps for non-DOCSIS scenarios; and
+ d) researchers interested in evaluating the algorithm. 
+    ' name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="Independent Submission Stream" name="keyword">
+<meta content="ISE" name="keyword">
+<meta content="Latency" name="keyword">
+<meta content="Policing" name="keyword">
+<meta content="9957" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.14.3
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.3
+    platformdirs 4.9.6
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.6.0
+    weasyprint 68.0
+-->
+<link href="rfc9957.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-briscoe-docsis-q-protection-07" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9957" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9957</td>
+<td class="center">Queue Protection to Preserve Low Latency</td>
+<td class="right">May 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Briscoe &amp; White</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Independent Submission</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9957" class="eref">9957</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-05" class="published">May 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">B. Briscoe, <span class="editor">Ed.</span>
+</div>
+<div class="org">Independent</div>
+</div>
+<div class="author">
+      <div class="author-name">G. White</div>
+<div class="org">CableLabs</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9957</h1>
+<h1 id="title">The DOCSIS Queue Protection Algorithm to Preserve Low Latency</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This Informational RFC explains the specification of the queue
+      protection algorithm introduced into Data-Over-Cable Service Interface Specification (DOCSIS) technology at version 3.1. A
+      shared low-latency queue relies on the non-queue-building behaviour of
+      every traffic flow using it. However, some flows might not take such
+      care, either accidentally or maliciously. If a queue is about to exceed
+      a threshold level of delay, the Queue Protection algorithm can rapidly
+      detect the flows most likely to be responsible. It can then prevent harm
+      to other traffic in the low-latency queue by ejecting selected packets
+      (or all packets) of these flows. This document is designed for four audiences: a) congestion control designers who need to understand how
+ to keep on the "good" side of the algorithm; b) implementers of the
+ algorithm who want to understand it in more depth; c) designers of
+ algorithms with similar goals, perhaps for non-DOCSIS scenarios; and
+ d) researchers interested in evaluating the algorithm.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This is a contribution to the RFC Series, independently of any
+            other RFC stream.  The RFC Editor has chosen to publish this
+            document at its discretion and makes no statement about its value
+            for implementation or deployment.  Documents approved for
+            publication by the RFC Editor are not candidates for any level of
+            Internet Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9957">https://www.rfc-editor.org/info/rfc9957</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-document-roadmap" class="internal xref">Document Roadmap</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-source-material" class="internal xref">Source Material</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-approach-in-brief" class="internal xref">Approach (In Brief)</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-mechanism" class="internal xref">Mechanism</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-policy" class="internal xref">Policy</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2.2.1">
+                    <p id="section-toc.1-1.2.2.2.2.1.1"><a href="#section-2.2.1" class="auto internal xref">2.2.1</a>.  <a href="#name-policy-conditions" class="internal xref">Policy Conditions</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2.2.2">
+                    <p id="section-toc.1-1.2.2.2.2.2.1"><a href="#section-2.2.2" class="auto internal xref">2.2.2</a>.  <a href="#name-policy-action" class="internal xref">Policy Action</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-necessary-flow-behaviour" class="internal xref">Necessary Flow Behaviour</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-pseudocode-walk-through" class="internal xref">Pseudocode Walk-Through</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-input-parameters-constants-" class="internal xref">Input Parameters, Constants, and Variables</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-qprot-data-path" class="internal xref">QProt  Data Path</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-the-qprotect-function" class="internal xref">The qprotect() Function</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-the-pick_bucket-function" class="internal xref">The pick_bucket() Function</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-the-fill_bucket-function" class="internal xref">The fill_bucket() Function</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.4">
+                    <p id="section-toc.1-1.4.2.2.2.4.1"><a href="#section-4.2.4" class="auto internal xref">4.2.4</a>.  <a href="#name-the-calcprobnative-function" class="internal xref">The calcProbNative() Function</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-rationale" class="internal xref">Rationale</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-rationale-blame-for-queuing" class="internal xref">Rationale: Blame for Queuing, Not for Rate in Itself</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-rationale-constant-aging-of" class="internal xref">Rationale: Constant Aging of the Queuing Score</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-rationale-transformed-queui" class="internal xref">Rationale: Transformed Queuing Score</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-rationale-policy-conditions" class="internal xref">Rationale: Policy Conditions</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-rationale-reclassification-" class="internal xref">Rationale: Reclassification as the Policy Action</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-limitations" class="internal xref">Limitations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-resource-exhaustion-attacks" class="internal xref">Resource Exhaustion Attacks</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.1">
+                    <p id="section-toc.1-1.8.2.1.2.1.1"><a href="#section-8.1.1" class="auto internal xref">8.1.1</a>.  <a href="#name-exhausting-flow-state-stora" class="internal xref">Exhausting Flow State Storage</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.2">
+                    <p id="section-toc.1-1.8.2.1.2.2.1"><a href="#section-8.1.2" class="auto internal xref">8.1.2</a>.  <a href="#name-exhausting-processing-resou" class="internal xref">Exhausting Processing Resources</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-comments-solicited" class="internal xref">Comments Solicited</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="qp_intro">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This Informational RFC explains the specification of the queue
+      protection (QProt) algorithm introduced into DOCSIS technology at version 3.1
+      <span>[<a href="#DOCSIS" class="cite xref">DOCSIS</a>]</span>.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Although the algorithm is defined in Annex P of <span>[<a href="#DOCSIS" class="cite xref">DOCSIS</a>]</span>, it relies on cross references to other parts of the
+      set of specifications. This document pulls all the strands together into one
+      self-contained document. The core of the document is a similar
+      pseudocode walk-through to that in the DOCSIS specification, but it also includes
+      additional material:<a href="#section-1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="i" class="normal type-i" id="section-1-3">
+ <li id="section-1-3.1">a brief overview,<a href="#section-1-3.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.2">a definition of how a data
+ sender needs to behave to avoid triggering queue protection, and<a href="#section-1-3.2" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.3">a
+      section giving the rationale for the design choices.<a href="#section-1-3.3" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-1-4">Low queuing delay depends on hosts sending their data smoothly,
+      either at a low rate or responding to Explicit Congestion Notification
+      (ECN) (see <span>[<a href="#RFC8311" class="cite xref">RFC8311</a>]</span> and <span>[<a href="#RFC9331" class="cite xref">RFC9331</a>]</span>). Therefore, low-latency queuing
+      is something hosts create themselves, not something the network
+      gives them. This tends to ensure that self-interest alone does not drive
+      flows to mismark their packets for the low-latency queue. However,
+      traffic from an application that does not behave in a non-queue-building
+      way might erroneously be classified into a low-latency queue, whether
+      accidentally or maliciously. QProt protects other traffic in the low-latency queue from the harm due to excess queuing that would otherwise
+      be caused by such anomalous behaviour.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">In normal scenarios without misclassified traffic, QProt is not
+      expected to intervene at all in the classification or forwarding of
+      packets.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">An overview of how low-latency support has been added to DOCSIS
+      technology is given in <span>[<a href="#LLD" class="cite xref">LLD</a>]</span>. In each direction of a
+      DOCSIS link (upstream and downstream), there are two queues: one for Low-Latency (LL) and one for Classic traffic, in an arrangement similar to
+      the IETF's Dual-Queue Coupled Active Queue Management (AQM) <span>[<a href="#RFC9332" class="cite xref">RFC9332</a>]</span>. The two queues
+      enable a transition from "Classic" to "Scalable" congestion control so
+      that low latency can become the norm for any application, including ones
+      seeking both full throughput and low latency, not just low-rate
+      applications that have been more traditionally associated with a low-latency service.  The Classic queue is only necessary for traffic such as
+      traditional (Reno <span>[<a href="#RFC5681" class="cite xref">RFC5681</a>]</span> / Cubic <span>[<a href="#RFC9438" class="cite xref">RFC9438</a>]</span>) TCP that needs about a round trip of buffering
+      to fully utilize the link; therefore, this traffic has no incentive to mismark
+      itself as low latency. The QProt function is located at the ingress to
+      the Low-Latency queue. Therefore, in the upstream, QProt is located on
+      the cable modem (CM); in the downstream, it is located on the 
+      CM Termination System (CMTS). If an arriving packet triggers queue
+      protection, the QProt algorithm ejects the packet from the Low-Latency
+      queue and reclassifies it into the Classic queue.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">If QProt is used in settings other than DOCSIS links, it would be a
+      simple matter to detect queue-building flows by using slightly different
+      conditions and/or to trigger a different action as a consequence, as
+      appropriate for the scenario, e.g., dropping instead of reclassifying
+      packets or perhaps accumulating a second per-flow score to decide
+      whether to redirect a whole flow rather than just certain packets. Such
+      work is for future study and out of scope of the present document.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">The QProt algorithm is based on a rigorous approach to quantifying how much
+      each flow contributes to congestion, which is used in economics to
+      allocate responsibility for the cost of one party's behaviour on others
+      (the economic externality). Another important feature of the approach is
+      that the metric used for the queuing score is based on the same variable
+      that determines the level of ECN signalling seen by the sender (see <span>[<a href="#RFC8311" class="cite xref">RFC8311</a>]</span> and <span>[<a href="#RFC9331" class="cite xref">RFC9331</a>]</span>). This makes the internal
+      queuing score visible externally as ECN markings. This transparency is
+      necessary to be able to objectively state (in <a href="#qp_nec_flow_behaviour" class="auto internal xref">Section 3</a>) how a flow can keep on the "good" side
+      of the algorithm.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<section id="section-1.1">
+        <h3 id="name-document-roadmap">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-document-roadmap" class="section-name selfRef">Document Roadmap</a>
+        </h3>
+<p id="section-1.1-1">The core of the document is the walk-through of the DOCSIS QProt
+        algorithm's pseudocode in <a href="#qp_walk-through" class="auto internal xref">Section 4</a>.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">Prior to that, <a href="#qp_approach" class="auto internal xref">Section 2</a> summarizes the approach
+        used in the algorithm. Then, <a href="#qp_nec_flow_behaviour" class="auto internal xref">Section 3</a>
+        considers QProt from the perspective of the end-system by defining
+        the behaviour that a flow needs to comply with to avoid the QProt
+        algorithm ejecting its packets from the low-latency queue.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3"><a href="#qp_rationale" class="auto internal xref">Section 5</a> gives deeper insight into the
+        principles and rationale behind the algorithm. Then, <a href="#qp_limitations" class="auto internal xref">Section 6</a> explains the limitations of the approach.  The usual closing sections follow.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="l4sds_Terminology">
+<section id="section-1.2">
+        <h3 id="name-terminology">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.2-1">The normative language for the DOCSIS QProt algorithm is in the
+        DOCSIS specifications <span>[<a href="#DOCSIS" class="cite xref">DOCSIS</a>]</span>, <span>[<a href="#DOCSIS-CM-OSS" class="cite xref">DOCSIS-CM-OSS</a>]</span>, and
+        <span>[<a href="#DOCSIS-CCAP-OSS" class="cite xref">DOCSIS-CCAP-OSS</a>]</span>: not in this Informational RFC. If
+        there is any inconsistency, the DOCSIS specifications take precedence.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<p id="section-1.2-2">The following terms and abbreviations are used:<a href="#section-1.2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-1.2-3">
+          <dt id="section-1.2-3.1">CM:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.2">Cable Modem<a href="#section-1.2-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.3">CMTS:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.4">CM Termination System<a href="#section-1.2-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.5">Congestion-rate:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.6">The transmission rate counting only bits or
+            bytes contained within packets of a flow that have the Congestion Experienced (CE)
+            codepoint set in the IP-ECN field <span>[<a href="#RFC3168" class="cite xref">RFC3168</a>]</span>
+            (including IP headers unless specified otherwise).
+            Congestion-bit-rate and congestion-volume were introduced in <span>[<a href="#RFC7713" class="cite xref">RFC7713</a>]</span> and <span>[<a href="#RFC6789" class="cite xref">RFC6789</a>]</span>.<a href="#section-1.2-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.7">DOCSIS:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.8">Data-Over-Cable Service Interface
+            Specification. "DOCSIS" is a registered trademark of Cable
+            Television Laboratories, Inc. ("CableLabs").<a href="#section-1.2-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.9">QProt:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.10">The DOCSIS Queue Protection function<a href="#section-1.2-3.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.11">non-queue-building:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.12">
+            <p id="section-1.2-3.12.1">A flow that tends not to build a queue.<a href="#section-1.2-3.12.1" class="pilcrow">¶</a></p>
+<p id="section-1.2-3.12.2">Note the use of lowercase "non-queue-building", which describes the behaviour
+            of a flow, in contrast to uppercase Non-Queue-Building (NQB), 
+            which refers to a Diffserv marking <span>[<a href="#RFC9956" class="cite xref">RFC9956</a>]</span>. 
+            A flow identifying itself as uppercase NQB may not, in fact, behave in a 
+            non-queue-building way, which is what the QProt algorithm is
+            intended to detect.<a href="#section-1.2-3.12.2" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.13">queue-building:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.14">A flow that builds a queue. If it is
+            classified into the Low-Latency queue, it is therefore a candidate
+            for the QProt  algorithm to detect and sanction.<a href="#section-1.2-3.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.15">ECN:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.16">Explicit Congestion Notification <span>[<a href="#RFC3168" class="cite xref">RFC3168</a>]</span><a href="#section-1.2-3.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-1.2-3.17">ECN marking or ECN signalling:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.2-3.18">Setting the IP-ECN field of an increasing proportion of packets to the
+            Congestion Experienced (CE) codepoint <span>[<a href="#RFC3168" class="cite xref">RFC3168</a>]</span> as queuing worsens.<a href="#section-1.2-3.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="source">
+<section id="section-1.3">
+        <h3 id="name-source-material">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-source-material" class="section-name selfRef">Source Material</a>
+        </h3>
+<p id="section-1.3-1">Parts of this document are reproduced from <span>[<a href="#DOCSIS" class="cite xref">DOCSIS</a>]</span> with kind permission of Cable Television Laboratories, Inc. ("CableLabs").<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="qp_approach">
+<section id="section-2">
+      <h2 id="name-approach-in-brief">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-approach-in-brief" class="section-name selfRef">Approach (In Brief)</a>
+      </h2>
+<p id="section-2-1">The QProt algorithm is divided into mechanism and policy. There is only a
+      tiny amount of policy code, but policy might need to be changed in the
+      future. So, where hardware implementation is being considered, it would
+      be advisable to implement the policy aspects in firmware or
+      software:<a href="#section-2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1">
+          <p id="section-2-2.1.1">The mechanism aspects identify flows, maintain flow state, and
+          accumulate per-flow queuing scores;<a href="#section-2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.2">
+          <p id="section-2-2.2.1">The policy aspects can be divided into conditions and
+          actions:<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.2.2.1">
+              <p id="section-2-2.2.2.1.1">The conditions are the logic that determines when action
+              should be taken to avert the risk of queuing delay becoming
+              excessive;<a href="#section-2-2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-2-2.2.2.2">
+              <p id="section-2-2.2.2.2.1">The actions determine how this risk is averted, e.g., by
+              redirecting packets from a flow into another queue or by
+              reclassifying a whole flow that seems to be misclassified.<a href="#section-2-2.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+      </ul>
+<div id="qp_approach_mechanism">
+<section id="section-2.1">
+        <h3 id="name-mechanism">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-mechanism" class="section-name selfRef">Mechanism</a>
+        </h3>
+<p id="section-2.1-1">The algorithm maintains per-flow state, where "flow" usually means
+        an end-to-end (Layer 4) 5-tuple. The flow state consists of a queuing
+        score that decays over time. Indeed, it is transformed into time units
+        so that it represents the flow state's own expiry time (explained in
+        <a href="#qp_rationale_normalize" class="auto internal xref">Section 5.3</a>). A higher queuing score
+        pushes out the expiry time further.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">Non-queue-building flows tend to release their flow state rapidly:
+        it usually expires reasonably early in the gap between the packets
+        of a normal flow. Then, the memory can be recycled for packets from
+        other flows that arrive in-between. Thus, only queue-building flows hold
+        flow state persistently.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3">The simplicity and effectiveness of the algorithm is due to the
+        definition of the queuing score. The queueing score represents the
+        share of blame for queuing that each flow bears. The scoring algorithm
+        uses the same internal variable, probNative, that the AQM for the low-latency queue uses to ECN-mark packets.  (The other two forms of
+        marking, Classic and coupled, are driven by Classic traffic;
+        therefore, they are not relevant to protection of the LL queue). In this way,
+        the queuing score accumulates the size of each arriving packet of a
+        flow but scaled by the value of probNative (in the range 0 to 1) at
+        the instant the packet arrives. Therefore, a flow's score accumulates faster:<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.1-4.1">the higher the degree of queuing and<a href="#section-2.1-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-2.1-4.2">the faster the flow's
+          packets arrive when there is queuing.<a href="#section-2.1-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-2.1-5"><a href="#qp_rationale_not_throughput" class="auto internal xref">Section 5.1</a> explains further why this score
+        represents blame for queuing.<a href="#section-2.1-5" class="pilcrow">¶</a></p>
+<p id="section-2.1-6">Thus, the algorithm accumulates a queuing score that
+        would rise at the so-called congestion-rate of the flow (see
+        <a href="#l4sds_Terminology" class="auto internal xref">Section 1.2</a>), i.e., the
+        rate at which the flow is contributing to congestion or the rate at
+        which the AQM is forwarding bytes of the flow that are ECN-marked.
+        However, rather than growing continually, the queuing score is also
+        reduced (or "aged") at a constant rate. This is because it is
+        unavoidable for capacity-seeking flows to induce a continuous low
+        level of congestion as they track available capacity. <a href="#qp_rationale_aging" class="auto internal xref">Section 5.2</a> explains why this allowance can be set
+        to the same constant for any scalable flow, whatever its bit rate.  As a result, the queuing score rises (or falls) according to the difference between the congestion-rate of the flow and the allowed aging rate.<a href="#section-2.1-6" class="pilcrow">¶</a></p>
+<p id="section-2.1-7">For implementation efficiency, the queuing score is transformed
+        into time units. It then represents the expiry time of the flow
+        state (as already discussed above). Then, it does not need to be
+        explicitly aged because the natural passage of time implicitly "ages"
+        an expiry time. The transformation into time units simply involves
+        dividing the queuing score of each packet by the constant aging rate
+        (this is explained further in <a href="#qp_rationale_normalize" class="auto internal xref">Section 5.3</a>).<a href="#section-2.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_approach_policy">
+<section id="section-2.2">
+        <h3 id="name-policy">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-policy" class="section-name selfRef">Policy</a>
+        </h3>
+<section id="section-2.2.1">
+          <h4 id="name-policy-conditions">
+<a href="#section-2.2.1" class="section-number selfRef">2.2.1. </a><a href="#name-policy-conditions" class="section-name selfRef">Policy Conditions</a>
+          </h4>
+<p id="section-2.2.1-1">The algorithm uses the queuing score to determine whether to
+          eject each packet only at the time it first arrives. This limits the
+          policies available. For instance, when queueing delay exceeds a
+          threshold, it is not feasible to eject a packet from the flow with
+          the highest queuing score because that would involve searching
+          the queue for such a packet (if, indeed, one were still in the queue).
+          Nonetheless, it is still possible to develop a policy that protects
+          the low latency of the queue by making the queuing score threshold
+          stricter the greater the excess of queuing delay relative to the
+          threshold (this is explained in <a href="#qp_rationale_conditions" class="auto internal xref">Section 5.4</a>).<a href="#section-2.2.1-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-2.2.2">
+          <h4 id="name-policy-action">
+<a href="#section-2.2.2" class="section-number selfRef">2.2.2. </a><a href="#name-policy-action" class="section-name selfRef">Policy Action</a>
+          </h4>
+<p id="section-2.2.2-1">At the time of writing, the DOCSIS QProt specification states that, when the policy
+          conditions are met, the action taken to protect the low-latency queue
+          is to reclassify a packet into the Classic queue (this is justified in <a href="#qp_rationale_reclassify" class="auto internal xref">Section 5.5</a>).<a href="#section-2.2.2-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+</section>
+</div>
+<div id="qp_nec_flow_behaviour">
+<section id="section-3">
+      <h2 id="name-necessary-flow-behaviour">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-necessary-flow-behaviour" class="section-name selfRef">Necessary Flow Behaviour</a>
+      </h2>
+<p id="section-3-1">The QProt algorithm described here can be used for responsive and/or
+      unresponsive flows.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-2.1">
+          <p id="section-3-2.1.1">It is possible to objectively describe the least responsive way
+          that a flow will need to respond to congestion signals in order to
+          avoid triggering queue protection, no matter the link capacity and
+          no matter how much other traffic there is.<a href="#section-3-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-2.2">
+          <p id="section-3-2.2.1">It is not possible to describe how fast or smooth an unresponsive
+          flow should be to avoid queue protection because this depends on
+          how much other traffic there is and the capacity of the link, which
+          an application is unable to know. However, the more smoothly an
+          unresponsive flow paces its packets and the lower its rate relative
+          to typical broadband link capacities, the less likelihood that it
+          will risk causing enough queueing to trigger queue protection.<a href="#section-3-2.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-3-3">Responsive low-latency flows can use a Low Latency, Low Loss, and Scalable throughput (L4S) ECN codepoint <span>[<a href="#RFC9331" class="cite xref">RFC9331</a>]</span> to get classified into the low-latency queue.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">A sender can arrange for flows that are smooth but do not respond to
+      ECN marking to be classified into the low-latency queue by using the
+      Non-Queue-Building (NQB) Diffserv codepoint <span>[<a href="#RFC9956" class="cite xref">RFC9956</a>]</span>, which the DOCSIS specifications support, or an
+      operator can use various other local classifiers.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">As already explained in <a href="#qp_approach_mechanism" class="auto internal xref">Section 2.1</a>, the
+      QProt algorithm is driven from the same variable that drives the ECN-marking probability in the Low-Latency or "LL" queue (the "Native" AQM
+      of the LL queue is defined in the Immediate Active Queue Management
+      Annex of <span>[<a href="#DOCSIS" class="cite xref">DOCSIS</a>]</span>). The algorithm that calculates this
+      internal variable is run on the arrival of every LL packet, whether or not it is
+      ECN-capable, so that it can be used by the QProt algorithm. But
+      the variable is only used to ECN-mark packets that are ECN-capable.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">Not only does this dual use of the variable improve processing
+      efficiency, but it also makes the basis of the QProt algorithm visible
+      and transparent, at least for responsive ECN-capable flows. Then, it is
+      possible to state objectively that a flow can avoid triggering queue
+      protection by keeping the bit rate of ECN-marked packets (the
+      congestion-rate) below AGING, which is a configured constant of the
+      algorithm (default 2^19 B/s ≈ 4 Mb/s). Note that it is in a congestion
+      controller's own interest to keep its average congestion-rate well below
+      this level (e.g., ~1 Mb/s) to ensure that it does not trigger queue
+      protection during transient dynamics.<a href="#section-3-6" class="pilcrow">¶</a></p>
+<p id="section-3-7">If the QProt algorithm is used in other settings, it would still need
+      to be based on the visible level of congestion signalling, in a similar
+      way to the DOCSIS approach. Without transparency of the basis of the
+      algorithm's decisions, end-systems would not be able to avoid triggering
+      queue protection on an objective basis.<a href="#section-3-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_walk-through">
+<section id="section-4">
+      <h2 id="name-pseudocode-walk-through">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-pseudocode-walk-through" class="section-name selfRef">Pseudocode Walk-Through</a>
+      </h2>
+<div id="qp_header_file">
+<section id="section-4.1">
+        <h3 id="name-input-parameters-constants-">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-input-parameters-constants-" class="section-name selfRef">Input Parameters, Constants, and Variables</a>
+        </h3>
+<p id="section-4.1-1">The operator input parameters that set the parameters in the first
+        two blocks of pseudocode below are defined for cable modems (CMs) in
+        <span>[<a href="#DOCSIS-CM-OSS" class="cite xref">DOCSIS-CM-OSS</a>]</span> and for CMTSs in <span>[<a href="#DOCSIS-CCAP-OSS" class="cite xref">DOCSIS-CCAP-OSS</a>]</span>. Then, further constants are either derived
+        from the input parameters or hard-coded.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">Defaults and units are shown in square brackets. Defaults (or
+        indeed any aspect of the QProt algorithm) are subject to change, so the
+        latest DOCSIS specifications are the definitive references. Also, any operator
+        might set certain parameters to non-default values.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.1-3">
+<pre>&lt;CODE BEGINS&gt;
+// Input Parameters
+MAX_RATE;          // Configured maximum sustained rate [b/s]
+QPROTECT_ON;       // Queue Protection is enabled [Default: TRUE]
+CRITICALqL_us;     // LL queue threshold delay [µs] Default: MAXTH_us
+CRITICALqLSCORE_us;// The threshold queuing score [Default: 4000 µs]
+LG_AGING;          // The aging rate of the q'ing score [Default: 19]
+                   //  as log base 2 of the congestion-rate [lg(B/s)]
+
+// Input Parameters for the calcProbNative() algorithm:
+MAXTH_us;          // Max LL AQM marking threshold [Default: 1000 µs]
+LG_RANGE;          // Log base 2 of the range of ramp [lg(ns)]
+                   //  Default: 2^19 = 524288 ns (roughly 525 µs)
+&lt;CODE ENDS&gt;</pre><a href="#section-4.1-3" class="pilcrow">¶</a>
+</div>
+<div class="lang-pseudocode sourcecode" id="section-4.1-4">
+<pre>&lt;CODE BEGINS&gt;
+// Constants, either derived from input parameters or hard-coded
+T_RES;                                    // Resolution of t_exp [ns]
+                                          // Convert units (approx)
+AGING = pow(2, (LG_AGING-30) ) * T_RES;   // lg([B/s]) to [B/T_RES]
+CRITICALqL = CRITICALqL_us * 1000;        // [µs] to [ns]
+CRITICALqLSCORE = CRITICALqLSCORE_us * 1000/T_RES; // [µs] to [T_RES]
+// Threshold for the q'ing score condition
+CRITICALqLPRODUCT = CRITICALqL * CRITICALqLSCORE;
+qLSCORE_MAX = 5E9 / T_RES;           // Max queuing score = 5 s
+
+ATTEMPTS = 2; // Max attempts to pick a bucket (vendor-specific)
+BI_SIZE = 5;  // Bit-width of index number for non-default buckets
+NBUCKETS = pow(2, BI_SIZE);  // No. of non-default buckets
+MASK = NBUCKETS-1;     // convenient constant, with BI_SIZE LSBs set
+
+                       // Queue Protection exit states
+EXIT_SUCCESS  = 0;     // Forward the packet
+EXIT_SANCTION = 1;     // Redirect the packet
+
+MAX_PROB      = 1; // For integer arithmetic, would use a large int
+                   //  e.g., 2^31, to allow space for overflow
+MAXTH = MAXTH_us * 1000;   // Max marking threshold [ns]
+MAX_FRAME_SIZE = 2000;  // DOCSIS-wide constant [B]
+// Minimum marking threshold of 2 MTU for slow links [ns]
+FLOOR =  2 * 8 * MAX_FRAME_SIZE * 10^9 / MAX_RATE;
+RANGE = (1 &lt;&lt; LG_RANGE);      // Range of ramp [ns]
+MINTH = max ( MAXTH - RANGE, FLOOR);
+MAXTH = MINTH + RANGE;           // Max marking threshold [ns]
+&lt;CODE ENDS&gt;</pre><a href="#section-4.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-5">Throughout the pseudocode, most variables are integers. The only
+        exceptions are floating-point variables representing probabilities
+        (MAX_PROB and probNative) and the AGING parameter. The actual DOCSIS
+        QProt algorithm is defined using integer arithmetic, but in the
+        floating-point arithmetic used in this document, 0 &lt;= probNative
+        &lt;= 1. Also, the pseudocode omits overflow checking and it would
+        need to be made robust to non-default input parameters.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1-6">The resolution for expressing time, T_RES, needs to be chosen to
+        ensure that expiry times for buckets can represent times that are a
+        fraction (e.g., 1/10) of the expected packet interarrival time for the
+        system.<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.1-7">The following definitions explain the purpose of important
+        variables and functions.<a href="#section-4.1-7" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.1-8">
+<pre>&lt;CODE BEGINS&gt;
+// Public variables:
+qdelay;        // The current queuing delay of the LL queue [ns]
+probNative;    // Native marking probability of LL queue within [0,1]
+
+// External variables
+packet;            // The structure holding packet header fields
+packet.size;       // The size of the current packet [B]
+packet.uflow;      // The flow identifier of the current packet
+                   //  (e.g., 5-tuple or 4-tuple if IPsec)
+
+// Irrelevant details of DOCSIS function to return qdelay are removed
+qdelayL(...)      // Returns current delay of the low-latency Q [ns]
+&lt;CODE ENDS&gt;</pre><a href="#section-4.1-8" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-9">Pseudocode for how the algorithm categorizes packets by flow ID to
+        populate the variable packet.uflow is not given in detail here. The
+        application's flow ID is usually defined by a common 5-tuple (or
+        4-tuple) of:<a href="#section-4.1-9" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-10.1">
+            <p id="section-4.1-10.1.1">source and destination IP addresses of the innermost IP header
+            found;<a href="#section-4.1-10.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-10.2">
+            <p id="section-4.1-10.2.1">the protocol (IPv4) or next header (IPv6) field in this IP
+            header<a href="#section-4.1-10.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-10.3">
+            <p id="section-4.1-10.3.1">either of:<a href="#section-4.1-10.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-10.3.2.1">
+                <p id="section-4.1-10.3.2.1.1">source and destination port numbers, for TCP, UDP,
+                UDP-Lite, Stream Control Transmission Protocol (SCTP), Datagram Congestion Control Protocol (DCCP), etc.<a href="#section-4.1-10.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-4.1-10.3.2.2">
+                <p id="section-4.1-10.3.2.2.1">Security Parameter Index (SPI) for IPsec Encapsulating
+                Security Payload (ESP) <span>[<a href="#RFC4303" class="cite xref">RFC4303</a>]</span>.<a href="#section-4.1-10.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+        </ul>
+<p id="section-4.1-11">The Microflow Classification section of the Queue Protection
+        Annex of the DOCSIS specification <span>[<a href="#DOCSIS" class="cite xref">DOCSIS</a>]</span> defines various
+        strategies to find these headers by skipping extension headers or
+        encapsulations. If they cannot be found, the specification defines
+        various less-specific 3-tuples that would be used. The DOCSIS
+        specification should be referred to for all these strategies, which will
+        not be repeated here.<a href="#section-4.1-11" class="pilcrow">¶</a></p>
+<p id="section-4.1-12">The array of bucket structures defined below is used by all the
+        QProt  functions:<a href="#section-4.1-12" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.1-13">
+<pre>&lt;CODE BEGINS&gt;
+struct bucket { // The leaky bucket structure to hold per-flow state
+   id;          // identifier (e.g., 5-tuple) of flow using bucket
+   t_exp;       // expiry time in units of T_RES
+                // (t_exp - now) = flow's transformed q'ing score
+};
+struct bucket buckets[NBUCKETS+1];
+&lt;CODE ENDS&gt;</pre><a href="#section-4.1-13" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="qp_data_path">
+<section id="section-4.2">
+        <h3 id="name-qprot-data-path">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-qprot-data-path" class="section-name selfRef">QProt  Data Path</a>
+        </h3>
+<p id="section-4.2-1">All the functions of QProt  operate on the data path,
+        driven by packet arrivals.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The following functions that maintain per-flow queuing scores and
+        manage per-flow state are considered primarily as mechanism:<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2-3">
+<pre>
+    pick_bucket(uflow_id);              // Returns bucket identifier
+    fill_bucket(bucket_id, pkt_size, probNative); /* Returns queuing
+                                                   * score */
+    calcProbNative(qdelay); /* Returns ECN-marking probability of the
+                             * Native LL AQM */</pre><a href="#section-4.2-3" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2-4">The following function is primarily concerned with
+        policy:<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2-5">
+<pre>
+    qprotect(packet, ...); /* Returns exit status to either forward
+                            * or redirect the packet */</pre><a href="#section-4.2-5" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2-6">('...' suppresses distracting detail.)<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.2-7">Future modifications to policy aspects are more likely than modifications to
+        mechanisms. Therefore, policy aspects would be less appropriate
+        candidates for any hardware acceleration.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
+<p id="section-4.2-8">The entry point to these functions is qprotect(), which is called
+        after packet classification and AQM (including ECN marking) yet before each packet is enqueued into the
+        appropriate queue, queue_id, as follows:<a href="#section-4.2-8" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2-9">
+<pre>&lt;CODE BEGINS&gt;
+classifier(packet) {
+   // Determine which queue using ECN, DSCP, and any local-use fields
+   queue_id = classify(packet);
+   //  LQ &amp; CQ are macros for valid queue IDs returned by classify()
+   if (queue_id == LQ) {
+      // if packet classified to Low-Latency Service Flow
+      aqm_mark(packet); // apply ECN marking, as needed based on AQM
+      if (QPROTECT_ON) {
+         if (qprotect(packet, ...) == EXIT_SANCTION) {
+            // redirect packet to Classic Service Flow
+            queue_id = CQ;
+         }
+      }
+   return queue_id;
+}
+&lt;CODE ENDS&gt;</pre><a href="#section-4.2-9" class="pilcrow">¶</a>
+</div>
+<div id="qp_qprotect">
+<section id="section-4.2.1">
+          <h4 id="name-the-qprotect-function">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-the-qprotect-function" class="section-name selfRef">The qprotect() Function</a>
+          </h4>
+<p id="section-4.2.1-1">On each packet arrival at the Low-Latency (LL) queue, qprotect() measures the
+          current delay of the LL queue and derives the Native LL marking
+          probability from it. Then, it uses pick_bucket to find the bucket
+          already holding the flow's state or to allocate a new bucket if the
+          flow is new or its state has expired (the most likely case). Then,
+          the queuing score is updated by the fill_bucket() function. That
+          completes the mechanism aspects.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">The comments against the subsequent policy conditions and actions
+          should be self-explanatory at a superficial level. The deeper
+          rationale for these conditions is given in <a href="#qp_rationale_conditions" class="auto internal xref">Section 5.4</a>.<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2.1-3">
+<pre>&lt;CODE BEGINS&gt;
+// Per-packet Queue Protection
+qprotect(packet, ...) {
+
+   bckt_id;   // bucket index
+   qLscore;   // queuing score of pkt's flow in units of T_RES
+
+   qdelay = qL.qdelay(...);
+   probNative = calcProbNative(qdelay);
+
+   bckt_id = pick_bucket(packet.uflow);
+   qLscore = fill_bucket(buckets[bckt_id], packet.size, probNative);
+
+   // Determine whether to sanction packet
+   if ( ( ( qdelay &gt; CRITICALqL ) // Test if qdelay over threshold...
+      // ...and if flow's q'ing score scaled by qdelay/CRITICALqL
+      // ...exceeds CRITICALqLSCORE
+      &amp;&amp; ( qdelay * qLscore &gt; CRITICALqLPRODUCT ) )
+      // or qLSCORE_MAX reached
+      || ( qLscore &gt;= qLSCORE_MAX ) )
+
+      return EXIT_SANCTION;
+
+   else
+      return EXIT_SUCCESS;
+}
+&lt;CODE ENDS&gt;</pre><a href="#section-4.2.1-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="qp_pick_bucket">
+<section id="section-4.2.2">
+          <h4 id="name-the-pick_bucket-function">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-the-pick_bucket-function" class="section-name selfRef">The pick_bucket() Function</a>
+          </h4>
+<p id="section-4.2.2-1">The pick_bucket() function is optimized for flow state that will
+          normally have expired from packet to packet of the same flow. It is
+          just one way of finding the bucket associated with the flow ID of
+          each packet: it might be possible to develop more efficient
+          alternatives.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">The algorithm is arranged so that the bucket holding any live
+          (non-expired) flow state associated with a packet will always be
+          found before a new bucket is allocated. The constant ATTEMPTS,
+          defined earlier, determines how many hashes are used to find a
+          bucket for each flow.  (Actually, only one hash is generated; then, by
+          default, 5 bits of it at a time are used as the hash value because,
+          by default, there are 2^5 = 32 buckets).<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">The algorithm stores the flow's own ID in its flow state. So,
+          when a packet of a flow arrives, the algorithm tries up to ATTEMPTS
+          times to hash to a bucket, looking for the flow's own ID. If found,
+          it uses that bucket, first resetting the expiry time to "now" if it
+          has expired.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-4">If it does not find the flow's ID, and the expiry time is still
+          current, the algorithm can tell that another flow is using that
+          bucket, and it continues to look for a bucket for the flow. Even if
+          it finds another flow's bucket where the expiry time has passed, it
+          doesn't immediately use it. It merely remembers it as the potential
+          bucket to use. But first it runs through all the ATTEMPTS hashes to
+          look for a bucket assigned to the flow ID. Then, if a live bucket is
+          not already associated with the packet's flow, the algorithm should
+          have already set aside an existing bucket with a score that has aged
+          out. Given this bucket is no longer necessary to hold state for its
+          previous flow, it can be recycled for use by the present packet's
+          flow.<a href="#section-4.2.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-5">If all else fails, there is one additional bucket (called the
+          dregs) that can be used. If the dregs is still in live use by
+          another flow, subsequent flows that cannot find a bucket of their
+          own all share it, adding their score to the one in the dregs. A flow
+          might get away with using the dregs on its own, but when there are
+          many mismarked flows, multiple flows are more likely to collide in
+          the dregs, including innocent flows. The choice of number of buckets
+          and number of hash attempts determines how likely it will be that
+          this undesirable scenario will occur.<a href="#section-4.2.2-5" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2.2-6">
+<pre>&lt;CODE BEGINS&gt;
+// Pick the bucket associated with flow uflw
+pick_bucket(uflw) {
+
+   now;                      // current time
+   j;                        // loop counter
+   h32;                      // holds hash of the packet's flow IDs
+   h;                        // bucket index being checked
+   hsav;                     // interim chosen bucket index
+
+   h32   = hash32(uflw);     // 32-bit hash of flow ID
+   hsav  = NBUCKETS;         // Default bucket
+   now   = get_time_now();   // in units of T_RES
+
+   // The for loop checks ATTEMPTS buckets for ownership by flow ID
+   // It also records the 1st bucket, if any, that could be recycled
+   // because it's expired.
+   // Must not recycle a bucket until all ownership checks completed
+   for (j=0; j&lt;ATTEMPTS; j++) {
+      // Use least signif. BI_SIZE bits of hash for each attempt
+      h = h32 &amp; MASK;
+      if (buckets[h].id == uflw) {    // Once uflw's bucket found...
+         if (buckets[h].t_exp &lt;= now) // ...if bucket has expired...
+            buckets[h].t_exp = now;   // ...reset it
+         return h;                    // Either way, use it
+      }
+      else if ( (hsav == NBUCKETS)  // If not seen expired bucket yet
+                                    //  and this bucket has expired
+           &amp;&amp; (buckets[h].t_exp &lt;= now) ) {
+         hsav = h;                  // set it as the interim bucket
+      }
+      h32 &gt;&gt;= BI_SIZE;          // Bit-shift hash for next attempt
+   }
+   // If reached here, no tested bucket was owned by the flow ID
+   if (hsav != NBUCKETS) {
+      // If here, found an expired bucket within the above for loop
+      buckets[hsav].t_exp = now;              // Reset expired bucket
+   } else {
+      // If here, we're having to use the default bucket (the dregs)
+      if (buckets[hsav].t_exp &lt;= now) {   // If dregs has expired...
+         buckets[hsav].t_exp = now;       // ...reset it
+      }
+   }
+   buckets[hsav].id = uflw; // In either case, claim for recycling
+   return hsav;
+}
+&lt;CODE ENDS&gt;</pre><a href="#section-4.2.2-6" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="qp_fill_bucket">
+<section id="section-4.2.3">
+          <h4 id="name-the-fill_bucket-function">
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-the-fill_bucket-function" class="section-name selfRef">The fill_bucket() Function</a>
+          </h4>
+<p id="section-4.2.3-1">The fill_bucket() function both accumulates and ages the queuing
+          score over time, as outlined in <a href="#qp_approach_mechanism" class="auto internal xref">Section 2.1</a>. To make aging the score efficient,
+          the increment of the queuing score is transformed into units of time
+          by dividing by AGING so that the result represents the new expiry
+          time of the flow.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-2">Given that probNative is already used to select which packets to
+          ECN-mark, it might be thought that the queuing score could just be
+          incremented by the full size of each selected packet, instead of
+          incrementing it by the product of every packet's size (pkt_sz) and
+          probNative. However, the unpublished experience of one of the
+          authors with other congestion policers has found that the score then
+          increments far too jumpily, particularly when probNative is low.<a href="#section-4.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-3">A deeper explanation of the queuing score is given in <a href="#qp_rationale" class="auto internal xref">Section 5</a>.<a href="#section-4.2.3-3" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2.3-4">
+<pre>&lt;CODE BEGINS&gt;
+fill_bucket(bckt_id, pkt_sz, probNative) {
+   now;                                       // current time
+   now = get_time_now();                      // in units of T_RES
+   // Add packet's queuing score
+   // For integer arithmetic, a bit-shift can replace the division
+   qLscore = min(buckets[bckt_id].t_exp - now
+                 + probNative * pkt_sz / AGING, qLSCORE_MAX);
+   buckets[bckt_id].t_exp = now + qLscore;
+   return qLscore;
+}
+&lt;CODE ENDS&gt;</pre><a href="#section-4.2.3-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="qp_calcProbNative">
+<section id="section-4.2.4">
+          <h4 id="name-the-calcprobnative-function">
+<a href="#section-4.2.4" class="section-number selfRef">4.2.4. </a><a href="#name-the-calcprobnative-function" class="section-name selfRef">The calcProbNative() Function</a>
+          </h4>
+<p id="section-4.2.4-1">To derive this queuing score, the QProt algorithm uses the linear
+          ramp function calcProbNative() to normalize instantaneous queuing
+          delay of the LL queue into a probability in the range [0,1], which
+          it assigns to probNative.<a href="#section-4.2.4-1" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-4.2.4-2">
+<pre>&lt;CODE BEGINS&gt;
+calcProbNative(qdelay){
+      if ( qdelay &gt;= MAXTH ) {
+         probNative = MAX_PROB;
+      } else if ( qdelay &gt; MINTH ) {
+         probNative = MAX_PROB * (qdelay - MINTH)/RANGE;
+         // In practice, the * and the / would use a bit-shift
+      } else {
+         probNative = 0;
+      }
+      return probNative;
+}
+&lt;CODE ENDS&gt;</pre><a href="#section-4.2.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="qp_rationale">
+<section id="section-5">
+      <h2 id="name-rationale">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-rationale" class="section-name selfRef">Rationale</a>
+      </h2>
+<div id="qp_rationale_not_throughput">
+<section id="section-5.1">
+        <h3 id="name-rationale-blame-for-queuing">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-rationale-blame-for-queuing" class="section-name selfRef">Rationale: Blame for Queuing, Not for Rate in Itself</a>
+        </h3>
+<p id="section-5.1-1"><a href="#qp_fig_blame_cbr_v_burst" class="auto internal xref">Figure 1</a> shows the bit rates of
+        two flows as stacked areas. It poses the question of which flow is
+        more to blame for queuing delay: the unresponsive constant bit rate
+        flow (c) that is consuming about 80% of the capacity or the flow
+        sending regular short unresponsive bursts (b)? The smoothness of c
+        seems better for avoiding queuing, but its high rate does not.
+        However, if flow c were not there, or ran slightly more slowly, b would
+        not cause any queuing.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<span id="name-which-is-more-to-blame-for-"></span><div id="qp_fig_blame_cbr_v_burst">
+<figure id="figure-1">
+          <div class="alignLeft art-text artwork" id="section-5.1-2.1">
+<pre>
+^ bit rate (stacked areas)
+|  ,-.          ,-.          ,-.          ,-.          ,-.
+|--|b|----------|b|----------|b|----------|b|----------|b|---Capacity
+|__|_|__________|_|__________|_|__________|_|__________|_|_____
+|
+|                       c
+|
+|
+|
++----------------------------------------------------------------&gt;
+                                                              time</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-which-is-more-to-blame-for-" class="selfRef">Which is more to blame for queuing delay?</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.1-3">To explain queuing scores, in the following it will initially be
+        assumed that the QProt algorithm is accumulating queuing scores but
+        not taking any action as a result.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.1-4">To quantify the responsibility that each flow bears for queuing
+        delay, the QProt algorithm accumulates the product of the rate of each
+        flow and the level of congestion, both measured at the instant each
+        packet arrives. The instantaneous flow rate is represented at each
+        discrete event when a packet arrives by the packet's size, which
+        accumulates faster the more packets arrive within each unit of time.
+        The level of congestion is normalized to a dimensionless number
+        between 0 and 1 (probNative). This fractional congestion level is used
+        in preference to a direct dependence on queuing delay for two
+        reasons:<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-5.1">
+            <p id="section-5.1-5.1.1">to be able to ignore very low levels of queuing that contribute
+            insignificantly to delay<a href="#section-5.1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-5.2">
+            <p id="section-5.1-5.2.1">to be able to erect a steep barrier against excessive queuing
+            delay<a href="#section-5.1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.1-6">The unit of the resulting queue score is "congested-bytes"
+        per second, which distinguishes it from just bytes per second.<a href="#section-5.1-6" class="pilcrow">¶</a></p>
+<p id="section-5.1-7">Then, during the periods between bursts (b), neither flow
+        accumulates any queuing score: the high rate of c is benign. But,
+        during each burst, if we say the rate of c and b are 80% and 45% of
+        capacity, thus causing 25% overload, they each bear (80/125)% and
+        (45/125)% of the responsibility for the queuing delay (64% and 36%).
+        The algorithm does not explicitly calculate these percentages. They
+        are just the outcome of the number of packets arriving from each flow
+        during the burst.<a href="#section-5.1-7" class="pilcrow">¶</a></p>
+<p id="section-5.1-8">To summarize, the queuing score never sanctions rate solely on its
+        own account. It only sanctions rate inasmuch as it causes queuing.<a href="#section-5.1-8" class="pilcrow">¶</a></p>
+<span id="name-responsibility-for-queuing-"></span><div id="qp_fig_blame_scenario">
+<figure id="figure-2">
+          <div class="alignLeft art-text artwork" id="section-5.1-9.1">
+<pre>
+^ bit rate (stacked areas)                               ,
+|               ,-.                       |\           ,-
+|------Capacity-|b|----------,-.----------|b|----------|b\-----
+|             __|_|_______   |b|        /``\| _...-._-': | ,.--
+|  ,-.     __/            \__|_|_     _/    |/          \|/
+|  |b| ___/                      \___/   __       r
+|  |_|/                v             \__/  \_______    _/\____/
+| _/                                               \__/
+|
++----------------------------------------------------------------&gt;
+                                                              time</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-responsibility-for-queuing-" class="selfRef">Responsibility for Queuing: A More Complex Scenario</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.1-10"><a href="#qp_fig_blame_scenario" class="auto internal xref">Figure 2</a> gives a more complex
+        illustration of the way the queuing score assigns responsibility for
+        queuing (limited to the precision that ASCII art can illustrate). The
+        figure shows the bit rates of three flows represented as stacked areas
+        labelled b, v, and r. The unresponsive bursts (b) are the same as in
+        the previous example, but a variable-rate video (v) replaces flow c.
+        Its rate varies as the complexity of the video scene varies. Also, on
+        a slower timescale, in response to the level of congestion, the video
+        adapts its quality. However, on a short timescale it appears to be
+        unresponsive to small amounts of queuing. Also, partway through, a
+        low-latency responsive flow (r) joins in, aiming to fill the balance
+        of capacity left by the other two.<a href="#section-5.1-10" class="pilcrow">¶</a></p>
+<p id="section-5.1-11">The combination of the first burst and the low application-limited
+        rate of the video causes neither flow to accumulate queuing score. In
+        contrast, the second burst causes similar excessive overload (125%) to
+        the example in <a href="#qp_fig_blame_cbr_v_burst" class="auto internal xref">Figure 1</a>. Then, the
+        video happens to reduce its rate (probably due to a less-complex
+        scene) so the third burst causes only a little congestion. Let us
+        assume the resulting queue causes probNative to rise to just 1%, then
+        the queuing score will only accumulate 1% of the size of each packet
+        of flows v and b during this burst.<a href="#section-5.1-11" class="pilcrow">¶</a></p>
+<p id="section-5.1-12">The fourth burst happens to arrive just as the new responsive flow
+        (r) has filled the available capacity, so it leads to very rapid
+        growth of the queue. After a round trip, the responsive flow rapidly
+        backs off, and the adaptive video also backs off more rapidly than it
+        would normally because of the very high congestion level. The rapid
+        response to congestion of flow r reduces the queuing score that all
+        three flows accumulate, but they each still bear the cost in
+        proportion to the product of the rates at which their packets arrive
+        at the queue and the value of probNative when they do so. Thus, during
+        the fifth burst, they all accumulate a lower score than the fourth
+        because the queuing delay is not as excessive.<a href="#section-5.1-12" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_rationale_aging">
+<section id="section-5.2">
+        <h3 id="name-rationale-constant-aging-of">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-rationale-constant-aging-of" class="section-name selfRef">Rationale: Constant Aging of the Queuing Score</a>
+        </h3>
+<p id="section-5.2-1">Even well-behaved flows will not always be able to respond fast
+        enough to dynamic events. Also, well-behaved flows, e.g., Data Center TCP (DCTCP) <span>[<a href="#RFC8257" class="cite xref">RFC8257</a>]</span>, TCP Prague <span>[<a href="#I-D.briscoe-iccrg-prague-congestion-control" class="cite xref">PRAGUE-CC</a>]</span>, Bottleneck Bandwidth and Round-trip propagation time version 3 (BBRv3) <span>[<a href="#BBRv3" class="cite xref">BBRv3</a>]</span>, or the L4S variant of SCReAM <span>[<a href="#SCReAM" class="cite xref">SCReAM</a>]</span>
+        for real-time media <span>[<a href="#RFC8298" class="cite xref">RFC8298</a>]</span>, can maintain a very
+        shallow queue by continual careful probing for more while also
+        continually subtracting a little from their rate (or congestion
+        window) in response to low levels of ECN signalling. Therefore, the
+        QProt algorithm needs to continually offer a degree of forgiveness to
+        age out the queuing score as it accumulates.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">Scalable congestion controllers, such as those above, maintain their
+        congestion window in inverse proportion to the congestion level,
+        probNative. That leads to the important property that, on average, a
+        scalable flow holds the product of its congestion window and the
+        congestion level constant, no matter the capacity of the link or how
+        many other flows it competes with. For instance, if the link capacity
+        doubles, a scalable flow induces half the congestion probability. Or,
+        if three scalable flows compete for the capacity, each flow will
+        reduce to one third of the capacity they would use on their own and
+        increase the congestion level by 3x. Therefore, in steady state, a
+        scalable flow will induce the same constant amount of
+        "congested-bytes" per round trip, whatever the link capacity and no
+        matter how many flows are sharing the capacity.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">This suggests that the QProt algorithm will not sanction a
+        well-behaved scalable flow if it ages out the queuing score at a
+        sufficient constant rate. The constant will need to be somewhat above
+        the average of a well-behaved scalable flow to allow for normal
+        dynamics.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">Relating QProt's aging constant to a scalable flow does not mean
+        that a flow has to behave like a scalable flow: it can be less
+        aggressive but not more aggressive. For instance, a longer RTT flow can run at a
+        lower congestion-rate than the aging rate, but it can also increase
+        its aggressiveness to equal the rate of short RTT scalable flows <span>[<a href="#ScalingCC" class="cite xref">ScalingCC</a>]</span>. The constant aging of QProt also means that a
+        long-running unresponsive flow will be prone to trigger QProt if it
+        runs faster than a competing responsive scalable flow would. And, of
+        course, if a flow causes excessive queuing in the short term, its
+        queuing score will still rise faster than the constant aging process
+        will decrease it. Then, QProt will still eject the flow's packets
+        before they harm the low latency of the shared queue.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_rationale_normalize">
+<section id="section-5.3">
+        <h3 id="name-rationale-transformed-queui">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-rationale-transformed-queui" class="section-name selfRef">Rationale: Transformed Queuing Score</a>
+        </h3>
+<p id="section-5.3-1">The QProt algorithm holds a flow's queuing score state in a
+        structure called a "bucket".  This is because of its similarity to a regular
+        leaky bucket (except the contents of the bucket do not represent
+        bytes).<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<span id="name-transformation-of-queuing-s"></span><div id="qp_fig_qscore_normalize">
+<figure id="figure-3">
+          <div class="alignLeft art-text artwork" id="section-5.3-2.1">
+<pre>
+probNative * pkt_sz   probNative * pkt_sz / AGING
+          |                        |
+       |  V  |                  |  V  |
+       |  :  |        ___       |  :  |
+       |_____|        ___       |_____|
+       |     |        ___       |     |
+       |__ __|                  |__ __|
+          |                        |
+          V                        V
+     AGING * Dt                    Dt</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-transformation-of-queuing-s" class="selfRef">Transformation of Queuing Score</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.3-3">The accumulation and aging of the queuing score is shown on the
+        left of <a href="#qp_fig_qscore_normalize" class="auto internal xref">Figure 3</a> in token bucket form.
+        Dt is the difference between the times when the scores of the current
+        and previous packets were processed.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-4">A transformed equivalent of this token bucket is shown on the right
+        of <a href="#qp_fig_qscore_normalize" class="auto internal xref">Figure 3</a>, dividing both the input
+        and output by the constant rate, AGING. The result is a bucket-depth
+        that represents time and it drains at the rate that time passes.<a href="#section-5.3-4" class="pilcrow">¶</a></p>
+<p id="section-5.3-5">As a further optimization, the time the bucket was last updated is
+        not stored with the flow state. Instead, when the bucket is
+        initialized, the queuing score is added to the system time "now" and
+        the resulting expiry time is written into the bucket. Subsequently, if
+        the bucket has not expired, the incremental queuing score is added to
+        the time already held in the bucket. Then, the queuing score always
+        represents the expiry time of the flow state itself. This means that
+        the queuing score does not need to be aged explicitly because it ages
+        itself implicitly.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_rationale_conditions">
+<section id="section-5.4">
+        <h3 id="name-rationale-policy-conditions">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-rationale-policy-conditions" class="section-name selfRef">Rationale: Policy Conditions</a>
+        </h3>
+<p id="section-5.4-1">Pseudocode for the QProt policy conditions is given in <a href="#qp_header_file" class="auto internal xref">Section 4.1</a> within the second half of the qprotect()
+        function. When each packet arrives, after finding its flow state and
+        updating the queuing score of the packet's flow, the algorithm checks
+        whether the shared queue delay exceeds a constant threshold CRITICALqL
+        (e.g., 2 ms), as repeated below for convenience:<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-5.4-2">
+<pre>&lt;CODE BEGINS&gt;
+   if (  ( qdelay &gt; CRITICALqL )  // Test if qdelay over threshold...
+      // ...and if flow's q'ing score scaled by qdelay/CRITICALqL
+      // ...exceeds CRITICALqLSCORE
+      &amp;&amp; ( qdelay * qLscore &gt; CRITICALqLPRODUCT ) )
+      // Recall that CRITICALqLPRODUCT = CRITICALqL * CRITICALqLSCORE
+&lt;CODE ENDS&gt;</pre><a href="#section-5.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-5.4-3">If the queue delay threshold is exceeded, the flow's queuing score
+        is temporarily scaled up by the ratio of the current queue delay to
+        the threshold queuing delay, CRITICALqL (the reason for the scaling is
+        given next). If this scaled up score exceeds another constant
+        threshold CRITICALqLSCORE, the packet is ejected. The actual last line
+        of code above multiplies both sides of the second condition by
+        CRITICALqL to avoid a costly division.<a href="#section-5.4-3" class="pilcrow">¶</a></p>
+<p id="section-5.4-4">This approach allows each packet to be assessed once, as it
+        arrives. Once queue delay exceeds the threshold, it has two
+        implications:<a href="#section-5.4-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.4-5.1">
+            <p id="section-5.4-5.1.1">The current packet might be ejected, even though there are
+            packets already in the queue from flows with higher queuing
+            scores. However, any flow that continues to contribute to the
+            queue will have to send further packets, giving an opportunity to
+            eject them as well, as they subsequently arrive.<a href="#section-5.4-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.4-5.2">
+            <p id="section-5.4-5.2.1">The next packets to arrive might not be ejected because they
+            might belong to flows with low queuing scores. In this case, queue
+            delay could continue to rise with no opportunity to eject a
+            packet. This is why the queuing score is scaled up by the current
+            queue delay. Then, the more the queue has grown without ejecting a
+            packet, the more the algorithm "raises the bar" to further
+            packets.<a href="#section-5.4-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.4-6">The above approach is preferred over the extra per-packet
+        processing cost of searching the buckets for the flow with the highest
+        queuing score and searching the queue for one of its packets to eject
+        (if one is still in the queue).<a href="#section-5.4-6" class="pilcrow">¶</a></p>
+<p id="section-5.4-7"><a href="#qp_fig_policy_conditions" class="auto internal xref">Figure 4</a> explains this approach
+        graphically. On the horizontal axis, it shows actual harm, meaning the
+        queuing delay in the shared queue. On the vertical axis, it shows the
+        behaviour record of the flow associated with the currently arriving
+        packet, represented in the algorithm by the flow's queuing score. The
+        shaded region represents the combination of actual harm and behaviour
+        record that will lead to the packet being ejected.<a href="#section-5.4-7" class="pilcrow">¶</a></p>
+<aside id="section-5.4-8">
+          <p id="section-5.4-8.1">Note that, by default, CRITICALqL_us is set to the maximum threshold
+        of the ramp marking algorithm MAXTH_us. However, there is some debate
+        as to whether setting it to the minimum threshold instead would
+        improve QProt performance. This would roughly double the ratio of
+        qdelay to CRITICALqL, which is compared against the CRITICALqLSCORE
+        threshold. Therefore, the threshold would have to be roughly doubled
+        accordingly.<a href="#section-5.4-8.1" class="pilcrow">¶</a></p>
+</aside>
+<span id="name-graphical-explanation-of-th"></span><div id="qp_fig_policy_conditions">
+<figure id="figure-4">
+          <div class="alignLeft art-text artwork" id="section-5.4-9.1">
+<pre>
+Behaviour Record:
+Queueing Score of
+Arriving Packet's Flow
+^
+|   +          |/ / / / / / / / / / / / / / / / / / /
+|    +   N     | / / / / / / / / / / / / / / / / / / /
+|     +        |/ / / / /                   / / / / /
+|      +       | / / / /  E (Eject packet)   / / / / /
+|       +      |/ / / / /                   / / / / /
+|         +    | / / / / / / / / / / / / / / / / / / /
+|           +  |/ / / / / / / / / / / / / / / / / / /
+|             +| / / / / / / / / / / / / / / / / / / /
+|              |+ / / / / / / / / / / / / / / / / / /
+|    N         |   + / / / / / / / / / / / / / / / / /
+| (No actual   |       +/ / / / / / / / / / / / / / /
+|   harm)      |            +  / / / / / / / / / / / /
+|              | P (Pass over)   +   ,/ / / / / / / /
+|              |                           ^ + /./ /_/
++--------------+------------------------------------------&gt;
+          CRITICALqL        Actual Harm: Shared Queue Delay</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-graphical-explanation-of-th" class="selfRef">Graphical Explanation of the Policy Conditions</a>
+          </figcaption></figure>
+</div>
+<p id="section-5.4-10">The regions labelled "N" represent cases where the first condition
+        is not met -- no actual harm -- queue delay is below the critical
+        threshold, CRITICALqL.<a href="#section-5.4-10" class="pilcrow">¶</a></p>
+<p id="section-5.4-11">The region labelled "E" represents cases where there is actual harm
+        (queue delay exceeds CRITICALqL) and the queuing score associated with
+        the arriving packet is high enough to be able to eject it with
+        certainty.<a href="#section-5.4-11" class="pilcrow">¶</a></p>
+<p id="section-5.4-12">The region labelled "P" represents cases where there is actual
+        harm, but the queuing score of the arriving packet is insufficient to
+        eject it, so it has to be passed over. This adds to queuing delay, but
+        the alternative would be to risk sanctioning an innocent flow. It can be seen
+        that, as actual harm increases, the judgement of innocence becomes
+        increasingly stringent; the behaviour record of the next packet's flow
+        does not have to be as bad to eject it.<a href="#section-5.4-12" class="pilcrow">¶</a></p>
+<p id="section-5.4-13">Conditioning ejection on actual harm helps prevent VPN packets
+        being ejected unnecessarily. VPNs consisting of multiple flows can
+        tend to accumulate queuing score faster than it is aged out because
+        the aging rate is intended for a single flow. However, whether or not
+        some traffic is in a VPN, the queue delay threshold (CRITICALqL) will
+        be no more likely to be exceeded. Therefore, conditioning ejection on actual
+        harm helps reduce the chance that VPN traffic will be ejected by the
+        QProt function.<a href="#section-5.4-13" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_rationale_reclassify">
+<section id="section-5.5">
+        <h3 id="name-rationale-reclassification-">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-rationale-reclassification-" class="section-name selfRef">Rationale: Reclassification as the Policy Action</a>
+        </h3>
+<p id="section-5.5-1">When the DOCSIS QProt algorithm deems that it is necessary to eject
+        a packet to protect the Low-Latency queue, it redirects the packet to
+        the Classic queue. In the Low-Latency DOCSIS architecture (as in
+        Dual-Queue Coupled AQMs generally), the Classic queue is expected to
+        frequently have a larger backlog of packets, which is caused by classic
+        congestion controllers interacting with a Classic AQM (which has a
+        latency target of 10 ms) as well as other bursty traffic.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<p id="section-5.5-2">Therefore, typically, an ejected packet will experience higher
+        queuing delay than it would otherwise, and it could be re-ordered
+        within its flow (assuming QProt does not eject all packets of an
+        anomalous flow). The mild harm caused to the performance of the
+        ejected packet's flow is deliberate. It gives senders a slight
+        incentive to identify their packets correctly.<a href="#section-5.5-2" class="pilcrow">¶</a></p>
+<p id="section-5.5-3">If there were no such harm, there would be nothing to prevent all
+        flows from identifying themselves as suitable for classification into
+        the low-latency queue and just letting QProt sort the resulting
+        aggregate into queue-building and non-queue-building flows. This might
+        seem like a useful alternative to requiring senders to correctly
+        identify their flows. However, handling of misclassified flows is not
+        without a cost. The more packets that have to be reclassified, the
+        more often the delay of the low-latency queue would exceed the
+        threshold. Also, more memory would be required to hold the extra flow
+        state.<a href="#section-5.5-3" class="pilcrow">¶</a></p>
+<p id="section-5.5-4">When a packet is redirected into the Classic queue, an operator
+        might want to alter the identifier(s) that originally caused it to be
+        classified into the Low-Latency queue so that the packet will not be
+        classified into another low-latency queue further downstream. However,
+        redirection of occasional packets can be due to unusually high
+        transient load just at the specific bottleneck, not necessarily at any
+        other bottleneck and not necessarily due to bad flow behaviour.
+        Therefore, <span><a href="https://rfc-editor.org/rfc/rfc9331#section-5.4.1.2" class="relref">Section 5.4.1.2</a> of [<a href="#RFC9331" class="cite xref">RFC9331</a>]</span> precludes a
+        network node from altering the end-to-end ECN field to exclude traffic
+        from L4S treatment. Instead a local-use identifier ought to be used
+        (e.g., Diffserv codepoint or VLAN tag) so that each operator can
+        apply its own policy, without prejudging what other operators ought to
+        do.<a href="#section-5.5-4" class="pilcrow">¶</a></p>
+<p id="section-5.5-5">Although not supported in the DOCSIS specifications, QProt could be extended
+        to recognize that large numbers of redirected packets belong to the
+        same flow. This might be detected when the bucket expiry time t_exp
+        exceeds a threshold. Depending on policy and implementation
+        capabilities, QProt could then install a classifier to redirect a
+        whole flow into the Classic queue, with an idle timeout to remove
+        stale classifiers. In these "persistent offender" cases, QProt might
+        also overwrite each redirected packet's DSCP, in order to protect other potential low-latency queues downstream.
+        The DOCSIS specifications do not discuss sanctioning whole flows; further
+        discussion is beyond the scope of the present document.<a href="#section-5.5-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="qp_limitations">
+<section id="section-6">
+      <h2 id="name-limitations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-limitations" class="section-name selfRef">Limitations</a>
+      </h2>
+<p id="section-6-1">The QProt algorithm groups packets with common Layer 4 flow
+      identifiers. It then uses this grouping to accumulate queuing scores and
+      to sanction packets.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">This choice of identifier for grouping is pragmatic with no
+      scientific basis. All the packets of a flow certainly pass between the
+      same two endpoints. However, some applications might initiate multiple flows
+      between the same endpoints, e.g., for media, control, data, etc. Others
+      might use common flow identifiers for all these streams. Also, a user
+      might group multiple application flows within the same encrypted VPN
+      between the same Layer 4 tunnel endpoints. And, even if there were a
+      one-to-one mapping between flows and applications, there is no reason to
+      believe that the rate at which congestion can be caused ought to be
+      allocated on a per-application-flow basis.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">The use of a queuing score that excludes those aspects of flow rate
+      that do not contribute to queuing (<a href="#qp_rationale_not_throughput" class="auto internal xref">Section 5.1</a>) goes some way to mitigating this
+      limitation because the algorithm does not judge responsibility for
+      queuing delay primarily on the combined rate of a set of flows grouped
+      under one flow ID.<a href="#section-6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="l4sds_IANA">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="l4sds_Security_Considerations">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">The whole of this document concerns traffic security. It considers
+      the security question of how to identify and eject traffic that does not
+      comply with the non-queue-building behaviour required to use a shared
+      low-latency queue, whether accidentally or maliciously.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2"><span><a href="https://rfc-editor.org/rfc/rfc9330#section-8.2" class="relref">Section 8.2</a> of [<a href="#RFC9330" class="cite xref">RFC9330</a>]</span> of the L4S architecture <span>[<a href="#RFC9330" class="cite xref">RFC9330</a>]</span>
+      introduces the problem of maintaining low latency by either
+      self-restraint or enforcement and places DOCSIS Queue Protection (QProt) in
+      context within a wider set of approaches to the problem.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<div id="qp_resource_exhaust">
+<section id="section-8.1">
+        <h3 id="name-resource-exhaustion-attacks">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-resource-exhaustion-attacks" class="section-name selfRef">Resource Exhaustion Attacks</a>
+        </h3>
+<p id="section-8.1-1">The QProt algorithm has been designed to fail gracefully in the face of
+        traffic crafted to overrun the resources used for the algorithm's own
+        processing and flow state. This means that non-queue-building flows
+        will always be less likely to be sanctioned than queue-building flows.
+        But an attack could be contrived to deplete resources in such a way
+        that the proportion of innocent (non-queue-building) flows that are
+        incorrectly sanctioned could increase.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1-2">Incorrect sanctioning is intended not to be catastrophic; it
+        results in more packets from well-behaved flows being redirected into
+        the Classic queue, which introduces more reordering into innocent
+        flows.<a href="#section-8.1-2" class="pilcrow">¶</a></p>
+<div id="qp_flow-state_exhaust">
+<section id="section-8.1.1">
+          <h4 id="name-exhausting-flow-state-stora">
+<a href="#section-8.1.1" class="section-number selfRef">8.1.1. </a><a href="#name-exhausting-flow-state-stora" class="section-name selfRef">Exhausting Flow State Storage</a>
+          </h4>
+<p id="section-8.1.1-1">To exhaust the number of buckets, the most efficient attack is to
+          send enough long-running attack flows to increase the chance that an
+          arriving flow will not find an available bucket and will, therefore, have
+          to share the "dregs" bucket. For instance, if ATTEMPTS=2 and
+          NBUCKETS=32, it requires about 94 attack flows, each using different
+          port numbers, to increase the probability to 99% that an arriving
+          flow will have to share the dregs, where it will share a high degree
+          of redirection into the Classic queue with the remainder of the attack
+          flows.<a href="#section-8.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.1-2">For an attacker to keep buckets busy, it is more efficient to
+          hold onto them by cycling regularly through a set of port numbers
+          (94 in the above example) rather than to keep occupying and
+          releasing buckets with single packet flows across a much larger
+          number of ports.<a href="#section-8.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-8.1.1-3">During such an attack, the coupled marking probability will have
+          saturated at 100%. Therefore, to hold a bucket, the rate of an attack flow
+          needs to be no less than the aging rate of each bucket: 4 Mb/s by
+          default. However, for an attack flow to be sure to hold on to its
+          bucket, it would need to send somewhat faster. Thus, an attack with
+          100 flows would need a total force of more than 100 * 4 Mb/s =
+          400 Mb/s.<a href="#section-8.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-8.1.1-4">This attack can be mitigated (but not prevented) by increasing
+          the number of buckets. The required attack force scales linearly
+          with the number of buckets, NBUCKETS. Therefore, if NBUCKETS were doubled
+          to 64, twice as many 4 Mb/s flows would be needed to maintain the
+          same impact on innocent flows.<a href="#section-8.1.1-4" class="pilcrow">¶</a></p>
+<p id="section-8.1.1-5">Probably the most effective mitigation would be to implement
+          redirection of whole-flows once enough of the individual packets of
+          a certain offending flow had been redirected. This would free up the
+          buckets used to maintain the per-packet queuing score of persistent
+          offenders. Whole-flow redirection is outside the scope of the
+          current version of the QProt algorithm specified here, but it is
+          briefly discussed at the end of <a href="#qp_rationale_reclassify" class="auto internal xref">Section 5.5</a>.<a href="#section-8.1.1-5" class="pilcrow">¶</a></p>
+<p id="section-8.1.1-6">It might be considered that all the packets of persistently
+          offending flows ought to be discarded rather than redirected.
+          However, this is not recommended because attack flows might be able
+          to pervert whole-flow discard, turning it onto at least some
+          innocent flows, thus amplifying an attack that causes reordering
+          into total deletion of some innocent flows.<a href="#section-8.1.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="qp_proc_exhaust">
+<section id="section-8.1.2">
+          <h4 id="name-exhausting-processing-resou">
+<a href="#section-8.1.2" class="section-number selfRef">8.1.2. </a><a href="#name-exhausting-processing-resou" class="section-name selfRef">Exhausting Processing Resources</a>
+          </h4>
+<p id="section-8.1.2-1">The processing time needed to apply the QProt algorithm to each
+          Low-Latency (LL) packet is small and intended not to take all the time available
+          between each of a run of fairly small packets. However, an attack
+          could use minimum sized packets launched from multiple input
+          interfaces into a lower capacity output interface. Whether the QProt
+          algorithm is vulnerable to processor exhaustion will depend on the
+          specific implementation.<a href="#section-8.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-2">Addition of a capability to redirect persistently offending flows
+          from LL to Classic would be the most effective way to reduce the
+          per-packet processing cost of the QProt algorithm when under
+          attack. As already mentioned in <a href="#qp_flow-state_exhaust" class="auto internal xref">Section 8.1.1</a>, this would also be an effective
+          way to mitigate flow-state exhaustion attacks. Further discussion of
+          whole-flow redirection is outside the scope of the present document
+          but is briefly discussed at the end of <a href="#qp_rationale_reclassify" class="auto internal xref">Section 5.5</a>.<a href="#section-8.1.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-comments-solicited">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-comments-solicited" class="section-name selfRef">Comments Solicited</a>
+      </h2>
+<p id="section-9-1">Evaluation and assessment of the algorithm by researchers is
+      solicited. Comments and questions are also encouraged and welcome. They
+      can be addressed to the authors.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="DOCSIS">[DOCSIS]</dt>
+        <dd>
+<span class="refAuthor">CableLabs</span>, <span class="refTitle">"MAC and Upper Layer Protocols Interface (MULPI) Specification, CM-SP-MULPIv3.1"</span>, <span class="seriesInfo">Data-Over-Cable Service Interface Specifications DOCSIS(r) 3.1 Version I17 or later</span>, <time datetime="2019-01-21" class="refDate">21 January 2019</time>, <span>&lt;<a href="https://www.cablelabs.com/specifications/CM-SP-MULPIv3.1">https://www.cablelabs.com/specifications/CM-SP-MULPIv3.1</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DOCSIS-CCAP-OSS">[DOCSIS-CCAP-OSS]</dt>
+        <dd>
+<span class="refAuthor">CableLabs</span>, <span class="refTitle">"CCAP Operations Support System Interface Specification"</span>, <span class="seriesInfo">Data-Over-Cable Service Interface Specifications DOCSIS(r) 3.1 Version I14 or later</span>, <time datetime="2019-02-07" class="refDate">7 February 2019</time>, <span>&lt;<a href="https://www.cablelabs.com/specifications/CM-SP-CCAP-OSSIv3.1">https://www.cablelabs.com/specifications/CM-SP-CCAP-OSSIv3.1</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DOCSIS-CM-OSS">[DOCSIS-CM-OSS]</dt>
+        <dd>
+<span class="refAuthor">CableLabs</span>, <span class="refTitle">"Cable Modem Operations Support System Interface Specification"</span>, <span class="seriesInfo">Data-Over-Cable Service Interface Specifications DOCSIS(r) 3.1 Version I14 or later</span>, <time datetime="2019-01-21" class="refDate">21 January 2019</time>, <span>&lt;<a href="https://www.cablelabs.com/specifications/CM-SP-CM-OSSIv3.1">https://www.cablelabs.com/specifications/CM-SP-CM-OSSIv3.1</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3168">[RFC3168]</dt>
+        <dd>
+<span class="refAuthor">Ramakrishnan, K.</span>, <span class="refAuthor">Floyd, S.</span>, and <span class="refAuthor">D. Black</span>, <span class="refTitle">"The Addition of Explicit Congestion Notification (ECN) to IP"</span>, <span class="seriesInfo">RFC 3168</span>, <span class="seriesInfo">DOI 10.17487/RFC3168</span>, <time datetime="2001-09" class="refDate">September 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3168">https://www.rfc-editor.org/info/rfc3168</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8311">[RFC8311]</dt>
+        <dd>
+<span class="refAuthor">Black, D.</span>, <span class="refTitle">"Relaxing Restrictions on Explicit Congestion Notification (ECN) Experimentation"</span>, <span class="seriesInfo">RFC 8311</span>, <span class="seriesInfo">DOI 10.17487/RFC8311</span>, <time datetime="2018-01" class="refDate">January 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8311">https://www.rfc-editor.org/info/rfc8311</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9331">[RFC9331]</dt>
+        <dd>
+<span class="refAuthor">De Schepper, K.</span> and <span class="refAuthor">B. Briscoe, Ed.</span>, <span class="refTitle">"The Explicit Congestion Notification (ECN) Protocol for Low Latency, Low Loss, and Scalable Throughput (L4S)"</span>, <span class="seriesInfo">RFC 9331</span>, <span class="seriesInfo">DOI 10.17487/RFC9331</span>, <time datetime="2023-01" class="refDate">January 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9331">https://www.rfc-editor.org/info/rfc9331</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9956">[RFC9956]</dt>
+      <dd>
+<span class="refAuthor">White, G.</span>, <span class="refAuthor">Fossati, T.</span>, and <span class="refAuthor">R. Geib</span>, <span class="refTitle">"A Non-Queue-Building Per-Hop Behavior (NQB PHB) for Differentiated Services"</span>, <span class="seriesInfo">RFC 9956</span>, <span class="seriesInfo">DOI 10.17487/RFC9956</span>, <time datetime="2026-05" class="refDate">May 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9956">https://www.rfc-editor.org/info/rfc9956</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="BBRv3">[BBRv3]</dt>
+        <dd>
+<span class="refTitle">"TCP BBR v3 Release"</span>, <span class="refContent">commit 90210de</span>, <time datetime="2025-03-18" class="refDate">18 March 2025</time>, <span>&lt;<a href="https://github.com/google/bbr/blob/v3/README.md">https://github.com/google/bbr/blob/v3/README.md</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="LLD">[LLD]</dt>
+        <dd>
+<span class="refAuthor">White, G.</span>, <span class="refAuthor">Sundaresan, K.</span>, and <span class="refAuthor">B. Briscoe</span>, <span class="refTitle">"Low Latency DOCSIS: Technology Overview"</span>, <span class="refContent">CableLabs White Paper</span>, <time datetime="2019-02" class="refDate">February 2019</time>, <span>&lt;<a href="https://cablela.bs/low-latency-docsis-technology-overview-february-2019">https://cablela.bs/low-latency-docsis-technology-overview-february-2019</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.briscoe-iccrg-prague-congestion-control">[PRAGUE-CC]</dt>
+        <dd>
+<span class="refAuthor">De Schepper, K.</span>, <span class="refAuthor">Tilmans, O.</span>, <span class="refAuthor">Briscoe, B.</span>, and <span class="refAuthor">V. Goel</span>, <span class="refTitle">"Prague Congestion Control"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-briscoe-iccrg-prague-congestion-control-04</span>, <time datetime="2024-07-24" class="refDate">24 July 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-briscoe-iccrg-prague-congestion-control-04">https://datatracker.ietf.org/doc/html/draft-briscoe-iccrg-prague-congestion-control-04</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4303">[RFC4303]</dt>
+        <dd>
+<span class="refAuthor">Kent, S.</span>, <span class="refTitle">"IP Encapsulating Security Payload (ESP)"</span>, <span class="seriesInfo">RFC 4303</span>, <span class="seriesInfo">DOI 10.17487/RFC4303</span>, <time datetime="2005-12" class="refDate">December 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4303">https://www.rfc-editor.org/info/rfc4303</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5681">[RFC5681]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Paxson, V.</span>, and <span class="refAuthor">E. Blanton</span>, <span class="refTitle">"TCP Congestion Control"</span>, <span class="seriesInfo">RFC 5681</span>, <span class="seriesInfo">DOI 10.17487/RFC5681</span>, <time datetime="2009-09" class="refDate">September 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5681">https://www.rfc-editor.org/info/rfc5681</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6789">[RFC6789]</dt>
+        <dd>
+<span class="refAuthor">Briscoe, B., Ed.</span>, <span class="refAuthor">Woundy, R., Ed.</span>, and <span class="refAuthor">A. Cooper, Ed.</span>, <span class="refTitle">"Congestion Exposure (ConEx) Concepts and Use Cases"</span>, <span class="seriesInfo">RFC 6789</span>, <span class="seriesInfo">DOI 10.17487/RFC6789</span>, <time datetime="2012-12" class="refDate">December 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6789">https://www.rfc-editor.org/info/rfc6789</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7713">[RFC7713]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span> and <span class="refAuthor">B. Briscoe</span>, <span class="refTitle">"Congestion Exposure (ConEx) Concepts, Abstract Mechanism, and Requirements"</span>, <span class="seriesInfo">RFC 7713</span>, <span class="seriesInfo">DOI 10.17487/RFC7713</span>, <time datetime="2015-12" class="refDate">December 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7713">https://www.rfc-editor.org/info/rfc7713</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8257">[RFC8257]</dt>
+        <dd>
+<span class="refAuthor">Bensley, S.</span>, <span class="refAuthor">Thaler, D.</span>, <span class="refAuthor">Balasubramanian, P.</span>, <span class="refAuthor">Eggert, L.</span>, and <span class="refAuthor">G. Judd</span>, <span class="refTitle">"Data Center TCP (DCTCP): TCP Congestion Control for Data Centers"</span>, <span class="seriesInfo">RFC 8257</span>, <span class="seriesInfo">DOI 10.17487/RFC8257</span>, <time datetime="2017-10" class="refDate">October 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8257">https://www.rfc-editor.org/info/rfc8257</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8298">[RFC8298]</dt>
+        <dd>
+<span class="refAuthor">Johansson, I.</span> and <span class="refAuthor">Z. Sarker</span>, <span class="refTitle">"Self-Clocked Rate Adaptation for Multimedia"</span>, <span class="seriesInfo">RFC 8298</span>, <span class="seriesInfo">DOI 10.17487/RFC8298</span>, <time datetime="2017-12" class="refDate">December 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8298">https://www.rfc-editor.org/info/rfc8298</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9330">[RFC9330]</dt>
+        <dd>
+<span class="refAuthor">Briscoe, B., Ed.</span>, <span class="refAuthor">De Schepper, K.</span>, <span class="refAuthor">Bagnulo, M.</span>, and <span class="refAuthor">G. White</span>, <span class="refTitle">"Low Latency, Low Loss, and Scalable Throughput (L4S) Internet Service: Architecture"</span>, <span class="seriesInfo">RFC 9330</span>, <span class="seriesInfo">DOI 10.17487/RFC9330</span>, <time datetime="2023-01" class="refDate">January 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9330">https://www.rfc-editor.org/info/rfc9330</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9332">[RFC9332]</dt>
+        <dd>
+<span class="refAuthor">De Schepper, K.</span>, <span class="refAuthor">Briscoe, B., Ed.</span>, and <span class="refAuthor">G. White</span>, <span class="refTitle">"Dual-Queue Coupled Active Queue Management (AQM) for Low Latency, Low Loss, and Scalable Throughput (L4S)"</span>, <span class="seriesInfo">RFC 9332</span>, <span class="seriesInfo">DOI 10.17487/RFC9332</span>, <time datetime="2023-01" class="refDate">January 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9332">https://www.rfc-editor.org/info/rfc9332</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9438">[RFC9438]</dt>
+        <dd>
+<span class="refAuthor">Xu, L.</span>, <span class="refAuthor">Ha, S.</span>, <span class="refAuthor">Rhee, I.</span>, <span class="refAuthor">Goel, V.</span>, and <span class="refAuthor">L. Eggert, Ed.</span>, <span class="refTitle">"CUBIC for Fast and Long-Distance Networks"</span>, <span class="seriesInfo">RFC 9438</span>, <span class="seriesInfo">DOI 10.17487/RFC9438</span>, <time datetime="2023-08" class="refDate">August 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9438">https://www.rfc-editor.org/info/rfc9438</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="ScalingCC">[ScalingCC]</dt>
+        <dd>
+<span class="refAuthor">Briscoe, B.</span> and <span class="refAuthor">K. De Schepper</span>, <span class="refTitle">"Resolving Tensions between Congestion Control Scaling Requirements"</span>, <span class="refContent">arXiv:1904.07605</span>, <span class="seriesInfo">Simula Technical Report TR-CS-2016-001</span>, <span class="seriesInfo">DOI 10.48550/arXiv.1904.07605</span>, <time datetime="2017-07" class="refDate">July 2017</time>, <span>&lt;<a href="https://arxiv.org/abs/1904.07605">https://arxiv.org/abs/1904.07605</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SCReAM">[SCReAM]</dt>
+      <dd>
+<span class="refTitle">"SCReAM"</span>, <span class="refContent">commit 0208f59</span>, <time datetime="2025-11-10" class="refDate">10 November 2025</time>, <span>&lt;<a href="https://github.com/EricssonResearch/scream/blob/master/README.md">https://github.com/EricssonResearch/scream/blob/master/README.md</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgements">
+<a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="appendix-A-1">Thanks to <span class="contact-name">Tom Henderson</span>, <span class="contact-name">Magnus Westerlund</span>, <span class="contact-name">David Black</span>,
+      <span class="contact-name">Adrian Farrel</span>, and <span class="contact-name">Gorry       Fairhurst</span> for their reviews of this document.  The design of the QProt
+      algorithm and the settings of the parameters benefited from discussion
+      and critique from the participants of the cable industry working group
+      on Low-Latency DOCSIS. CableLabs funded <span class="contact-name">Bob       Briscoe</span>'s initial work on this document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Bob Briscoe (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Independent</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ietf@bobbriscoe.net" class="email">ietf@bobbriscoe.net</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://bobbriscoe.net/" class="url">https://bobbriscoe.net/</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Greg White</span></div>
+<div dir="auto" class="left"><span class="org">CableLabs</span></div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:G.White@CableLabs.com" class="email">G.White@CableLabs.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>

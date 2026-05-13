@@ -1,0 +1,3310 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9959: Careful Resume: Convergence of Congestion Control from Retained State</title>
+<meta content="Nicolas Kuhn" name="author">
+<meta content="Emile Stephan" name="author">
+<meta content="Godred Fairhurst" name="author">
+<meta content="Raffaello Secchi" name="author">
+<meta content="Christian Huitema" name="author">
+<meta content='
+       This document specifies a cautious method for Internet transports that
+        enables fast startup of Congestion Control (CC) for a wide
+        range of connections, known as "Careful Resume".
+        It reuses a set of computed CC parameters that
+        are based on previously observed path characteristics between
+        the same pair of transport endpoints. These parameters
+        are saved, allowing them to be later used to modify the
+        CC behaviour of a subsequent connection. 
+       This document describes the assumptions and defines the requirements for how a
+        sender utilises these parameters to provide opportunities for a
+        connection to more rapidly get up to speed and utilise available
+        capacity. It discusses how the use of this method impacts the capacity at a
+        shared network bottleneck and the safe response that is needed after any
+        indication that the new rate is inappropriate. 
+    ' name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="Transport" name="keyword">
+<meta content="Congestion Control" name="keyword">
+<meta content="QUIC" name="keyword">
+<meta content="9959" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.14.3
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.3
+    platformdirs 4.9.6
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.6.0
+    weasyprint 68.0
+-->
+<link href="rfc9959.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-tsvwg-careful-resume-24" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9959" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9959</td>
+<td class="center">Careful Resume</td>
+<td class="right">May 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Kuhn, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9959" class="eref">9959</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-05" class="published">May 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">N. Kuhn</div>
+<div class="org">Thales Alenia Space</div>
+</div>
+<div class="author">
+      <div class="author-name">E. Stephan</div>
+<div class="org">Orange</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Fairhurst</div>
+<div class="org">University of Aberdeen</div>
+</div>
+<div class="author">
+      <div class="author-name">R. Secchi</div>
+<div class="org">University of Aberdeen</div>
+</div>
+<div class="author">
+      <div class="author-name">C. Huitema</div>
+<div class="org">Private Octopus Inc.</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9959</h1>
+<h1 id="title">Careful Resume: Convergence of Congestion Control from Retained State</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document specifies a cautious method for Internet transports that
+        enables fast startup of Congestion Control (CC) for a wide
+        range of connections, known as "Careful Resume".
+        It reuses a set of computed CC parameters that
+        are based on previously observed path characteristics between
+        the same pair of transport endpoints. These parameters
+        are saved, allowing them to be later used to modify the
+        CC behaviour of a subsequent connection.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document describes the assumptions and defines the requirements for how a
+        sender utilises these parameters to provide opportunities for a
+        connection to more rapidly get up to speed and utilise available
+        capacity. It discusses how the use of this method impacts the capacity at a
+        shared network bottleneck and the safe response that is needed after any
+        indication that the new rate is inappropriate.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9959">https://www.rfc-editor.org/info/rfc9959</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-use-of-saved-cc-parameters-" class="internal xref">Use of Saved CC Parameters by a Sender</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-receiver-preference" class="internal xref">Receiver Preference</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-transport-protocol-interact" class="internal xref">Transport Protocol Interaction</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.4">
+                <p id="section-toc.1-1.1.2.4.1"><a href="#section-1.4" class="auto internal xref">1.4</a>.  <a href="#name-examples-of-scenarios-of-in" class="internal xref">Examples of Scenarios of Interest</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.5">
+                <p id="section-toc.1-1.1.2.5.1"><a href="#section-1.5" class="auto internal xref">1.5</a>.  <a href="#name-design-principles" class="internal xref">Design Principles</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-language-notation-and-terms" class="internal xref">Language, Notation, and Terms</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-the-remote-endpoint" class="internal xref">The Remote Endpoint</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-logging-support" class="internal xref">Logging Support</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4">
+                <p id="section-toc.1-1.2.2.4.1"><a href="#section-2.4" class="auto internal xref">2.4</a>.  <a href="#name-notation-and-terms" class="internal xref">Notation and Terms</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-the-phases-of-cc-using-care" class="internal xref">The Phases of CC Using Careful Resume</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-observing" class="internal xref">Observing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-reconnaissance-phase" class="internal xref">Reconnaissance Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-unvalidated-phase" class="internal xref">Unvalidated Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-validating-phase" class="internal xref">Validating Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-safe-retreat-phase" class="internal xref">Safe Retreat Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.6">
+                <p id="section-toc.1-1.3.2.6.1"><a href="#section-3.6" class="auto internal xref">3.6</a>.  <a href="#name-detecting-persistent-conges" class="internal xref">Detecting Persistent Congestion While Using Careful Resume</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.7">
+                <p id="section-toc.1-1.3.2.7.1"><a href="#section-3.7" class="auto internal xref">3.7</a>.  <a href="#name-returning-to-use-normal-cc" class="internal xref">Returning to Use Normal CC</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-implementation-notes-and-gu" class="internal xref">Implementation Notes and Guidelines</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-observing-the-path-capacity" class="internal xref">Observing the Path Capacity</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-confirming-the-path-in-the-" class="internal xref">Confirming the Path in the Reconnaissance Phase</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-confirming-the-path" class="internal xref">Confirming the Path</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-safety-in-the-unvalidated-p" class="internal xref">Safety in the Unvalidated Phase</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.1">
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="auto internal xref">4.3.1</a>.  <a href="#name-lifetime-of-cc-parameters" class="internal xref">Lifetime of CC Parameters</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.2">
+                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="auto internal xref">4.3.2</a>.  <a href="#name-pacing-in-the-unvalidated-p" class="internal xref">Pacing in the Unvalidated Phase</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.3">
+                    <p id="section-toc.1-1.4.2.3.2.3.1"><a href="#section-4.3.3" class="auto internal xref">4.3.3</a>.  <a href="#name-exit-from-the-unvalidated-p" class="internal xref">Exit from the Unvalidated Phase Because of Variable Network Conditions</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-the-validating-phase" class="internal xref">The Validating Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-safety-in-the-safe-retreat-" class="internal xref">Safety in the Safe Retreat Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
+                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-returning-to-normal-congest" class="internal xref">Returning to Normal Congestion Control</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.7">
+                <p id="section-toc.1-1.4.2.7.1"><a href="#section-4.7" class="auto internal xref">4.7</a>.  <a href="#name-limitations-from-transport-" class="internal xref">Limitations from Transport Protocols</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-notes-on-the-careful-resume" class="internal xref">Notes on the Careful Resume Phases</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-examples-of-the-careful-res" class="internal xref">Examples of the Careful Resume Phases</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#appendix-B.1" class="auto internal xref">B.1</a>.  <a href="#name-example-with-no-loss" class="internal xref">Example with No Loss</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#appendix-B.2" class="auto internal xref">B.2</a>.  <a href="#name-example-with-no-loss-rate-l" class="internal xref">Example with No Loss, Rate Limited</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.3">
+                <p id="section-toc.1-1.10.2.3.1"><a href="#appendix-B.3" class="auto internal xref">B.3</a>.  <a href="#name-example-with-loss-detected-" class="internal xref">Example with Loss Detected in the Reconnaissance Phase</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.4">
+                <p id="section-toc.1-1.10.2.4.1"><a href="#appendix-B.4" class="auto internal xref">B.4</a>.  <a href="#name-example-with-loss-detected-i" class="internal xref">Example with Loss Detected in the Validating Phase</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref">Appendix C</a>.  <a href="#name-implementation-notes-for-us" class="internal xref">Implementation Notes for Using BBR</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#appendix-C.1" class="auto internal xref">C.1</a>.  <a href="#name-sending-unvalidated-packets" class="internal xref">Sending Unvalidated Packets Using BBR</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#appendix-C.2" class="auto internal xref">C.2</a>.  <a href="#name-validation-for-bbr" class="internal xref">Validation for BBR</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#appendix-C.3" class="auto internal xref">C.3</a>.  <a href="#name-safe-retreat-for-bbr" class="internal xref">Safe Retreat for BBR</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-E" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="sec-introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">All Internet transports are required to either use a Congestion
+      Control (CC) algorithm or to constrain their rate of transmission <span>[<a href="#RFC2914" class="cite xref">RFC2914</a>]</span> <span>[<a href="#RFC8085" class="cite xref">RFC8085</a>]</span>. In 2010, a survey of
+      alternative CC algorithms <span>[<a href="#RFC5783" class="cite xref">RFC5783</a>]</span> noted that there are
+      challenges when a CC algorithm operates across an Internet path with a
+      high and/or varying Bandwidth-Delay Product (BDP). The specified method
+      targets a solution for these challenges.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">A CC algorithm typically takes time to ramp up the sending rate. This is
+    called the "Slow Start Phase" and is informally known as the time to "get up
+    to speed". This defines a time during which a sender
+    intentionally uses less capacity than might be available, with the
+    intention to avoid or limit overshoot of the available capacity for the path.
+    In the context of CC, a path is associated with the end-to-end communication between
+    a pair of transport endpoints, each identified by a source IP address
+    and a unicast or anycast destination IP address. (This document does not define
+    support for broadcast or multicast destination addresses.) A path can
+    also be associated with a specific Differentiated Services Code Point (DSCP).
+    Below the transport layer, a specific path could be realised in various ways, but this
+    is not normally evident to the transport endpoints. (When known, additional
+    path information could potentially provide an explicit signal to the CC algorithm
+    to allow it to detect a change in the path.)<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">Any overshoot of the bottleneck rate can have a
+    detrimental effect on other flows that share a common bottleneck.
+    A sender can also use a method that observes the rate of acknowledged data
+    to seek to avoid an overshoot of this bottleneck capacity (e.g., Hystart++
+    <span>[<a href="#RFC9406" class="cite xref">RFC9406</a>]</span>).<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">In the extreme case, an overshoot can result in persistent congestion
+    with unwanted starvation of
+    other flows that share a common capacity bottleneck
+    (i.e., preventing other flows
+    from successfully sharing the capacity at a common bottleneck <span>[<a href="#RFC2914" class="cite xref">RFC2914</a>]</span>).<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">A separate instance of a CC algorithm typically executes over a transport path.
+    This seeks to avoid an increase in the queuing (latency or jitter) and/or
+    congestion packet loss for the flow.
+    In the case of a multipath
+    transport, there can be more than one path with a separate CC 
+     context for each path.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">This document specifies Careful Resume, a method that seeks to reduce
+   the time to complete a transfer when the sending rate is limited by
+   the congestion controller using the congestion window (CWND).  Specifically,
+   this is when a transfer seeks to send significantly more data than
+   allowed by the initial congestion window (IW) and where the BDP of
+   the path is also significantly more than the product of the IW and
+   path Round Trip Time (RTT).<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">Careful Resume introduces an alternative method to select initial CC parameters that
+    seeks to more rapidly and safely grow the sending rate controlled by
+    the CWND.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">Careful Resume is based on temporal sharing (sometimes known as
+    "caching") of a saved set of CC parameters that relate to previous observations
+    of the same path. The
+    parameters are saved and used to modify the CC
+    behaviour of a subsequent connection between the
+    same endpoints.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">CC algorithms that are rate based can make
+    similar adjustments to their target sending rate.
+    When saving the observed capacity,
+    some CC algorithms might save a different parameter
+    that is equivalent to the saved_cwnd.
+    For example, a rate-based CC algorithm
+    such as Bottleneck Bandwidth and Round-trip propagation time (BBR) <span>[<a href="#I-D.ietf-ccwg-bbr" class="cite xref">BBR-CC</a>]</span> can retain the
+    value of the bottleneck bandwidth required to reach the capacity available to
+    the flow (e.g., BBR.max_bw).<a href="#section-1-9" class="pilcrow">¶</a></p>
+<div id="sec-CC-params">
+<section id="section-1.1">
+        <h3 id="name-use-of-saved-cc-parameters-">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-use-of-saved-cc-parameters-" class="section-name selfRef">Use of Saved CC Parameters by a Sender</a>
+        </h3>
+<p id="section-1.1-1">CC parameters are used by Careful Resume for three functions:<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1.1-2">
+<li id="section-1.1-2.1">
+            <p id="section-1.1-2.1.1">Information to confirm whether a saved path corresponds to
+            the current path.<a href="#section-1.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.1-2.2">
+            <p id="section-1.1-2.2.1">Information about the utilised path capacity and observed RTT to
+            set CC parameters for the current connection.<a href="#section-1.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.1-2.3">
+            <p id="section-1.1-2.3.1">Information to check the CC parameters are not too old.<a href="#section-1.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-1.1-3">CC algorithms need to be cautious when using saved CC parameters on a new path
+            (see <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> and <span>[<a href="#RFC9040" class="cite xref">RFC9040</a>]</span>).
+            Care is therefore needed
+            to assure safe use and to be robust to changes
+            in traffic patterns, network routing, and link/node conditions.
+            There are cases where using the saved parameters of a previous
+            connection is not appropriate (see <a href="#guidance" class="auto internal xref">Section 4</a>).<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="rec-choice">
+<section id="section-1.2">
+        <h3 id="name-receiver-preference">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-receiver-preference" class="section-name selfRef">Receiver Preference</a>
+        </h3>
+<p id="section-1.2-1">Whilst the sender could take optimisation decisions without
+        considering the receiver's preference, there are cases where a
+        receiver could have information that is not available at the sender or
+        might benefit from understanding that Careful Resume might be used.
+        In these cases, a receiver could use a transport mechanism to
+        explicitly ask to either enable or inhibit Careful Resume when an
+        application initiates a new connection.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<p id="section-1.2-2">Receivers might request the ability to inhibit the use of Careful Resume in some situations, for example:<a href="#section-1.2-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1.2-3">
+<li id="section-1.2-3.1">
+            <p id="section-1.2-3.1.1">when a receiver can predict the pattern of traffic (e.g., insight
+       into the volume of data to be sent, the expected length of a
+       connection, or the requested maximum transfer rate);<a href="#section-1.2-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-3.2">
+            <p id="section-1.2-3.2.1">when a receiver with a local indication that a path/local interface
+       has changed since the CC parameters were saved;<a href="#section-1.2-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-3.3">
+            <p id="section-1.2-3.3.1">when a receiver has knowledge of the current hardware limitations;<a href="#section-1.2-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.2-3.4">
+            <p id="section-1.2-3.4.1">when a receiver can predict additional capacity will be needed
+       for other concurrent or later flows (i.e., it prefers to activate
+       Careful Resume for a different connection).<a href="#section-1.2-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="sec-transport-design">
+<section id="section-1.3">
+        <h3 id="name-transport-protocol-interact">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-transport-protocol-interact" class="section-name selfRef">Transport Protocol Interaction</a>
+        </h3>
+<p id="section-1.3-1">The CWND is one factor that limits the
+        sending rate of a transport protocol. Other mechanisms also constrain
+        the maximum sending rate. These include the sender pacing rate and the
+        receiver-advertised window <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span> or flow control credit <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>; see <a href="#flow-control" class="auto internal xref">Section 4.7</a>.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-use_case">
+<section id="section-1.4">
+        <h3 id="name-examples-of-scenarios-of-in">
+<a href="#section-1.4" class="section-number selfRef">1.4. </a><a href="#name-examples-of-scenarios-of-in" class="section-name selfRef">Examples of Scenarios of Interest</a>
+        </h3>
+<p id="section-1.4-1">This section provides a set of examples where Careful Resume is expected
+        to improve performance.
+        Either endpoint can assume the role of a
+        sender or a receiver. Careful Resume can also be independently used 
+        for each direction of a bidirectional connection.<a href="#section-1.4-1" class="pilcrow">¶</a></p>
+<p id="section-1.4-2">For example, consider an application that uses a series of connections over a path:
+        Without a new method,
+        each connection would need to individually
+        discover appropriate CC parameters, whereas Careful Resume allows the flow
+        to use a rate based on the previously observed CC parameters.<a href="#section-1.4-2" class="pilcrow">¶</a></p>
+<p id="section-1.4-3">Another example considers an application that connects after a disruption
+        had temporarily reduced the path
+        capacity: When this endpoint
+        returns to use the path using Careful Resume, the
+        sending rate can be based on the previously observed CC parameters.<a href="#section-1.4-3" class="pilcrow">¶</a></p>
+<p id="section-1.4-4">There is a particular benefit for
+        any path with an RTT that is much larger than for typical
+        Internet paths.
+        In a specific example, an application connected via a geo-stationary satellite access network
+        <span>[<a href="#IJSCN" class="cite xref">IJSCN</a>]</span>
+        could take 9 seconds to complete a 5.3 MB transfer
+        using standard CC, whereas a sender using Careful Resume
+        could reduce this transfer time to 4 seconds. The time to complete a 1 MB transfer could
+        similarly be reduced by 62 % <span>[<a href="#MAPRG111" class="cite xref">MAPRG111</a>]</span>. This benefit is also
+        expected for other sizes of transfer and for different path
+        characteristics when a path has a large BDP. 
+        <span>[<a href="#CR25" class="cite xref">CR25</a>]</span> provides further discussion of the method defined
+        in this document and includes analysis over various types of paths.<a href="#section-1.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-principle">
+<section id="section-1.5">
+        <h3 id="name-design-principles">
+<a href="#section-1.5" class="section-number selfRef">1.5. </a><a href="#name-design-principles" class="section-name selfRef">Design Principles</a>
+        </h3>
+<p id="section-1.5-1">Resuming a connection with CC parameters that were observed
+            during a previous connection
+            is inherently a tradeoff between the potential performance
+            gains for the new connection and the risks of degraded performance
+            for other connections that share
+            a common bottleneck. The specified method is designed to obtain good performance when resuming is appropriate,
+            while seeking to minimise the impact on other connections when it is
+            not appropriate.<a href="#section-1.5-1" class="pilcrow">¶</a></p>
+<p id="section-1.5-2">The following precautions mitigate the risk of
+            a sender adding excessive congestion to a path:<a href="#section-1.5-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1.5-3">
+          <li id="section-1.5-3.1">
+            <p id="section-1.5-3.1.1">The first precaution is to recognise whether the conditions
+            have changed so much that the saved values are no longer valid. We
+            describe that as the "Reconnaissance Phase". During that phase,
+            the sender will not send more data than allowed for any new
+            connection, e.g., using the recommended maximum IW for the first
+            RTT of transmitting data <span>[<a href="#RFC6928" class="cite xref">RFC6928</a>]</span> <span>[<a href="#RFC9002" class="cite xref">RFC9002</a>]</span>. The sender will only proceed with the resume
+            process if the reconnaissance succeeds.  If it fails (for example,
+            if previous packets in a connection experience congestion or the
+            RTT is significantly different), the sender will follow the
+            standard process for a new connection.  This provides some protection against aggravating severe congestion and
+    allows establishing the minimum RTT.<a href="#section-1.5-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.5-3.2">
+            <p id="section-1.5-3.2.1">The second precaution is to cautiously use the saved parameters
+                when resuming. This is called the "Unvalidated Phase".
+                For example,
+                the jump in the size of CWND/rate is restricted to a fraction (1/2) of the saved_cwnd,
+                to avoid starving other flows that may have started or increased
+                their capacity after the last capacity measurement.
+                The same principle applies for CC algorithms that use different parameters to classic
+                TCP CC: i.e., a sender must not send faster than allowed by a fraction
+                of the saved CC parameters. For example, a connection using a rate-based CC algorithm
+                (e.g., BBR) will set the
+                pacing rate to half the remembered value of the "bottleneck bandwidth".
+                The sender also needs to pace all unvalidated packets,
+                to ensure the rate does not exceed the previously used rate.
+                This is intended to avoid a sudden influx of
+                packets that could result in building a bottleneck queue and disrupting existing flows.
+                Successful validation can allow further increases of the CWND,
+                after first validating that the used rate did not result in congestion.<a href="#section-1.5-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-1.5-3.3">
+            <p id="section-1.5-3.3.1">The third precaution is to enter a "Safe Retreat Phase" if the validation fails,
+                for example, if congestion is detected during validation. The risk here is that the
+                trial use of the saved CC parameters could have disrupted existing connections.
+                For example, consider a connection using Reno CC:
+                When exiting "Slow Start" mode due to loss,
+                Reno would normally update the CWND to a
+                "Slow Start threshold" set to half the volume of data in flight.
+                However, during this validation,
+                the CWND is restored from the saved CC parameters. The resultant sending rate
+                could be much larger than the value that would have been reached by a
+                "standard" Slow Start process, resulting in an overload of the path that potentially
+                could cause significant congestion to other flows.
+                Instead of continuing with that "too large" value, the retreat process resets the
+                congestion window (rate) to a value no greater than what a standard process would have
+                discovered. For other CC algorithms,
+                such as CUBIC <span>[<a href="#RFC9438" class="cite xref">RFC9438</a>]</span> or BBR, the implementation
+                details may differ, but the principle remains: Trying and failing should not
+                unduly disadvantage existing connections that
+                share a common bottleneck (e.g., resulting in starving these connections).<a href="#section-1.5-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+</section>
+</div>
+<div id="notation">
+<section id="section-2">
+      <h2 id="name-language-notation-and-terms">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-language-notation-and-terms" class="section-name selfRef">Language, Notation, and Terms</a>
+      </h2>
+<p id="section-2-1">This section provides a brief summary of key terms and the
+    requirements language.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<div id="sec_req_language">
+<section id="section-2.1">
+        <h3 id="name-requirements-language">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>",
+    "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+    "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>",
+    "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be
+    interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as
+    shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="endpoint">
+<section id="section-2.2">
+        <h3 id="name-the-remote-endpoint">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-the-remote-endpoint" class="section-name selfRef">The Remote Endpoint</a>
+        </h3>
+<p id="section-2.2-1"> The Remote Endpoint is an implementation-dependent value that identifies the sender's
+        view of the network path being used. This is used
+        to match the current path with a set of CC parameters associated with a previously observed path.
+        It includes:<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.2-2.1">
+            <p id="section-2.2-2.1.1">an identifier representing the sending interface (e.g., a globally
+            assigned address/prefix or other local identifier);<a href="#section-2.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.2">
+            <p id="section-2.2-2.2.1"> an identifier representing the destination (e.g., a unicast or anycast
+            IP address).<a href="#section-2.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.2-3">The Remote Endpoint could also include information such as the DSCP.
+        If included, such information needs to be set consistently for a resumed connection
+        to the same endpoint.
+        Although additional information could improve the path
+        differentiation, it could reduce the reusability of saved parameters.<a href="#section-2.2-3" class="pilcrow">¶</a></p>
+<p id="section-2.2-4">The saved CC parameters can only be used to modify the startup when
+        the Remote Endpoint is not known to have changed (see <a href="#sec-phase-rec-phase" class="auto internal xref">Section 3.2</a>).<a href="#section-2.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-QLOG">
+<section id="section-2.3">
+        <h3 id="name-logging-support">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-logging-support" class="section-name selfRef">Logging Support</a>
+        </h3>
+<p id="section-2.3-1">This document defines triggers to support logging key events. For example,
+        <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span> provides definitions that enable a
+        Careful Resume implementation
+        to generate QLOG events when using QUIC.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-terms_def">
+<section id="section-2.4">
+        <h3 id="name-notation-and-terms">
+<a href="#section-2.4" class="section-number selfRef">2.4. </a><a href="#name-notation-and-terms" class="section-name selfRef">Notation and Terms</a>
+        </h3>
+<p id="section-2.4-1"> The document uses language drawn from a range of RFCs.  The
+        following terms are defined:<a href="#section-2.4-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2.4-2">
+          <dt id="section-2.4-2.1">ACK:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.2">The indication at the transport layer that the
+          Remote Endpoint has correctly received the acknowledged data. In a
+          CC algorithm, an ACK also confirms that the acknowledged data is no
+          longer in flight.<a href="#section-2.4-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.3">Beta:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.4">A scaling factor between 0.5 and 1; the default
+          value is 0.5.<a href="#section-2.4-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.5">Careful Resume:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.6">The method specified in this
+          document to select initial CC parameters and to more rapidly and
+          safely increase the initial sending rate.<a href="#section-2.4-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.7">Congestion Control (CC) parameters:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.8">A set of saved CC
+          parameters from observing the capacity of an established connection
+          (see <a href="#sec-CC-params" class="auto internal xref">Section 1.1</a>).<a href="#section-2.4-2.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.9">congestion window (CWND):</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.10">The congestion window or equivalent CC variable
+          limiting the maximum sending rate (see <span>[<a href="#RFC5681" class="cite xref">RFC5681</a>]</span>).<a href="#section-2.4-2.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.11">current Round Trip Time (RTT):</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.12">A sample measurement of the current RTT measured using the most recent ACK.<a href="#section-2.4-2.12" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.13">flight_size:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.14">The current volume of unacknowledged data (see <span>[<a href="#RFC5681" class="cite xref">RFC5681</a>]</span>).<a href="#section-2.4-2.14" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.15">jump_cwnd:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.16">The resumed CWND, used in the Unvalidated Phase.<a href="#section-2.4-2.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.17">Lifetime:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.18">The configured time after which a set of saved CC parameters can no longer be safely reused.<a href="#section-2.4-2.18" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.19">max_jump:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.20">The configured maximum jump_cwnd.<a href="#section-2.4-2.20" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.21">PipeSize:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.22">A measure of the validated available capacity based on the acknowledged data.<a href="#section-2.4-2.22" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.23">Remote Endpoint:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.24">The endpoint corresponding to a connection; see <a href="#endpoint" class="auto internal xref">Section 2.2</a>.<a href="#section-2.4-2.24" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.25">saved_cwnd:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.26">A CC parameter with the preserved capacity
+          derived from observation of a previous connection (see <a href="#req-observe" class="auto internal xref">Section 4.1</a>).<a href="#section-2.4-2.26" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.27">saved_remote_endpoint:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.28">The Remote Endpoint that was associated with a set of saved CC parameters.<a href="#section-2.4-2.28" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.29">saved_rtt:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.30">A CC parameter with the preserved minimum RTT (see <a href="#req-observe" class="auto internal xref">Section 4.1</a>).<a href="#section-2.4-2.30" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.4-2.31">unvalidated packet:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.4-2.32">A packet sent when the CWND has been
+          increased beyond the size normally permitted by the CC algorithm; if
+          such a packet is acknowledged by an ACK, it contributes to the
+          PipeSize, but if congestion is detected, it triggers entry to the
+          Safe Retreat Phase.<a href="#section-2.4-2.32" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-phase">
+<section id="section-3">
+      <h2 id="name-the-phases-of-cc-using-care">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-the-phases-of-cc-using-care" class="section-name selfRef">The Phases of CC Using Careful Resume</a>
+      </h2>
+<p id="section-3-1">This section defines a series of phases that the
+    congestion controller moves through as a connection
+    uses Careful Resume. Each rule is prefixed by the
+    name of the relevant phase.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span id="name-key-transitions-between-pha"></span><div id="fig1">
+<figure id="figure-1">
+        <div id="section-3-2.1">
+          <div class="alignLeft art-svg artwork" id="section-3-2.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="192" width="580" viewBox="0 0 580 192" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+              <path d="M 208,48 L 208,64" fill="none" stroke="black"></path>
+              <path d="M 208,96 L 208,160" fill="none" stroke="black"></path>
+              <path d="M 264,96 L 264,112" fill="none" stroke="black"></path>
+              <path d="M 336,128 L 336,160" fill="none" stroke="black"></path>
+              <path d="M 504,48 L 504,160" fill="none" stroke="black"></path>
+              <path d="M 336,32 L 496,32" fill="none" stroke="black"></path>
+              <path d="M 296,80 L 504,80" fill="none" stroke="black"></path>
+              <path d="M 264,112 L 288,112" fill="none" stroke="black"></path>
+              <path d="M 392,112 L 504,112" fill="none" stroke="black"></path>
+              <path d="M 208,160 L 360,160" fill="none" stroke="black"></path>
+              <path d="M 480,160 L 504,160" fill="none" stroke="black"></path>
+              <polygon class="arrowhead" points="512,48 500,42.4 500,53.6" fill="black" transform="rotate(270,504,48)"></polygon>
+              <polygon class="arrowhead" points="504,32 492,26.4 492,37.6" fill="black" transform="rotate(0,496,32)"></polygon>
+              <polygon class="arrowhead" points="368,160 356,154.4 356,165.6" fill="black" transform="rotate(0,360,160)"></polygon>
+              <polygon class="arrowhead" points="296,112 284,106.4 284,117.6" fill="black" transform="rotate(0,288,112)"></polygon>
+              <polygon class="arrowhead" points="216,64 204,58.4 204,69.6" fill="black" transform="rotate(90,208,64)"></polygon>
+              <g class="text">
+                <text x="164" y="36">Normal CC  ...  Connect -&gt; Reconnaissance</text>
+                <text x="542" y="36">Normal CC</text>
+                <text x="52" y="52">(Observing)</text>
+                <text x="240" y="84">Unvalidated</text>
+                <text x="340" y="116">Validating</text>
+                <text x="420" y="164">Safe Retreat</text>
+              </g>
+            </svg><a href="#section-3-2.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-key-transitions-between-pha" class="selfRef">Key Transitions Between Phases in Careful Resume</a>
+        </figcaption></figure>
+</div>
+<p id="section-3-3">
+    The key phases of Careful Resume are illustrated in <a href="#fig1" class="auto internal xref">Figure 1</a>.
+    Examples of transitions between these phases
+    are provided in Appendices <a href="#Notes" class="auto internal xref">A</a> and <a href="#Examples" class="auto internal xref">B</a>.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<section id="section-3.1">
+        <h3 id="name-observing">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-observing" class="section-name selfRef">Observing</a>
+        </h3>
+<p id="section-3.1-1">An established connection can save a set of CC parameters for the specific path
+        to the current endpoint. A set of CC parameters includes a
+        Lifetime (e.g., as a timestamp after which the parameters must not be used)
+        and corresponds to one saved_remote_endpoint.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">The following rules apply to observing a connection:<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-3.1">
+            <p id="section-3.1-3.1.1">Observing (saved_cwnd):
+        The currently utilised capacity for the connection is
+        measured as the volume of bytes sent during an RTT and is recorded in the
+        saved_cwnd. This could be computed
+        by measuring the volume of data acknowledged in one RTT.
+        If the measured CWND is less than four times the IW,
+        the sender can choose to not save the CC parameters, because the additional actions associated with
+        performing Careful Resume for a small CWND would not justify its use.<a href="#section-3.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-3.2">
+            <p id="section-3.1-3.2.1">Observing (saved_rtt): The minimum RTT at the time of observation is saved as the saved_rtt.<a href="#section-3.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.1-3.3">
+            <p id="section-3.1-3.3.1">Observing (updating saved CC parameters): A sender <span class="bcp14">MUST NOT</span> retain more than one
+        set of CC parameters for a Remote Endpoint,
+        but the set of CC parameters <span class="bcp14">SHOULD</span> be updated (or replaced)
+        after a later observation of a path to the same Remote Endpoint.<a href="#section-3.1-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.1-4">Implementation notes are provided in <a href="#req-observe" class="auto internal xref">Section 4.1</a>.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+<div id="sec-phase-rec-phase">
+<section id="section-3.2">
+        <h3 id="name-reconnaissance-phase">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-reconnaissance-phase" class="section-name selfRef">Reconnaissance Phase</a>
+        </h3>
+<p id="section-3.2-1">During this phase, the sender attempts to retrieve CC
+        parameters that were previously saved, then determine whether the path is
+        consistent with a previously observed path (i.e, match the
+        saved_remote_endpoint in a set of saved CC parameters).<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2"> The sender enters the Reconnaissance Phase after connection setup (using normal CC).
+        In this phase, the CWND is initialised to the IW, and the sender transmits any initial data.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3"> In the Reconnaissance Phase, the sender performs the following
+        action:<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-4.1">
+            <p id="section-3.2-4.1.1">Reconnaissance Phase (received acknowledgment):
+         The CWND is increased using normal CC as each ACK
+         confirms delivery of previously unacknowledged data
+          (i.e., the base CC algorithm continues to operate normally).<a href="#section-3.2-4.1.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.2-5">The sender exits the Reconnaissance Phase and stops using Careful Resume
+     when one of the following events occurs:<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-6.1">
+            <p id="section-3.2-6.1.1">Reconnaissance Phase (detected congestion): If the sender detects
+         congestion (e.g., packet loss or ECN-CE marking),
+         this indicates that
+         use of the saved CC parameters is inappropriate.
+         The sender stops using Careful Resume and <span class="bcp14">MUST</span> continue using normal CC to
+         react to the detected congestion.<a href="#section-3.2-6.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.2-6.2">
+            <p id="section-3.2-6.2.1">Reconnaissance Phase (using saved_cwnd):
+        Only one connection can use a specific set of saved CC parameters.
+        If another connection has already started to use the saved_cwnd, the sender
+        <span class="bcp14">MUST</span> exit Careful Resume and return to use normal CC.<a href="#section-3.2-6.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.2-6.3">
+            <p id="section-3.2-6.3.1">Reconnaissance Phase (path change): If the Remote Endpoint is not
+      the same as any saved_remote_endpoint, or the sender receives a
+      signal from the local stack indicating that the path is now
+      different to the observed path, the sender <span class="bcp14">MUST</span> stop using
+      Careful Resume and returns to use normal CC.<a href="#section-3.2-6.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.2-6.4">
+            <p id="section-3.2-6.4.1">Reconnaissance Phase (lifetime of saved CC parameters): The CC
+      parameters are temporal.  If the Lifetime of the observed CC parameters is exceeded, this set of CC
+   parameters is not used.  The saved CC parameters are deleted, and 
+   the sender <span class="bcp14">MUST</span> stop using Careful Resume and return to using normal CC.<a href="#section-3.2-6.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.2-6.5">
+            <p id="section-3.2-6.5.1">Reconnaissance Phase (minimum RTT too small): If the minimum
+      RTT recorded in the Reconnaissance Phase is less than or equal to
+      (saved_rtt / 2) (see <a href="#sec-confirm-rtt" class="auto internal xref">Section 4.2.1</a>), the sender <span class="bcp14">MUST</span> stop
+      using Careful Resume 
+      (e.g., logged as rtt_not_validated in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>) and returns to use normal CC.  
+      This is because the
+      calculation of a sending rate from a saved_cwnd is directly
+      impacted by the RTT; therefore, a significant change in the RTT is
+      a strong indication that the previously observed CC parameters are
+      not valid for the current path.<a href="#section-3.2-6.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.2-7">Note: When a path is not confirmed, Careful Resume does not modify the CWND
+     before it exits to use normal CC.<a href="#section-3.2-7" class="pilcrow">¶</a></p>
+<p id="section-3.2-8">The sender is permitted to enter the Unvalidated Phase as described below:<a href="#section-3.2-8" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-9.1">
+            <p id="section-3.2-9.1.1">Reconnaissance Phase (path confirmed):
+        When the sender has
+        received an ACK that acknowledges all the initial data (usually the IW)
+        without reported congestion, it <span class="bcp14">MAY</span> then enter the Unvalidated Phase.
+        Although a sender can immediately transition to the Unvalidated Phase,
+        this transition <span class="bcp14">MAY</span> be deferred to the time at which more data is sent
+       than would have been normally permitted by the CC algorithm.<a href="#section-3.2-9.1.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.2-10">Implementation notes are provided in <a href="#req-recon" class="auto internal xref">Section 4.2</a>.<a href="#section-3.2-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-phase-unv-phase">
+<section id="section-3.3">
+        <h3 id="name-unvalidated-phase">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-unvalidated-phase" class="section-name selfRef">Unvalidated Phase</a>
+        </h3>
+<p id="section-3.3-1">The Unvalidated Phase is designed to enable the CWND
+        to more rapidly get up to speed by using paced transmission of a tentatively increased CWND.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">On entry to the Unvalidated Phase, the following actions are performed:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-3.1">
+            <p id="section-3.3-3.1.1">Unvalidated Phase (initialising PipeSize):
+               The variable PipeSize is initialised to the flight_size on
+               entry to the Unvalidated Phase. This records the used portion of the
+               CWND before a jump is applied.<a href="#section-3.3-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.3-3.2">
+            <p id="section-3.3-3.2.1">Unvalidated Phase (setting the jump_cwnd):
+               To avoid starving other flows that could have either started
+               or increased their use of capacity since observing the capacity of a path,
+               the jump_cwnd <span class="bcp14">MUST</span> be no more than half of the saved_cwnd.
+               Hence, jump_cwnd is less than  or equal to Min(max_jump,(saved_cwnd/2)).
+               CWND = jump_cwnd.<a href="#section-3.3-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.3-4">
+          In the Unvalidated Phase, the sender performs the following actions:<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-5.1">
+            <p id="section-3.3-5.1.1">Unvalidated Phase (pacing transmission): All packets sent in the
+               Unvalidated Phase <span class="bcp14">MUST</span> use pacing based on the current RTT.<a href="#section-3.3-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.3-5.2">
+            <p id="section-3.3-5.2.1">Unvalidated Phase (tracking PipeSize):
+               The variable PipeSize is increased by the volume of data that is newly acknowledged
+               by each received ACK. (This indicates a previously unvalidated packet has been
+               successfully sent over the path.)<a href="#section-3.3-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.3-6">The sender exits the Unvalidated Phase and enters the Safe Retreat Phase 
+        when one of the following events occurs:<a href="#section-3.3-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-7.1">
+            <p id="section-3.3-7.1.1">Unvalidated Phase (confirming the path during transmission):
+               If the sender determines that it is not valid to use the previous CC parameters
+               due to a detected path change (e.g., a change in the RTT 
+               or an explicit signal indicating a path change),
+               the Safe Retreat Phase <span class="bcp14">MUST</span> be entered (e.g., logged as
+               path_changed in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).<a href="#section-3.3-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.3-7.2">
+            <p id="section-3.3-7.2.1">Unvalidated Phase (detected congestion): If the sender detects
+               congestion (e.g., packet loss or ECN-CE marking),
+               the Safe Retreat Phase <span class="bcp14">MUST</span> be entered
+               (e.g., logged as either packet_loss or ECN_CE in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).
+               (Note that insufficient time has passed in the Unvalidated Phase for a
+               sender to receive any feedback validating the jump in the CWND.
+               Therefore, any detected congestion must have resulted from packets
+               sent before the Unvalidated Phase.)<a href="#section-3.3-7.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.3-8">The sender exits the Unvalidated Phase and evaluates whether to enter the
+       Validating Phase when one of the following events occurs:<a href="#section-3.3-8" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.3-9.1">
+            <p id="section-3.3-9.1.1">Unvalidated Phase (completed sending all unvalidated packets):
+               The sender enters the Validating Phase when the flight_size equals the CWND
+               (e.g., logged as last_unvalidated_packet_sent in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>). For an 
+   implementation that measures the CWND in bytes, this condition is 
+   also true when the remaining unused CWND is less than one maximum-sized packet.<a href="#section-3.3-9.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.3-9.2">
+            <p id="section-3.3-9.2.1">Unvalidated Phase (receiving acknowledgment for an unvalidated packet):
+               The sender enters the Validating Phase when an ACK is
+               received that acknowledges the first packet number (or higher)
+                that was sent in the Unvalidated Phase
+               (e.g., logged as first_unvalidated_packet_acknowledged in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).<a href="#section-3.3-9.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.3-9.3">
+            <p id="section-3.3-9.3.1">Unvalidated Phase (limiting time in the Unvalidated Phase): The sender enters the
+               Validating Phase if more than one RTT has elapsed while in the Unvalidated Phase
+               (e.g., logged as rtt_exceeded in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).<a href="#section-3.3-9.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.3-10">Unvalidated Phase (check flight_size): Upon any of these events,
+          and after processing any Acknowledgments that update the PipeSize
+          and flight_size, the sender checks if the flight_size is less than
+          the IW or if the flight_size is less than or equal to the PipeSize, and
+          if true, resets the CWND to the PipeSize (e.g., logged as
+          rate_limited in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>)
+          and stops using Careful Resume and returns to use normal CC. In the
+          absence of detected congestion, the CWND is not reduced below the
+          IW.  (The PipeSize does not include the part of the jump_cwnd that
+          was not utilised.) Otherwise, the CWND <span class="bcp14">MUST</span> be set to
+          the flight_size and the sender progresses to the Validating
+          Phase.<a href="#section-3.3-10" class="pilcrow">¶</a></p>
+<p id="section-3.3-11">Implementation notes are provided in <a href="#req-unvalid" class="auto internal xref">Section 4.3</a>.<a href="#section-3.3-11" class="pilcrow">¶</a></p>
+<p id="section-3.3-12">Notes for BBR are
+          provided in <a href="#sec-phase-unval-bbr" class="auto internal xref">Appendix C.1</a>.<a href="#section-3.3-12" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-phase-val-phase">
+<section id="section-3.4">
+        <h3 id="name-validating-phase">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-validating-phase" class="section-name selfRef">Validating Phase</a>
+        </h3>
+<p id="section-3.4-1">The Validating Phase checks whether all packets
+          sent in the Unvalidated Phase were received without inducing congestion.
+          The CWND remains unvalidated and the sender typically remains in this phase for one RTT.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">In the Validating Phase, the sender performs the following actions:<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-3.1">
+            <p id="section-3.4-3.1.1">Validating Phase (tracking PipeSize):
+            The PipeSize is increased by the volume of acknowledged data for each
+            received ACK that indicates a packet was
+            successfully sent over the path.<a href="#section-3.4-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-3.2">
+            <p id="section-3.4-3.2.1">Validating Phase (updating the CWND): The CWND is updated using the
+            normal rules for the current congestion controller.
+            This typically will use "Slow Start", which
+            allows the CWND to be increased for each received ACK that
+            indicates a packet has been successfully sent across the path.<a href="#section-3.4-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.4-4">The sender exits the Validating Phase when one of the following events
+        occurs:<a href="#section-3.4-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.4-5.1">
+            <p id="section-3.4-5.1.1">Validating Phase (detected congestion):
+            If the sender determines that congestion was detected
+            (e.g., packet loss or ECN-CE marking), Careful Resume
+            enters the Safe Retreat Phase
+            (e.g., logged as either packet_loss or ECN_CE in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).<a href="#section-3.4-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.4-5.2">
+            <p id="section-3.4-5.2.1">Validating Phase (receiving acknowledgment of the unvalidated packets):
+            The sender stops using Careful Resume when an ACK is
+            received that acknowledges the last packet number (or higher)
+            that was sent in the Unvalidated Phase
+            (e.g., logged as last_unvalidated_packet_acknowledged in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).
+            This means that the packets sent in the Unvalidated Phase were acknowledged
+            without congestion.<a href="#section-3.4-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.4-6">Notes for BBR are
+        provided in <a href="#sec-phase-val-bbr" class="auto internal xref">Appendix C.2</a>.<a href="#section-3.4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-phase-ret-phase">
+<section id="section-3.5">
+        <h3 id="name-safe-retreat-phase">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-safe-retreat-phase" class="section-name selfRef">Safe Retreat Phase</a>
+        </h3>
+<p id="section-3.5-1">This phase is entered when congestion is
+        detected for an unvalidated packet.
+        It drains the path of other unvalidated packets.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">On entry to the Safe Retreat Phase, the following actions are performed:<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.5-3.1">
+            <p id="section-3.5-3.1.1">Safe Retreat Phase (removing saved information):
+            The set of saved CC parameters for
+            the path are deleted, to prevent these
+            from being used again by later flows.<a href="#section-3.5-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.5-3.2">
+            <p id="section-3.5-3.2.1">Safe Retreat Phase (re-initializing the CWND):
+            The CWND <span class="bcp14">MUST</span> be reduced to
+            no more than (PipeSize/2).
+            This avoids persistent starvation by allowing capacity for other flows to regain
+            their share of the total capacity.
+            (Note: The minimum CWND in QUIC is 2 packets; see <span>[<a href="#RFC9002" class="cite xref">RFC9002</a>], <a href="https://rfc-editor.org/rfc/rfc9002#section-4.8" class="relref">Section 4.8</a></span>).<a href="#section-3.5-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.5-3.3">
+            <p id="section-3.5-3.3.1">Safe Retreat Phase (loss recovery):
+            Loss recovery commences using the newly reduced CWND
+            that was set on entry to the Safe Retreat Phase.
+            When the CWND is reduced,
+            a QUIC sender can immediately send a single packet prior to the reduction
+            <span>[<a href="#RFC9002" class="cite xref">RFC9002</a>]</span> to speed up loss
+            recovery. A
+            similar method for TCP is described in <span><a href="https://rfc-editor.org/rfc/rfc6675#section-5" class="relref">Section 5</a> of [<a href="#RFC6675" class="cite xref">RFC6675</a>]</span>.
+            The loss recovery continues
+            until acknowledgment of the last packet number (or a later packet) sent in the
+            Unvalidated or Validating Phase.
+            (Note: If the last unvalidated packet is not cumulatively acknowledged, then
+            additional packets might also need to be retransmitted.)<a href="#section-3.5-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.5-4">In the Safe Retreat Phase, the sender performs the following actions:<a href="#section-3.5-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.5-5.1">
+            <p id="section-3.5-5.1.1">Safe Retreat Phase (tracking PipeSize):
+            The sender continues to update
+            the PipeSize after processing each ACK.
+            (The PipeSize will be used to update the ssthresh when
+           leaving this phase, but it does not affect the CWND.)<a href="#section-3.5-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.5-5.2">
+            <p id="section-3.5-5.2.1">Safe Retreat Phase (maintaining the CWND):
+            The CWND <span class="bcp14">MUST NOT</span> be increased in the Safe Retreat Phase.<a href="#section-3.5-5.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-3.5-5.3">
+            <p id="section-3.5-5.3.1">Safe Retreat Phase (acknowledgment of unvalidated packets):
+            When the last packet (or a later packet) sent during the
+            Unvalidated Phase has been acknowledged,
+            the sender stops using Careful Resume and returns to use normal CC.<a href="#section-3.5-5.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-3.5-6">On leaving
+            the Safe Retreat Phase, the ssthresh <span class="bcp14">MUST</span> be set to no larger than
+            the most recently measured PipeSize * Beta, where Beta
+            is a scaling factor between 0.5 and 1. The default value
+            is 0.5, chosen to reduce the probability of inducing
+            a second round of congestion. CUBIC defines a
+           Beta__cubic of 0.7 <span>[<a href="#RFC9438" class="cite xref">RFC9438</a>]</span>
+            (e.g., logged as exit_recovery in <span>[<a href="#I-D.ietf-tsvwg-careful-resume-qlog" class="cite xref">LOG</a>]</span>).<a href="#section-3.5-6" class="pilcrow">¶</a></p>
+<p id="section-3.5-7">Implementation notes are provided in <a href="#req-retreat" class="auto internal xref">Section 4.5</a>.<a href="#section-3.5-7" class="pilcrow">¶</a></p>
+<p id="section-3.5-8">Notes for BBR are described in <a href="#sec-BBR-SR" class="auto internal xref">Appendix C.3</a>.<a href="#section-3.5-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-3.6">
+        <h3 id="name-detecting-persistent-conges">
+<a href="#section-3.6" class="section-number selfRef">3.6. </a><a href="#name-detecting-persistent-conges" class="section-name selfRef">Detecting Persistent Congestion While Using Careful Resume</a>
+        </h3>
+<p id="section-3.6-1">A sender that experiences persistent congestion (e.g., a
+        Retransmission Time Out (RTO) or expiry in TCP) ceases to use Careful
+        Resume.  The sender stops using Careful Resume and returns to use
+        normal CC. If using BBR, the normal processing of packet losses will
+        cause it to enter the Drain state while the "carefully-resuming" flag
+        is set to True; see <a href="#sec-BBR-SR" class="auto internal xref">Appendix C.3</a>.<a href="#section-3.6-1" class="pilcrow">¶</a></p>
+<p id="section-3.6-2"> As in loss recovery, data sent in the
+        Unvalidated Phase could be later acknowledged after an RTO event.<a href="#section-3.6-2" class="pilcrow">¶</a></p>
+</section>
+<div id="Normal_Phase">
+<section id="section-3.7">
+        <h3 id="name-returning-to-use-normal-cc">
+<a href="#section-3.7" class="section-number selfRef">3.7. </a><a href="#name-returning-to-use-normal-cc" class="section-name selfRef">Returning to Use Normal CC</a>
+        </h3>
+<p id="section-3.7-1">After exiting Careful Resume, the sender returns to using
+            the normal CC algorithm (e.g., in congestion avoidance when the CWND is more than ssthresh, or Slow Start when
+            less than or equal to ssthresh).<a href="#section-3.7-1" class="pilcrow">¶</a></p>
+<p id="section-3.7-2">Implementation notes are provided in <a href="#req-normal" class="auto internal xref">Section 4.6</a>.<a href="#section-3.7-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="guidance">
+<section id="section-4">
+      <h2 id="name-implementation-notes-and-gu">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-implementation-notes-and-gu" class="section-name selfRef">Implementation Notes and Guidelines</a>
+      </h2>
+<p id="section-4-1">This section provides guidance for implementation and use.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="req-observe">
+<section id="section-4.1">
+        <h3 id="name-observing-the-path-capacity">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-observing-the-path-capacity" class="section-name selfRef">Observing the Path Capacity</a>
+        </h3>
+<p id="section-4.1-1">There are various approaches to measuring the capacity used by a connection.
+        Congestion controllers, such as Reno <span>[<a href="#RFC5681" class="cite xref">RFC5681</a>]</span> or CUBIC <span>[<a href="#RFC9438" class="cite xref">RFC9438</a>]</span>, could estimate the
+        capacity based on the
+        CWND, flight_size, acknowledged rate, etc. A different approach could
+        estimate the same parameters for a rate-based congestion
+        controller, such as BBR <span>[<a href="#I-D.ietf-ccwg-bbr" class="cite xref">BBR-CC</a>]</span>,
+        or by observing the rate at which data is acknowledged by the Remote Endpoint.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">Implementations are required to calculate a saved_rtt, measuring
+        the minimum RTT while observing the capacity. For example, this could be the minimum
+        of a set RTT of measurements measured over the previous 5 minutes.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-3.1">
+            <p id="section-4.1-3.1.1">There are cases where the current CWND does not reflect the
+            path capacity. At the end of Slow Start, the CWND can be
+            significantly larger than needed to fully utilise the path (i.e.,
+            a CWND overshoot). It is inappropriate to use an overshoot in the
+            CWND as a basis for estimating the capacity. In most cases, the
+            CWND will converge to a stable value after several more RTTs.  One
+            mitigation when a connection is in Slow Start could be to set the
+            saved_cwnd based on the validated pipe size (i.e., CWND / 2).<a href="#section-4.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-3.2">
+            <p id="section-4.1-3.2.1">When the sender
+            is rate limited or in the RTT following a burst of
+            transmission, a sender typically transmits
+            less data than allowed by the CWND. Such observations could be discounted when
+            estimating the saved_cwnd (e.g., when a previous
+            observation recorded a higher value).<a href="#section-4.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="req-recon">
+<section id="section-4.2">
+        <h3 id="name-confirming-the-path-in-the-">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-confirming-the-path-in-the-" class="section-name selfRef">Confirming the Path in the Reconnaissance Phase</a>
+        </h3>
+<p id="section-4.2-1">In the Reconnaissance Phase, the sender initiates a connection
+        and starts sending initial data, while measuring the current RTT.
+        The CC is not modified.
+        A sender therefore needs to limit the initial data,
+        sent in the first RTT of transmitted data,
+        to no more than the IW <span>[<a href="#RFC9002" class="cite xref">RFC9002</a>]</span>.
+        This transmission using the IW is
+        assumed to be a safe starting point for any path to avoid
+        adding excessive load to a potentially congested path.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">Careful Resume does not permit multiple concurrent reuse of
+        the saved CC parameters. When multiple new concurrent connections
+        are made to a server, each can have a valid saved_remote_endpoint,
+        but the saved_cwnd can only be used by one connection at a time.
+        This is to prevent the sender from performing multiple jumps in the CWND,
+        each individually based on the same saved_cwnd, and hence creating an
+        excessive aggregate load at the bottleneck.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">The method that is used to prevent reuse of the saved CC parameters
+        will depend upon the design of the server.
+        For example, 
+        if a simple sender receives multiple connections from a Remote Endpoint, 
+        then the sender process could use a hash table to manage the CC parameters,
+        whereas when using some types of load
+        balancing, a distributed system might be needed to ensure this
+        invariant when the load balancing hashes
+        connections by 4-tuple and hence multiple connections from the same
+        client device are served by different server processes;
+        see also <a href="#req-recon" class="auto internal xref">Section 4.2</a>.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">A sender that is rate limited <span>[<a href="#RFC7661" class="cite xref">RFC7661</a>]</span> sends
+        insufficient data to be able to validate transmission at a higher
+        rate.  Such a sender is allowed to remain in the Reconnaissance Phase
+        and to not transition to the Unvalidated Phase until there is more
+        data in the transmission buffer than would normally be permitted by
+        the CC algorithm.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<div id="sec-confirm-rtt">
+<section id="section-4.2.1">
+          <h4 id="name-confirming-the-path">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-confirming-the-path" class="section-name selfRef">Confirming the Path</a>
+          </h4>
+<p id="section-4.2.1-1">Path characteristics can change over time for many reasons.
+            This can result in the previously observed CC parameters
+            becoming irrelevant. To help confirm the path, the sender compares the
+            saved_rtt with each current RTT sample.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">If the current RTT sample is less than a half of the
+            saved_rtt, this is regarded as too small. This is an indicator of a path change.
+            This factor of two arises because the jump_cwnd is calculated as half the
+            measured saved_cwnd and the sending rate ought not to exceed the observed rate when
+            the saved_cwnd was measured.<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-3">If the current RTT is larger than the saved_rtt,
+            this would result
+            in a proportionally lower rate for the unvalidated packets, because the transmission
+            is paced based on the current RTT. Hence, this rate is still safe.
+            If the current RTT has been incorrectly measured as larger
+            than the actual path RTT, the sender will receive an ACK for an
+            unvalidated packet before it has completed the Unvalidated Phase. This
+            ACK resets the CWND to reflect the flight_size,
+            and the sender then enters the Validating Phase.
+            The flight_size reflects the amount of outstanding data
+            in the network rather than the
+            maximum that is permitted by the CWND.<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4">A current RTT that is more than ten times the
+            saved_rtt is indicative of a path change.
+            The value of ten accommodates both increases in latency from buffering
+            on a path and any variation between RTT samples.<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-5">Note 1: In the Reconnaissance Phase, the sender calculates a minimum RTT over the phase
+            and checks this on entry to the Unvalidated Phase.
+            This avoids a need to check after each current RTT sample.<a href="#section-4.2.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-6">Note 2: During the Unvalidated Phase, the
+            minimum RTT cannot increase, and hence the minimum RTT can never be larger
+            than (saved_rtt x 10) during the Unvalidated Phase.<a href="#section-4.2.1-6" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-7">The sender also verifies that the initial data was acknowledged.
+          Any loss could be indicative of persistent congestion.  If a sender
+          in the Reconnaissance Phase detects congestion, it stops using
+          Careful Resume and returns to using normal CC.  Some transport
+          protocols implement CC mechanisms that infer potential congestion
+          from an increase in the current RTT.  Designs need to consider
+          whether such an indication is a suitable trigger to stop using
+          Careful Resume and revert to using normal CC.<a href="#section-4.2.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="req-unvalid">
+<section id="section-4.3">
+        <h3 id="name-safety-in-the-unvalidated-p">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-safety-in-the-unvalidated-p" class="section-name selfRef">Safety in the Unvalidated Phase</a>
+        </h3>
+<p id="section-4.3-1">This section considers the safety
+        for using saved CC parameters to tentatively update the CWND.
+        This seeks to avoid starving other flows that could have either started
+        or increased their use of capacity since observing the capacity of a path.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">To avoid inducing significant congestion to any connections that
+        have started to use a shared bottleneck, a sender must not directly use the previous
+        saved_cwnd to directly initialise a new flow causing it to resume sending at the same
+        rate. The jump_cwnd is therefore limited to half the previously saved_cwnd.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<div id="req-lifetime">
+<section id="section-4.3.1">
+          <h4 id="name-lifetime-of-cc-parameters">
+<a href="#section-4.3.1" class="section-number selfRef">4.3.1. </a><a href="#name-lifetime-of-cc-parameters" class="section-name selfRef">Lifetime of CC Parameters</a>
+          </h4>
+<p id="section-4.3.1-1">The long-term use of the previously observed parameters is not appropriate;
+            a Lifetime defines the duration during
+            which a set of saved CC parameters can be safely reused.
+            The maximum Lifetime is a configurable parameter for a sender. 
+            An implementation also needs to provide a method to flush the set of saved CC parameters
+            following a configuration change.<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-2"><span>[<a href="#RFC9040" class="cite xref">RFC9040</a>]</span> provides guidance on the implementation of
+            TCP Control Block Interdependence, but it does not specify how long a saved
+            parameter can safely be reused.
+            <span>[<a href="#RFC7661" class="cite xref">RFC7661</a>]</span> specifies a method for managing an
+            unvalidated CWND. It states:<a href="#section-4.3.1-2" class="pilcrow">¶</a></p>
+<blockquote id="section-4.3.1-3">After a fixed period of time (the non-validated period (NVP)), the sender
+            adjusts the CWND (Section 4.4.3). The NVP <span class="bcp14">SHOULD NOT</span> exceed five minutes.<a href="#section-4.3.1-3" class="pilcrow">¶</a>
+</blockquote>
+<p id="section-4.3.1-4"><span><a href="https://rfc-editor.org/rfc/rfc7661#section-5" class="relref">Section 5</a> of [<a href="#RFC7661" class="cite xref">RFC7661</a>]</span> discusses the rationale for
+            choosing that period.
+            However, <span>[<a href="#RFC7661" class="cite xref">RFC7661</a>]</span> targets rate-limited connections using normal
+            CC. Careful Resume includes additional
+            mechanisms to avoid and mitigate the effects of overshoot, and therefore
+            a longer period can be justified when using a saved_cwnd with
+            Careful Resume.<a href="#section-4.3.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.3.1-5">When the path characteristics are known to be dynamic, or the path varies,
+            a small Lifetime is desirable (e.g., measured in minutes). For stable paths,
+            and where the sender does not expect the path to be shared by many senders,
+            a longer Lifetime (e.g., measured in hours) could be used.
+            A bottleneck that is shared
+            by a large number of senders brings greater risk that Careful Resume connections could
+            contribute congestion that leads to prolonged overload with starvation. This can
+            be mitigated by setting a small Lifetime.<a href="#section-4.3.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="req-pace">
+<section id="section-4.3.2">
+          <h4 id="name-pacing-in-the-unvalidated-p">
+<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-pacing-in-the-unvalidated-p" class="section-name selfRef">Pacing in the Unvalidated Phase</a>
+          </h4>
+<p id="section-4.3.2-1">A sender needs to avoid any step increase in the CWND resulting in a burst of 
+            packets that is greater than the size of the CC algorithm's IW.
+            This is consistent with <span>[<a href="#RFC8085" class="cite xref">RFC8085</a>]</span> and
+            <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>.<a href="#section-4.3.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-2">Pacing packets as a function of
+            the current RTT, rather than the saved_rtt, provides additional safety during the
+            Unvalidated Phase, because it avoids a smaller saved_rtt inflating the sending rate.
+            The lower bound to the minimum acceptable current RTT
+            avoids sending unvalidated packets at a rate that would be higher than was previously observed.<a href="#section-4.3.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.3.2-3">The following example provides a relevant pacing rhythm:
+            An Inter-packet Transmission Time (ITT) is determined
+            by using the current Maximum Packet Size (MPS), including headers,
+            the saved_cwnd, and the current RTT. A safety
+            margin can be configured to avoid sending more than a maximum
+            (max_jump):<a href="#section-4.3.2-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3.2-4">
+<pre>
+      jump_cwnd = Min(max_jump,saved_cwnd/2)
+
+      ITT = (current RTT x MPS)/jump_cwnd
+</pre><a href="#section-4.3.2-4" class="pilcrow">¶</a>
+</div>
+<p id="section-4.3.2-5">This follows the idea presented in <span>[<a href="#RFC4782" class="cite xref">RFC4782</a>]</span>,
+            <span>[<a href="#I-D.irtf-iccrg-sallantin-initial-spreading" class="cite xref">INIT-SPREADING</a>]</span>, and
+            <span>[<a href="#CONEXT15" class="cite xref">CONEXT15</a>]</span>.
+            Other sender mitigations have also been suggested to
+            avoid line-rate bursts (e.g., <span>[<a href="#I-D.hughes-restart" class="cite xref">TCP-SSR</a>]</span>).<a href="#section-4.3.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-4.3.3">
+          <h4 id="name-exit-from-the-unvalidated-p">
+<a href="#section-4.3.3" class="section-number selfRef">4.3.3. </a><a href="#name-exit-from-the-unvalidated-p" class="section-name selfRef">Exit from the Unvalidated Phase Because of Variable Network Conditions</a>
+          </h4>
+<ul class="normal">
+<li class="normal" id="section-4.3.3-1.1">
+              <p id="section-4.3.3-1.1.1">Careful Resume has been designed to be robust to
+               changes in network conditions
+               due to variations in the forwarding path (see <a href="#sec-principle" class="auto internal xref">Section 1.5</a>), such as reconfiguration of
+               equipment or changes in the link conditions. This is mitigated
+               by path confirmation.<a href="#section-4.3.3-1.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.3.3-1.2">
+              <p id="section-4.3.3-1.2.1">Careful Resume has been designed to be robust to changes
+                in network traffic, including the
+                arrival of new flows that compete for capacity at a shared bottleneck.
+                This is mitigated by jumping to no more than a half of
+                the saved_cwnd and by pacing.<a href="#section-4.3.3-1.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.3.3-1.3">
+              <p id="section-4.3.3-1.3.1">Careful Resume has been designed to avoid unduly suppressing flows
+                that have used the capacity since the capacity was observed. This is further
+                mitigated by bounding the duration of the Unvalidated Phase and the following
+                Validating Phase, and the conservative design of the Safe Retreat Phase.<a href="#section-4.3.3-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</section>
+</section>
+</div>
+<div id="req-val">
+<section id="section-4.4">
+        <h3 id="name-the-validating-phase">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-the-validating-phase" class="section-name selfRef">The Validating Phase</a>
+        </h3>
+<p id="section-4.4-1">The purpose of the Validating Phase is to trigger an
+        entry to the Safe Retreat Phase if the capacity is not validated.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4-2">When the sender completes the Unvalidated Phase, either by sending a jump_cwnd of data
+        or after one RTT or an acknowledgment for an unvalidated packet,
+        it ceases to use the unvalidated CWND.<a href="#section-4.4-2" class="pilcrow">¶</a></p>
+<p id="section-4.4-3">If the flight_size was less than or equal to the PipeSize, the
+        sender resets the CWND to the PipeSize and stops using Careful Resume. Otherwise, if the CWND is larger than the flight_size,
+        the CWND is reset to the flight_size.
+        The sender then awaits reception of ACKs to validate the
+        use of this capacity.<a href="#section-4.4-3" class="pilcrow">¶</a></p>
+<p id="section-4.4-4">New packets are sent when previously
+        sent data is newly acknowledged.
+        The CWND is increased during the Validating Phase,
+        based on received ACKs. This allows new data to be sent,
+        but this does not have any final impact on the CWND
+        if congestion is subsequently detected.<a href="#section-4.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="req-retreat">
+<section id="section-4.5">
+        <h3 id="name-safety-in-the-safe-retreat-">
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-safety-in-the-safe-retreat-" class="section-name selfRef">Safety in the Safe Retreat Phase</a>
+        </h3>
+<p id="section-4.5-1">This section considers the safety
+        after congestion has been detected for unvalidated packets.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-2">The Safe Retreat Phase sets a safe CWND value to drain any unvalidated packets
+        from the path after a packet loss has been detected or when ACKs that indicate the sent
+        packets were marked as ECN-CE. The CC parameters that were used are invalid
+        and are removed.<a href="#section-4.5-2" class="pilcrow">¶</a></p>
+<p id="section-4.5-3">The Safe Retreat reaction differs from a traditional
+        reaction to detected congestion, because
+        a jump_cwnd can result in a significantly higher rate than would be allowed by
+        Slow Start. Such a jump could aggressively feed a congested bottleneck,
+        resulting in overshoot where a disproportionate number of packets
+        from existing flows are displaced from the buffer at the congested bottleneck.
+        For this reason, a sender in the Safe Retreat Phase needs to react to detected congestion by
+        reducing the CWND significantly below the saved_cwnd.<a href="#section-4.5-3" class="pilcrow">¶</a></p>
+<p id="section-4.5-4">During loss recovery, a receiver can cumulatively acknowledge data
+        that was previously sent in the Unvalidated Phase in addition to
+        acknowledging the successful retransmission of data.  <span>[<a href="#RFC3465" class="cite xref">RFC3465</a>]</span> describes how to appropriately account for such
+        ACKs.  The sender tracks received ACKs that acknowledge the reception
+        of the unvalidated packets to measure the maximum available capacity,
+        called the "PipeSize".  (The first unvalidated packet can be
+        determined by recording the sequence number of the first packet sent
+        in the Unvalidated Phase.)  This calculated PipeSize is later used to
+        reset the ssthresh.  However, note that this is not a safe measure of
+        the currently available share of the capacity whenever there was also
+        a significant overshoot at the bottleneck, and it must not be used to
+        reinitialise the CWND.<a href="#section-4.5-4" class="pilcrow">¶</a></p>
+<p id="section-4.5-5">Proportional Rate Reduction (PRR) <span>[<a href="#RFC9937" class="cite xref">RFC9937</a>]</span>
+        assumes that it is safe to reduce
+        the rate gradually when in congestion avoidance.
+        PRR is therefore not appropriate
+        when there might be significant overshoot in the use of the capacity, which can
+        be the case when the Safe Retreat Phase is entered.<a href="#section-4.5-5" class="pilcrow">¶</a></p>
+<p id="section-4.5-6">The recovery from loss depends on the design of a transport protocol.
+        A TCP or SCTP sender is required to retransmit
+        all lost data <span>[<a href="#RFC5681" class="cite xref">RFC5681</a>]</span>.
+        For some transports (e.g., QUIC and DCCP), the need for loss recovery
+        depends on the sender policy for retransmission.
+        On entry to the Safe Retreat Phase, the CWND can be
+        significantly reduced. When there were multiple losses,
+        a sender recovering all lost data could then take multiple RTTs to complete.<a href="#section-4.5-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="req-normal">
+<section id="section-4.6">
+        <h3 id="name-returning-to-normal-congest">
+<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-returning-to-normal-congest" class="section-name selfRef">Returning to Normal Congestion Control</a>
+        </h3>
+<p id="section-4.6-1">After using Careful Resume, the CC controller returns to using normal CC.<a href="#section-4.6-1" class="pilcrow">¶</a></p>
+<p id="section-4.6-2">The CWND at entry to the phase will have been
+        increased when a sender has passed through the Unvalidated Phase,
+        unless the sender was rate limited, which causes the CWND to be
+        reset based on the used capacity.
+        The CWND is not reduced below the IW, unless congestion was
+        detected.
+        However, note that in some cases the value of the CWND
+        could be significantly lower than the
+        jump_cwnd (e.g., when a sender did not utilise
+        the entire CWND in the Unvalidated Phase). The implementation details for different CC algorithms depend on the
+        design of the algorithm.<a href="#section-4.6-2" class="pilcrow">¶</a></p>
+<p id="section-4.6-3">Once a sender is no longer using Careful Resume, the sender is permitted to start
+        observing the capacity of the path.<a href="#section-4.6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="flow-control">
+<section id="section-4.7">
+        <h3 id="name-limitations-from-transport-">
+<a href="#section-4.7" class="section-number selfRef">4.7. </a><a href="#name-limitations-from-transport-" class="section-name selfRef">Limitations from Transport Protocols</a>
+        </h3>
+<p id="section-4.7-1">The CWND is one factor that limits the
+        sending rate of the sender. Other mechanisms can also constrain
+        the maximum sending rate of a transport protocol.
+        A transport protocol might need to update these mechanisms
+        to fully utilise the CWND made available by Careful Resume:<a href="#section-4.7-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.7-2.1">
+            <p id="section-4.7-2.1.1">A TCP sender is limited by the receiver window (rwnd).
+            Unless configured at a receiver, the rwnd constrains the rate
+            of increase for a connection and reduces the benefit of Careful Resume.<a href="#section-4.7-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.7-2.2">
+            <p id="section-4.7-2.2.1">QUIC includes flow control mechanisms and mechanisms to prevent amplification
+            attacks. In particular, a QUIC receiver might need to issue proactive
+            MAX_DATA frames to increase the flow control limits of a connection
+            that is started when using Careful Resume to gain the expected benefit.<a href="#section-4.7-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="ops">
+<section id="section-5">
+      <h2 id="name-operational-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<p id="section-5-1">This section provides some operational considerations for network
+    providers. As noted above, using CC parameters that were observed
+    during a previous connection is inherently a tradeoff between the
+    potential performance gains for the new connection and the risks of
+    degraded performance for other connections that share a common
+    bottleneck.
+    A transport endpoint often has no visibility of changes in the level of
+    network traffic, nor the forwarding path over which the transport path
+    is supported.
+    Careful Resume is therefore a sender-side transport change that
+    has been designed so that any potential "harm" to
+    other flows is constrained. It seeks to detect whether the transport
+    path has changed since the observation of that capacity.
+    Importantly, whenever a sender detects
+    that assumptions about the capacity are not valid, the sender
+    safely responds to reduce the impact on other flows (see <a href="#sec-principle" class="auto internal xref">Section 1.5</a>).<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">There are three ways that the use of Careful Resume can be constrained:<a href="#section-5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1">
+          <p id="section-5-3.1.1">The maximum configured jump window (max_jump) (see <a href="#sec-phase-unv-phase" class="auto internal xref">Section 3.3</a>),<a href="#section-5-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-3.2">
+          <p id="section-5-3.2.1">The Remote Endpoint identifying the client and the server that are permitted to use a specific set of saved CC parameters (see <a href="#endpoint" class="auto internal xref">Section 2.2</a>),<a href="#section-5-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-3.3">
+          <p id="section-5-3.3.1">The configured Lifetime for a set of saved CC parameters (see <a href="#req-lifetime" class="auto internal xref">Section 4.3.1</a>).<a href="#section-5-3.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-5-4">Network methods such
+    as Equal Cost Multipath Routing, Anycast Routing, and Network Address Translation
+    can result in changes to the forwarding path. The impact of these
+    methods on Careful Resume can be minimised when the network is configured
+    so that the alternative paths are
+    provisioned to support equivalent capacity (i.e., a change to
+    the forwarding path does not introduce a significant reduction in the capacity
+    of the smallest bottleneck on the end-to-end path).<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">For many network paths, the smallest bottleneck is located in the access
+    part of the end-to-end path.
+    As an example, consider a typical client on an access network
+    could connect to a remote server with a capacity bottleneck located in the
+    access part of this path. When the client
+    connects to a server using an anycast destination address, the anycast
+    routing would be configured to distribute connections to a
+    corresponding server. A client would then be unaware of whether
+    different instances of the client's
+    connections (with the same address pair) would terminate at the same or
+    different servers, or at servers located at different "server farms".
+    Hence, if a server is configured to
+    send using Careful Resume, there is an onus to appropriately manage the
+    use of saved CC parameters (see <a href="#req-recon" class="auto internal xref">Section 4.2</a>).<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-5-6">The way in which this is realised will depend upon the design choices in
+    configuring the network and the servers.
+    On the one hand, if all the servers responding to a
+    given IP address share the same location (e.g., are in the same data center),
+    then a method could be provided to coordinate their sharing of the CC parameters
+    that are used to send data using Careful Resume.
+    On the other hand, if the service configuration is such that subsequent use of the
+    IP anycast address might
+    result in a very different path to a server (e.g., at a different
+    location where the path would be unable to support the same capacity),
+    a sender should not use Careful Resume based on saved CC parameters.<a href="#section-5-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-IANA">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-security">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">The security considerations are the same as for other
+     sender-based CC methods. Such methods
+     rely on the receiver appropriately acknowledging receipt
+     of data. The ability of an on-path or off-path attacker
+     to influence CC depends upon the security
+     properties of the transport protocol being used.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2914">[RFC2914]</dt>
+        <dd>
+<span class="refAuthor">Floyd, S.</span>, <span class="refTitle">"Congestion Control Principles"</span>, <span class="seriesInfo">BCP 41</span>, <span class="seriesInfo">RFC 2914</span>, <span class="seriesInfo">DOI 10.17487/RFC2914</span>, <time datetime="2000-09" class="refDate">September 2000</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2914">https://www.rfc-editor.org/info/rfc2914</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8085">[RFC8085]</dt>
+        <dd>
+<span class="refAuthor">Eggert, L.</span>, <span class="refAuthor">Fairhurst, G.</span>, and <span class="refAuthor">G. Shepherd</span>, <span class="refTitle">"UDP Usage Guidelines"</span>, <span class="seriesInfo">BCP 145</span>, <span class="seriesInfo">RFC 8085</span>, <span class="seriesInfo">DOI 10.17487/RFC8085</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8085">https://www.rfc-editor.org/info/rfc8085</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-ccwg-bbr">[BBR-CC]</dt>
+        <dd>
+<span class="refAuthor">Cardwell, N.</span>, <span class="refAuthor">Swett, I.</span>, and <span class="refAuthor">J. Beshay</span>, <span class="refTitle">"BBR Congestion Control"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-ccwg-bbr-05</span>, <time datetime="2026-03-02" class="refDate">2 March 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-ccwg-bbr-05">https://datatracker.ietf.org/doc/html/draft-ietf-ccwg-bbr-05</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CONEXT15">[CONEXT15]</dt>
+        <dd>
+<span class="refAuthor">Li, Q.</span>, <span class="refAuthor">Dong, M.</span>, and <span class="refAuthor">P. B. Godfrey</span>, <span class="refTitle">"Halfback: Running Short Flows Quickly and Safely"</span>, <span class="refContent">CoNEXT '15: Proceedings of the 11th ACM Conference on Emerging Networking Experiments and Technologies</span>, <span class="seriesInfo">DOI 10.1145/2716281.2836107</span>, <time datetime="2015" class="refDate">2015</time>, <span>&lt;<a href="https://doi.org/10.1145/2716281.2836107">https://doi.org/10.1145/2716281.2836107</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CR25">[CR25]</dt>
+        <dd>
+<span class="refAuthor">Yanev, M.</span>, <span class="refAuthor">Custura, A.</span>, <span class="refAuthor">Secchi, R.</span>, and <span class="refAuthor">G. Fairhurst</span>, <span class="refTitle">"Analysis of Careful Resumption of Internet Congestion Control from Retained Path State"</span>, <span class="refContent">Computer Networks, vol. 276</span>, <span class="seriesInfo">DOI 10.1016/j.comnet.2025.111950</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://www.sciencedirect.com/science/article/abs/pii/S1389128625009156">https://www.sciencedirect.com/science/article/abs/pii/S1389128625009156</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IJSCN">[IJSCN]</dt>
+        <dd>
+<span class="refAuthor">Thomas, L.</span>, <span class="refAuthor">Dubois, E.</span>, <span class="refAuthor">Kuhn, N.</span>, and <span class="refAuthor">E. Lochin</span>, <span class="refTitle">"Google QUIC performance over a public SATCOM access"</span>, <span class="refContent">International Journal of Satellite Communications and Networking, vol. 37, no. 6, pp. 601-611</span>, <span class="seriesInfo">DOI 10.1002/sat.1301</span>, <time datetime="2019" class="refDate">2019</time>, <span>&lt;<a href="https://doi.org/10.1002/sat.1301">https://doi.org/10.1002/sat.1301</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.irtf-iccrg-sallantin-initial-spreading">[INIT-SPREADING]</dt>
+        <dd>
+<span class="refAuthor">Sallantin, R.</span>, <span class="refAuthor">Baudoin, C.</span>, <span class="refAuthor">Arnal, F.</span>, <span class="refAuthor">Dubois, E.</span>, <span class="refAuthor">Chaput, E.</span>, and <span class="refAuthor">A. Beylot</span>, <span class="refTitle">"Safe increase of the TCP's Initial Window Using Initial Spreading"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-iccrg-sallantin-initial-spreading-00</span>, <time datetime="2014-01-15" class="refDate">15 January 2014</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-irtf-iccrg-sallantin-initial-spreading-00">https://datatracker.ietf.org/doc/html/draft-irtf-iccrg-sallantin-initial-spreading-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-tsvwg-careful-resume-qlog">[LOG]</dt>
+        <dd>
+<span class="refAuthor">Custura, A.</span> and <span class="refAuthor">G. Fairhurst</span>, <span class="refTitle">"Quic Logging for Convergence of Congestion Control from Retained State"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-tsvwg-careful-resume-qlog-02</span>, <time datetime="2026-02-02" class="refDate">2 February 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-tsvwg-careful-resume-qlog-02">https://datatracker.ietf.org/doc/html/draft-ietf-tsvwg-careful-resume-qlog-02</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="MAPRG111">[MAPRG111]</dt>
+        <dd>
+<span class="refAuthor">Kuhn, N.</span>, <span class="refAuthor">Stephan, E.</span>, <span class="refAuthor">Fairhurst, G.</span>, <span class="refAuthor">Jones, T.</span>, and <span class="refAuthor">C. Huitema</span>, <span class="refTitle">"Feedback from using QUIC's 0-RTT-BDP extension over SATCOM public access"</span>, <span class="refContent">IETF 111 Proceedings</span>, <time datetime="2021-07" class="refDate">July 2021</time>, <span>&lt;<a href="https://www.ietf.org/proceedings/111/slides/slides-111-maprg-feedback-from-using-quics-0-rtt-bdp-extension-over-satcom-public-access-00.pdf">https://www.ietf.org/proceedings/111/slides/slides-111-maprg-feedback-from-using-quics-0-rtt-bdp-extension-over-satcom-public-access-00.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3465">[RFC3465]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refTitle">"TCP Congestion Control with Appropriate Byte Counting (ABC)"</span>, <span class="seriesInfo">RFC 3465</span>, <span class="seriesInfo">DOI 10.17487/RFC3465</span>, <time datetime="2003-02" class="refDate">February 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3465">https://www.rfc-editor.org/info/rfc3465</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4782">[RFC4782]</dt>
+        <dd>
+<span class="refAuthor">Floyd, S.</span>, <span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Jain, A.</span>, and <span class="refAuthor">P. Sarolahti</span>, <span class="refTitle">"Quick-Start for TCP and IP"</span>, <span class="seriesInfo">RFC 4782</span>, <span class="seriesInfo">DOI 10.17487/RFC4782</span>, <time datetime="2007-01" class="refDate">January 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4782">https://www.rfc-editor.org/info/rfc4782</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5681">[RFC5681]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Paxson, V.</span>, and <span class="refAuthor">E. Blanton</span>, <span class="refTitle">"TCP Congestion Control"</span>, <span class="seriesInfo">RFC 5681</span>, <span class="seriesInfo">DOI 10.17487/RFC5681</span>, <time datetime="2009-09" class="refDate">September 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5681">https://www.rfc-editor.org/info/rfc5681</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5783">[RFC5783]</dt>
+        <dd>
+<span class="refAuthor">Welzl, M.</span> and <span class="refAuthor">W. Eddy</span>, <span class="refTitle">"Congestion Control in the RFC Series"</span>, <span class="seriesInfo">RFC 5783</span>, <span class="seriesInfo">DOI 10.17487/RFC5783</span>, <time datetime="2010-02" class="refDate">February 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5783">https://www.rfc-editor.org/info/rfc5783</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6675">[RFC6675]</dt>
+        <dd>
+<span class="refAuthor">Blanton, E.</span>, <span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Wang, L.</span>, <span class="refAuthor">Jarvinen, I.</span>, <span class="refAuthor">Kojo, M.</span>, and <span class="refAuthor">Y. Nishida</span>, <span class="refTitle">"A Conservative Loss Recovery Algorithm Based on Selective Acknowledgment (SACK) for TCP"</span>, <span class="seriesInfo">RFC 6675</span>, <span class="seriesInfo">DOI 10.17487/RFC6675</span>, <time datetime="2012-08" class="refDate">August 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6675">https://www.rfc-editor.org/info/rfc6675</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6928">[RFC6928]</dt>
+        <dd>
+<span class="refAuthor">Chu, J.</span>, <span class="refAuthor">Dukkipati, N.</span>, <span class="refAuthor">Cheng, Y.</span>, and <span class="refAuthor">M. Mathis</span>, <span class="refTitle">"Increasing TCP's Initial Window"</span>, <span class="seriesInfo">RFC 6928</span>, <span class="seriesInfo">DOI 10.17487/RFC6928</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6928">https://www.rfc-editor.org/info/rfc6928</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7661">[RFC7661]</dt>
+        <dd>
+<span class="refAuthor">Fairhurst, G.</span>, <span class="refAuthor">Sathiaseelan, A.</span>, and <span class="refAuthor">R. Secchi</span>, <span class="refTitle">"Updating TCP to Support Rate-Limited Traffic"</span>, <span class="seriesInfo">RFC 7661</span>, <span class="seriesInfo">DOI 10.17487/RFC7661</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7661">https://www.rfc-editor.org/info/rfc7661</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9000">https://www.rfc-editor.org/info/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9002">[RFC9002]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">I. Swett, Ed.</span>, <span class="refTitle">"QUIC Loss Detection and Congestion Control"</span>, <span class="seriesInfo">RFC 9002</span>, <span class="seriesInfo">DOI 10.17487/RFC9002</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9002">https://www.rfc-editor.org/info/rfc9002</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9040">[RFC9040]</dt>
+        <dd>
+<span class="refAuthor">Touch, J.</span>, <span class="refAuthor">Welzl, M.</span>, and <span class="refAuthor">S. Islam</span>, <span class="refTitle">"TCP Control Block Interdependence"</span>, <span class="seriesInfo">RFC 9040</span>, <span class="seriesInfo">DOI 10.17487/RFC9040</span>, <time datetime="2021-07" class="refDate">July 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9040">https://www.rfc-editor.org/info/rfc9040</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9293">[RFC9293]</dt>
+        <dd>
+<span class="refAuthor">Eddy, W., Ed.</span>, <span class="refTitle">"Transmission Control Protocol (TCP)"</span>, <span class="seriesInfo">STD 7</span>, <span class="seriesInfo">RFC 9293</span>, <span class="seriesInfo">DOI 10.17487/RFC9293</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9293">https://www.rfc-editor.org/info/rfc9293</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9406">[RFC9406]</dt>
+        <dd>
+<span class="refAuthor">Balasubramanian, P.</span>, <span class="refAuthor">Huang, Y.</span>, and <span class="refAuthor">M. Olson</span>, <span class="refTitle">"HyStart++: Modified Slow Start for TCP"</span>, <span class="seriesInfo">RFC 9406</span>, <span class="seriesInfo">DOI 10.17487/RFC9406</span>, <time datetime="2023-05" class="refDate">May 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9406">https://www.rfc-editor.org/info/rfc9406</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9438">[RFC9438]</dt>
+        <dd>
+<span class="refAuthor">Xu, L.</span>, <span class="refAuthor">Ha, S.</span>, <span class="refAuthor">Rhee, I.</span>, <span class="refAuthor">Goel, V.</span>, and <span class="refAuthor">L. Eggert, Ed.</span>, <span class="refTitle">"CUBIC for Fast and Long-Distance Networks"</span>, <span class="seriesInfo">RFC 9438</span>, <span class="seriesInfo">DOI 10.17487/RFC9438</span>, <time datetime="2023-08" class="refDate">August 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9438">https://www.rfc-editor.org/info/rfc9438</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9937">[RFC9937]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span>, <span class="refAuthor">Cardwell, N.</span>, <span class="refAuthor">Cheng, Y.</span>, and <span class="refAuthor">N. Dukkipati</span>, <span class="refTitle">"Proportional Rate Reduction (PRR)"</span>, <span class="seriesInfo">RFC 9937</span>, <span class="seriesInfo">DOI 10.17487/RFC9937</span>, <time datetime="2025-12" class="refDate">December 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9937">https://www.rfc-editor.org/info/rfc9937</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.hughes-restart">[TCP-SSR]</dt>
+      <dd>
+<span class="refAuthor">Hughes, A.</span>, <span class="refAuthor">Touch, J.</span>, and <span class="refAuthor">J. Heidemann</span>, <span class="refTitle">"Issues in TCP Slow-Start Restart After Idle"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-hughes-restart-00</span>, <time datetime="2001-12" class="refDate">December 2001</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-hughes-restart-00">https://datatracker.ietf.org/doc/html/draft-hughes-restart-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="Notes">
+<section id="appendix-A">
+      <h2 id="name-notes-on-the-careful-resume">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-notes-on-the-careful-resume" class="section-name selfRef">Notes on the Careful Resume Phases</a>
+      </h2>
+<p id="appendix-A-1"> The table below is provided to illustrate the operation of Careful Resume.
+    This table is informative; please refer to the body of the document
+    for the normative specification. The description is based on a normal
+    CC that uses Reno. The PipeSize tracks the validated CWND.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">The phases in <a href="#cr-operation" class="auto internal xref">Table 1</a> correspond to Sections <a href="#sec-phase-rec-phase" class="auto internal xref">3.2</a> through <a href="#sec-phase-ret-phase" class="auto internal xref">3.5</a>. This table also uses the following abbreviations:<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="appendix-A-3">
+        <dt id="appendix-A-3.1">SS</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.2">= Slow Start<a href="#appendix-A-3.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.3">FS</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.4">= flight_size<a href="#appendix-A-3.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.5">PS</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.6">= PipeSize<a href="#appendix-A-3.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.7">ACK</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.8">= highest acknowledged packet<a href="#appendix-A-3.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.9">CC</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.10">= Congestion Control<a href="#appendix-A-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.11">CR</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.12">= Careful Resume<a href="#appendix-A-3.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.13">IW</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.14">= Initial congestion Window<a href="#appendix-A-3.14" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="appendix-A-3.15">CWND</dt>
+        <dd style="margin-left: 1.5em" id="appendix-A-3.16">= Congestion Window<a href="#appendix-A-3.16" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<span id="name-illustration-of-the-operati"></span><div id="cr-operation">
+<table class="center" id="table-1">
+        <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-illustration-of-the-operati" class="selfRef">Illustration of the Operation of Careful Resume</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Phase</th>
+            <th class="text-left" rowspan="1" colspan="1">Normal</th>
+            <th class="text-left" rowspan="1" colspan="1">Recon.</th>
+            <th class="text-left" rowspan="1" colspan="1">Unvalidated</th>
+            <th class="text-left" rowspan="1" colspan="1">Validating</th>
+            <th class="text-left" rowspan="1" colspan="1">Safe Ret.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1">Observing CC params</td>
+            <td class="text-left" rowspan="1" colspan="1">Confirm path</td>
+            <td class="text-left" rowspan="1" colspan="1">Send faster using saved_cwnd</td>
+            <td class="text-left" rowspan="1" colspan="1">Validate new CWND; Update PS</td>
+            <td class="text-left" rowspan="1" colspan="1">Drain path; Update PS</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">On entry:</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+            <td class="text-left" rowspan="1" colspan="1">CWND=IW</td>
+            <td class="text-left" rowspan="1" colspan="1">PS=FS jump_cwnd =saved_cwnd /2; CWND =jump_cwnd</td>
+            <td class="text-left" rowspan="1" colspan="1">If (FS&gt;PS) {CWND=FS} else {CWND=PS; use Normal CC}</td>
+            <td class="text-left" rowspan="1" colspan="1">CWND=(PS/2)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">CWND:</td>
+            <td class="text-left" rowspan="1" colspan="1">When in observe, measure saved _cwnd</td>
+            <td class="text-left" rowspan="1" colspan="1">CWND increases using SS</td>
+            <td class="text-left" rowspan="1" colspan="1">CWND is not increased</td>
+            <td class="text-left" rowspan="1" colspan="1">CWND can increase using normal CC</td>
+            <td class="text-left" rowspan="1" colspan="1">CWND is not increased</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">PS:</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+            <td class="text-left" rowspan="1" colspan="3">PS+=ACKed</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">RTT:</td>
+            <td class="text-left" rowspan="1" colspan="1">Measure saved_rtt</td>
+            <td class="text-left" rowspan="1" colspan="1">Measure current RTT</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">If loss or ECN-CE:</td>
+            <td class="text-left" rowspan="1" colspan="1">Normal CC</td>
+            <td class="text-left" rowspan="1" colspan="1">Normal CC; CR is not allowed</td>
+            <td class="text-left" rowspan="1" colspan="2">Enter Safe Retreat</td>
+            <td class="text-center" rowspan="1" colspan="1">-</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Next Phase:</td>
+            <td class="text-left" rowspan="1" colspan="1">Observing (as needed)</td>
+            <td class="text-left" rowspan="1" colspan="1">If (CWND, Lifetime, and RTT confirmed), enter Unvalidated; else CWND=Max (PS,IW); and use Normal CC</td>
+            <td class="text-left" rowspan="1" colspan="1">If (FS&gt;CWND or &gt;1 RTT has passed or ACK &gt;= first unvalidated packet), If ((FS&gt;CWND) or (FS&lt;=PS)) cwnd=PS; and use Normal CC else cwnd=FS; enter Validating</td>
+            <td class="text-left" rowspan="1" colspan="1">If (ACK &gt;= last unvalidated packet), use Normal CC</td>
+            <td class="text-left" rowspan="1" colspan="1">If (ACK &gt;= last unvalidated packet), ssthresh = PS x Beta; and use Normal CC</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+</section>
+</div>
+<div id="Examples">
+<section id="appendix-B">
+      <h2 id="name-examples-of-the-careful-res">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-examples-of-the-careful-res" class="section-name selfRef">Examples of the Careful Resume Phases</a>
+      </h2>
+<p id="appendix-B-1">The following examples consider an implementation that keeps track of transmitted data in terms of packets and provide informative examples of use.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">In the Unvalidated Phase, the first unvalidated packet corresponds to the
+        highest sent packet recorded on entry to this phase.
+        In the Validating Phase and Safe Retreat Phase, the sender tracks the last unvalidated packet
+        (this is also the highest sent packet number recorded on entry to this phase).
+        The PipeSize (PS) tracks the validated portion of the CWND. The PS is set to the CWND
+        on entry to the Unvalidated Phase.
+        It is updated after receiving an ACK for each additional packet. The default value of Beta is 0.5.<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+<p id="appendix-B-3">Note:
+    To simplify the description, these examples
+    are described using packet numbers (whereas QLOG variables are expressed in bytes).<a href="#appendix-B-3" class="pilcrow">¶</a></p>
+<div id="Examples-no_loss">
+<section id="appendix-B.1">
+        <h3 id="name-example-with-no-loss">
+<a href="#appendix-B.1" class="section-number selfRef">B.1. </a><a href="#name-example-with-no-loss" class="section-name selfRef">Example with No Loss</a>
+        </h3>
+<p id="appendix-B.1-1">In the first example of using Careful Resume,
+        the sender starts by sending IW packets, assumed to be 10 packets, in the Reconnaissance Phase,
+        and then continues in a subsequent RTT to send more packets until the sender
+        becomes CWND limited (i.e., flight_size = CWND).<a href="#appendix-B.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-B.1-2">The sender in the Reconnaissance Phase then
+        confirms the RTT and other conditions for using Careful Resume.
+        In this example, this is confirmed when the sender has 29 packets in flight.<a href="#appendix-B.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-B.1-3">The sender then enters the Unvalidated Phase.
+        (This path confirmation could have happened earlier if data had been available to send.) The
+        sender initialises the PipeSize to the flight_size
+        (in this case, 29 packets)
+        and then sets the CWND to 150 packets (based upon half of the previously
+        observed saved_cwnd of 300 packets).<a href="#appendix-B.1-3" class="pilcrow">¶</a></p>
+<p id="appendix-B.1-4">The sender now sends 121 unvalidated packets (the unused portion of the current CWND).
+        Each time a packet is sent, the sender checks whether 1 RTT has passed since entering the
+        Unvalidated Phase (otherwise, the Validating Phase is entered). This check triggers only
+        for cases where the sender is rate limited, as shown in the following example: The PipeSize increases after each ACK is received.<a href="#appendix-B.1-4" class="pilcrow">¶</a></p>
+<p id="appendix-B.1-5">When the first unvalidated packet is acknowledged (packet number 30), the sender
+        enters the Validating Phase. (This transition would also occur if the flight_size increased to equal the CWND.)
+        During this phase, the CWND can be increased for each ACK that acknowledges an unvalidated packet, because
+        this indicates that the packet was validated.<a href="#appendix-B.1-5" class="pilcrow">¶</a></p>
+<p id="appendix-B.1-6">When an ACK is received that acknowledges the last packet that was sent in the
+        Unvalidated Phase, the sender stops using Careful Resume.
+        For example, if the CWND is less than ssthresh,
+        a Reno or CUBIC sender using normal CC is permitted to use Slow Start to grow the CWND towards
+        the ssthresh and will then enter congestion avoidance.<a href="#appendix-B.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Examples-dl">
+<section id="appendix-B.2">
+        <h3 id="name-example-with-no-loss-rate-l">
+<a href="#appendix-B.2" class="section-number selfRef">B.2. </a><a href="#name-example-with-no-loss-rate-l" class="section-name selfRef">Example with No Loss, Rate Limited</a>
+        </h3>
+<p id="appendix-B.2-1">A rate-limited sender will not fully utilise the available CWND when using Careful Resume,
+        and the CWND is therefore reset on entry to the Validating Phase, as described below.<a href="#appendix-B.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-B.2-2">The sender starts by sending up to IW packets (10) in the Reconnaissance Phase.
+        It commences as described in the first example, transitioning to the Unvalidated Phase,
+        where the CWND is set to 150 packets, and the PipeSize is set to the flight_size (i.e., 29 packets).<a href="#appendix-B.2-2" class="pilcrow">¶</a></p>
+<p id="appendix-B.2-3">The sender then becomes rate limited, because the example only sends 50 unvalidated packets.<a href="#appendix-B.2-3" class="pilcrow">¶</a></p>
+<p id="appendix-B.2-4"> After about one RTT (e.g., by comparing the current time with local timestamps for each sent packet
+        or by receiving an ACK for the first
+        unvalidated packet), the sender will still not have fully used the CWND. It then enters
+        the Validating Phase and resets the CWND to the current flight_size (i.e., 50 packets).
+        During this phase, the CWND can be increased for each received ACK
+        that validates reception of an unvalidated packet.
+        The PipeSize also increases with each ACK received, to reflect the discovered capacity.<a href="#appendix-B.2-4" class="pilcrow">¶</a></p>
+<p id="appendix-B.2-5">The sender completes using Careful Resume
+        when a received ACK acknowledges the last packet that was sent in the Unvalidated Phase.
+        It then stops using Careful Resume, as in the example with no loss.<a href="#appendix-B.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Examples-loss-recon">
+<section id="appendix-B.3">
+        <h3 id="name-example-with-loss-detected-">
+<a href="#appendix-B.3" class="section-number selfRef">B.3. </a><a href="#name-example-with-loss-detected-" class="section-name selfRef">Example with Loss Detected in the Reconnaissance Phase</a>
+        </h3>
+<p id="appendix-B.3-1">When a sender detects that a packet was lost in the Reconnaissance Phase, 
+        it will stop using Careful Resume
+        and recover the loss using the normal loss recovery algorithm and normal CC.
+     It is considered that the sender may have discovered a capacity limit and it is not
+        allowed to continue to use Careful Resume. In this case, there is no change to
+    the CC algorithm and the CWND is the same as if Careful Resume had not been attempted.<a href="#appendix-B.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Examples-loss-unval">
+<section id="appendix-B.4">
+        <h3 id="name-example-with-loss-detected-i">
+<a href="#appendix-B.4" class="section-number selfRef">B.4. </a><a href="#name-example-with-loss-detected-i" class="section-name selfRef">Example with Loss Detected in the Validating Phase</a>
+        </h3>
+<p id="appendix-B.4-1">As in the first example, the sender enters the Unvalidated Phase with a CWND of 150 packets
+        and with the PipeSize initialised to the flight_size (i.e., 29 packets).<a href="#appendix-B.4-1" class="pilcrow">¶</a></p>
+<p id="appendix-B.4-2">The sender now sends 121 unvalidated packets (consuming the remaining unused CWND).
+        This example considers the case when one of the unvalidated packets is lost. We assume
+        in the example that the lost packet is 64 (the 35th packet sent in the Unvalidated Phase).<a href="#appendix-B.4-2" class="pilcrow">¶</a></p>
+<p id="appendix-B.4-3">The received ACKs acknowledge the reception of the first 34 unvalidated packets.
+        The PipeSize at this time is equal to 63 (29 + 34) packets.<a href="#appendix-B.4-3" class="pilcrow">¶</a></p>
+<p id="appendix-B.4-4">A loss is then detected (by a timer or by receiving three ACKs that
+         do not acknowledge packet number 35).
+        The sender then enters the Safe Retreat Phase because the CWND was not validated.
+        Assuming that the IW was 10 packets,
+        the CWND is reset to Max(10,PS/2) = Max(10,63/2) = 31 packets.
+        This CWND is used during the Safe Retreat Phase, because congestion was detected and the
+        sender still does not yet know if the remaining unvalidated packets will be
+        successfully acknowledged. This conservative CWND calculation ensures the sender drains
+        the path after this potentially severe congestion event.
+        There is no further increase in the CWND in this phase.<a href="#appendix-B.4-4" class="pilcrow">¶</a></p>
+<p id="appendix-B.4-5">The sender continues to receive ACKs that acknowledge the remaining 86 (121-35) unvalidated packets.
+        Recall that the 35th unvalidated packet was lost and had packet number 64 (29+35).
+        The PipeSize tracks the
+        capacity discovered by ACKs that acknowledge the unvalidated packets (i.e., the PipeSize
+        is increased for each received ACK that acknowledges new data).
+        Although this PipeSize cannot be used to safely initialise the CWND (because it was measured when the sender
+        had aggressively created overload), the estimated PipeSize
+        (which, in this case, is 121-1 = 120 packets) can be used to set the ssthresh on exit
+        from Safe Retreat, since it does indicate a measured upper limit to the current capacity.<a href="#appendix-B.4-5" class="pilcrow">¶</a></p>
+<p id="appendix-B.4-6">At the point where all the unvalidated packets that were sent in the Unvalidated Phase
+        have been either acknowledged
+        or have been declared lost, the sender updates the ssthresh to be no larger than the recently
+        measured PipeSize multiplied by Beta (the final action of the Safe Retreat Phase), and
+        the sender stops using Careful Resume.
+        Because the CWND will now be less than ssthresh, a sender using normal CC is permitted to use
+        Slow Start to grow the CWND towards the ssthresh,
+        after which it will enter congestion avoidance.<a href="#appendix-B.4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="bbr">
+<section id="appendix-C">
+      <h2 id="name-implementation-notes-for-us">
+<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-implementation-notes-for-us" class="section-name selfRef">Implementation Notes for Using BBR</a>
+      </h2>
+<p id="appendix-C-1">Bottleneck Bandwidth and Round-trip propagation time (BBR) uses recent measurements of a transport connection's delivery rate, Round Trip Time (RTT), and packet loss rate to build an explicit model of the network path. BBR then uses this model to control both how fast it sends data and the maximum volume of data it allows in flight in the network at any time <span>[<a href="#I-D.ietf-ccwg-bbr" class="cite xref">BBR-CC</a>]</span>.<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+<p id="appendix-C-2">When the flow is controlled using BBR <a href="#bbr" class="auto internal xref">Appendix C</a>, Careful Resume is implemented
+       by setting the pacing rate from the saved CC parameters,
+       with the following precautions:<a href="#appendix-C-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-C-3.1">
+          <p id="appendix-C-3.1.1">The flag "carefully-resuming" is added to the BBR state to
+          indicate that the sender is allowed to send unvalidated packets.
+          This is initialised to False when a BBR flow starts.<a href="#appendix-C-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.2">
+          <p id="appendix-C-3.2.1">Prerequisites for using Careful Resume are described in
+       <a href="#sec-phase-rec-phase" class="auto internal xref">Section 3.2</a>.<a href="#appendix-C-3.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<div id="sec-phase-unval-bbr">
+<section id="appendix-C.1">
+        <h3 id="name-sending-unvalidated-packets">
+<a href="#appendix-C.1" class="section-number selfRef">C.1. </a><a href="#name-sending-unvalidated-packets" class="section-name selfRef">Sending Unvalidated Packets Using BBR</a>
+        </h3>
+<p id="appendix-C.1-1">Careful Resume is allowed to transmit unvalidated packets
+       only when the BBR flow is in the Startup state.<a href="#appendix-C.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-C.1-2">The probing rate is configured to 1/2 of the bottleneck
+       bandwidth, derived from the CWND calculation specified in the
+       saved CC parameters according to the
+       requirements in <a href="#sec-phase-unv-phase" class="auto internal xref">Section 3.3</a>.<a href="#appendix-C.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-C.1-3">The sender starts the Unvalidated Phase at the beginning of a BBR round,
+       and sets the "carefully-resuming" flags to True.
+       When this "carefully-resuming" flag is set, the BBR congestion
+       controller sets the BBR pacing rate
+       to the larger of the nominal pacing rate (BBR.bw multiplied bytes
+       BBRStartupPacingGain) or the calculated probing rate.
+       Then, the CWND is set to the larger of BBR.bw
+       and the probing rate, multiplied by BBR.rtt_min times
+       BBRStartupCwndGain.<a href="#appendix-C.1-3" class="pilcrow">¶</a></p>
+<p id="appendix-C.1-4">The "carefully-resuming" flag is reset to False two rounds after it
+        is set (i.e., after all the packets sent in the first round of
+        "carefully resuming" have been received and acknowledged by the peer).
+        At that stage (after the capacity has been validated), the measured
+        delivery rate is expected to reflect the probing rate.<a href="#appendix-C.1-4" class="pilcrow">¶</a></p>
+<p id="appendix-C.1-5">If congestion is detected while the "carefully-resuming" flag
+           is True, BBR exits the Startup state
+               and enters the Drain state (implementing the Safe Retreat Phase).<a href="#appendix-C.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-phase-val-bbr">
+<section id="appendix-C.2">
+        <h3 id="name-validation-for-bbr">
+<a href="#appendix-C.2" class="section-number selfRef">C.2. </a><a href="#name-validation-for-bbr" class="section-name selfRef">Validation for BBR</a>
+        </h3>
+<p id="appendix-C.2-1">When using BBR, the Validation Phase is realised using the
+   BBR rules for exiting Startup. Upon exiting Startup, the connection
+   estimates that the measured delivery rate will reflect the flow's share of
+   the actual bottleneck bandwidth. If congestion is detected
+   while using Careful Resume (i.e, the "carefully-resuming" flag is True),
+   BBR then exits the Startup state and enters the Drain state.<a href="#appendix-C.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-BBR-SR">
+<section id="appendix-C.3">
+        <h3 id="name-safe-retreat-for-bbr">
+<a href="#appendix-C.3" class="section-number selfRef">C.3. </a><a href="#name-safe-retreat-for-bbr" class="section-name selfRef">Safe Retreat for BBR</a>
+        </h3>
+<p id="appendix-C.3-1">When using BBR, the Safe Retreat Phase is entered if the Drain
+   state is entered while the "carefully-resuming" flag (see <a href="#bbr" class="auto internal xref">Appendix C</a>) is still
+   True (i.e., if less than 2 full rounds have elapsed after
+   the sender entered the Unvalidated Phase). The delivery rates measured in
+   these conditions are tainted, because packets sent during the attempt
+   are still queued at the bottleneck buffer and could have "pushed out" packets belonging to any
+   competing flows. Therefore, any delivery rates measured in the Drain state
+   <span class="bcp14">MUST</span> be discarded if the "carefully-resuming" flag is set to True.
+   This flag is cleared upon exiting the Drain state.<a href="#appendix-C.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-acknowledgments">
+<section id="appendix-D">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-D-1">The authors would like to thank <span class="contact-name">John Border</span>,
+      <span class="contact-name">Gabriel Montenegro</span>, <span class="contact-name">Patrick       McManus</span>, <span class="contact-name">Ian Swett</span>, <span class="contact-name">Igor       Lubashev</span>, <span class="contact-name">Robin Marx</span>, <span class="contact-name">Roland       Bless</span>, <span class="contact-name">Franklin Simo</span>, <span class="contact-name">Kazuho       Oku</span>, <span class="contact-name">Tong</span>, <span class="contact-name">Ana Custura</span>,
+      <span class="contact-name">Neal Cardwell</span>, <span class="contact-name">Marten       Seemann</span>, <span class="contact-name">Matthias Hofstaetter</span>, <span class="contact-name">Nicolai Fischer</span>, <span class="contact-name">Yi Huang</span>, <span class="contact-name">Mihail Yanev</span>, and <span class="contact-name">Joerg Deutschmann</span>
+      for their fruitful comments in developing this specification. They also
+      thank <span class="contact-name">Mike Bishop</span> for his careful suggestions on
+      the structure to describe the phases.  Thanks also to <span class="contact-name">Mohamed Boucadair</span> and to <span class="contact-name">Dan Harkins</span>
+      for his secdir review.<a href="#appendix-D-1" class="pilcrow">¶</a></p>
+<p id="appendix-D-2">The authors would like to thank <span class="contact-name">Tom Jones</span> for
+      co-authoring previous draft versions of this document.<a href="#appendix-D-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-E">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Nicolas Kuhn</span></div>
+<div dir="auto" class="left"><span class="org">Thales Alenia Space</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:nicolas.kuhn.ietf@gmail.com" class="email">nicolas.kuhn.ietf@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Emile Stephan</span></div>
+<div dir="auto" class="left"><span class="org">Orange</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:emile.stephan@orange.com" class="email">emile.stephan@orange.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Godred Fairhurst</span></div>
+<div dir="auto" class="left"><span class="org">University of Aberdeen</span></div>
+<div dir="auto" class="left"><span class="street-address">School of Engineering<br>Fraser Noble Building</span></div>
+<div dir="auto" class="left"><span class="locality">Aberdeen</span></div>
+<div dir="auto" class="left"><span class="postal-code">AB24 3UE</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gorry@erg.abdn.ac.uk" class="email">gorry@erg.abdn.ac.uk</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Raffaello Secchi</span></div>
+<div dir="auto" class="left"><span class="org">University of Aberdeen</span></div>
+<div dir="auto" class="left"><span class="street-address">School of Engineering<br>Fraser Noble Building</span></div>
+<div dir="auto" class="left"><span class="locality">Aberdeen</span></div>
+<div dir="auto" class="left"><span class="postal-code">AB24 3UE</span></div>
+<div dir="auto" class="left"><span class="country-name">United Kingdom</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:r.secchi@abdn.ac.uk" class="email">r.secchi@abdn.ac.uk</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Christian Huitema</span></div>
+<div dir="auto" class="left"><span class="org">Private Octopus Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:huitema@huitema.net" class="email">huitema@huitema.net</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
