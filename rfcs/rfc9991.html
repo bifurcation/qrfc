@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9991: Domain-Based Message Authentication, Reporting, and Conformance (DMARC) Failure Reporting</title>
+<meta content="Steven M. Jones" name="author">
+<meta content="Alessandro Vesely" name="author">
+<meta content='
+       Domain-based Message Authentication, Reporting, and Conformance
+(DMARC) is a mechanism by which a Domain Owner can request
+feedback about email messages using their domain in the From: address
+field.  This document describes "failure reports", or "failed message
+reports", which provide details about individual messages that failed
+to authenticate according to the DMARC mechanism. 
+       This document updates RFC 6591 and obsoletes RFC 7489. 
+    ' name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="DMARC" name="keyword">
+<meta content="DKIM" name="keyword">
+<meta content="SPF" name="keyword">
+<meta content="feedback" name="keyword">
+<meta content="Email Authentication" name="keyword">
+<meta content="Failure report" name="keyword">
+<meta content="9991" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.14.3
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.3
+    platformdirs 4.9.6
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.6.0
+    weasyprint 68.0
+-->
+<link href="rfc9991.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-dmarc-failure-reporting-25" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9991" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9991</td>
+<td class="center">DMARC Failure Reporting</td>
+<td class="right">May 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Jones &amp; Vesely</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9991" class="eref">9991</a></dd>
+<dt class="label-obsoletes">Obsoletes:</dt>
+<dd class="obsoletes">
+<a href="https://www.rfc-editor.org/rfc/rfc7489" class="eref">7489</a> </dd>
+<dt class="label-updates">Updates:</dt>
+<dd class="updates">
+<a href="https://www.rfc-editor.org/rfc/rfc6591" class="eref">6591</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-05" class="published">May 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Jones, <span class="editor">Ed.</span>
+</div>
+<div class="org">DMARC.org</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Vesely, <span class="editor">Ed.</span>
+</div>
+<div class="org">Tana</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9991</h1>
+<h1 id="title">Domain-Based Message Authentication, Reporting, and Conformance (DMARC) Failure Reporting</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Domain-based Message Authentication, Reporting, and Conformance
+(DMARC) is a mechanism by which a Domain Owner can request
+feedback about email messages using their domain in the From: address
+field.  This document describes "failure reports", or "failed message
+reports", which provide details about individual messages that failed
+to authenticate according to the DMARC mechanism.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document updates RFC 6591 and obsoletes RFC 7489.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9991">https://www.rfc-editor.org/info/rfc9991</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-document-status" class="internal xref">Document Status</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-dmarc-failure-reports" class="internal xref">DMARC Failure Reports</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-other-failure-reports" class="internal xref">Other Failure Reports</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-reporting-format-update" class="internal xref">Reporting Format Update</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-verifying-external-destinat" class="internal xref">Verifying External Destinations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-transport" class="internal xref">Transport</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-feedback-report-header-fiel" class="internal xref">Feedback Report Header Fields Registry Update</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-data-exposure-consideration" class="internal xref">Data Exposure Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-report-recipients" class="internal xref">Report Recipients</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-additional-damage" class="internal xref">Additional Damage</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-denial-of-service" class="internal xref">Denial of Service</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-example-failure-report" class="internal xref">Example Failure Report</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Domain-based Message Authentication, Reporting, and Conformance (DMARC)
+<span>[<a href="#RFC9989" class="cite xref">RFC9989</a>]</span> is a mechanism by which a mail-originating
+organization can express domain-level policies and preferences for
+message validation, disposition, and reporting that can be used by a
+mail-receiving organization to improve mail handling. This document
+focuses on one type of reporting that can be requested under DMARC.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Failure reports provide detailed information about the failure of a
+single message or a group of similar messages failing for the same
+reason. Their purpose is twofold.  On the one hand, they are meant to
+aid in cases where a Domain Owner wishes to determine the cause of
+failures that were part of aggregate reports (see
+<span>[<a href="#RFC9990" class="cite xref">RFC9990</a>]</span>).  On the other hand, they can
+allow the Domain Owner to quickly identify and address harmful
+messages involving direct domain abuse.  It is important to note that
+these reports can contain the header fields or sometimes the entire
+content of a failed message, which may contain Personally Identifiable
+Information (PII). The potential disclosure of PII should be considered
+when deciding whether to request failure reports as a Domain Owner, or
+what information to include or redact in failure reports when creating
+them as a Mail Receiver, or whether to create failure reports at all.
+Refer to <a href="#privacy-considerations" class="auto internal xref">Section 7</a> for more discussion on privacy considerations.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<div id="terminology">
+<section id="section-1.1">
+        <h3 id="name-terminology">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.1-1">There are a number of terms defined in
+<span><a href="https://rfc-editor.org/rfc/rfc9989#section-3.2" class="relref">Section 3.2</a> of [<a href="#RFC9989" class="cite xref">RFC9989</a>]</span>
+that are used within this document.  Understanding those
+definitions will aid in reading this document.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">The format of DMARC failure reports is derived from "Authentication
+Failure Reporting Using the Abuse Reporting Format" <span>[<a href="#RFC6591" class="cite xref">RFC6591</a>]</span>, and
+the terms defined there are used here.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="document-status">
+<section id="section-1.2">
+        <h3 id="name-document-status">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-document-status" class="section-name selfRef">Document Status</a>
+        </h3>
+<p id="section-1.2-1">This document, in part, along with <span>[<a href="#RFC9989" class="cite xref">RFC9989</a>]</span> and <span>[<a href="#RFC9990" class="cite xref">RFC9990</a>]</span>,
+obsoletes and replaces <span>[<a href="#RFC7489" class="cite xref">RFC7489</a>]</span>.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="failure-reports">
+<section id="section-2">
+      <h2 id="name-dmarc-failure-reports">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-dmarc-failure-reports" class="section-name selfRef">DMARC Failure Reports</a>
+      </h2>
+<p id="section-2-1">Besides the header fields or the entire contents of a failed message, failure
+reports supply details about transmission and DMARC authentication,
+which may aid a Domain Owner in determining the cause of an authentication failure.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">Failure reports are normally generated and sent almost immediately
+after the Mail Receiver detects a DMARC failure.  Rather than waiting
+for an aggregate report, these reports are useful for quickly notifying
+the Domain Owners when there is an authentication failure. Failure
+reports also provide more information about the failed message than is
+available in an aggregate report.  This allows the failure report
+consumer to better determine whether the failure is of a message that
+the Domain Owner intended to authenticate or one for which use of its
+domain was not authorized.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">These reports should include as much of the message header fields and body as
+possible, consistent with the reporting party's privacy policies, to
+enable the Domain Owner to diagnose the authentication failure.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4">When a Domain Owner requests failure reports for the purpose of
+forensic analysis, and the Mail Receiver is willing to provide such
+reports, the Mail Receiver generates and sends a message using the
+format described in <span>[<a href="#RFC6591" class="cite xref">RFC6591</a>]</span>; this document updates that reporting
+format, as described in <a href="#reporting-format-update" class="auto internal xref">Section 4</a>.<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5">The destination(s) to which failure reports are sent, and options for when
+they will be sent, are defined by the "ruf" and "fo" tags as provided
+in <span><a href="https://rfc-editor.org/rfc/rfc9989#section-4.7" class="relref">Section 4.7</a> of [<a href="#RFC9989" class="cite xref">RFC9989</a>]</span>.<a href="#section-2-5" class="pilcrow">¶</a></p>
+<p id="section-2-6">When multiple Uniform Resource Identifiers (URIs) are provided to receive failure reports, the
+report generator <span class="bcp14">MUST</span> make an attempt to deliver to each of them.
+External destinations <span class="bcp14">MUST</span> be verified (see <a href="#verifying-external-destinations" class="auto internal xref">Section 5</a>).
+Report generators <span class="bcp14">MUST NOT</span> consider "ruf" tags in DMARC Policy Records that have a "psd=y"
+tag, unless there are specific agreements between the interested parties.<a href="#section-2-6" class="pilcrow">¶</a></p>
+<p id="section-2-7">Report generators <span class="bcp14">MUST</span> implement a rate-limit on outgoing reports
+so as not to flood Report Consumers with excessive reports, which would
+allow denial of service (see <a href="#dos-attacks" class="auto internal xref">Section 8.1</a>).<a href="#section-2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="other-reports">
+<section id="section-3">
+      <h2 id="name-other-failure-reports">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-other-failure-reports" class="section-name selfRef">Other Failure Reports</a>
+      </h2>
+<p id="section-3-1">This document only describes DMARC failure reports. DomainKeys Identified Mail (DKIM) failure
+reports and Sender Policy Framework (SPF) failure reports are described in <span>[<a href="#RFC6591" class="cite xref">RFC6591</a>]</span>.  A Mail
+Receiver that generates DMARC failure reports <span class="bcp14">MAY</span> choose to issue failure reports
+of the type specific to the authentication mechanism that failed instead of, or in
+addition to, the DMARC failure report type described here. The Receiver <span class="bcp14">SHALL</span> determine which
+failure report types, if any, to transmit based on its own policy, the failure in question, and the content of the "fo" tag in the retrieved
+DMARC Policy Record.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Note that DKIM failure reports and SPF failure reports can also be
+requested using the methods described in <span>[<a href="#RFC6651" class="cite xref">RFC6651</a>]</span> and <span>[<a href="#RFC6652" class="cite xref">RFC6652</a>]</span>,
+respectively.  Report generators are free to follow any of the
+specifications.<a href="#section-3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="reporting-format-update">
+<section id="section-4">
+      <h2 id="name-reporting-format-update">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-reporting-format-update" class="section-name selfRef">Reporting Format Update</a>
+      </h2>
+<p id="section-4-1">Operators implementing this specification also implement an augmented
+version of failure reporting described in <span>[<a href="#RFC6591" class="cite xref">RFC6591</a>]</span> as follows:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4-2">
+<li id="section-4-2.1">
+          <p id="section-4-2.1.1">A DMARC failure report includes the following Abuse Reporting Format (ARF) header fields,
+with the indicated normative requirement levels:<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1.2.1">
+              <p id="section-4-2.1.2.1.1">Identity-Alignment (<span class="bcp14">REQUIRED</span>; defined below)<a href="#section-4-2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-2.1.2.2">
+              <p id="section-4-2.1.2.2.1">Delivery-Result (<span class="bcp14">OPTIONAL</span>)<a href="#section-4-2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-2.1.2.3">
+              <p id="section-4-2.1.2.3.1">DKIM-Domain, DKIM-Identity, DKIM-Selector (<span class="bcp14">REQUIRED</span> for DKIM failures of an aligned identifier)<a href="#section-4-2.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-2.1.2.4">
+              <p id="section-4-2.1.2.4.1">DKIM-Canonicalized-Header, DKIM-Canonicalized-Body (<span class="bcp14">OPTIONAL</span> if reporting a DKIM failure)<a href="#section-4-2.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-2.1.2.5">
+              <p id="section-4-2.1.2.5.1">SPF-DNS (<span class="bcp14">REQUIRED</span> for SPF failure of an aligned identifier)<a href="#section-4-2.1.2.5.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li id="section-4-2.2">
+          <p id="section-4-2.2.1">The Identity-Alignment field is defined to contain a comma-
+separated list of authentication mechanism names that failed to authenticate an
+aligned identity or the keyword "none" if all of the attempted methods were successful at authenticating an aligned identity.  Here is the ABNF <span>[<a href="#RFC5234" class="cite xref">RFC5234</a>]</span> (importing comments and/or folding white space (CFWS) from <span>[<a href="#RFC5322" class="cite xref">RFC5322</a>]</span>):<a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
+<div class="lang-abnf sourcecode" id="section-4-2.2.2">
+<pre>
+id-align     = "Identity-Alignment:" [CFWS]
+                 ( "none" /
+                   dmarc-method
+                     *( [CFWS] "," [CFWS] dmarc-method ) )
+                 [CFWS]
+
+dmarc-method = ( "dkim" / "spf" )
+                 ; each may appear at most once in an id-align</pre><a href="#section-4-2.2.2" class="pilcrow">¶</a>
+</div>
+</li>
+        <li id="section-4-2.3">Authentication Failure Type "dmarc" is defined for the Auth-Failure
+field, which is to be used when a failure report is generated because
+some or all of the authentication mechanisms failed to produce aligned
+identifiers.  Note that a failure report generator <span class="bcp14">MAY</span> also
+independently produce an ARF message for any or all of the underlying
+authentication methods.<a href="#section-4-2.3" class="pilcrow">¶</a>
+</li>
+      </ol>
+</section>
+</div>
+<div id="verifying-external-destinations">
+<section id="section-5">
+      <h2 id="name-verifying-external-destinat">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-verifying-external-destinat" class="section-name selfRef">Verifying External Destinations</a>
+      </h2>
+<p id="section-5-1">It is possible to specify destinations for failure reports that are
+outside of the Organizational Domain of the DMARC Policy Record that
+was requesting the reports.  These destinations are
+commonly referred to as "external destinations" and may represent a
+different domain controlled by the same organization, a contracted
+report processing service, or some other arrangement.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">In case of external destinations, a Mail Receiver who
+generates failure reports <span class="bcp14">MUST</span> use the Verifying External Destinations
+procedure described in <span><a href="https://rfc-editor.org/rfc/rfc9990#section-4" class="relref">Section 4</a> of [<a href="#RFC9990" class="cite xref">RFC9990</a>]</span>,
+substituting the "ruf" tag where the "rua" tag appears in that procedure.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">This prevents a bad actor from publishing a DMARC Policy Record
+requesting failure reports to an external destination and
+then deliberately sending messages that will generate failure reports
+as a form of abuse. It also prevents a Domain Owner from unilaterally
+publishing a DMARC Policy Record with an external destination for
+failure reports, forcing the external destination to deal with unwanted
+messages and potential privacy issues.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<div id="transport">
+<section id="section-5.1">
+        <h3 id="name-transport">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-transport" class="section-name selfRef">Transport</a>
+        </h3>
+<p id="section-5.1-1">Email streams carrying DMARC failure reports <span class="bcp14">SHOULD</span> be DMARC-aligned.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">We recommend that reporters set a reasonable rate-limit for the number
+of failure reports sent
+to any recipient to avoid overloading recipient systems.
+Unaligned reports may in turn produce subsequent failure reports that could
+cause mail loops.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="feedback-report-header-fields-registry-update">
+<section id="section-6.1">
+        <h3 id="name-feedback-report-header-fiel">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-feedback-report-header-fiel" class="section-name selfRef">Feedback Report Header Fields Registry Update</a>
+        </h3>
+<p id="section-6.1-1">IANA has updated the reference and description for the "Identity-Alignment" entry in the
+"Feedback Report Header Fields" registry within the
+"Messaging Abuse Reporting Format (MARF) Parameters" registry group, as follows:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-6.1-2">
+          <dt id="section-6.1-2.1">Field Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.2">Identity-Alignment<a href="#section-6.1-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.4">a list of authentication mechanism names that failed to authenticate an aligned identity, or "none" if all were successful<a href="#section-6.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.5">Multiple Appearances:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.6">No<a href="#section-6.1-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.7">Related "Feedback-Type":</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.8">auth-failure<a href="#section-6.1-2.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.9">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.10">RFC 9991<a href="#section-6.1-2.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-6.1-2.11">Status:</dt>
+          <dd style="margin-left: 1.5em" id="section-6.1-2.12">current<a href="#section-6.1-2.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-7">
+      <h2 id="name-privacy-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<p id="section-7-1">The generation and transmission of DMARC failure reports raise
+significant privacy concerns that must be carefully considered before
+deployment.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">Given these factors, many large-scale providers limit or entirely
+disable the generation of failure reports, preferring to rely on
+aggregate reports, which provide statistical visibility without
+exposing sensitive content. Operators that choose to enable failure
+reporting are strongly encouraged to:<a href="#section-7-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-3.1">Limit the scope and duration of use to targeted diagnostic activities;<a href="#section-7-3.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-3.2">Ensure that reporting URIs are carefully controlled and validated;<a href="#section-7-3.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-3.3">Apply minimization techniques, such as redaction of message bodies
+and header fields, to reduce sensitive data exposure;<a href="#section-7-3.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-3.4">Always transmit reports over secure channels.<a href="#section-7-3.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-7-4">In summary, while DMARC failure reports can offer diagnostic value, the
+associated privacy concerns have led many operators to restrict their
+use.  Aggregate reports remain the recommended mechanism for gaining
+visibility into authentication results while preserving the
+confidentiality of end-user communications.<a href="#section-7-4" class="pilcrow">¶</a></p>
+<p id="section-7-5">Particular privacy-specific issues are explored below.<a href="#section-7-5" class="pilcrow">¶</a></p>
+<div id="data-exposure-considerations">
+<section id="section-7.1">
+        <h3 id="name-data-exposure-consideration">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-data-exposure-consideration" class="section-name selfRef">Data Exposure Considerations</a>
+        </h3>
+<p id="section-7.1-1">Failure reports may include PII and non-public information (NPI) from
+messages that fail to authenticate, since these reports may contain
+message content as well as trace header fields. These reports may
+expose sender and recipient identifiers (e.g., RFC5322.From addresses),
+and although the <span>[<a href="#RFC5965" class="cite xref">RFC5965</a>]</span> format used for failed-message reporting
+supports redaction <span>[<a href="#RFC6590" class="cite xref">RFC6590</a>]</span>, failed-message reporting is capable of
+exposing the entire message to the Report Consumer.  They may also
+expose PII, sensitive business data, or other confidential
+communications to unintended recipients. Such exposure can create
+regulatory, legal, and operational risks for both senders and
+receivers.  Examples include product launches, termination notices for
+employees, or calendar data. Even innocuous-seeming failures (such as
+malformed or "broken" calendar invitations) can result in the leakage
+of private communications.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">Domain Owners requesting reports will receive information about mail
+using their domain, but which they did not actually cause to be sent.
+This might provide valuable insight into content used in abusive
+messages, but it might also expose PII or NPI from legitimate messages
+mistakenly or accidentally failing authentication.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">Information about the final destination of mail, where it might
+otherwise be obscured by intermediate systems, may be exposed through a
+failure report. A commonly cited example is exposure of members of
+mailing lists when one list member sends messages to the list, and
+failure reports are generated when that message is delivered to other
+list members. Those failure reports would be sent to the Domain Owner
+of the list member posting the message or their delegated Report
+Consumer(s).<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<p id="section-7.1-4">Similarly, when message forwarding arrangements exist, Domain Owners
+requesting reports may receive information about mail forwarded to
+domains that were not originally part of their messages' recipient
+list. This means that destinations previously unknown to the Domain
+Owner may now become visible.<a href="#section-7.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="report-recipients">
+<section id="section-7.2">
+        <h3 id="name-report-recipients">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-report-recipients" class="section-name selfRef">Report Recipients</a>
+        </h3>
+<p id="section-7.2-1">A DMARC Policy Record can specify that reports should be sent to a
+Report Consumer operating on behalf of the Domain Owner. This might be
+done when the Domain Owner sends reports to an entity to monitor mail
+streams for deliverability, performance issues, or abuse. Receipt of
+such data by third parties may or may not be permitted by the Mail
+Receiver's privacy policy, terms of use, etc. Domain Owners and
+Mail Receivers should both review and understand whether their own
+internal policies constrain the use and transmission of DMARC
+reporting.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">Some potential exists for Report Consumers to perform traffic analysis,
+making it possible to obtain metadata about the Mail Receiver's
+traffic. In addition to verifying compliance with policies, Mail
+Receivers need to consider that before sending reports to a third
+party.  On the other hand, a Domain Owner may publish a destination
+address that appears to be an Internal Report Consumer but is actually
+a forwarding address; in this case, the final destination of a report
+is not guaranteed.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="additional-damage">
+<section id="section-7.3">
+        <h3 id="name-additional-damage">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-additional-damage" class="section-name selfRef">Additional Damage</a>
+        </h3>
+<p id="section-7.3-1">The risks associated with failure reports are compounded by volume and
+content distribution concerns. Partially or unredacted reports may
+propagate large amounts of spam, phishing, or malware content, all of
+which may require special handling by Report Consumers or other
+recipients to avoid incidents. This underscores the need to avoid
+misconfiguration of the destinations in the "ruf" reporting URIs and
+the suggestions for redaction in this document, for example, using the
+method described in <span>[<a href="#RFC6590" class="cite xref">RFC6590</a>]</span>. All of these concerns are
+heightened for high-volume domains. To mitigate such concerns, the
+following steps should be considered:<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<p id="section-7.3-2">By report generators:<a href="#section-7.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.3-3.1">Help prevent accidental access to potentially malicious URIs by substituting hxxp for http;<a href="#section-7.3-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.3-3.2">Remove attachments that could embed malicious payload.<a href="#section-7.3-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-7.3-4">By report consumers:<a href="#section-7.3-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.3-5.1">Isolate report streams from other mail streams;<a href="#section-7.3-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.3-5.2">Use sandboxes in evaluating failure reports;<a href="#section-7.3-5.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.3-5.3">Use network segmentation;<a href="#section-7.3-5.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.3-5.4">Limit access to failure reports to authorized individuals with
+appropriate security training.<a href="#section-7.3-5.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-8-1">While reviewing this document and its security considerations, the
+reader should also review the privacy considerations above, as well as
+the privacy considerations and security considerations in Sections
+<a href="https://rfc-editor.org/rfc/rfc9989#section-10" class="relref">10</a> and <a href="https://rfc-editor.org/rfc/rfc9989#section-11" class="relref">11</a> of
+<span>[<a href="#RFC9989" class="cite xref">RFC9989</a>]</span> and in Sections
+<a href="https://rfc-editor.org/rfc/rfc9990#section-7" class="relref">7</a> and
+<a href="https://rfc-editor.org/rfc/rfc9990#section-8" class="relref">8</a> of
+<span>[<a href="#RFC9990" class="cite xref">RFC9990</a>]</span>.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<div id="dos-attacks">
+<section id="section-8.1">
+        <h3 id="name-denial-of-service">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-denial-of-service" class="section-name selfRef">Denial of Service</a>
+        </h3>
+<p id="section-8.1-1">Failure reports represent a possible denial-of-service attack that could be
+perpetrated by an attacker who sends numerous messages purporting to
+be from the intended victim Domain Owner but which fail both SPF and
+DKIM; this would cause participating Mail Receivers to send failure
+reports to the Domain Owner or its delegate(s), potentially in large
+numbers.
+Accordingly, participating Mail Receivers are encouraged to
+aggregate these reports as much as is practical, using the Incidents
+field of the ARF <span>[<a href="#RFC5965" class="cite xref">RFC5965</a>]</span>.
+Indeed, the aim is not to count each and every failure but rather to
+report different failure conditions.
+Various pruning techniques are possible, including the following:<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.1-2.1">
+            <p id="section-8.1-2.1.1">Store reports for a period of time before sending them, allowing
+detection, collection, and consolidation of like incidents;<a href="#section-8.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-8.1-2.2">
+            <p id="section-8.1-2.2.1">Apply rate-limiting, such as a maximum number of reports per
+minute that will be generated (and the remainder discarded).<a href="#section-8.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5234">[RFC5234]</dt>
+        <dd>
+<span class="refAuthor">Crocker, D., Ed.</span> and <span class="refAuthor">P. Overell</span>, <span class="refTitle">"Augmented BNF for Syntax Specifications: ABNF"</span>, <span class="seriesInfo">STD 68</span>, <span class="seriesInfo">RFC 5234</span>, <span class="seriesInfo">DOI 10.17487/RFC5234</span>, <time datetime="2008-01" class="refDate">January 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5234">https://www.rfc-editor.org/info/rfc5234</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5322">[RFC5322]</dt>
+        <dd>
+<span class="refAuthor">Resnick, P., Ed.</span>, <span class="refTitle">"Internet Message Format"</span>, <span class="seriesInfo">RFC 5322</span>, <span class="seriesInfo">DOI 10.17487/RFC5322</span>, <time datetime="2008-10" class="refDate">October 2008</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5322">https://www.rfc-editor.org/info/rfc5322</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5965">[RFC5965]</dt>
+        <dd>
+<span class="refAuthor">Shafranovich, Y.</span>, <span class="refAuthor">Levine, J.</span>, and <span class="refAuthor">M. Kucherawy</span>, <span class="refTitle">"An Extensible Format for Email Feedback Reports"</span>, <span class="seriesInfo">RFC 5965</span>, <span class="seriesInfo">DOI 10.17487/RFC5965</span>, <time datetime="2010-08" class="refDate">August 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5965">https://www.rfc-editor.org/info/rfc5965</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6590">[RFC6590]</dt>
+        <dd>
+<span class="refAuthor">Falk, J., Ed.</span> and <span class="refAuthor">M. Kucherawy, Ed.</span>, <span class="refTitle">"Redaction of Potentially Sensitive Data from Mail Abuse Reports"</span>, <span class="seriesInfo">RFC 6590</span>, <span class="seriesInfo">DOI 10.17487/RFC6590</span>, <time datetime="2012-04" class="refDate">April 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6590">https://www.rfc-editor.org/info/rfc6590</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6591">[RFC6591]</dt>
+        <dd>
+<span class="refAuthor">Fontana, H.</span>, <span class="refTitle">"Authentication Failure Reporting Using the Abuse Reporting Format"</span>, <span class="seriesInfo">RFC 6591</span>, <span class="seriesInfo">DOI 10.17487/RFC6591</span>, <time datetime="2012-04" class="refDate">April 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6591">https://www.rfc-editor.org/info/rfc6591</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6692">[RFC6692]</dt>
+        <dd>
+<span class="refAuthor">Clayton, R.</span> and <span class="refAuthor">M. Kucherawy</span>, <span class="refTitle">"Source Ports in Abuse Reporting Format (ARF) Reports"</span>, <span class="seriesInfo">RFC 6692</span>, <span class="seriesInfo">DOI 10.17487/RFC6692</span>, <time datetime="2012-07" class="refDate">July 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6692">https://www.rfc-editor.org/info/rfc6692</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9989">[RFC9989]</dt>
+        <dd>
+<span class="refAuthor">Herr, T., Ed.</span> and <span class="refAuthor">J. Levine, Ed.</span>, <span class="refTitle">"Domain-Based Message Authentication, Reporting, and Conformance (DMARC)"</span>, <span class="seriesInfo">RFC 9989</span>, <span class="seriesInfo">DOI 10.17487/RFC9989</span>, <time datetime="2026-05" class="refDate">May 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9989">https://www.rfc-editor.org/info/rfc9989</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9990">[RFC9990]</dt>
+      <dd>
+<span class="refAuthor">Brotman, A., Ed.</span>, <span class="refTitle">"Domain-Based Message Authentication, Reporting, and Conformance (DMARC) Aggregate Reporting"</span>, <span class="seriesInfo">RFC 9990</span>, <span class="seriesInfo">DOI 10.17487/RFC9990</span>, <time datetime="2026-05" class="refDate">May 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9990">https://www.rfc-editor.org/info/rfc9990</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC6651">[RFC6651]</dt>
+        <dd>
+<span class="refAuthor">Kucherawy, M.</span>, <span class="refTitle">"Extensions to DomainKeys Identified Mail (DKIM) for Failure Reporting"</span>, <span class="seriesInfo">RFC 6651</span>, <span class="seriesInfo">DOI 10.17487/RFC6651</span>, <time datetime="2012-06" class="refDate">June 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6651">https://www.rfc-editor.org/info/rfc6651</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6652">[RFC6652]</dt>
+        <dd>
+<span class="refAuthor">Kitterman, S.</span>, <span class="refTitle">"Sender Policy Framework (SPF) Authentication Failure Reporting Using the Abuse Reporting Format"</span>, <span class="seriesInfo">RFC 6652</span>, <span class="seriesInfo">DOI 10.17487/RFC6652</span>, <time datetime="2012-06" class="refDate">June 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6652">https://www.rfc-editor.org/info/rfc6652</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7489">[RFC7489]</dt>
+      <dd>
+<span class="refAuthor">Kucherawy, M., Ed.</span> and <span class="refAuthor">E. Zwicky, Ed.</span>, <span class="refTitle">"Domain-based Message Authentication, Reporting, and Conformance (DMARC)"</span>, <span class="seriesInfo">RFC 7489</span>, <span class="seriesInfo">DOI 10.17487/RFC7489</span>, <time datetime="2015-03" class="refDate">March 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7489">https://www.rfc-editor.org/info/rfc7489</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="report-format-example">
+<section id="appendix-A">
+      <h2 id="name-example-failure-report">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-example-failure-report" class="section-name selfRef">Example Failure Report</a>
+      </h2>
+<p id="appendix-A-1">This is the full content of a sample failure message, including the message header.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div class="breakable lang-message/rfc822 sourcecode" id="appendix-A-2">
+<pre>
+Received: from gen.example (gen.example [192.0.2.1])
+  (TLS: TLS1.3,256bits,ECDHE_RSA_AES_256_GCM_SHA384)
+  by mail.consumer.example with ESMTPS
+  id 00000000005DC0DD.0000442E; Tue, 19 Jul 2022 07:57:50 +0200
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+  d=gen.example; s=mail; t=1658210268;
+  bh=rCrh1aFDE8d/Fltt8wbcu48bLOu4OM23QXqphUZPAIM=;
+  h=From:To:Date:Subject:From;
+  b=IND9JkuwF9/5841kzxMbPeej0VYimVzNKozR2R89M8eYO2zOlCBblx507Gz0YK7mE
+   /h6pslWm0ODBVFzLlwY9CXv4Vu62QsN0RBIXHPjEXOkoM2VCD5zCd+5i5dtCFX7Mxh
+   LThb2ZJ3efklbSB9RQRwxcmRvCPV7z6lt/Ds9sucVE1RDODYHjx+iWnAUQrlos6ZQb
+   u/YOUGjf60LPpyljfPu3EpFwo80mSHyQlP/4S5KEykgPQMgCqLPPKvJwu1aAIDj+jG
+   q2ylO3fmc/ERDeDWACtR67YNabEKBWtjqCRLNxKttazViJTZ5drcLfpX0853KoougX
+   Rltp7zdoLdy4A==
+From: DMARC Filter &lt;DMARC@gen.example&gt;;
+To: dmarcfail@consumer.example
+Date: Tue, 19 Jul 2022 00:57:48 -0500 (CDT)
+Subject: FW: This is the original subject
+Mime-Version: 1.0
+Content-Type: multipart/report; report-type=feedback-report;
+  boundary="=_mime_boundary_"
+Message-Id: &lt;20220719055748.4AE9D403CC@gen.example&gt;;
+
+This is a MIME-formatted message.  If you see this text it means that
+your E-mail software does not support MIME-formatted messages.
+
+--=_mime_boundary_
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+
+This is an authentication failure report for an email message
+received from IP 192.0.2.2 on Tue, 19 Jul 2022 00:57:48 -0500.
+
+--=_mime_boundary_
+Content-Type: message/feedback-report
+Content-Transfer-Encoding: 7bit
+
+Feedback-Type: auth-failure
+Version: 1
+User-Agent: DMARC-Filter/1.2.3
+Auth-Failure: dmarc
+Authentication-Results: gen.example;
+  dmarc=fail header.from=consumer.example
+Identity-Alignment: dkim
+DKIM-Domain: consumer.example
+DKIM-Identity: @consumer.example
+DKIM-Selector: epsilon
+Original-Envelope-Id: 65E1A3F0A0
+Original-Mail-From: author=gen.example@forwarder.example
+Source-IP: 192.0.2.2
+Source-Port: 12345
+Reported-Domain: consumer.example
+
+--=_mime_boundary_
+Content-Type: message/rfc822; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+Authentication-Results: gen.example;
+  dkim=permerror header.d=forwarder.example header.b="EjCbN/c3";
+  dkim=temperror header.d=forwarder.example header.b="mQ8GEWPc";
+  dkim=permerror header.d=consumer.example header.b="hETrymCb";
+  dkim=neutral header.d=consumer.example header.b="C2nsAp3A";
+Received: from mail.forwarder.example
+  (mail.forwarder.example [IPv6:2001:db8::23ac])
+  by mail.gen.example (Postfix) with ESMTP id 5E8B0C159826
+  for &lt;x@gen.example&gt;; Sun, 14 Aug 2022 07:58:29 -0700 (PDT)
+Received: from mail.forwarder.example (localhost [127.0.0.1])
+  by mail.forwarder.example (Postfix) with ESMTP id 4Ln7Qw4fnvz6Bq
+  for &lt;x@gen.example&gt;; Tue, 19 Jul 2022 07:57:44 +0200
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed;
+  d=forwarder.example; s=ed25519-59hs; t=1658210264;
+  x=1663210264; bh=KYH/g7ForvDbnyyDLYSjauMYMW6sEIqu75/9w3OIONg=;
+  h=Message-ID:Date:List-Id:List-Archive:List-Post:List-Help:
+   List-Subscribe:List-Unsubscribe:List-Owner:MIME-Version:Subject:
+   To:References:From:In-Reply-To:Content-Type:
+   Content-Transfer-Encoding:autocrypt:cc:content-transfer-encoding:
+   content-type:date:from:in-reply-to:message-id:mime-version:
+   openpgp:references:subject:to;
+  b=EjCbN/c3bTU4QkZH/zwTbYxBDp0k8kpmWSXh5h1M7T8J4vtRo+hvafJazT3ZRgq+7
+   +4dzEQwUhl+NOJYXXNUAA==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+  d=forwarder.example; s=rsa-wgJg; t=1658210264; x=1663210264;
+  bh=KYH/g7ForvDbnyyDLYSjauMYMW6sEIqu75/9w3OIONg=;
+  h=Message-ID:Date:List-Id:List-Archive:List-Post:List-Help:
+   List-Subscribe:List-Unsubscribe:List-Owner:MIME-Version:Subject:
+   To:References:From:In-Reply-To:Content-Type:
+   Content-Transfer-Encoding:autocrypt:cc:content-transfer-encoding:
+   content-type:date:from:in-reply-to:message-id:mime-version:
+   openpgp:references:subject:to;
+  b=mQ8GEWPcVpBpeqQ88pcbXpGHBT0J/Rwi8Zd2WZTXWWneQGRCOJLRcbBJpjqnrwtqd
+   76IqawH86tihz4Z/12J1GBCdNx1gfazsoI3yaqfooRDYg0mSyZHrYhQBmodnPcqZj4
+   /25L5278sc/UNrYO9az2n7R/skbVZ0bvSo2eEiGU8fcpO8+a5SKNYskhaviAI4eGIB
+   iRMdEP7gP8dESdnZguNbY5HI32UMDpPPNqajzd/BgcqbveYpRrWCDOhcY47POV7GHM
+   i/KLHiZXtJsL3/Pr/4TL+HTjdX8EDSsy1K5/JCvJCFsJHnSvkEaJQGLn/2m03eW9r8
+   9w1bQ90aY+VCQ==
+X-Original-To: users@forwarder.example
+Received: from mail.consumer.example
+  (mail.consumer.example [192.0.2.4])
+  (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+   key-exchange ECDHE (P-256) server-signature ECDSA (P-384)
+   server-digest SHA384)
+  (Client did not present a certificate)
+  by mail.forwarder.example (Postfix) with ESMTPS id 4Ln7Qs55xmz4nP
+  for &lt;users@forwarder.example&gt;;
+  Tue, 19 Jul 2022 07:57:41 +0200 (CEST)
+Authentication-Results: mail.forwarder.example;
+  arc=none smtp.remote-ip=192.0.2.4
+Authentication-Results: mail.forwarder.example;
+  dkim=pass (512-bit key; secure) header.d=consumer.example
+   header.i=@consumer.example header.a=ed25519-sha256
+   header.s=epsilon header.b=hETrymCb;
+  dkim=pass (1152-bit key; secure) header.d=consumer.example
+   header.i=@consumer.example header.a=rsa-sha256
+   header.s=delta header.b=C2nsAp3A
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed;
+  d=consumer.example; s=epsilon; t=1658210255;
+  bh=KYH/g7ForvDbnyyDLYSjauMYMW6sEIqu75/9w3OIONg=;
+  h=Date:Subject:To:References:From:In-Reply-To;
+  b=hETrymCbz6T1Dyo5dCG9dk8rPykKLdhJCPFeJ9TiiP/kaoN2afpUYtj+SrI+I83lp
+   p1F/FfYSGy7zz3Q3OdxBA==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+  d=consumer.example; s=delta; t=1658210255;
+  bh=KYH/g7ForvDbnyyDLYSjauMYMW6sEIqu75/9w3OIONg=;
+  h=Date:To:References:From:In-Reply-To;
+  b=C2nsAp3AMNX33Nq7nN/StPo921xE3XGF8Ju3iAKdYB3EKhsril0N5IjWGlglJECst
+   jLNKSo7KWZZ2lkH/dVZ9Rs1GHT2uaKy1sc/xmNIC5rHdhrxammiwpTSo4PsT8disfc
+   3DVF6Q62n0EsdLFqcw1KY8A9inFqYKY2tqoo+y4zMtItqCYx3xjsj3I0IFLuX
+Author: Message Author &lt;author@consumer.example&gt;
+Received: from [192.0.2.8] (host-8-2-0-192.isp.example [192.0.2.8])
+  (AUTH: CRAM-MD5 uXDGrn@SYT0/k, TLS: TLS1.3,128bits,
+  ECDHE_RSA_AES_128_GCM_SHA256)
+  by mail.consumer.example with ESMTPSA
+  id 00000000005DC076.00004417; Tue, 19 Jul 2022 07:57:35 +0200
+Message-ID: &lt;2431dc66-b010-c9cc-4f2b-a1f889f8bdb4@consumer.example&gt;
+Date: Tue, 19 Jul 2022 07:57:33 +0200
+List-Id: &lt;users.forwarder.example&gt;
+List-Post: &lt;mailto:users@forwarder.example&gt;
+List-Help: &lt;mailto:users+help@forwarder.example&gt;
+List-Subscribe: &lt;mailto:users+subscribe@forwarder.example&gt;
+List-Unsubscribe: &lt;mailto:users+unsubscribe@forwarder.example&gt;
+List-Owner: &lt;mailto:users+owner@forwarder.example&gt;
+Precedence: list
+MIME-Version: 1.0
+Subject: This is the original subject
+Content-Language: en-US
+To: users@forwarder.example
+Authentication-Results: consumer.example; auth=pass (details omitted)
+From: Message Author &lt;author@consumer.example&gt;
+In-Reply-To: &lt;20220718102753.0f6d9dde.cel@example.com&gt;
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+[ Message body was here ]
+--=_mime_boundary_--</pre><a href="#appendix-A-2" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A-3">The Source-Port field definition is given by <span>[<a href="#RFC6692" class="cite xref">RFC6692</a>]</span>.<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+<p id="appendix-A-4">In the final MIME entity, the local-parts of To and From addresses are
+reported unredacted.  Since we know that the local parts are PII, we
+can reduce the privacy risk by redacting them.  In the example, the
+report generator could have replaced "users" with "lRLxexey" and
+"author" with "RT47aVey" throughout the entity.<a href="#appendix-A-4" class="pilcrow">¶</a></p>
+<p id="appendix-A-5">If the body of the message is not included, the last MIME entity
+would have "Content-Type: text/rfc822-headers" instead of "message/rfc822".<a href="#appendix-A-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Steven M. Jones (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">DMARC.org</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:smj@dmarc.org" class="email">smj@dmarc.org</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Alessandro Vesely (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Tana</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:vesely@tana.it" class="email">vesely@tana.it</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
