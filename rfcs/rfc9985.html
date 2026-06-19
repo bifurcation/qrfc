@@ -1,0 +1,2632 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 9985: Optimizing Bidirectional Forwarding Detection (BFD) Authentication</title>
+<meta content="Mahesh Jethanandani" name="author">
+<meta content="Ashesh Mishra" name="author">
+<meta content="Jeffrey Haas" name="author">
+<meta content="Ankur Saxena" name="author">
+<meta content="Manav Bhatia" name="author">
+<meta content="
+       
+ This document describes an experimental optimization to Bidirectional Forwarding Detection (BFD) Authentication.
+ This optimization enables BFD to scale better when there is a desire to
+ use authentication where applying the same authentication mechanism to
+ every BFD Control Packet may adversely impact performance.
+ This optimization partitions BFD Authentication into a more
+ computationally intensive (MCI) mechanism that is applied to BFD significant
+ changes and a less computationally intensive (LCI) mechanism that is applied to the
+ majority of BFD Control Packets.
+       
+    " name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="BFD" name="keyword">
+<meta content="authentication" name="keyword">
+<meta content="9985" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.14.4
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.0
+    platformdirs 4.9.6
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.6.0
+    weasyprint 68.0
+-->
+<link href="rfc9985.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-bfd-optimizing-authentication-36" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc9985" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 9985</td>
+<td class="center">BFD Authentication Optimization</td>
+<td class="right">June 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Jethanandani, et al.</td>
+<td class="center">Experimental</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9985" class="eref">9985</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Experimental</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-06" class="published">June 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Jethanandani</div>
+<div class="org">Arrcus</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Mishra</div>
+<div class="org">Aalyria Technologies</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Haas</div>
+<div class="org">HPE</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Saxena</div>
+<div class="org">Ciena Corporation</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Bhatia</div>
+<div class="org">Google</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 9985</h1>
+<h1 id="title">Optimizing Bidirectional Forwarding Detection (BFD) Authentication</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+ This document describes an experimental optimization to Bidirectional Forwarding Detection (BFD) Authentication.
+ This optimization enables BFD to scale better when there is a desire to
+ use authentication where applying the same authentication mechanism to
+ every BFD Control Packet may adversely impact performance.
+ This optimization partitions BFD Authentication into a more
+ computationally intensive (MCI) mechanism that is applied to BFD significant
+ changes and a less computationally intensive (LCI) mechanism that is applied to the
+ majority of BFD Control Packets.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for examination, experimental implementation, and
+            evaluation.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document defines an Experimental Protocol for the Internet
+            community.  This document is a product of the Internet Engineering
+            Task Force (IETF).  It represents the consensus of the IETF community.
+            It has received public review and has been approved for publication
+            by the Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc9985">https://www.rfc-editor.org/info/rfc9985</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-bfd-control-packets-that-re" class="internal xref">BFD Control Packets That Require MCI Authentication</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-protecting-bfd-significant-" class="internal xref">Protecting BFD Significant Changes with MCI Authentication</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-using-lci-auth-types" class="internal xref">Using LCI Auth Types</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-periodic-mci-reauthenticati" class="internal xref">Periodic MCI Reauthentication</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-optimized-authentication-mo" class="internal xref">Optimized Authentication Modes</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-signaling-optimized-authent" class="internal xref">Signaling Optimized Authentication</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-transmitting-and-receiving-" class="internal xref">Transmitting and Receiving Using Optimized Authentication</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-optimized-authentication-op" class="internal xref">Optimized Authentication Operations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-optimizing-authentication-y" class="internal xref">Optimizing Authentication YANG Data Model</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-data-model-overview" class="internal xref">Data Model Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-tree-diagram" class="internal xref">Tree Diagram</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-the-yang-data-model" class="internal xref">The YANG Data Model</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-ietf-xml-registry" class="internal xref">IETF XML Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-the-yang-module-names-regis" class="internal xref">The YANG Module Names Registry</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-protocol-security-considera" class="internal xref">Protocol Security Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-yang-security-consideration" class="internal xref">YANG Security Considerations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-examples" class="internal xref">Examples</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1">
+                <p id="section-toc.1-1.12.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-single-hop-bfd-configuratio" class="internal xref">Single-Hop BFD Configuration</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-experimental-status" class="internal xref">Experimental Status</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#appendix-E" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><span><a href="#RFC5880" class="internal xref">BFD</a> [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span> authentication procedures, when enabled,
+      authenticate each control packet using the same authentication mechanism.
+      Devices implementing BFD are often resource-constrained and authentication
+      may adversely impact the performance of BFD, thus discouraging the
+      deployment of authentication.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">When implemented in software, BFD Authentication mechanisms compete
+      with other necessary work done by the systems implementing the protocol.
+      When implemented using hardware acceleration, these mechanisms may scale
+      better situationally, but they still impose a cost on the implementation.
+      BFD's value is tied to its ability to scale in terms of numbers of
+      sessions and a Detection Time that relies on sending its control packets
+      at a high rate.  Implementers and operators are forced to evaluate
+      trade-offs of the benefits of authentication vs. its impact on BFD
+      performance.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The authentication mechanisms documented in <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>, 
+      <span><a href="#RFC1321" class="internal xref">MD5 Message-Digest Algorithm</a> [<a href="#RFC1321" class="cite xref">RFC1321</a>]</span>, and 
+      <span><a href="#RFC3174" class="internal xref">Secure Hash Algorithm (SHA-1)</a> [<a href="#RFC3174" class="cite xref">RFC3174</a>]</span> are not
+      particularly strong in a cryptographic sense.  However, they may still not
+      appropriately scale situationally in a given implementation.  In the
+      future, there may be a desire to use stronger authentication mechanisms
+      than those already specified, and those mechanisms are likely to use even
+      more resources.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">The BFD protocol can broadly be described as the set of procedures
+      that handle its state machine changes to reach the Up state, and once BFD
+      is in the Up state, it will send those Up packets at the negotiated high rate.
+      The number of BFD Control Packets needed to signal state changes (called
+      significant changes) is very small, while the majority of the Control
+      Packets validate that the session remains in the Up state.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This document describes an experimental optimization to BFD
+      Authentication.  This optimization partitions BFD Authentication into a
+      more computationally intensive (MCI) mechanism used to authenticate
+      significant changes, and a less computationally intensive (LCI) mechanism
+      applied to the majority of the BFD Control Packets that don't signal such
+      significant changes.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">The details of the motivation for experimental status are given in
+      <a href="#experiment" class="auto internal xref">Appendix B</a>.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<section id="section-1.1">
+        <h3 id="name-requirements-language">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+</div>
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">The following terms used in this document have been defined in
+      <span><a href="#RFC5880" class="internal xref">BFD</a> [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1">
+          <p id="section-2-2.1.1">Auth Type<a href="#section-2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.2">
+          <p id="section-2-2.2.1">Detect Multiplier<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.3">
+          <p id="section-2-2.3.1">Detection Time<a href="#section-2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-2-3">The following terms are introduced in this document.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-4">
+        <dt id="section-2-4.1">significant change:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.2">A state change, demand mode change (to D bit), or poll sequence change (P or F bit). Changes to BFD Control Packets that do not require a poll sequence, such as bfd.DetectMult, are also considered a significant change.<a href="#section-2-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.3">More Computationally Intensive (MCI) authentication:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.4">The authentication mechanism applied to BFD Control Packets that are significant changes.<a href="#section-2-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.5">Less Computationally Intensive (LCI) authentication:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.6">The authentication mechanism applied to BFD Control Packets that are NOT significant changes.<a href="#section-2-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.7">configured MCI reauthentication interval:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.8">Interval at which BFD Control Packets are retried using MCI authentication.<a href="#section-2-4.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-2-5">
+        The authentication mechanisms described in this optimization are paired
+ as MCI and LCI.  While it will be generally
+ the case that the relationship between these mechanisms will be
+ "stronger" and "less strong", this document doesn't use the term
+ "strong" to avoid conflation with either mechanism's relative
+ cryptographic strength.  The relative criteria for each mechanism is the
+ impact on the implementation.<a href="#section-2-5" class="pilcrow">¶</a></p>
+</section>
+<div id="strong_authentication">
+<section id="section-3">
+      <h2 id="name-bfd-control-packets-that-re">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-bfd-control-packets-that-re" class="section-name selfRef">BFD Control Packets That Require MCI Authentication</a>
+      </h2>
+<p id="section-3-1">
+ The intention of these optimized procedures is to permit more
+ computationally intensive
+ authentication for BFD state changes and utilize the less
+ computationally intensive authentication mechanisms to provide
+ protection for the session in the Up state while performing less
+ work overall.  Such procedures are intended to aid BFD session scaling
+ without compromising BFD session security.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">All BFD Control Packets with the state AdminDown, Down, and Init
+      <span class="bcp14">MUST</span> use MCI authentication.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">Once the BFD state machine has reached the Up state, it will continue
+      to send BFD Control Packets with MCI authentication in the Up state for a period as discussed in
+      <a href="#operations" class="auto internal xref">Section 7.2</a>.  If optimized authentication mechanisms are
+      in use, as defined in <a href="#optimized_modes" class="auto internal xref">Section 6</a>, the session <span class="bcp14">MAY</span>
+      switch to the LCI mode.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">The contents of an Up packet must not change aside from the
+      Authentication Section unless MCI authentication is in use.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<div id="significant_changes">
+<section id="section-3.1">
+        <h3 id="name-protecting-bfd-significant-">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-protecting-bfd-significant-" class="section-name selfRef">Protecting BFD Significant Changes with MCI Authentication</a>
+        </h3>
+<p id="section-3.1-1">
+   This document proposes that BFD Control Packets that signal a
+   state change, a change in demand mode (D bit), or a poll sequence
+   (P or F bit change) be categorized as a "significant
+   change". Control packets that do not require a poll sequence,
+   such as bfd.DetectMult, are also considered a
+   significant change.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">
+   Such significant changes are intended to be protected by more
+   computationally intensive authentication.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="optimized_type">
+<section id="section-4">
+      <h2 id="name-using-lci-auth-types">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-using-lci-auth-types" class="section-name selfRef">Using LCI Auth Types</a>
+      </h2>
+<p id="section-4-1">
+ The majority of packets exchanged in a BFD session in the Up state are
+ not significant changes.  This document proposes a new optimized
+ authentication mode where packets that are not significant changes may
+ use an LCI authentication mechanism.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">
+ Once the session has reached the Up state, the session can
+ use an LCI Auth Type derived from
+ the format in <a href="#signaling" class="auto internal xref">Section 7</a>.
+ Currently, this includes:<a href="#section-4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-3.1">
+     Meticulous Keyed ISAAC Authentication as described in
+     <span>[<a href="#RFC9986" class="cite xref">RFC9986</a>]</span>.
+            This authentication type protects the BFD session when BFD Up
+            packets do not change, because only the paired devices know the
+            shared secret, key, and sequence number to select the ISAAC
+            result.<a href="#section-4-3.1" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-4">
+        Other mechanisms may be defined in the future.<a href="#section-4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-5">
+      <h2 id="name-periodic-mci-reauthenticati">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-periodic-mci-reauthenticati" class="section-name selfRef">Periodic MCI Reauthentication</a>
+      </h2>
+<p id="section-5-1">
+        When using the LCI authentication
+        mechanism, BFD should periodically test the session using the MCI
+        authentication mechanism.  MCI authentication is tested using a
+        Poll sequence. To test MCI authentication, a Poll sequence <span class="bcp14">SHOULD</span>
+        be initiated by the sender using the MCI authentication mode rather    
+than the LCI mechanism. If a control packet
+        with the Final (F) bit is not received using MCI authentication
+ within twice the Detect Interval as would be calculated by the
+ receiving system, the session has been compromised, and it <span class="bcp14">MUST</span> be brought
+ down.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">
+        The value "twice the Detect interval as would be calculated by the
+        receiving system" is, roughly, twice the number of packets the local
+        system would transmit to the receiving system within its own Detect
+        Interval.  This accommodates for possible packet loss from the sending
+        system during the Poll sequence to the receiving system, plus time for
+        the receiving system to transmit a control packet with the Final (F) bit
+        set to the local system.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">
+ This "MCI reauthentication interval" for
+ performing such periodic tests using the MCI
+ authentication mechanism can be configured depending on the capability
+ of the system.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">
+        Most packets transmitted in a BFD session are BFD Up packets.
+        MCI authenticating a limited subset of these packets with a Poll
+        sequence as described above, e.g., every one minute,
+        significantly reduces the computational demand for the system
+        while maintaining security of the session across the
+        configured MCI reauthentication interval.<a href="#section-5-4" class="pilcrow">¶</a></p>
+</section>
+<div id="optimized_modes">
+<section id="section-6">
+      <h2 id="name-optimized-authentication-mo">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-optimized-authentication-mo" class="section-name selfRef">Optimized Authentication Modes</a>
+      </h2>
+<p id="section-6-1">The cryptographic authentication mechanisms specified in <span><a href="https://rfc-editor.org/rfc/rfc5880#section-6.7" class="relref">Section 6.7</a> of BFD [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span> describe enabling and
+      disabling of authentication as a one-time operation. The following is stated in <span><a href="https://rfc-editor.org/rfc/rfc5880#section-6.7.1" class="relref">Section 6.7.1</a> of [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<blockquote id="section-6-2">... implementations using this method <span class="bcp14">SHOULD</span> only allow the
+      authentication state to be changed at most once without some form of
+      intervention (so that authentication cannot be turned on and off
+      repeatedly simply based on the receipt of BFD Control Packets from remote
+      systems).<a href="#section-6-2" class="pilcrow">¶</a>
+</blockquote>
+<p id="section-6-3">Once enabled, every packet must have the Authentication Present (A) bit set and the
+      associated Authentication Type appended (<span><a href="https://rfc-editor.org/rfc/rfc5880#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>).
+      In addition, <span><a href="https://rfc-editor.org/rfc/rfc5880#section-6.7.1" class="relref">Section 6.7.1</a> of [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span> states that an
+      implementation <span class="bcp14">SHOULD NOT</span> allow the authentication state to be changed
+      based on the receipt of a BFD Control Packet.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">
+        This document proposes that an "optimized" authentication mode that
+ permits both an MCI authentication mode and an LCI mode be used within the same BFD
+ session.  This pairing of an MCI and an LCI mode of authentication is
+ carried in new BFD Authentication types representing a given optimized
+ authentication type pairing.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">
+ This document defines which BFD Control Packets require MCI authentication in <a href="#significant_changes" class="auto internal xref">Section 3.1</a>.
+ A BFD Control Packet that fails
+ authentication, or a BFD Control Packet that was
+ supposed to be MCI-authenticated but was not (e.g., a significant
+ change packet), is discarded. However, there is no change to
+ the state machine for BFD, as the decision of a significant
+ change is still decided by how many valid consecutive packets
+ were received.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<p id="section-6-6">
+ In this specification, the contents of an Up packet <span class="bcp14">MUST NOT</span> change
+ aside from the Authentication Section without MCI
+ authentication. The full procedure is documented in the following
+ sections.<a href="#section-6-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="signaling">
+<section id="section-7">
+      <h2 id="name-signaling-optimized-authent">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-signaling-optimized-authent" class="section-name selfRef">Signaling Optimized Authentication</a>
+      </h2>
+<p id="section-7-1">
+        When the
+ Authentication Present (A) bit is set and the Auth Type
+ (<span>[<a href="#RFC5880" class="cite xref">RFC5880</a>], <a href="https://rfc-editor.org/rfc/rfc5880#section-4.1" class="relref">Section 4.1</a></span>)
+ is a type supporting Optimized BFD Authentication, the Auth Type signals a
+ pairing of an MCI authentication type and an LCI authentication type.  This pairing is
+ advertised in a single Auth Type value in order to permit
+ implementations to be aware that:<a href="#section-7-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-2.1">Optimized BFD procedures will be in use.<a href="#section-7-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-2.2">The pairing of the MCI and LCI
+              authentication mechanisms will be used for that session.<a href="#section-7-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-2.3">There is a requirement to carry a Sequence Number.<a href="#section-7-2.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-7-2.4">The current MCI or LCI mode will be carried as described below.<a href="#section-7-2.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<span id="name-common-optimized-bfd-authen"></span><figure id="figure-1">
+        <div class="alignCenter art-text artwork" id="section-7-3.1">
+<pre>
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Auth Type   |   Auth Len    |  Auth Key ID  |   Opt. Mode   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        Sequence Number                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                   Authentication Specific Data                ~
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-common-optimized-bfd-authen" class="selfRef">Common Optimized BFD Authentication Section</a>
+        </figcaption></figure>
+<p id="section-7-4">
+        The values of Auth Type and Auth Len are defined in their respective
+ Optimized BFD Authentication procedural documents.<a href="#section-7-4" class="pilcrow">¶</a></p>
+<p id="section-7-5">
+        The values of the Optimized Authentication Mode field are:<a href="#section-7-5" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-7-6">
+   <li id="section-7-6.1">The MCI authentication type for Optimized BFD Auth Types.<a href="#section-7-6.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-7-6.2">The LCI authentication type for Optimized BFD Auth Types.<a href="#section-7-6.2" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-7-7">
+ Authentication Specific Data: When using the more computationally
+ intensive authentication type, the remainder of the Authentication
+ Section carries that type's data.<a href="#section-7-7" class="pilcrow">¶</a></p>
+<section id="section-7.1">
+        <h3 id="name-transmitting-and-receiving-">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-transmitting-and-receiving-" class="section-name selfRef">Transmitting and Receiving Using Optimized Authentication</a>
+        </h3>
+<p id="section-7.1-1">
+   The procedures for authenticating BFD Control Packets using Optimized
+   Authentication are similar to the existing procedures covered in 
+   <span><a href="https://rfc-editor.org/rfc/rfc5880#section-6.7" class="relref">Section 6.7</a> of [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>. 
+          Optimized Authentication modes have common procedural requirements for 
+   authentication regardless of which more or less computationally
+   intensive authentication modes are used.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">
+   The required value of the Auth Len field for a given Optimized
+   Authentication mode is defined in the respective specifications for
+   their respective MCI and LCI modes.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">
+          The following common procedures apply to authenticating BFD Control
+          packets utilizing Optimized Authentication:<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.1-4.1">
+          If the received BFD Control Packet does not contain an 
+   Authentication Section (<span>[<a href="#RFC5880" class="cite xref">RFC5880</a>], <a href="https://rfc-editor.org/rfc/rfc5880#section-4.1" class="relref">Section 4.1</a></span>), or
+   the Auth Type is not a supported Optimized Authentication Auth Type,
+   then the received packet <span class="bcp14">MUST</span> be discarded.<a href="#section-7.1-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.2">
+   If the received BFD Control Packet contains an optimized
+   authentication type using these procedures and the Optimized
+          Authentication Mode field is not 1 or 2, then the received packet
+          <span class="bcp14">MUST</span> be discarded.<a href="#section-7.1-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.3">
+   If bfd.SessionState is AdminDown, Down, or Init and the Optimized
+   Authentication Mode field is not 1, then the received packet <span class="bcp14">MUST</span> be
+   discarded.<a href="#section-7.1-4.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.4">
+   If bfd.SessionState is Up and there is a significant change as defined
+   in <a href="#significant_changes" class="auto internal xref">Section 3.1</a>, and the Optimized Authentication
+   Mode field is not 1, then the received packet <span class="bcp14">MUST</span> be discarded.<a href="#section-7.1-4.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.5">
+          If the Auth Len field is not equal to a value appropriate for the
+          Optimized Authentication Mode field, the packet <span class="bcp14">MUST</span> be discarded.<a href="#section-7.1-4.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.1-4.6">
+          If bfd.AuthSeqKnown is 1, examine the Sequence Number field. If the sequence number lies outside of the inclusive range of bfd.RcvAuthSeq+1 to bfd.RcvAuthSeq+(3*Detect Mult) when treated as an unsigned 32-bit circular number space, the received packet <span class="bcp14">MUST</span> be discarded.<a href="#section-7.1-4.6" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-7.1-5">
+          Otherwise (bfd.AuthSeqKnown is 0), bfd.AuthSeqKnown <span class="bcp14">MUST</span> be set to 1,
+          bfd.RcvAuthSeq <span class="bcp14">MUST</span> be set to the value of the received Sequence
+          Number field, and the received packet <span class="bcp14">MUST</span> be accepted.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
+<p id="section-7.1-6">
+          For the specified Auth Type and Optimized Authentication Mode, perform
+          the appropriate authentication procedures.  If authentication
+          succeeds, the received packet <span class="bcp14">MUST</span> be accepted.  Otherwise, the
+          received packet <span class="bcp14">MUST</span> be discarded.<a href="#section-7.1-6" class="pilcrow">¶</a></p>
+</section>
+<div id="operations">
+<section id="section-7.2">
+        <h3 id="name-optimized-authentication-op">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-optimized-authentication-op" class="section-name selfRef">Optimized Authentication Operations</a>
+        </h3>
+<p id="section-7.2-1">
+   As noted in <a href="#significant_changes" class="auto internal xref">Section 3.1</a>,
+   when using Optimized BFD procedures, MCI
+   authentication is used in the BFD state machine to bring a BFD session
+   to the Up state or to make any change of the BFD parameters as carried
+   in the BFD Control Packet when in the Up state.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">
+   Once the BFD session has reached the Up state, the BFD Up state <span class="bcp14">MUST</span>
+   be signaled to the remote BFD system using the MCI authentication mode for
+   an interval that is at least the Detection Time before switching to
+   the LCI authentication mode.  This is to permit mechanisms such as 
+   <span><a href="#RFC9986" class="internal xref">Meticulous Keyed ISAAC for BFD Optimized Authentication</a> [<a href="#RFC9986" class="cite xref">RFC9986</a>]</span>
+   or other approved, less intensive authentication mechanisms to be
+   bootstrapped before switching to the LCI mode.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<p id="section-7.2-3">
+   It is <span class="bcp14">RECOMMENDED</span> that when using optimized authentication that
+   implementations switch from MCI authentication to LCI
+   authentication mode after an interval that
+   is at least the Detection Time. In the circumstances where a BFD
+   session successfully reaches the Up state with MCI authentication,
+   but there are problems with the LCI authentication, this will
+   permit the remote system to tear down the session as quickly as
+   possible.<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<p id="section-7.2-4">
+   BFD sessions using optimized authentication that succeed in reaching the
+   Up state using MCI authentication and fail using LCI authentication
+   <span class="bcp14">SHOULD</span> bring the issue to the attention of the operator.  Furthermore,
+   implementations <span class="bcp14">MAY</span> wish to throttle session restarts.<a href="#section-7.2-4" class="pilcrow">¶</a></p>
+<p id="section-7.2-5">
+   It is further <span class="bcp14">RECOMMENDED</span> that BFD implementations using optimized
+   authentication defer notifying their client that the session has reached
+   the Up state until it has transitioned to using the LCI
+   authentication mode.  In the event where LCI authentication is
+   failing in the protocol, this avoids propagating the failed transitions
+   to the LCI mode to their clients.<a href="#section-7.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="opt-auth-yang-model">
+<section id="section-8">
+      <h2 id="name-optimizing-authentication-y">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-optimizing-authentication-y" class="section-name selfRef">Optimizing Authentication YANG Data Model</a>
+      </h2>
+<div id="data-model-overview">
+<section id="section-8.1">
+        <h3 id="name-data-model-overview">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-data-model-overview" class="section-name selfRef">Data Model Overview</a>
+        </h3>
+<p id="section-8.1-1">
+   The <span><a href="#RFC7950" class="internal xref">YANG 1.1</a> [<a href="#RFC7950" class="cite xref">RFC7950</a>]</span> data model defined in
+   this document augments the "ietf-bfd" module to add
+   data nodes relevant to the management of the feature defined in this
+   document. It adds an interval value that specifies how often the BFD
+   session should be reauthenticated using more computationally
+   intensive authentication once it is in the Up state.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="tree-diagram">
+<section id="section-8.2">
+        <h3 id="name-tree-diagram">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-tree-diagram" class="section-name selfRef">Tree Diagram</a>
+        </h3>
+<p id="section-8.2-1">
+   The tree diagram for the YANG modules defined in this
+   document uses annotations defined in <span><a href="#RFC8340" class="internal xref">YANG Tree Diagrams</a> [<a href="#RFC8340" class="cite xref">RFC8340</a>]</span>.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<div class="lang-yangtree sourcecode" id="section-8.2-2">
+<pre>
+module: ietf-bfd-opt-auth
+
+  augment /rt:routing/rt:control-plane-protocols
+            /rt:control-plane-protocol/bfd:bfd/bfd-ip-sh:ip-sh
+            /bfd-ip-sh:sessions/bfd-ip-sh:session
+            /bfd-ip-sh:authentication:
+    +--rw reauth-interval?   uint32
+  augment /rt:routing/rt:control-plane-protocols
+            /rt:control-plane-protocol/bfd:bfd/bfd-ip-mh:ip-mh
+            /bfd-ip-mh:session-groups/bfd-ip-mh:session-group
+            /bfd-ip-mh:authentication:
+    +--rw reauth-interval?   uint32
+  augment /rt:routing/rt:control-plane-protocols
+            /rt:control-plane-protocol/bfd:bfd/bfd-lag:lag
+            /bfd-lag:sessions/bfd-lag:session/bfd-lag:authentication:
+    +--rw reauth-interval?   uint32
+  augment /rt:routing/rt:control-plane-protocols
+            /rt:control-plane-protocol/bfd:bfd/bfd-mpls:mpls
+            /bfd-mpls:session-groups/bfd-mpls:session-group
+            /bfd-mpls:authentication:
+    +--rw reauth-interval?   uint32</pre><a href="#section-8.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="the-yang-model">
+<section id="section-8.3">
+        <h3 id="name-the-yang-data-model">
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-the-yang-data-model" class="section-name selfRef">The YANG Data Model</a>
+        </h3>
+<p id="section-8.3-1">
+   This YANG module imports modules defined in "<a href="#RFC8349" class="internal xref">A YANG Data Model for Routing Management (NMDA Version)</a>" <span>[<a href="#RFC8349" class="cite xref">RFC8349</a>]</span> and "<a href="#RFC9314" class="internal xref">YANG Data Model for Bidirectional Forwarding Detection (BFD)</a>" <span>[<a href="#RFC9314" class="cite xref">RFC9314</a>]</span>.<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.3-2">Implementations supporting the optimization procedures defined in this document enable optimization by using one of the newly defined key-chain crypto-algorithms in the ietf-bfd-met-keyed-isaac YANG module in <span>[<a href="#RFC9986" class="cite xref">RFC9986</a>]</span>.<a href="#section-8.3-2" class="pilcrow">¶</a></p>
+<div class="breakable lang-yang sourcecode" id="section-8.3-3">
+<pre>&lt;CODE BEGINS&gt; file "ietf-bfd-opt-auth@2026-06-19.yang"
+
+module ietf-bfd-opt-auth {
+  yang-version 1.1;
+  namespace "urn:ietf:params:xml:ns:yang:ietf-bfd-opt-auth";
+  prefix bfd-oa;
+
+  import ietf-routing {
+    prefix rt;
+    reference
+      "RFC 8349: A YANG Data Model for Routing Management
+       (NMDA version).";
+  }
+
+  import ietf-bfd {
+    prefix bfd;
+    reference
+      "RFC 9314: YANG Data Model for Bidirectional
+       Forwarding Detection (BFD).";
+  }
+
+  import ietf-bfd-ip-sh {
+    prefix bfd-ip-sh;
+    reference
+      "RFC 9314: YANG Data Model for Bidirectional
+       Forwarding Detection (BFD).";
+  }
+
+  import ietf-bfd-ip-mh {
+    prefix bfd-ip-mh;
+    reference
+      "RFC 9314: YANG Data Model for Bidirectional
+       Forwarding Detection (BFD).";
+  }
+
+  import ietf-bfd-lag {
+    prefix bfd-lag;
+    reference
+      "RFC 9314: YANG Data Model for Bidirectional
+       Forwarding Detection (BFD).";
+  }
+
+  import ietf-bfd-mpls {
+    prefix bfd-mpls;
+    reference
+      "RFC 9314: YANG Data Model for Bidirectional
+       Forwarding Detection (BFD).";
+  }
+
+  organization
+    "IETF Bidirectional Forwarding Detection (BFD) Working Group";
+
+  contact
+    "WG Web:   &lt;http://tools.ietf.org/wg/bfd&gt;
+     WG List:  &lt;rtg-bfd@ietf.org&gt;
+
+     Authors: Mahesh Jethanandani (mjethanandani@gmail.com)
+              Ashesh Mishra (ashesh@aalyria.com)
+              Ankur Saxena (ankurpsaxena@gmail.com)
+              Manav Bhatia (mnvbhatia@google.com)
+              Jeffrey Haas (jeffrey.haas@hpe.com).";
+
+  description
+    "This YANG module augments the base BFD YANG module to add
+     attributes related to the experimental BFD Optimized
+     Authentication.
+
+     The key words 'MUST', 'MUST NOT', 'REQUIRED', 'SHALL', 'SHALL
+     NOT', 'SHOULD', 'SHOULD NOT', 'RECOMMENDED', 'NOT RECOMMENDED',
+     'MAY', and 'OPTIONAL' in this document are to be interpreted as
+     described in BCP 14 (RFC 2119) (RFC 8174) when, and only when,
+     they appear in all capitals, as shown here.
+
+     Copyright (c) 2026 IETF Trust and the persons identified as
+     authors of the code.  All rights reserved.
+
+     Redistribution and use in source and binary forms, with or
+     without modification, is permitted pursuant to, and subject to
+     the license terms contained in, the Revised BSD License set
+     forth in Section 4.c of the IETF Trust's Legal Provisions
+     Relating to IETF Documents
+     (https://trustee.ietf.org/license-info).
+
+     This version of this YANG module is part of RFC 9985
+     (https://www.rfc-editor.org/info/rfc9985); see the RFC itself
+     for full legal notices.";
+
+  revision "2026-06-19" {
+    description
+      "Initial Version.";
+    reference
+      "RFC 9985: Optimizing BFD Authentication.";
+  }
+
+  feature optimized-auth {
+    description
+      "Indicates that the implementation supports optimized
+       authentication.";
+    reference
+      "RFC 9985: Optimizing BFD Authentication.";
+  }
+
+  grouping bfd-opt-auth-config {
+    description
+      "Grouping for BFD Optimized Authentication Parameters.";
+    leaf reauth-interval {
+      type uint32;
+      units "seconds";
+      default "60";
+      description
+        "Interval of time after which more computationally intensive
+         authentication should be utilized to prevent an
+         on-path-attacker attack.
+
+         A value of zero means that we do not do periodic
+         reauthentication using the more computationally intensive
+         authentication method.
+
+         This value SHOULD have jitter applied to it to avoid
+         self-synchronization during expensive authentication
+         operations.";
+    }
+  }
+
+  augment "/rt:routing/rt:control-plane-protocols"
+        + "/rt:control-plane-protocol/bfd:bfd/bfd-ip-sh:ip-sh"
+        + "/bfd-ip-sh:sessions/bfd-ip-sh:session"
+        + "/bfd-ip-sh:authentication" {
+    uses bfd-opt-auth-config;
+
+    description
+      "Augment the 'authentication' container for single-hop BFD
+       module to add attributes related to BFD Optimized
+       Authentication.";
+  }
+
+  augment "/rt:routing/rt:control-plane-protocols"
+        + "/rt:control-plane-protocol/bfd:bfd/bfd-ip-mh:ip-mh"
+        + "/bfd-ip-mh:session-groups/bfd-ip-mh:session-group"
+        + "/bfd-ip-mh:authentication" {
+    uses bfd-opt-auth-config;
+
+    description
+      "Augment the 'authentication' container for multi-hop BFD
+       module to add attributes related to BFD Optimized
+       Authentication.";
+  }
+
+  augment "/rt:routing/rt:control-plane-protocols"
+        + "/rt:control-plane-protocol/bfd:bfd/bfd-lag:lag"
+        + "/bfd-lag:sessions/bfd-lag:session"
+        + "/bfd-lag:authentication" {
+    uses bfd-opt-auth-config;
+
+    description
+      "Augment the 'authentication' container for BFD over LAG
+       module to add attributes related to BFD Optimized
+       Authentication.";
+  }
+
+  augment "/rt:routing/rt:control-plane-protocols"
+        + "/rt:control-plane-protocol/bfd:bfd/bfd-mpls:mpls"
+        + "/bfd-mpls:session-groups/bfd-mpls:session-group"
+        + "/bfd-mpls:authentication" {
+    uses bfd-opt-auth-config;
+
+    description
+      "Augment the 'authentication' container for BFD over MPLS
+       module to add attributes related to BFD Optimized
+       Authentication.";
+  }
+}
+&lt;CODE ENDS&gt;</pre><a href="#section-8.3-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="IANA">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">
+ IANA has assigned one URI and one YANG module as described in this section.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<div id="ietf-xml-registry">
+<section id="section-9.1">
+        <h3 id="name-ietf-xml-registry">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-ietf-xml-registry" class="section-name selfRef">IETF XML Registry</a>
+        </h3>
+<p id="section-9.1-1">
+   IANA has registered the following URI in the "ns"
+   registry within the "IETF XML Registry" group <span>[<a href="#RFC3688" class="cite xref">RFC3688</a>]</span>:<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-9.1-2">
+          <dt id="section-9.1-2.1">URI:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.1-2.2">urn:ietf:params:xml:ns:yang:ietf-bfd-opt-auth<a href="#section-9.1-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.1-2.3">Registrant Contact:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.1-2.4">The IESG<a href="#section-9.1-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.1-2.5">XML:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.1-2.6">N/A; the requested URI is an XML namespace.<a href="#section-9.1-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="yang-module-names">
+<section id="section-9.2">
+        <h3 id="name-the-yang-module-names-regis">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-the-yang-module-names-regis" class="section-name selfRef">The YANG Module Names Registry</a>
+        </h3>
+<p id="section-9.2-1">
+   IANA has registered the following YANG module in the "YANG Module
+   Names" registry <span>[<a href="#RFC6020" class="cite xref">RFC6020</a>]</span> within the "YANG Parameters" registry group:<a href="#section-9.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-9.2-2">
+          <dt id="section-9.2-2.1">Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-2.2">ietf-bfd-opt-auth<a href="#section-9.2-2.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-2.3">Maintained by IANA:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-2.4">N<a href="#section-9.2-2.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-2.5">Namespace:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-2.6">urn:ietf:params:xml:ns:yang:ietf-bfd-opt-auth<a href="#section-9.2-2.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-2.7">Prefix:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-2.8">bfd-oa<a href="#section-9.2-2.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-9.2-2.9">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-9.2-2.10">RFC 9985<a href="#section-9.2-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="Security">
+<section id="section-10">
+      <h2 id="name-security-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="Protocol_Security">
+<section id="section-10.1">
+        <h3 id="name-protocol-security-considera">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-protocol-security-considera" class="section-name selfRef">Protocol Security Considerations</a>
+        </h3>
+<p id="section-10.1-1">
+   Devices implementing BFD are often resource-constrained, whether in a
+   single session or a multidimensional set of scaled sessions.
+   Desired detection intervals for the BFD sessions, and their number,
+   are common scaling considerations for BFD implementations.  Security
+   mechanisms also impact the performance of implementations, whether in
+   software or hardware, due to the use of additional computational
+   resources these mechanisms use.<a href="#section-10.1-1" class="pilcrow">¶</a></p>
+<p id="section-10.1-2">
+   The optimized procedures in this document provide a different level of
+   resistance to attack than methods using a single authentication
+   mechanism:<a href="#section-10.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10.1-3.1">
+       The MCI authentication mechanisms used
+       for optimized authentication are expected to have similar
+       cryptographic strength acceptable for BFD for authenticating the
+       entire session, as described in <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>.<a href="#section-10.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.1-3.2">
+       When the BFD state machine is attempting to move from the Down
+       state to the Up state, the MCI
+       authentication mechanism is intended to protect vs. attempt to
+       inappropriately start BFD sessions.<a href="#section-10.1-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.1-3.3">
+       When the BFD state machine is in the Up state, the MCI authentication mechanism is intended to
+       protect vs. attempt to change BFD session parameters or to reset
+       the BFD session.<a href="#section-10.1-3.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.1-3.4">
+When the BFD state machine is in the Up state, the LCI authentication mechanism is intended to provide resistance to keeping a BFD session in the Up state inappropriately. Since the procedures for changing BFD state require utilizing the MCI mechanism, and the LCI mechanism requires that the contents of the Control Packet in the Up state remain unchanged, the only thing that successfully spoofing such packets can do is keep the session Up.<a href="#section-10.1-3.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.1-3.5">
+       The periodic, MCI reauthentication
+       procedure provides protection against long-term successful
+       spoofing of the LCI authentication
+       mechanism.<a href="#section-10.1-3.5" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-10.1-4">
+   In other words, the intention of Optimized BFD procedures is to make
+   it difficult to reset or inappropriately start BFD sessions.  However,
+   protecting against keeping the session Up is seen as a less
+   interesting attack and can receive less protection.<a href="#section-10.1-4" class="pilcrow">¶</a></p>
+<p id="section-10.1-5">The recent escalating series of attacks on MD5
+ and SHA-1 described in <span><a href="#SHA-1-attack1" class="internal xref">Finding Collisions
+ in the Full SHA-1</a> [<a href="#SHA-1-attack1" class="cite xref">SHA-1-attack1</a>]</span> and <span><a href="#SHA-1-attack2" class="internal xref">New Collision
+ Search for SHA-1</a> [<a href="#SHA-1-attack2" class="cite xref">SHA-1-attack2</a>]</span> raise concerns about their remaining useful
+ lifetime as outlined in <span><a href="#RFC6151" class="internal xref">Updated Security
+ Considerations for the MD5 Message-Digest and the HMAC-MD5 Algorithm</a> [<a href="#RFC6151" class="cite xref">RFC6151</a>]</span> and <span><a href="#RFC6194" class="internal xref">Security Considerations for the SHA-0
+ and SHA-1 Message-Digest Algorithm</a> [<a href="#RFC6194" class="cite xref">RFC6194</a>]</span>. If replaced by stronger
+ algorithms, the computational overhead will make the task of
+ authenticating every packet even more difficult to achieve.<a href="#section-10.1-5" class="pilcrow">¶</a></p>
+<p id="section-10.1-6">The procedures described in this document provide a mechanism that
+ could enable implementations to leverage stronger security to address
+ the concerns above when strong authentication is required.  
+  However,
+ this requires operators to evaluate the trade-offs of the less
+ computationally intensive mechanisms to adequately address their desired
+ security stance.<a href="#section-10.1-6" class="pilcrow">¶</a></p>
+<p id="section-10.1-7">Keys generated and distributed out of band for the purposes described
+ in this specification are generally limited in the security they can
+ provide. It is essential that these keys are selected well and
+ protected when stored.<a href="#section-10.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="YANG_Security">
+<section id="section-10.2">
+        <h3 id="name-yang-security-consideration">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-yang-security-consideration" class="section-name selfRef">YANG Security Considerations</a>
+        </h3>
+<p id="section-10.2-1">
+   This section is modeled after the template described in <span><a href="https://rfc-editor.org/rfc/rfc9907#section-3.7.1" class="relref">Section 3.7.1</a> of [<a href="#RFC9907" class="cite xref">RFC9907</a>]</span>.<a href="#section-10.2-1" class="pilcrow">¶</a></p>
+<p id="section-10.2-2">
+   The "ietf-bfd-opt-auth" YANG module defines a data model that
+   is designed to be accessed via YANG-based management protocols, such
+   as the Network Configuration Protocol (NETCONF) <span>[<a href="#RFC6241" class="cite xref">RFC6241</a>]</span> and RESTCONF <span>[<a href="#RFC8040" class="cite xref">RFC8040</a>]</span>.
+   These YANG-based management protocols (1) have to use a secure
+   transport layer (e.g., Secure Shell (SSH) <span>[<a href="#RFC4252" class="cite xref">RFC4252</a>]</span>,
+          TLS <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, and QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span>)
+   and (2) have to use mutual authentication.<a href="#section-10.2-2" class="pilcrow">¶</a></p>
+<p id="section-10.2-3">
+   The Network Configuration Access Control Model (NACM)
+   <span>[<a href="#RFC8341" class="cite xref">RFC8341</a>]</span> provides the means to restrict
+   access for particular NETCONF or RESTCONF users to a preconfigured
+   subset of all available NETCONF or RESTCONF protocol operations and
+   content.<a href="#section-10.2-3" class="pilcrow">¶</a></p>
+<p id="section-10.2-4">
+   There are a number of data nodes defined in this YANG module that are
+   writable/creatable/deletable (i.e., "config true", which is the
+   default).  All writable data nodes are likely to be sensitive or
+   vulnerable in some network environments.  Write operations (e.g.,
+   edit-config) and delete operations to these data nodes without proper
+   protection or authentication can have a negative effect on network
+   operations.  The following subtrees and data nodes have particular
+   sensitivities/vulnerabilities:<a href="#section-10.2-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10.2-5.1">
+     'reauth-interval' specifies the interval in Up state, after
+     which MCI authentication <span class="bcp14">SHOULD</span> be
+     performed to prevent a Person-in-the-Middle (PITM) attack. If this
+     interval is set very low, the utility of these optimization
+     procedures is lessened. If this interval is set very high, attacks
+     detected by the MCI authentication
+     mechanisms may happen overly late.<a href="#section-10.2-5.1" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-10.2-6">
+   There are no particularly sensitive readable data nodes.<a href="#section-10.2-6" class="pilcrow">¶</a></p>
+<p id="section-10.2-7">
+   There are no RPC operations defined in this model.<a href="#section-10.2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3688">[RFC3688]</dt>
+        <dd>
+<span class="refAuthor">Mealling, M.</span>, <span class="refTitle">"The IETF XML Registry"</span>, <span class="seriesInfo">BCP 81</span>, <span class="seriesInfo">RFC 3688</span>, <span class="seriesInfo">DOI 10.17487/RFC3688</span>, <time datetime="2004-01" class="refDate">January 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3688">https://www.rfc-editor.org/info/rfc3688</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5880">[RFC5880]</dt>
+        <dd>
+<span class="refAuthor">Katz, D.</span> and <span class="refAuthor">D. Ward</span>, <span class="refTitle">"Bidirectional Forwarding Detection (BFD)"</span>, <span class="seriesInfo">RFC 5880</span>, <span class="seriesInfo">DOI 10.17487/RFC5880</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5880">https://www.rfc-editor.org/info/rfc5880</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6020">[RFC6020]</dt>
+        <dd>
+<span class="refAuthor">Bjorklund, M., Ed.</span>, <span class="refTitle">"YANG - A Data Modeling Language for the Network Configuration Protocol (NETCONF)"</span>, <span class="seriesInfo">RFC 6020</span>, <span class="seriesInfo">DOI 10.17487/RFC6020</span>, <time datetime="2010-10" class="refDate">October 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6020">https://www.rfc-editor.org/info/rfc6020</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7950">[RFC7950]</dt>
+        <dd>
+<span class="refAuthor">Bjorklund, M., Ed.</span>, <span class="refTitle">"The YANG 1.1 Data Modeling Language"</span>, <span class="seriesInfo">RFC 7950</span>, <span class="seriesInfo">DOI 10.17487/RFC7950</span>, <time datetime="2016-08" class="refDate">August 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7950">https://www.rfc-editor.org/info/rfc7950</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8341">[RFC8341]</dt>
+        <dd>
+<span class="refAuthor">Bierman, A.</span> and <span class="refAuthor">M. Bjorklund</span>, <span class="refTitle">"Network Configuration Access Control Model"</span>, <span class="seriesInfo">STD 91</span>, <span class="seriesInfo">RFC 8341</span>, <span class="seriesInfo">DOI 10.17487/RFC8341</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8341">https://www.rfc-editor.org/info/rfc8341</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8349">[RFC8349]</dt>
+        <dd>
+<span class="refAuthor">Lhotka, L.</span>, <span class="refAuthor">Lindem, A.</span>, and <span class="refAuthor">Y. Qu</span>, <span class="refTitle">"A YANG Data Model for Routing Management (NMDA Version)"</span>, <span class="seriesInfo">RFC 8349</span>, <span class="seriesInfo">DOI 10.17487/RFC8349</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8349">https://www.rfc-editor.org/info/rfc8349</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9314">[RFC9314]</dt>
+      <dd>
+<span class="refAuthor">Jethanandani, M., Ed.</span>, <span class="refAuthor">Rahman, R., Ed.</span>, <span class="refAuthor">Zheng, L., Ed.</span>, <span class="refAuthor">Pallagatti, S.</span>, and <span class="refAuthor">G. Mirsky</span>, <span class="refTitle">"YANG Data Model for Bidirectional Forwarding Detection (BFD)"</span>, <span class="seriesInfo">RFC 9314</span>, <span class="seriesInfo">DOI 10.17487/RFC9314</span>, <time datetime="2022-09" class="refDate">September 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9314">https://www.rfc-editor.org/info/rfc9314</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1321">[RFC1321]</dt>
+        <dd>
+<span class="refAuthor">Rivest, R.</span>, <span class="refTitle">"The MD5 Message-Digest Algorithm"</span>, <span class="seriesInfo">RFC 1321</span>, <span class="seriesInfo">DOI 10.17487/RFC1321</span>, <time datetime="1992-04" class="refDate">April 1992</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1321">https://www.rfc-editor.org/info/rfc1321</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2026">[RFC2026]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"The Internet Standards Process -- Revision 3"</span>, <span class="seriesInfo">BCP 9</span>, <span class="seriesInfo">RFC 2026</span>, <span class="seriesInfo">DOI 10.17487/RFC2026</span>, <time datetime="1996-10" class="refDate">October 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2026">https://www.rfc-editor.org/info/rfc2026</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3174">[RFC3174]</dt>
+        <dd>
+<span class="refAuthor">Eastlake 3rd, D.</span> and <span class="refAuthor">P. Jones</span>, <span class="refTitle">"US Secure Hash Algorithm 1 (SHA1)"</span>, <span class="seriesInfo">RFC 3174</span>, <span class="seriesInfo">DOI 10.17487/RFC3174</span>, <time datetime="2001-09" class="refDate">September 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3174">https://www.rfc-editor.org/info/rfc3174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4252">[RFC4252]</dt>
+        <dd>
+<span class="refAuthor">Ylonen, T.</span> and <span class="refAuthor">C. Lonvick, Ed.</span>, <span class="refTitle">"The Secure Shell (SSH) Authentication Protocol"</span>, <span class="seriesInfo">RFC 4252</span>, <span class="seriesInfo">DOI 10.17487/RFC4252</span>, <time datetime="2006-01" class="refDate">January 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4252">https://www.rfc-editor.org/info/rfc4252</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6151">[RFC6151]</dt>
+        <dd>
+<span class="refAuthor">Turner, S.</span> and <span class="refAuthor">L. Chen</span>, <span class="refTitle">"Updated Security Considerations for the MD5 Message-Digest and the HMAC-MD5 Algorithms"</span>, <span class="seriesInfo">RFC 6151</span>, <span class="seriesInfo">DOI 10.17487/RFC6151</span>, <time datetime="2011-03" class="refDate">March 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6151">https://www.rfc-editor.org/info/rfc6151</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6194">[RFC6194]</dt>
+        <dd>
+<span class="refAuthor">Polk, T.</span>, <span class="refAuthor">Chen, L.</span>, <span class="refAuthor">Turner, S.</span>, and <span class="refAuthor">P. Hoffman</span>, <span class="refTitle">"Security Considerations for the SHA-0 and SHA-1 Message-Digest Algorithms"</span>, <span class="seriesInfo">RFC 6194</span>, <span class="seriesInfo">DOI 10.17487/RFC6194</span>, <time datetime="2011-03" class="refDate">March 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6194">https://www.rfc-editor.org/info/rfc6194</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6241">[RFC6241]</dt>
+        <dd>
+<span class="refAuthor">Enns, R., Ed.</span>, <span class="refAuthor">Bjorklund, M., Ed.</span>, <span class="refAuthor">Schoenwaelder, J., Ed.</span>, and <span class="refAuthor">A. Bierman, Ed.</span>, <span class="refTitle">"Network Configuration Protocol (NETCONF)"</span>, <span class="seriesInfo">RFC 6241</span>, <span class="seriesInfo">DOI 10.17487/RFC6241</span>, <time datetime="2011-06" class="refDate">June 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6241">https://www.rfc-editor.org/info/rfc6241</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8040">[RFC8040]</dt>
+        <dd>
+<span class="refAuthor">Bierman, A.</span>, <span class="refAuthor">Bjorklund, M.</span>, and <span class="refAuthor">K. Watsen</span>, <span class="refTitle">"RESTCONF Protocol"</span>, <span class="seriesInfo">RFC 8040</span>, <span class="seriesInfo">DOI 10.17487/RFC8040</span>, <time datetime="2017-01" class="refDate">January 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8040">https://www.rfc-editor.org/info/rfc8040</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8340">[RFC8340]</dt>
+        <dd>
+<span class="refAuthor">Bjorklund, M.</span> and <span class="refAuthor">L. Berger, Ed.</span>, <span class="refTitle">"YANG Tree Diagrams"</span>, <span class="seriesInfo">BCP 215</span>, <span class="seriesInfo">RFC 8340</span>, <span class="seriesInfo">DOI 10.17487/RFC8340</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8340">https://www.rfc-editor.org/info/rfc8340</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8446">[RFC8446]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8792">[RFC8792]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refAuthor">Auerswald, E.</span>, <span class="refAuthor">Farrel, A.</span>, and <span class="refAuthor">Q. Wu</span>, <span class="refTitle">"Handling Long Lines in Content of Internet-Drafts and RFCs"</span>, <span class="seriesInfo">RFC 8792</span>, <span class="seriesInfo">DOI 10.17487/RFC8792</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8792">https://www.rfc-editor.org/info/rfc8792</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9000">https://www.rfc-editor.org/info/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9907">[RFC9907]</dt>
+        <dd>
+<span class="refAuthor">Bierman, A.</span>, <span class="refAuthor">Boucadair, M., Ed.</span>, and <span class="refAuthor">Q. Wu</span>, <span class="refTitle">"Guidelines for Authors and Reviewers of Documents Containing YANG Data Models"</span>, <span class="seriesInfo">BCP 216</span>, <span class="seriesInfo">RFC 9907</span>, <span class="seriesInfo">DOI 10.17487/RFC9907</span>, <time datetime="2026-03" class="refDate">March 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9907">https://www.rfc-editor.org/info/rfc9907</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9986">[RFC9986]</dt>
+        <dd>
+<span class="refAuthor">DeKok, A.</span>, <span class="refAuthor">Jethanandani, M.</span>, <span class="refAuthor">Agarwal, S.</span>, <span class="refAuthor">Mishra, A.</span>, and <span class="refAuthor">J. Haas</span>, <span class="refTitle">"Meticulous Keyed ISAAC for Bidirectional Forwarding Detection (BFD) Optimized Authentication"</span>, <span class="seriesInfo">RFC 9986</span>, <time datetime="2026-06" class="refDate">June 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9986">https://www.rfc-editor.org/info/rfc9986</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SHA-1-attack1">[SHA-1-attack1]</dt>
+        <dd>
+<span class="refAuthor">Wang, X.</span>, <span class="refAuthor">Yin, Y.</span>, and <span class="refAuthor">H. Yu</span>, <span class="refTitle">"Finding Collisions in the Full SHA-1"</span>, <span class="refContent">Advances in Cryptology - CRYPTO 2005, Lecture Notes in Computer Science, vol. 3621, pp. 17-36</span>, <span class="seriesInfo">DOI 10.1007/11535218_2</span>, <time datetime="2005" class="refDate">2005</time>, <span>&lt;<a href="https://doi.org/10.1007/11535218_2">https://doi.org/10.1007/11535218_2</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SHA-1-attack2">[SHA-1-attack2]</dt>
+      <dd>
+<span class="refAuthor">Wang, X.</span>, <span class="refAuthor">Yao, A.</span>, and <span class="refAuthor">F. Yao</span>, <span class="refTitle">"Cryptanalysis on SHA-1"</span>, <time datetime="2005" class="refDate">2005</time>, <span>&lt;<a href="https://csrc.nist.gov/csrc/media/events/first-cryptographic-hash-workshop/documents/wang_sha1-new-result.pdf">https://csrc.nist.gov/csrc/media/events/first-cryptographic-hash-workshop/documents/wang_sha1-new-result.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="examples">
+<section id="appendix-A">
+      <h2 id="name-examples">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-examples" class="section-name selfRef">Examples</a>
+      </h2>
+<p id="appendix-A-1">
+ This section tries to show some examples in how the model can
+ be configured.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div id="example-a.1.1">
+<section id="appendix-A.1">
+        <h3 id="name-single-hop-bfd-configuratio">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-single-hop-bfd-configuratio" class="section-name selfRef">Single-Hop BFD Configuration</a>
+        </h3>
+<p id="appendix-A.1-1">
+          This example demonstrates how a single-hop BFD session can
+          be configured for optimized authentication. Note that line wrapping is used per <span>[<a href="#RFC8792" class="cite xref">RFC8792</a>]</span>.<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+<div class="breakable lang-xml sourcecode" id="appendix-A.1-2">
+<pre>
+=============== NOTE: '\' line wrapping per RFC 8792 ===============
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;key-chains
+    xmlns="urn:ietf:params:xml:ns:yang:ietf-key-chain"
+    xmlns:opt-auth="urn:ietf:params:xml:ns:yang:ietf-bfd-opt-auth"
+    xmlns:bfd-mki="urn:ietf:params:xml:ns:yang:ietf-bfd-met-keyed-i\
+saac"&gt;
+  &lt;key-chain&gt;
+    &lt;name&gt;bfd-auth-config&lt;/name&gt;
+    &lt;description&gt;"An example for BFD Optimized Auth configuration."\
+&lt;/description&gt;
+    &lt;key&gt;
+      &lt;key-id&gt;55&lt;/key-id&gt;
+      &lt;lifetime&gt;
+        &lt;send-lifetime&gt;
+          &lt;start-date-time&gt;2017-01-01T00:00:00Z&lt;/start-date-time&gt;
+          &lt;end-date-time&gt;2017-02-01T00:00:00Z&lt;/end-date-time&gt;
+        &lt;/send-lifetime&gt;
+        &lt;accept-lifetime&gt;
+          &lt;start-date-time&gt;2016-12-31T23:59:55Z&lt;/start-date-time&gt;
+          &lt;end-date-time&gt;2017-02-01T00:00:05Z&lt;/end-date-time&gt;
+        &lt;/accept-lifetime&gt;
+      &lt;/lifetime&gt;
+      &lt;crypto-algorithm&gt;bfd-mki:optimized-sha1-meticulous-keyed-isa\
+ac&lt;/crypto-algorithm&gt;
+      &lt;key-string&gt;
+        &lt;keystring&gt;testvector&lt;/keystring&gt;
+      &lt;/key-string&gt;
+    &lt;/key&gt;
+  &lt;/key-chain&gt;
+&lt;/key-chains&gt;
+&lt;interfaces
+    xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"
+    xmlns:if-type="urn:ietf:params:xml:ns:yang:iana-if-type"&gt;
+  &lt;interface&gt;
+    &lt;name&gt;eth0&lt;/name&gt;
+    &lt;type&gt;if-type:ethernetCsmacd&lt;/type&gt;
+  &lt;/interface&gt;
+&lt;/interfaces&gt;
+&lt;routing
+    xmlns="urn:ietf:params:xml:ns:yang:ietf-routing"
+    xmlns:bfd-types="urn:ietf:params:xml:ns:yang:ietf-bfd-types"
+    xmlns:iana-bfd-types="urn:ietf:params:xml:ns:yang:iana-bfd-type\
+s"
+    xmlns:opt-auth="urn:ietf:params:xml:ns:yang:ietf-bfd-opt-auth"
+    xmlns:bfd-mki="urn:ietf:params:xml:ns:yang:ietf-bfd-met-keyed-i\
+saac"&gt;
+  &lt;control-plane-protocols&gt;
+    &lt;control-plane-protocol&gt;
+      &lt;type&gt;bfd-types:bfdv1&lt;/type&gt;
+      &lt;name&gt;name:BFD&lt;/name&gt;
+      &lt;bfd xmlns="urn:ietf:params:xml:ns:yang:ietf-bfd"&gt;
+        &lt;ip-sh xmlns="urn:ietf:params:xml:ns:yang:ietf-bfd-ip-sh"&gt;
+          &lt;sessions&gt;
+            &lt;session&gt;
+              &lt;interface&gt;eth0&lt;/interface&gt;
+              &lt;dest-addr&gt;2001:db8:0:113::101&lt;/dest-addr&gt;
+              &lt;desired-min-tx-interval&gt;10000&lt;/desired-min-tx-interv\
+al&gt;
+              &lt;required-min-rx-interval&gt;
+                10000
+              &lt;/required-min-rx-interval&gt;
+              &lt;authentication&gt;
+                &lt;key-chain&gt;bfd-auth-config&lt;/key-chain&gt;
+                &lt;opt-auth:reauth-interval&gt;30&lt;/opt-auth:reauth-inter\
+val&gt;
+              &lt;/authentication&gt;
+            &lt;/session&gt;
+          &lt;/sessions&gt;
+        &lt;/ip-sh&gt;
+      &lt;/bfd&gt;
+    &lt;/control-plane-protocol&gt;
+  &lt;/control-plane-protocols&gt;
+&lt;/routing&gt;</pre><a href="#appendix-A.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="experiment">
+<section id="appendix-B">
+      <h2 id="name-experimental-status">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-experimental-status" class="section-name selfRef">Experimental Status</a>
+      </h2>
+<p id="appendix-B-1">
+ This document describes an experiment that presents a candidate
+ solution to update BFD Authentication that is currently specified in
+ <span>[<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>.  This experiment is intended to
+ provide additional insights into what happens when the
+ optimized authentication mechanism defined in this document is
+ used. Here are the reasons why this document is on the Experimental track:<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-B-2.1">
+          <p id="appendix-B-2.1.1">
+   In the initial stages of the document, there were significant
+   participation and reviews from the working group.  
+   Since then, there have been considerable changes to the document,
+   such as the use of ISAAC, the allowance for ISAAC bootstrapping
+   when a BFD session comes up, and the use of a single Auth Type to
+   indicate optimized authentication. These changes did not get significant review from the working
+   group and therefore do not meet the bar set in 
+   <span><a href="https://rfc-editor.org/rfc/rfc2026#section-4.1.1" class="relref">Section 4.1.1</a> of [<a href="#RFC2026" class="cite xref">RFC2026</a>]</span>.<a href="#appendix-B-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-B-2.2">
+          <p id="appendix-B-2.2.1">
+   There are no known implementations at this time.<a href="#appendix-B-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-B-2.3">
+          <p id="appendix-B-2.3.1">
+   The work in this document could become very valuable in the future,
+   especially if the need for deploying BFD Authentication at scale
+   becomes a reality.<a href="#appendix-B-2.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="appendix-B-3">
+ This document is classified as Experimental and is not part of
+ the IETF Standards Track. Implementations based on this
+ document should not be considered as compliant with <span><a href="#RFC5880" class="internal xref">BFD</a> [<a href="#RFC5880" class="cite xref">RFC5880</a>]</span>.<a href="#appendix-B-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="appendix-C">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-C-1">The authors would like to thank <span class="contact-name">Qiufang Ma</span>,
+      <span class="contact-name">Stephen Farrell</span>, and <span class="contact-name">Acee       Lindem</span> for providing directorate reviews of this document.<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+</section>
+<div id="contributors">
+<section id="appendix-D">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<p id="appendix-D-1">
+ The authors of this document would like to acknowledge <span class="contact-name">Reshad Rahman</span> as a contributor to this document.<a href="#appendix-D-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-E">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mahesh Jethanandani</span></div>
+<div dir="auto" class="left"><span class="org">Arrcus</span></div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mjethanandani@gmail.com" class="email">mjethanandani@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ashesh Mishra</span></div>
+<div dir="auto" class="left"><span class="org">Aalyria Technologies</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ashesh@aalyria.com" class="email">ashesh@aalyria.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jeffrey Haas</span></div>
+<div dir="auto" class="left"><span class="org">HPE</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jeffrey.haas@hpe.com" class="email">jeffrey.haas@hpe.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ankur Saxena</span></div>
+<div dir="auto" class="left"><span class="org">Ciena Corporation</span></div>
+<div dir="auto" class="left"><span class="street-address">3939 N 1st Street</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Jose</span>, <span class="region">CA</span> <span class="postal-code">95134</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ankurpsaxena@gmail.com" class="email">ankurpsaxena@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Manav Bhatia</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div dir="auto" class="left"><span class="street-address">Bagmane Capital Park</span></div>
+<div dir="auto" class="left">
+<span class="locality">Bengaluru</span> <span class="postal-code">560048</span>
+</div>
+<div dir="auto" class="left"><span class="region">Karnataka</span></div>
+<div dir="auto" class="left"><span class="country-name">India</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mnvbhatia@google.com" class="email">mnvbhatia@google.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
