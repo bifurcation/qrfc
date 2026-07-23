@@ -1,0 +1,2291 @@
+<!DOCTYPE html>
+<html lang="en" class="BCP RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10026: Operational Recommendations for DNSSEC Delegation Signer (DS) Automation</title>
+<meta content="Steve Sheng" name="author">
+<meta content="Peter Thomassen" name="author">
+<meta content="
+       Enabling support for automatic acceptance of DNSSEC Delegation Signer (DS) parameters from the Child DNS operator (via RFCs 7344, 8078, and 9615) requires the Parental Agent, often a registry or registrar, to make a number of technical decisions around acceptance checks, error and success reporting, and multi-party issues such as concurrent updates. This document describes recommendations about how these points are best addressed in practice. 
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="DNS" name="keyword">
+<meta content="DS" name="keyword">
+<meta content="10026" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.0
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.7.0
+    weasyprint 69.0
+-->
+<link href="rfc10026.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-dnsop-ds-automation-09" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc10026" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10026</td>
+<td class="center">DS Automation</td>
+<td class="right">July 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Sheng &amp; Thomassen</td>
+<td class="center">Best Current Practice</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10026" class="eref">10026</a></dd>
+<dt class="label-bcp">BCP:</dt>
+<dd class="bcp">246</dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Best Current Practice</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-07" class="published">July 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">S. Sheng</div>
+</div>
+<div class="author">
+      <div class="author-name">P. Thomassen</div>
+<div class="org">deSEC</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10026</h1>
+<h1 id="title">Operational Recommendations for DNSSEC Delegation Signer (DS) Automation</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Enabling support for automatic acceptance of DNSSEC Delegation Signer (DS) parameters from the Child DNS operator (via RFCs 7344, 8078, and 9615) requires the Parental Agent, often a registry or registrar, to make a number of technical decisions around acceptance checks, error and success reporting, and multi-party issues such as concurrent updates. This document describes recommendations about how these points are best addressed in practice.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This memo documents an Internet Best Current Practice.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further information
+            on BCPs is available in Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10026">https://www.rfc-editor.org/info/rfc10026</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-requirements-notation" class="internal xref">Requirements Notation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-recommendations-for-deploym" class="internal xref">Recommendations for Deployments of DS Automation</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-acceptance-checks-and-safet" class="internal xref">Acceptance Checks and Safety Measures</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-recommendations" class="internal xref">Recommendations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-analysis" class="internal xref">Analysis</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-continuity-of-resolution" class="internal xref">Continuity of Resolution</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-timing-ttls-and-caching" class="internal xref">Timing, TTLs, and Caching</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-cds-vs-cdnskey" class="internal xref">CDS vs. CDNSKEY</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-reporting-and-transparency" class="internal xref">Reporting and Transparency</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-recommendations-2" class="internal xref">Recommendations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-analysis-2" class="internal xref">Analysis</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-registration-locks" class="internal xref">Registration Locks</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-recommendations-3" class="internal xref">Recommendations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-analysis-3" class="internal xref">Analysis</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.1">
+                    <p id="section-toc.1-1.6.2.2.2.1.1"><a href="#section-6.2.1" class="auto internal xref">6.2.1</a>.  <a href="#name-registrar-vs-registry-lock" class="internal xref">Registrar vs. Registry Lock</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.2">
+                    <p id="section-toc.1-1.6.2.2.2.2.1"><a href="#section-6.2.2" class="auto internal xref">6.2.2</a>.  <a href="#name-detailed-rationale" class="internal xref">Detailed Rationale</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-multiple-submitting-parties" class="internal xref">Multiple Submitting Parties and Suspension of Automation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-recommendations-4" class="internal xref">Recommendations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-analysis-4" class="internal xref">Analysis</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2.2.1">
+                    <p id="section-toc.1-1.7.2.2.2.1.1"><a href="#section-7.2.1" class="auto internal xref">7.2.1</a>.  <a href="#name-necessity-of-non-automatic-" class="internal xref">Necessity of Non-Automatic Updates</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2.2.2">
+                    <p id="section-toc.1-1.7.2.2.2.2.1"><a href="#section-7.2.2" class="auto internal xref">7.2.2</a>.  <a href="#name-impact-of-non-automatic-upd" class="internal xref">Impact of Non-Automatic Updates: When to Suspend Automation</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2.2.3">
+                    <p id="section-toc.1-1.7.2.2.2.3.1"><a href="#section-7.2.3" class="auto internal xref">7.2.3</a>.  <a href="#name-concurrent-automatic-update" class="internal xref">Concurrent Automatic Updates</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-recommendations-overview" class="internal xref">Recommendations Overview</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1">
+                <p id="section-toc.1-1.12.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-acceptance-checks-and-safety" class="internal xref">Acceptance Checks and Safety Measures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2">
+                <p id="section-toc.1-1.12.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-reporting-and-transparency-2" class="internal xref">Reporting and Transparency</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3">
+                <p id="section-toc.1-1.12.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-registration-locks-2" class="internal xref">Registration Locks</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.4">
+                <p id="section-toc.1-1.12.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-multiple-submitting-parties-" class="internal xref">Multiple Submitting Parties and Suspension of Automation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><span>[<a href="#RFC7344" class="cite xref">RFC7344</a>]</span>, <span>[<a href="#RFC8078" class="cite xref">RFC8078</a>]</span>, and <span>[<a href="#RFC9615" class="cite xref">RFC9615</a>]</span> automate DNSSEC <span>[<a href="#RFC9364" class="cite xref">RFC9364</a>]</span> delegation trust maintenance by having the child publish Child DS (CDS) and/or Child DNSKEY (CDNSKEY) records, which indicate the delegation's desired DNSSEC parameters ("DS automation").<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Parental Agents using these protocols have to make a number of technical decisions relating to issues of acceptance checks, timing, error reporting, locks, etc. Additionally, when using the registrant-registrar-registry (RRR) model (as is common amongst top-level domains (TLDs)), both the registrar and the registry can effect parent-side changes to the delegation. In such a situation, additional opportunities for implementation differences arise.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">Not all existing DS automation deployments have made the same choices with respect to these questions, leading to somewhat inconsistent behavior. From the perspective of a domain holder with domain names under various TLDs, this may be unexpected and confusing.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">In the following sections, operational questions are first raised and answered with the corresponding recommendations. Each section is concluded with an analysis of its recommendations and related considerations. A combined view of the recommendations from all sections is given in <a href="#recommendations_overview" class="auto internal xref">Appendix A</a>.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">Readers are expected to be familiar with DNSSEC <span>[<a href="#RFC9364" class="cite xref">RFC9364</a>]</span> <span>[<a href="#RFC9615" class="cite xref">RFC9615</a>]</span> <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span> <span>[<a href="#RFC9975" class="cite xref">RFC9975</a>]</span>.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">The core issues addressed in the document are derived from Section 4.4 of <span>[<a href="#SAC126" class="cite xref">SAC126</a>]</span>. Readers are referred to this report for additional background.<a href="#section-1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">The term "Parental Agent" is used as defined in <span><a href="https://rfc-editor.org/rfc/rfc7344#section-1.1" class="relref">Section 1.1</a> of [<a href="#RFC7344" class="cite xref">RFC7344</a>]</span>. The document also uses terms defined in <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span>, in particular:<a href="#section-2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1">
+          <p id="section-2-2.1.1">DNS operator<a href="#section-2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.2">
+          <p id="section-2-2.2.1">Registry<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.3">
+          <p id="section-2-2.3.1">Registrant<a href="#section-2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.4">
+          <p id="section-2-2.4.1">Registrar<a href="#section-2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-2-3">In addition, the document makes use of the following terms:<a href="#section-2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-4">
+        <dt id="section-2-4.1">Child zone:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.2">
+          <p id="section-2-4.2.1">DNS zone whose delegation is in the Parent zone.<a href="#section-2-4.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.3">Child (DNS operator):</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.4">
+          <p id="section-2-4.4.1">DNS operator responsible for a Child zone.<a href="#section-2-4.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.5">Parent zone:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.6">
+          <p id="section-2-4.6.1">DNS zone that holds a delegation for a Child zone.<a href="#section-2-4.6.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.7">Parent:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.8">
+          <p id="section-2-4.8.1">The operator responsible for a Parent zone and thus involved with the maintenance of the delegation's DNSSEC parameters (in particular, the acceptance of these parameters and the publication of corresponding DS records).<a href="#section-2-4.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.9">RRR Model:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.10">
+          <p id="section-2-4.10.1">The registrant-registrar-registry (RRR) interaction framework, where registrants interact with a registrar to register and manage domain names and registrars interact with the domain's registry for the provision and management of domain names on the registrant's behalf. This model is common amongst TLDs.<a href="#section-2-4.10.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<div id="requirements-notation">
+<section id="section-2.1">
+        <h3 id="name-requirements-notation">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-requirements-notation" class="section-name selfRef">Requirements Notation</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="recommendations-for-deployments-of-ds-automation">
+<section id="section-3">
+      <h2 id="name-recommendations-for-deploym">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-recommendations-for-deploym" class="section-name selfRef">Recommendations for Deployments of DS Automation</a>
+      </h2>
+<p id="section-3-1">The guidelines for deploying DS automation set out in this document are meant to achieve more uniform treatment across suffixes -- minimizing user surprise and providing baseline safety and uniformity of behavior.
+They are also intended to prevent disruption of DNS and DNSSEC functionality.
+At a minimum, compliance with this RFC requires support for both DNSSEC bootstrapping <span>[<a href="#RFC9615" class="cite xref">RFC9615</a>]</span> and subsequent updates <span>[<a href="#RFC7344" class="cite xref">RFC7344</a>]</span> <span>[<a href="#RFC8078" class="cite xref">RFC8078</a>]</span> under the implementation guidance below.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">The recommendations optimize interoperability and safety. In certain cases, local policy may take precedence, such as when a registry is subjected to national cryptographic policy requirements.
+However, not following any requirements designated with the "<span class="bcp14">SHOULD</span>" key word will generally lead to undesirable effects of ambiguity and interoperability issues.
+When implementing these recommendations, operators <span class="bcp14">MUST</span> mitigate issues arising from any particular deviation.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">Registries with additional requirements on DS update checks <span class="bcp14">MAY</span> implement any additional checks in line with local policy.<a href="#section-3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="acceptance">
+<section id="section-4">
+      <h2 id="name-acceptance-checks-and-safet">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-acceptance-checks-and-safet" class="section-name selfRef">Acceptance Checks and Safety Measures</a>
+      </h2>
+<p id="section-4-1">This section provides recommendations to address the following operational questions:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1">
+          <p id="section-4-2.1.1">What kind of acceptance checks should be performed on DS parameters?<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-2.2">
+          <p id="section-4-2.2.1">Should these checks be performed upon acceptance or also continually when in place?<a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-2.3">
+          <p id="section-4-2.3.1">How do TTLs and caching impact DS provisioning? How important is timing in a child key change?<a href="#section-4-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-2.4">
+          <p id="section-4-2.4.1">Are parameters for DS automation best conveyed as CDNSKEY or CDS records or both?<a href="#section-4-2.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<div id="recommendations">
+<section id="section-4.1">
+        <h3 id="name-recommendations">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-recommendations" class="section-name selfRef">Recommendations</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-4.1-1">
+   <li id="section-4.1-1.1">
+            <p id="section-4.1-1.1.1">Entities performing automated DS maintenance <span class="bcp14">MUST</span> verify:<a href="#section-4.1-1.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-4.1-1.1.2">
+       <li id="section-4.1-1.1.2.1">
+<div id="acceptance-rec1a">
+                <p id="section-4.1-1.1.2.1.1">the unambiguous intent of each DS bootstrapping or update request as per <span>[<a href="#RFC9975" class="cite xref">RFC9975</a>]</span>, by checking its consistency both<a href="#section-4.1-1.1.2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-1.1.2.1.2.1">
+                    <p id="section-4.1-1.1.2.1.2.1.1">between any published CDS and CDNSKEY records and<a href="#section-4.1-1.1.2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="section-4.1-1.1.2.1.2.2">
+                    <p id="section-4.1-1.1.2.1.2.2.1">across all authoritative nameservers in the delegation,<a href="#section-4.1-1.1.2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+<p id="section-4.1-1.1.2.1.3">
+and<a href="#section-4.1-1.1.2.1.3" class="pilcrow">¶</a></p>
+</div>
+              </li>
+<li id="section-4.1-1.1.2.2">
+                <p id="section-4.1-1.1.2.2.1">that the resulting DS record set would allow continued DNSSEC validation if deployed<a href="#section-4.1-1.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+<p id="section-4.1-1.1.3">
+and cancel the update if the verifications do not succeed.<a href="#section-4.1-1.1.3" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.2">
+            <p id="section-4.1-1.2.1">Parent-side entities (such as registries) <span class="bcp14">SHOULD</span> allow for effective rollback by reducing a DS record set's TTL to a value between 5-15 minutes when a new set of records is published, and restore the previous (or, if unavailable, default) TTL value at a later occasion (but not before the previous DS RRset's TTL has expired).<a href="#section-4.1-1.2.1" class="pilcrow">¶</a></p>
+<p id="section-4.1-1.2.2">Besides a prudent choice of TTL, prompt DS changes also require
+      timely discovery of update requests.  For recommended methods,
+      see <a href="#ttls-and-caching" class="auto internal xref">Section 4.2.2</a>.<a href="#section-4.1-1.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.3">
+            <p id="section-4.1-1.3.1">DNS operators <span class="bcp14">MUST</span> publish both CDNSKEY and CDS records (unless the parent's preference is known) and follow best practice for the choice of hash digest type <span>[<a href="#DS-IANA" class="cite xref">DS-IANA</a>]</span>.<a href="#section-4.1-1.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="analysis_acceptance">
+<section id="section-4.2">
+        <h3 id="name-analysis">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-analysis" class="section-name selfRef">Analysis</a>
+        </h3>
+<div id="continuity-of-resolution">
+<section id="section-4.2.1">
+          <h4 id="name-continuity-of-resolution">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-continuity-of-resolution" class="section-name selfRef">Continuity of Resolution</a>
+          </h4>
+<p id="section-4.2.1-1">To maintain the basic resolution function, it is critical to avoid deployment of flawed DS record sets in the Parent zone. It is therefore necessary for the Parent to verify that the DS record set resulting from an automated (or even manual) update does not break DNSSEC validation if deployed and otherwise cancel the update.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">This is best achieved by:<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2.1-3">
+     <li id="section-4.2.1-3.1">
+              <p id="section-4.2.1-3.1.1">verifying that consistent CDS/CDNSKEY responses are served by all of the delegation's nameservers <span>[<a href="#RFC9975" class="cite xref">RFC9975</a>]</span>;<a href="#section-4.2.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.2.1-3.2">
+              <p id="section-4.2.1-3.2.1">verifying that the resulting DS Resource Record set (RRset) does not break the delegation if applied (<span>[<a href="#RFC7344" class="cite xref">RFC7344</a>], <a href="https://rfc-editor.org/rfc/rfc7344#section-4.1" class="relref">Section 4.1</a></span>), i.e., it provides at least one valid path for validators to use (<span>[<a href="#RFC6840" class="cite xref">RFC6840</a>], <a href="https://rfc-editor.org/rfc/rfc6840#section-5.11" class="relref">Section 5.11</a></span>). This is the case if the child's DNSKEY RRset has a valid RRSIG signature from a key that is referenced by at least one DS record, with the digest type and signing algorithm values designated as "<span class="bcp14">RECOMMENDED</span>" or "<span class="bcp14">MUST</span>" in the "Use for DNSSEC Validation" columns of the relevant IANA registries (<span>[<a href="#DS-IANA" class="cite xref">DS-IANA</a>]</span> and <span>[<a href="#DNSKEY-IANA" class="cite xref">DNSKEY-IANA</a>]</span>). Note that these checks need not be enforced when provisioning DS records manually in order to enable the use of other digest types or algorithms for potentially non-interoperable purposes.<a href="#section-4.2.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+<p id="section-4.2.1-4">Even without an update being requested, Parents may occasionally check whether the current DS contents would still be acceptable if they were newly submitted in CDS/CDNSKEY form (see <a href="#acceptance" class="auto internal xref">Section 4</a>).
+Any failures -- such as a missing DNSKEY due to improper rollover timing (<span>[<a href="#RFC6781" class="cite xref">RFC6781</a>], <a href="https://rfc-editor.org/rfc/rfc6781#section-4.1" class="relref">Section 4.1</a></span>) or changed algorithm requirements -- can then be communicated in line with <a href="#recommendations-1" class="auto internal xref">Section 5.1</a>, without altering or removing the existing DS RRset.<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ttls-and-caching">
+<section id="section-4.2.2">
+          <h4 id="name-timing-ttls-and-caching">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-timing-ttls-and-caching" class="section-name selfRef">Timing, TTLs, and Caching</a>
+          </h4>
+<p id="section-4.2.2-1">For timely execution of DS provisioning requests, it is important to
+  discover them reasonably quickly.  The best way to do so is for the
+  Child DNS operator to send an <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span> notification to the parent
+  (Sections <a href="https://rfc-editor.org/rfc/rfc9859#section-4.1" class="relref">4.1</a> and <a href="https://rfc-editor.org/rfc/rfc9859#section-4.2" class="relref">4.2</a> of <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span>).  In addition to publication of the
+  relevant notification targets, this requires the advertised endpoint
+  to actually listen (Sections <a href="https://rfc-editor.org/rfc/rfc9859#section-3" class="relref">3</a> and <a href="https://rfc-editor.org/rfc/rfc9859#section-4.3" class="relref">4.3</a> of <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span>).  By explicitly
+  naming a responsible endpoint, this method also resolves potential
+  contention between registry and registrar when the RRR model is used
+  (see <a href="#concurrent-automatic-updates" class="auto internal xref">Section 7.2.3</a>).  Note that periodic scanning is a suboptimal
+  alternative as it introduces policy-dependent delays and does not
+  scale well for large zones.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">To further reduce the impact of any misconfigured DS record set -- be it from automated or from manual provisioning -- the option to quickly roll back the delegation's DNSSEC parameters is of great importance. This is achieved by setting a comparatively low TTL on the DS record set in the parent domain, at the cost of reduced resiliency against nameserver unreachability due to the earlier expiration of cached records. The availability risk can be mitigated by limiting such TTLs to a brief time period after a change to the DS configuration, during which rollbacks are most likely to occur.<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">Registries therefore should significantly lower the DS RRset's TTL for some time following bootstrapping or an update. Pragmatic values for the reduced TTL value range between 5-15 minutes.
+Using values below 5 minutes risks excessive queries, and using values greater than 15 minutes may impact recovery from operational mistakes.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-4">Note that recent measurements have demonstrated low TTLs like the above to have negligible impact on the overall load of a registry's authoritative nameserver infrastructure <span>[<a href="#LowTTL" class="cite xref">LowTTL</a>]</span>.<a href="#section-4.2.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-5">The reduction should be in effect at least for a couple of days and until the previous DS record set has expired from caches, i.e., the period during which the low-TTL is applied typically will significantly exceed the normal TTL value. When using the Extensible Provisioning Protocol (EPP) <span>[<a href="#RFC5730" class="cite xref">RFC5730</a>]</span>, the domain <code>&lt;info&gt;</code> command described in <span><a href="https://rfc-editor.org/rfc/rfc9803#section-2.1.1.2" class="relref">Section 2.1.1.2</a> of [<a href="#RFC9803" class="cite xref">RFC9803</a>]</span> can be used by the registrar to obtain the registry's TTL policy.<a href="#section-4.2.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-6">While this approach enables quick rollbacks, timing of the desired DS update process itself is largely governed by the previous DS RRset's TTL and therefore does not generally benefit from an overall speed-up. Note also that nothing is gained from first lowering the TTL of the old DS RRset: Such an additional step would, in fact, require another wait period while resolver caches adjust. For the sake of completeness, there likewise is no point to increasing any DS TTL values beyond their normal value.<a href="#section-4.2.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="cds-vs-cdnskey">
+<section id="section-4.2.3">
+          <h4 id="name-cds-vs-cdnskey">
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-cds-vs-cdnskey" class="section-name selfRef">CDS vs. CDNSKEY</a>
+          </h4>
+<p id="section-4.2.3-1">DS records can be generated from information provided either in DS format (CDS) or in DNSKEY format (CDNSKEY). While the format of CDS records is identical to that of DS records (so the record data can be taken verbatim), generation of a DS record from CDNSKEY information involves computing a hash.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-2">Whether a Parent processes CDS or CDNSKEY records depends on their preference:<a href="#section-4.2.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.3-3.1">
+              <p id="section-4.2.3-3.1.1">Processing (and storing) CDNSKEY information allows the Parent to control the choice of hash algorithms. The Parent may then unilaterally regenerate DS records with a different choice of hash algorithm(s) whenever deemed appropriate.<a href="#section-4.2.3-3.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4.2.3-3.2">
+              <p id="section-4.2.3-3.2.1">Processing CDS information allows the Child DNS operator to control the hash digest type used in DS records, enabling the Child DNS operator to deploy (for example) experimental hash digests and removing the need for registry-side changes when additional digest types become available.<a href="#section-4.2.3-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4.2.3-4">The need to make a choice in the face of this dichotomy is not specific to DS automation: Even when DNSSEC parameters are relayed to the Parent through conventional channels, the Parent has to make some choice about which format(s) to accept.<a href="#section-4.2.3-4" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-5">As there exists no protocol for Child DNS operators to discover a Parent's input format preference, interoperability requires publication of both CDNSKEY as well as CDS records, in line with <span><a href="https://rfc-editor.org/rfc/rfc7344#section-5" class="relref">Section 5</a> of [<a href="#RFC7344" class="cite xref">RFC7344</a>]</span>. The choice of hash digest type should follow current best practice <span>[<a href="#DS-IANA" class="cite xref">DS-IANA</a>]</span>.<a href="#section-4.2.3-5" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-6">Publishing the same information in two different formats is not ideal. Still, it is much less complex and costly than burdening the Child DNS operator with discovering each Parent's current policy. Also, it is very easily automated. Operators should ensure that published RRsets are consistent with each other.<a href="#section-4.2.3-6" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-7">If both RRsets are published, Parents are expected to verify consistency between them by verifying that they refer to the same set of keys <span>[<a href="#RFC9975" class="cite xref">RFC9975</a>]</span>. By not second-guessing inconsistencies (such as by RRset recency) and instead rejecting them, responsibility to clearly express each update request is placed on the Child DNS operator.<a href="#section-4.2.3-7" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-8">CDS records need only be considered for CDNSKEY consistency when their digest type field is designated as "<span class="bcp14">MUST</span>" in the "Implement for DNSSEC Delegation" column of the "Digest Algorithms" registry <span>[<a href="#DS-IANA" class="cite xref">DS-IANA</a>]</span>.
+Consistency of records with other digest types need not be verified, especially when the digest type is unsupported; such records can be ignored.
+Note that this does not imply a restriction on the DS hash digest types: If no inconsistencies are found, the parent can publish DS records with whatever digest type(s) it prefers.<a href="#section-4.2.3-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="reporting">
+<section id="section-5">
+      <h2 id="name-reporting-and-transparency">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-reporting-and-transparency" class="section-name selfRef">Reporting and Transparency</a>
+      </h2>
+<p id="section-5-1">This section provides recommendations to address the following operational question:<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-2.1">
+          <p id="section-5-2.1.1">Should a failed (or even successful) DS update trigger a notification to anyone?<a href="#section-5-2.1.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<div id="recommendations-1">
+<section id="section-5.1">
+        <h3 id="name-recommendations-2">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-recommendations-2" class="section-name selfRef">Recommendations</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-5.1-1">
+   <li id="section-5.1-1.1">
+            <p id="section-5.1-1.1.1">For certain DS updates (see <span><a href="#analysis_reporting" class="internal xref">analysis</a> (<a href="#analysis_reporting" class="auto internal xref">Section 5.2</a>)</span>) and for DS deactivation, relevant points of contact known to the parent-side entity (registry or registrar) <span class="bcp14">SHOULD</span> be notified.<a href="#section-5.1-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-1.2">
+            <p id="section-5.1-1.2.1">For error conditions, the child DNS operator and the domain's technical contact (if applicable) <span class="bcp14">SHOULD</span> be notified first. The registrant <span class="bcp14">SHOULD NOT</span> be notified unless the problem persists for a prolonged amount of time (e.g., three days).<a href="#section-5.1-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-1.3">
+            <p id="section-5.1-1.3.1">Child DNS operators <span class="bcp14">SHOULD</span> be notified of errors using a report query <span>[<a href="#RFC9567" class="cite xref">RFC9567</a>]</span> to the agent domain as described in <span><a href="https://rfc-editor.org/rfc/rfc9859#section-4" class="relref">Section 4</a> of [<a href="#RFC9859" class="cite xref">RFC9859</a>]</span>. Note that this requires listening to notifications and that appropriate notification targets are in place (<span><a href="https://rfc-editor.org/rfc/rfc9859#section-3" class="relref">Section 3</a> of [<a href="#RFC9859" class="cite xref">RFC9859</a>]</span>).<a href="#section-5.1-1.3.1" class="pilcrow">¶</a></p>
+<p id="section-5.1-1.3.2">Notifications to humans (domain holder) will be performed in accordance with the communication preferences established with the parent-side entity. The same condition <span class="bcp14">SHOULD NOT</span> be reported unnecessarily frequently to the same recipient.<a href="#section-5.1-1.3.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-1.4">
+            <p id="section-5.1-1.4.1">In the RRR model, registries performing DS automation <span class="bcp14">SHOULD</span> inform the registrar of any DS record changes via the EPP Change Poll Extension <span>[<a href="#RFC8590" class="cite xref">RFC8590</a>]</span> or a similar channel.<a href="#section-5.1-1.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-1.5">
+            <p id="section-5.1-1.5.1">The currently active DS configuration <span class="bcp14">SHOULD</span> be made accessible to the registrant (or their designated party) through the customer portal available for domain management. The DS update history <span class="bcp14">MAY</span> be made available in the same way.<a href="#section-5.1-1.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="analysis_reporting">
+<section id="section-5.2">
+        <h3 id="name-analysis-2">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-analysis-2" class="section-name selfRef">Analysis</a>
+        </h3>
+<p id="section-5.2-1">When accepting or rejecting a DS update, it cannot be assumed that relevant parties are aware of what's happening. For example, a registrar may not know when an automatic DS update is performed by the registry. Similarly, a Child DNS operator may not be aware when their CDS/CDNSKEY RRsets are out of sync across nameservers, causing them to be ignored.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">To help involved parties act appropriately and in a timely manner, entities performing automated DS maintenance should report on conditions they encounter. The following success situations may be of particular interest:<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2-3">
+   <li id="section-5.2-3.1">
+<div id="reporting-1">
+            <p id="section-5.2-3.1.1">A DS RRset has been provisioned:<a href="#section-5.2-3.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-5.2-3.1.2">
+       <li id="section-5.2-3.1.2.1">
+<div id="reporting-1a">
+                <p id="section-5.2-3.1.2.1.1">manually;<a href="#section-5.2-3.1.2.1.1" class="pilcrow">¶</a></p>
+</div>
+              </li>
+<li id="section-5.2-3.1.2.2">
+<div id="reporting-1b">
+                <p id="section-5.2-3.1.2.2.1">due to commencing DS automation (either via DNSSEC bootstrapping or for the first time after a manual change; see <a href="#multiple" class="auto internal xref">Section 7</a>);<a href="#section-5.2-3.1.2.2.1" class="pilcrow">¶</a></p>
+</div>
+              </li>
+<li id="section-5.2-3.1.2.3">
+<div id="reporting-1c">
+                <p id="section-5.2-3.1.2.3.1">automatically, as an update to an existing DS RRset that had itself been automatically provisioned.<a href="#section-5.2-3.1.2.3.1" class="pilcrow">¶</a></p>
+</div>
+            </li>
+</ol>
+</div>
+          </li>
+<li id="section-5.2-3.2">
+<div id="reporting-2">
+            <p id="section-5.2-3.2.1">The DS RRset has been removed:<a href="#section-5.2-3.2.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-5.2-3.2.2">
+       <li id="section-5.2-3.2.2.1">
+                <p id="section-5.2-3.2.2.1.1">manually;<a href="#section-5.2-3.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-5.2-3.2.2.2">
+                <p id="section-5.2-3.2.2.2.1">automatically, using a delete signal (<span>[<a href="#RFC8078" class="cite xref">RFC8078</a>], <a href="https://rfc-editor.org/rfc/rfc8078#section-4" class="relref">Section 4</a></span>).<a href="#section-5.2-3.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+</div>
+        </li>
+</ol>
+<p id="section-5.2-4">In addition, there are error conditions worthy of being reported:<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<ol start="3" type="1" class="normal type-1" id="section-5.2-5">
+   <li id="section-5.2-5.1">
+<div id="reporting-3">
+            <p id="section-5.2-5.1.1">A pending DS update cannot be applied due to an error condition. There are various scenarios where an automated DS update might have been requested but can't be fulfilled. These include:<a href="#section-5.2-5.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-5.2-5.1.2">
+       <li id="section-5.2-5.1.2.1">
+                <p id="section-5.2-5.1.2.1.1">The new DS record set would break validation/resolution or is not acceptable to the Parent for some other reason (see <a href="#acceptance" class="auto internal xref">Section 4</a>).<a href="#section-5.2-5.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-5.2-5.1.2.2">
+                <p id="section-5.2-5.1.2.2.1">A lock prevents DS automation (see <a href="#locks" class="auto internal xref">Section 6</a>).<a href="#section-5.2-5.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+</div>
+          </li>
+<li id="section-5.2-5.2">
+<div id="reporting-4">
+            <p id="section-5.2-5.2.1">No DS update is due, but it was determined that the Child zone is no longer compatible with the existing DS record set (e.g., DS RRset only references non-existing keys).<a href="#section-5.2-5.2.1" class="pilcrow">¶</a></p>
+</div>
+        </li>
+</ol>
+<p id="section-5.2-6">In these latter two cases, the entity performing DS automation would be justified to attempt communicating the situation. Potential recipients are:<a href="#section-5.2-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-7.1">
+            <p id="section-5.2-7.1.1">Child DNS operator, preferably by making a report query <span>[<a href="#RFC9567" class="cite xref">RFC9567</a>]</span> to the agent domain listed in the EDNS0 Report-Channel option of the DS update notification that triggered the DS update (<span>[<a href="#RFC9859" class="cite xref">RFC9859</a>], <a href="https://rfc-editor.org/rfc/rfc9859#section-4" class="relref">Section 4</a></span>) or else via email to the address contained in the Child zone's SOA RNAME field (see Sections <a href="https://rfc-editor.org/rfc/rfc1035#section-3.3.13" class="relref">3.3.13</a> and <a href="https://rfc-editor.org/rfc/rfc1035#section-8" class="relref">8</a> of <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span>);<a href="#section-5.2-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-7.2">
+            <p id="section-5.2-7.2.1">Registrar (if DS automation is performed by the registry);<a href="#section-5.2-7.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.2-7.3">
+            <p id="section-5.2-7.3.1">Registrant (domain holder; in non-technical language, such as "DNSSEC security for your domain has been enabled and will be maintained automatically"), or technical contact, in accordance with the communication preferences established with the parent-side entity.<a href="#section-5.2-7.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.2-8">For manual updates (<a href="#reporting-1a" class="internal xref">case 1a</a>), commencing DS automation (<a href="#reporting-1b" class="internal xref">case 1b</a>), and deactivating DNSSEC (<a href="#reporting-2" class="internal xref">case 2</a>), it seems worthwhile to notify both the domain's technical contact (if applicable) and the registrant. This will typically lead to one notification during normal operation of a domain. (<a href="#reporting-1c" class="internal xref">Case 1c</a>, the regular operation of automation, is not an interesting condition to report to a human.)<a href="#section-5.2-8" class="pilcrow">¶</a></p>
+<p id="section-5.2-9">For error conditions (cases <a href="#reporting-3" class="internal xref">3</a> and <a href="#reporting-4" class="internal xref">4</a>), the registrant need not always be involved. It seems advisable to first notify the domain's technical contact and the DNS operator serving the affected Child zone, and only if the problem persists for a prolonged amount of time (e.g., three days), notify the registrant.<a href="#section-5.2-9" class="pilcrow">¶</a></p>
+<p id="section-5.2-10">When the RRR model is used and the registry performs DS automation, the registrar should always stay informed of any DS record changes, e.g., via the EPP Change Poll Extension <span>[<a href="#RFC8590" class="cite xref">RFC8590</a>]</span>.<a href="#section-5.2-10" class="pilcrow">¶</a></p>
+<p id="section-5.2-11">Overly frequent reporting of the same condition to the same recipient is discouraged (e.g., no more than twice in a row). For example, when CDS and CDNSKEY records are inconsistent and prevent DS initialization, the registrant may be notified twice. Additional notifications may be sent with some back-off mechanism (in increasing intervals).<a href="#section-5.2-11" class="pilcrow">¶</a></p>
+<p id="section-5.2-12">The registrant (or their designated party) should be able to retrieve the current DS configuration through the customer portal available for domain management.
+Failure to provide the registrant a means to inspect the current configuration after it has been changed may hinder recovery from operational incidents because the registrant may have out-of-date information.<a href="#section-5.2-12" class="pilcrow">¶</a></p>
+<p id="section-5.2-13">Ideally, the history of DS updates would also be available. However, due to the associated state requirements and the lack of direct operational impact, implementation of this is optional.
+If supported by the registry, the DS TTL currently in effect can be obtained using the RDAP TTL extension <span>[<a href="#I-D.ietf-regext-rdap-ttl-extension" class="cite xref">RDAP-TTL</a>]</span>.<a href="#section-5.2-13" class="pilcrow">¶</a></p>
+<p id="section-5.2-14">For troubleshooting, dispute resolution, and post-incident analysis, it is instrumental for the Parental Agent to retain structured records of each DS automation decision, including timestamp, triggering CDS/CDNSKEY RRsets, notification channel, authoritative nameservers consulted, verification results, decision outcome, and the applied DS RRset or cancellation reason.<a href="#section-5.2-14" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="locks">
+<section id="section-6">
+      <h2 id="name-registration-locks">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-registration-locks" class="section-name selfRef">Registration Locks</a>
+      </h2>
+<p id="section-6-1">This section provides recommendations to address the following operational question:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-2.1">
+          <p id="section-6-2.1.1">How does DS automation interact with other registration state parameters, such as registration locks?<a href="#section-6-2.1.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<div id="recommendations-2">
+<section id="section-6.1">
+        <h3 id="name-recommendations-3">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-recommendations-3" class="section-name selfRef">Recommendations</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-6.1-1">
+   <li id="section-6.1-1.1">
+            <p id="section-6.1-1.1.1">To secure ongoing operations, automated DS maintenance <span class="bcp14">MUST NOT</span> be suspended based on a registrar update lock alone (such as EPP status clientUpdateProhibited <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>).<a href="#section-6.1-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-6.1-1.2">
+            <p id="section-6.1-1.2.1">When performed by the registry, automated DS maintenance <span class="bcp14">MUST NOT</span> be suspended based on a registry update lock alone (such as EPP status serverUpdateProhibited <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>).<a href="#section-6.1-1.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="analysis_locks">
+<section id="section-6.2">
+        <h3 id="name-analysis-3">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-analysis-3" class="section-name selfRef">Analysis</a>
+        </h3>
+<p id="section-6.2-1">Registries and registrars can set various types of locks for domain registrations, usually upon the registrant's request. An overview of standardized locks using EPP, for example, is given in <span><a href="https://rfc-editor.org/rfc/rfc5731#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>. Some registries may offer additional (or other) types of locks whose meaning and set/unset mechanisms are defined according to a proprietary policy.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2">While some locks clearly should have no impact on DS automation (such as transfer or deletion locks), other types of locks, in particular "update locks", deserve a closer analysis.<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+<div id="registrar-vs-registry-lock">
+<section id="section-6.2.1">
+          <h4 id="name-registrar-vs-registry-lock">
+<a href="#section-6.2.1" class="section-number selfRef">6.2.1. </a><a href="#name-registrar-vs-registry-lock" class="section-name selfRef">Registrar vs. Registry Lock</a>
+          </h4>
+<p id="section-6.2.1-1">A registrar-side update lock (such as clientUpdateProhibited in EPP) protects against various types of accidental or malicious change (like unintended changes through the registrar's customer portal). Its security model does not prevent the registrar's (nor the registry's) actions. This is because a registrar-side lock can be removed by the registrar without an out-of-band interaction.<a href="#section-6.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-2">Under such a security model, no tangible security benefit is gained by preventing automated DS maintenance based on a registrar lock alone, while preventing it would make maintenance needlessly difficult. It is therefore not justified to suspend automation when such a lock is present.<a href="#section-6.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-3">When a registry-side update lock is in place, the registrar cannot apply any changes (for security or delinquency or other reasons). However, it does not protect against changes made by the registry itself. This is exemplified by the serverUpdateProhibited EPP status, which demands only that the registrar's "[r]equests to update the object [...] <span class="bcp14">MUST</span> be rejected" (<span><a href="https://rfc-editor.org/rfc/rfc5731#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>). This type of lock therefore precludes DS automation by the registrar, while registry-side automation remains unaffected.<a href="#section-6.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.2.1-4">DS automation by the registry is consistent with <span><a href="https://rfc-editor.org/rfc/rfc5731#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>, which explicitly notes that an EPP server (registry) may override status values set by an EPP client (registrar), subject to local server policies. The risk that DS changes from registry-side DS automation might go unnoticed by the registrar is mitigated by sending change notifications to the registrar; see Recommendation 4 of <a href="#reporting" class="auto internal xref">Section 5</a>.<a href="#section-6.2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="detailed-rationale">
+<section id="section-6.2.2">
+          <h4 id="name-detailed-rationale">
+<a href="#section-6.2.2" class="section-number selfRef">6.2.2. </a><a href="#name-detailed-rationale" class="section-name selfRef">Detailed Rationale</a>
+          </h4>
+<p id="section-6.2.2-1">Pre-DNSSEC, it was possible for a registration to be set up once, then locked and left alone (no maintenance required). With DNSSEC comes a change to this operational model: The configuration may have to be maintained in order to remain secure and operational. For example, the Child DNS operator may switch to another signing algorithm if the previous one is no longer deemed appropriate or roll its Secure Entry Point (SEP) key for other reasons. Such changes entail updating the delegation's DS records.<a href="#section-6.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-2">If authenticated, these operations do not qualify as accidental or malicious changes but as legitimate and normal activity for securing ongoing operation. The CDS/CDNSKEY method provides an automatic, authenticated means to convey DS bootstrapping and update requests <span>[<a href="#RFC9615" class="cite xref">RFC9615</a>]</span> <span>[<a href="#RFC7344" class="cite xref">RFC7344</a>]</span>. The resulting operation is subject to the parent's acceptance checks; in particular, it is not applied when it would break the delegation (see <a href="#acceptance" class="auto internal xref">Section 4</a>).<a href="#section-6.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-3">Given that registrar locks protect against unintended changes (such as through the customer portal) while not preventing actions done by the registrar (or the registry) itself, such a lock is not suitable for defending against actions performed illegitimately by the registrar or registry (e.g., due to compromise). Any attack on the registration data that is feasible in the presence of a registrar lock is also feasible regardless of whether DS maintenance is done automatically; in other words, DS automation is orthogonal to the attack vector that a registrar lock protects against.<a href="#section-6.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-4">Considering that automated DS bootstrapping and update requests are required to be authenticated and validated for correctness, honoring such requests -- while in the registrant's interest -- comes with no additional associated risk when compared to other authenticated update methods. Suspending automated DS maintenance therefore is not justified.<a href="#section-6.2.2-4" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-5">Following this line of thought, at the time of document writing, some registries (e.g., .ch/.cz/.li) perform automated DS maintenance even when an "update lock" is in place. Registries offering proprietary locks should carefully consider for each lock whether its scope warrants suspension.<a href="#section-6.2.2-5" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-6">In case of a domain not yet secured with DNSSEC, automatic DS initialization is not required to maintain ongoing operation; however, authenticated DNSSEC bootstrapping <span>[<a href="#RFC9615" class="cite xref">RFC9615</a>]</span> might be requested. Besides being in the interest of security, the fact that a Child is requesting DS initialization through an authenticated method expresses the registrant's intent to have the delegation secured.<a href="#section-6.2.2-6" class="pilcrow">¶</a></p>
+<p id="section-6.2.2-7">Further, some domains are equipped with an update lock by default. Not honoring DNSSEC bootstrapping requests then imposes an additional burden on the registrant, who has to unlock and relock the domain in order to facilitate DS provisioning after registration. This is a needless cost especially for large domain portfolios. It is also unexpected, as the registrant already has arranged for the necessary CDS/CDNSKEY records to be published. DS initialization and rollovers therefore should be treated the same way with respect to locks.<a href="#section-6.2.2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="multiple">
+<section id="section-7">
+      <h2 id="name-multiple-submitting-parties">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-multiple-submitting-parties" class="section-name selfRef">Multiple Submitting Parties and Suspension of Automation</a>
+      </h2>
+<p id="section-7-1">This section provides recommendations to address the following operational questions:<a href="#section-7-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-2.1">
+          <p id="section-7-2.1.1">How are conflicts resolved when DS parameters are accepted through multiple channels (e.g., via a conventional channel and via automation)?<a href="#section-7-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-7-2.2">
+          <p id="section-7-2.2.1">In case both the registry and the registrar are automating DS provisioning, how are potential collisions resolved?<a href="#section-7-2.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<div id="recommendations-3">
+<section id="section-7.1">
+        <h3 id="name-recommendations-4">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-recommendations-4" class="section-name selfRef">Recommendations</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-7.1-1">
+   <li id="section-7.1-1.1">
+            <p id="section-7.1-1.1.1">Registries and registrars <span class="bcp14">MUST</span> provide another (e.g., manual) channel for DS maintenance in order to enable recovery when the Child has lost access to its signing key(s). This out-of-band channel is also needed when a DNS operator does not support DS automation or refuses to cooperate.<a href="#section-7.1-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-1.2">
+            <p id="section-7.1-1.2.1">DS bootstrapping and update requests <span class="bcp14">MUST</span> be executed at the next publication opportunity after verification of their authenticity, regardless of whether they are received in-band or via an out-of-band channel.<a href="#section-7.1-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-1.3">
+<div id="multiple-rec3">
+            <p id="section-7.1-1.3.1">When processing a CDS/CDNSKEY "delete" signal to remove the entire DS record set (<span>[<a href="#RFC8078" class="cite xref">RFC8078</a>], <a href="https://rfc-editor.org/rfc/rfc8078#section-4" class="relref">Section 4</a></span>), DS automation <span class="bcp14">MUST NOT</span> be suspended. For all other removal requests (such as when received via EPP or a web form), DS automation <span class="bcp14">SHOULD</span> be suspended until a new DS record set has been provisioned, in order to prevent accidental re-initialization when the registrant intended to disable DNSSEC.<a href="#section-7.1-1.3.1" class="pilcrow">¶</a></p>
+</div>
+          </li>
+<li id="section-7.1-1.4">
+            <p id="section-7.1-1.4.1">Whenever a non-empty DS record set is provisioned, through whichever channel, DS automation <span class="bcp14">SHOULD NOT</span> (or no longer) be suspended (including after an earlier removal).<a href="#section-7.1-1.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-1.5">
+            <p id="section-7.1-1.5.1">In the RRR model, a registry <span class="bcp14">MUST NOT</span> automatically initialize DS records when it is known that the registrar does not provide a way for the domain holder to later disable DNSSEC. If the registrar has declared that it performs automated DS maintenance, the registry <span class="bcp14">SHOULD</span> publish the registrar's notification endpoint <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span> (if applicable) instead of their own and refrain from registry-side DS automation.<a href="#section-7.1-1.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="analysis_multiple">
+<section id="section-7.2">
+        <h3 id="name-analysis-4">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-analysis-4" class="section-name selfRef">Analysis</a>
+        </h3>
+<p id="section-7.2-1">In the RRR model, there are multiple channels through which DS parameters can be accepted:<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.2-2.1">
+            <p id="section-7.2-2.1.1">The registry can retrieve information about an intended DS provisioning request automatically from the Child DNS operator and apply the it directly;<a href="#section-7.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.2-2.2">
+            <p id="section-7.2-2.2.1">The registrar can retrieve the same and relay it to the registry;<a href="#section-7.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.2-2.3">
+            <p id="section-7.2-2.3.1">The registrar can obtain the information from the registrant through another channel (such as a non-automated "manual update" via web form submission) and relay it to the registry.<a href="#section-7.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-7.2-3">There are several considerations in this context, as discussed in the following subsections.<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<div id="necessity-of-non-automatic-updates">
+<section id="section-7.2.1">
+          <h4 id="name-necessity-of-non-automatic-">
+<a href="#section-7.2.1" class="section-number selfRef">7.2.1. </a><a href="#name-necessity-of-non-automatic-" class="section-name selfRef">Necessity of Non-Automatic Updates</a>
+          </h4>
+<p id="section-7.2.1-1">Under special circumstances, it may be necessary to perform a non-automatic DS update. One important example is when the key used for authentication of DS updates is destroyed: In this case, an automatic key rollover is impossible as the Child DNS operator can no longer authenticate the associated information. Another example is when several providers are involved, but one no longer cooperates (e.g., when removing a provider from a multi-provider setup). Disabling all other DS management interfaces therefore poses significant operational risk.<a href="#section-7.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.2.1-2">Similarly, when the registrar is known to not support DNSSEC (especially to not provide a means to remove a DS RRset), registries are cautioned against automatically initializing DS records, in order to prevent situations in which a misconfigured or undesired DS RRset cannot be repaired by the registrant.<a href="#section-7.2.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="impact-of-non-automatic-updates-when-to-suspend-automation">
+<section id="section-7.2.2">
+          <h4 id="name-impact-of-non-automatic-upd">
+<a href="#section-7.2.2" class="section-number selfRef">7.2.2. </a><a href="#name-impact-of-non-automatic-upd" class="section-name selfRef">Impact of Non-Automatic Updates: When to Suspend Automation</a>
+          </h4>
+<p id="section-7.2.2-1">When an out-of-band (e.g., manual) DS update is performed while CDS/CDNSKEY records referencing the previous DS RRset's keys are present, the delegation's DS records may be reset to their previous state at the next run of the automation process. This section discusses in which situations it is appropriate to suspend DS automation after such a non-automatic update.<a href="#section-7.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2.2-2">One option is to suspend DS automation after a manual DS update but only until a resumption signal is observed. In the past, it was proposed that seeing an updated SOA serial in the Child zone may serve as a resumption signal. However, as any arbitrary modification of zone contents -- including the regular updating of DNSSEC signature validity timestamps -- typically causes an SOA serial change, resumption of DS automation after a serial change comes with a high risk of surprise. Additional issues arise if nameservers have different serial offsets (e.g., in a multi-provider setup). This practice therefore is <span class="bcp14">NOT RECOMMENDED</span>.<a href="#section-7.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-7.2.2-3">Note also that "automatic rollback" due to old CDS/CDNSKEY RRsets can only occur if they are signed with a key authorized by one of the new DS records. Acceptance checks described in <a href="#acceptance" class="auto internal xref">Section 4</a> further ensure that updates do not break validation.<a href="#section-7.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-7.2.2-4">Removal of a DS record set is triggered either through a CDS/CDNSKEY "delete" signal observed by the party performing the automation (<span>[<a href="#RFC8078" class="cite xref">RFC8078</a>], <a href="https://rfc-editor.org/rfc/rfc8078#section-4" class="relref">Section 4</a></span>) or by receiving a removal request out-of-band (e.g., via EPP or a web form). In the first case, the registrant can expect automation to be kept active for the delegation to facilitate later DS bootstrapping. In the second case, it is likely that the registrant intends to disable DNSSEC for the domain, and DS automation is best suspended (until a new DS record is provisioned somehow).<a href="#section-7.2.2-4" class="pilcrow">¶</a></p>
+<p id="section-7.2.2-5">One may ask how a registry can know whether a removal request received via EPP was the result of the registrar observing a CDS/CDNSKEY "delete" signal. It turns out that the registry does not need to know that; in fact, the advice works out nicely regardless of who does the automation:<a href="#section-7.2.2-5" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-7.2.2-6">
+     <li id="section-7.2.2-6.1">
+              <p id="section-7.2.2-6.1.1">Only registry: If the registry performs automation, then the registry will consider any request received from the registrar as out-of-band (in the context of this automation). When such requests demand removal of the entire DS record set, the registry therefore should suspend automation.<a href="#section-7.2.2-6.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-7.2.2-6.2">
+              <p id="section-7.2.2-6.2.1">Only registrar: The registrar can always distinguish between removal requests obtained from a CDS/CDNSKEY "delete" signal and other registrant requests and suspend automation as appropriate.<a href="#section-7.2.2-6.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-7.2.2-6.3">
+              <p id="section-7.2.2-6.3.1">In the (undesirable) case that both parties automate, there are two cases:<a href="#section-7.2.2-6.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.2.2-6.3.2.1">
+                  <p id="section-7.2.2-6.3.2.1.1">If the registrant submits a manual removal request to the registrar, it is out-of-band from the registrar perspective (e.g., web form) and also for the registry (e.g., EPP). As a consequence, both will suspend automation (which is the correct result).<a href="#section-7.2.2-6.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                <li class="normal" id="section-7.2.2-6.3.2.2">
+                  <p id="section-7.2.2-6.3.2.2.1">If a CDS/CDNSKEY "delete" signal causes the registrar to request DS removal from the registry, then the registry will suspend automation (because the removal request is received out-of-band, such as via EPP). This is independent of whether the registry's automation has already seen the signal. The registrar, however, will be aware of the in-band nature of the request and not suspend automation (which is also the correct result).<a href="#section-7.2.2-6.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              </ul>
+<p id="section-7.2.2-6.3.3">
+As a side effect, this works towards avoiding redundant automation at the registry.<a href="#section-7.2.2-6.3.3" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+<p id="section-7.2.2-7">All in all:<a href="#section-7.2.2-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.2.2-8.1">
+              <p id="section-7.2.2-8.1.1">It is advisable to generally not suspend in-band DS automation when an out-of-band DS update has occurred.<a href="#section-7.2.2-8.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-7.2.2-8.2">
+              <p id="section-7.2.2-8.2.1">An exception to this rule is when the entire DS record set was removed through an out-of-band request, in which case the registrant likely wants to disable DNSSEC for the domain. DS automation should then be suspended so that automatic re-initialization (bootstrapping) does not occur.<a href="#section-7.2.2-8.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-7.2.2-8.3">
+              <p id="section-7.2.2-8.3.1">In all other cases, any properly authenticated DS updates received, including through an automated method, are to be considered as the current intent of the domain holder.<a href="#section-7.2.2-8.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</section>
+</div>
+<div id="concurrent-automatic-updates">
+<section id="section-7.2.3">
+          <h4 id="name-concurrent-automatic-update">
+<a href="#section-7.2.3" class="section-number selfRef">7.2.3. </a><a href="#name-concurrent-automatic-update" class="section-name selfRef">Concurrent Automatic Updates</a>
+          </h4>
+<p id="section-7.2.3-1">When the RRR model is used, there is a potential for collision if both the registry and the registrar are automating DS provisioning by scanning the child for CDS/CDNSKEY records. No disruptive consequences are expected if both parties perform DS automation. An exception is when, during a key rollover, the registry and registrar see different versions of the Child's DS update requests, such as when CDS/CDNSKEY records are retrieved from different vantage points. Although unlikely due to Recommendation 1a of <a href="#acceptance" class="auto internal xref">Section 4</a>, this may lead to flapping of DS updates. However, it is not expected to be harmful as either DS RRset will allow for the validation function to continue to work, as ensured by Recommendation 1b of <a href="#acceptance" class="auto internal xref">Section 4</a>. The effect subsides as the Child's state eventually becomes consistent (roughly within the child's replication delay); any flapping until then will be a minor nuisance only.<a href="#section-7.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-7.2.3-2">The issue disappears entirely when scanning is replaced by notifications that trigger DS maintenance through one party's designated endpoint <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span> and can otherwise be mitigated if the registry and registrar agree that only one of them will perform scanning.<a href="#section-7.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-7.2.3-3">As a standard aspect of key rollovers <span>[<a href="#RFC6781" class="cite xref">RFC6781</a>]</span>, the Child DNS operator is expected to monitor propagation of Child zone updates to all authoritative nameserver instances and only proceed to the next step once replication has succeeded everywhere and the DS record set was subsequently updated (and in no case before the DS RRset's TTL has passed). Any breakage resulting from improper timing on the Child side is outside of the Parent's sphere of influence and thus cannot be handled with only parent-side changes.<a href="#section-7.2.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-8">
+      <h2 id="name-iana-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-8-1">This document has no IANA actions.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="operational-considerations">
+<section id="section-9">
+      <h2 id="name-operational-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<p id="section-9-1">The document provides operational recommendations for DNSSEC DS automation. There are no additional operational considerations beyond those listed in <a href="#recommendations_overview" class="auto internal xref">Appendix A</a>.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-10">
+      <h2 id="name-security-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-10-1">The recommendations in this document are designed to improve the safety and interoperability of DNSSEC delegation maintenance. Relevant security implications and various trade-offs are explained in the analysis subsections above. This section notes additional aspects worth considering.<a href="#section-10-1" class="pilcrow">¶</a></p>
+<p id="section-10-2">When inconsistencies between CDS/CDNSKEY RRsets are ignored (contrary to <a href="#acceptance-rec1a" class="internal xref">Recommendation 4.1.1.a</a>), a number of security risks result. For example, when a nameserver domain expires and is re-registered maliciously, the adversary may be able to initialize a DS RRset and subsequently redelegate the domain using CSYNC synchronization <span>[<a href="#RFC7477" class="cite xref">RFC7477</a>]</span>, resulting in a full hijack of the domain. For details, refer to <span><a href="https://rfc-editor.org/rfc/rfc9975#appendix-A" class="relref">Appendix A</a> of [<a href="#RFC9975" class="cite xref">RFC9975</a>]</span>.<a href="#section-10-2" class="pilcrow">¶</a></p>
+<p id="section-10-3">Similar risks of total adversarial control exist when the child's SEP key is compromised, as this key can authorize DS update or removal requests if consistently published on all nameservers. This reinforces that loss of key control poses severe risks; utmost care must be taken when managing SEP keys.<a href="#section-10-3" class="pilcrow">¶</a></p>
+<p id="section-10-4">When a domain is stripped of its DNSSEC protection by removing the DS RRset -- either manually or using an automatic delete signal (<a href="#multiple-rec3" class="internal xref">Recommendation 7.1.3</a>) -- DNSSEC security guarantees and associated benefits are no longer in effect. For example, an email operator may enforce DNS-Based Authentication of Named Entities (DANE) <span>[<a href="#RFC7672" class="cite xref">RFC7672</a>]</span> for domains previously observed to support it and, as a result, experience a service disruption in email delivery. Both child and parent DNS operators <span class="bcp14">MUST</span> take such service disruptions into account when considering removal of the DS RRset for their zone.<a href="#section-10-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="DNSKEY-IANA">[DNSKEY-IANA]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"DNS Security Algorithm Numbers"</span>, <span>&lt;<a href="https://www.iana.org/assignments/dns-sec-alg-numbers">https://www.iana.org/assignments/dns-sec-alg-numbers</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DS-IANA">[DS-IANA]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"DNSSEC Delegation Signer (DS) Resource Record (RR) Type Digest Algorithms"</span>, <span>&lt;<a href="https://www.iana.org/assignments/ds-rr-types">https://www.iana.org/assignments/ds-rr-types</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1035">[RFC1035]</dt>
+        <dd>
+<span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - implementation and specification"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1035</span>, <span class="seriesInfo">DOI 10.17487/RFC1035</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1035">https://www.rfc-editor.org/info/rfc1035</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7344">[RFC7344]</dt>
+        <dd>
+<span class="refAuthor">Kumari, W.</span>, <span class="refAuthor">Gudmundsson, O.</span>, and <span class="refAuthor">G. Barwood</span>, <span class="refTitle">"Automating DNSSEC Delegation Trust Maintenance"</span>, <span class="seriesInfo">RFC 7344</span>, <span class="seriesInfo">DOI 10.17487/RFC7344</span>, <time datetime="2014-09" class="refDate">September 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7344">https://www.rfc-editor.org/info/rfc7344</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8078">[RFC8078]</dt>
+        <dd>
+<span class="refAuthor">Gudmundsson, O.</span> and <span class="refAuthor">P. Wouters</span>, <span class="refTitle">"Managing DS Records from the Parent via CDS/CDNSKEY"</span>, <span class="seriesInfo">RFC 8078</span>, <span class="seriesInfo">DOI 10.17487/RFC8078</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8078">https://www.rfc-editor.org/info/rfc8078</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8590">[RFC8590]</dt>
+        <dd>
+<span class="refAuthor">Gould, J.</span> and <span class="refAuthor">K. Feher</span>, <span class="refTitle">"Change Poll Extension for the Extensible Provisioning Protocol (EPP)"</span>, <span class="seriesInfo">RFC 8590</span>, <span class="seriesInfo">DOI 10.17487/RFC8590</span>, <time datetime="2019-05" class="refDate">May 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8590">https://www.rfc-editor.org/info/rfc8590</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9364">[RFC9364]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span>, <span class="refTitle">"DNS Security Extensions (DNSSEC)"</span>, <span class="seriesInfo">BCP 237</span>, <span class="seriesInfo">RFC 9364</span>, <span class="seriesInfo">DOI 10.17487/RFC9364</span>, <time datetime="2023-02" class="refDate">February 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9364">https://www.rfc-editor.org/info/rfc9364</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9499">[RFC9499]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">K. Fujiwara</span>, <span class="refTitle">"DNS Terminology"</span>, <span class="seriesInfo">BCP 219</span>, <span class="seriesInfo">RFC 9499</span>, <span class="seriesInfo">DOI 10.17487/RFC9499</span>, <time datetime="2024-03" class="refDate">March 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9499">https://www.rfc-editor.org/info/rfc9499</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9567">[RFC9567]</dt>
+        <dd>
+<span class="refAuthor">Arends, R.</span> and <span class="refAuthor">M. Larson</span>, <span class="refTitle">"DNS Error Reporting"</span>, <span class="seriesInfo">RFC 9567</span>, <span class="seriesInfo">DOI 10.17487/RFC9567</span>, <time datetime="2024-04" class="refDate">April 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9567">https://www.rfc-editor.org/info/rfc9567</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9615">[RFC9615]</dt>
+        <dd>
+<span class="refAuthor">Thomassen, P.</span> and <span class="refAuthor">N. Wisiol</span>, <span class="refTitle">"Automatic DNSSEC Bootstrapping Using Authenticated Signals from the Zone's Operator"</span>, <span class="seriesInfo">RFC 9615</span>, <span class="seriesInfo">DOI 10.17487/RFC9615</span>, <time datetime="2024-07" class="refDate">July 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9615">https://www.rfc-editor.org/info/rfc9615</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9859">[RFC9859]</dt>
+        <dd>
+<span class="refAuthor">Stenstam, J.</span>, <span class="refAuthor">Thomassen, P.</span>, and <span class="refAuthor">J. Levine</span>, <span class="refTitle">"Generalized DNS Notifications"</span>, <span class="seriesInfo">RFC 9859</span>, <span class="seriesInfo">DOI 10.17487/RFC9859</span>, <time datetime="2025-09" class="refDate">September 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9859">https://www.rfc-editor.org/info/rfc9859</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9975">[RFC9975]</dt>
+      <dd>
+<span class="refAuthor">Thomassen, P.</span>, <span class="refTitle">"Clarifications on CDS/CDNSKEY and CSYNC Consistency"</span>, <span class="seriesInfo">RFC 9975</span>, <span class="seriesInfo">DOI 10.17487/RFC9975</span>, <time datetime="2026-05" class="refDate">May 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9975">https://www.rfc-editor.org/info/rfc9975</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="LowTTL">[LowTTL]</dt>
+        <dd>
+<span class="refAuthor">Špaček, P.</span>, <span class="refTitle">"DS and DNSKEY low TTL experiments"</span>, <span class="refContent">DNS OARC 41</span>, <time datetime="2023-09-06" class="refDate">6 September 2023</time>, <span>&lt;<a href="https://indico.dns-oarc.net/event/47/contributions/1010/attachments/958/1811/DS%20and%20DNSKEY%20TTL%20experiment.pdf">https://indico.dns-oarc.net/event/47/contributions/1010/attachments/958/1811/DS%20and%20DNSKEY%20TTL%20experiment.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-regext-rdap-ttl-extension">[RDAP-TTL]</dt>
+        <dd>
+<span class="refAuthor">Brown, G.</span>, <span class="refTitle">"RDAP Extension for DNS Time-To-Live (TTL Values)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-regext-rdap-ttl-extension-12</span>, <time datetime="2026-05-27" class="refDate">27 May 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-regext-rdap-ttl-extension-12">https://datatracker.ietf.org/doc/html/draft-ietf-regext-rdap-ttl-extension-12</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5730">[RFC5730]</dt>
+        <dd>
+<span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP)"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5730</span>, <span class="seriesInfo">DOI 10.17487/RFC5730</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5730">https://www.rfc-editor.org/info/rfc5730</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5731">[RFC5731]</dt>
+        <dd>
+<span class="refAuthor">Hollenbeck, S.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Domain Name Mapping"</span>, <span class="seriesInfo">STD 69</span>, <span class="seriesInfo">RFC 5731</span>, <span class="seriesInfo">DOI 10.17487/RFC5731</span>, <time datetime="2009-08" class="refDate">August 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5731">https://www.rfc-editor.org/info/rfc5731</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6781">[RFC6781]</dt>
+        <dd>
+<span class="refAuthor">Kolkman, O.</span>, <span class="refAuthor">Mekking, W.</span>, and <span class="refAuthor">R. Gieben</span>, <span class="refTitle">"DNSSEC Operational Practices, Version 2"</span>, <span class="seriesInfo">RFC 6781</span>, <span class="seriesInfo">DOI 10.17487/RFC6781</span>, <time datetime="2012-12" class="refDate">December 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6781">https://www.rfc-editor.org/info/rfc6781</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6840">[RFC6840]</dt>
+        <dd>
+<span class="refAuthor">Weiler, S., Ed.</span> and <span class="refAuthor">D. Blacka, Ed.</span>, <span class="refTitle">"Clarifications and Implementation Notes for DNS Security (DNSSEC)"</span>, <span class="seriesInfo">RFC 6840</span>, <span class="seriesInfo">DOI 10.17487/RFC6840</span>, <time datetime="2013-02" class="refDate">February 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6840">https://www.rfc-editor.org/info/rfc6840</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7477">[RFC7477]</dt>
+        <dd>
+<span class="refAuthor">Hardaker, W.</span>, <span class="refTitle">"Child-to-Parent Synchronization in DNS"</span>, <span class="seriesInfo">RFC 7477</span>, <span class="seriesInfo">DOI 10.17487/RFC7477</span>, <time datetime="2015-03" class="refDate">March 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7477">https://www.rfc-editor.org/info/rfc7477</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7672">[RFC7672]</dt>
+        <dd>
+<span class="refAuthor">Dukhovni, V.</span> and <span class="refAuthor">W. Hardaker</span>, <span class="refTitle">"SMTP Security via Opportunistic DNS-Based Authentication of Named Entities (DANE) Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 7672</span>, <span class="seriesInfo">DOI 10.17487/RFC7672</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7672">https://www.rfc-editor.org/info/rfc7672</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9803">[RFC9803]</dt>
+        <dd>
+<span class="refAuthor">Brown, G.</span>, <span class="refTitle">"Extensible Provisioning Protocol (EPP) Mapping for DNS Time-to-Live (TTL) Values"</span>, <span class="seriesInfo">RFC 9803</span>, <span class="seriesInfo">DOI 10.17487/RFC9803</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9803">https://www.rfc-editor.org/info/rfc9803</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SAC126">[SAC126]</dt>
+      <dd>
+<span class="refAuthor">ICANN Security and Stability Advisory Committee (SSAC)</span>, <span class="refTitle">"SAC126: DNSSEC Delegation Signer (DS) Record Automation"</span>, <time datetime="2024-08-12" class="refDate">12 August 2024</time>, <span>&lt;<a href="https://itp.cdn.icann.org/en/files/security-and-stability-advisory-committee-ssac-reports/sac-126-16-08-2024-en.pdf">https://itp.cdn.icann.org/en/files/security-and-stability-advisory-committee-ssac-reports/sac-126-16-08-2024-en.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="recommendations_overview">
+<section id="appendix-A">
+      <h2 id="name-recommendations-overview">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-recommendations-overview" class="section-name selfRef">Recommendations Overview</a>
+      </h2>
+<p id="appendix-A-1">For ease of review and referencing, the recommendations from this document are reproduced here without further comment. For background and analysis, refer to Sections <a href="#acceptance" class="auto internal xref">4</a>-<a href="#multiple" class="auto internal xref">7</a>.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div id="acceptance-checks-and-safety-measures">
+<section id="appendix-A.1">
+        <h3 id="name-acceptance-checks-and-safety">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-acceptance-checks-and-safety" class="section-name selfRef">Acceptance Checks and Safety Measures</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="appendix-A.1-1">
+   <li id="appendix-A.1-1.1">
+            <p id="appendix-A.1-1.1.1">Entities performing automated DS maintenance <span class="bcp14">MUST</span> verify:<a href="#appendix-A.1-1.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="appendix-A.1-1.1.2">
+       <li id="appendix-A.1-1.1.2.1">
+                <p id="appendix-A.1-1.1.2.1.1">the unambiguous intent of each DS bootstrapping or update request as per <span>[<a href="#RFC9975" class="cite xref">RFC9975</a>]</span>, by checking its consistency both<a href="#appendix-A.1-1.1.2.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-A.1-1.1.2.1.2.1">
+                    <p id="appendix-A.1-1.1.2.1.2.1.1">between any published CDS and CDNSKEY records and<a href="#appendix-A.1-1.1.2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                  <li class="normal" id="appendix-A.1-1.1.2.1.2.2">
+                    <p id="appendix-A.1-1.1.2.1.2.2.1">across all authoritative nameservers in the delegation,<a href="#appendix-A.1-1.1.2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                </ul>
+<p id="appendix-A.1-1.1.2.1.3">
+and<a href="#appendix-A.1-1.1.2.1.3" class="pilcrow">¶</a></p>
+</li>
+              <li id="appendix-A.1-1.1.2.2">
+                <p id="appendix-A.1-1.1.2.2.1">that the resulting DS record set would allow continued DNSSEC validation if deployed<a href="#appendix-A.1-1.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+<p id="appendix-A.1-1.1.3">
+and cancel the update if the verifications do not succeed.<a href="#appendix-A.1-1.1.3" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.1-1.2">
+            <p id="appendix-A.1-1.2.1">Parent-side entities (such as registries) <span class="bcp14">SHOULD</span> allow for effective rollback by reducing a DS record set's TTL to a value between 5-15 minutes when a new set of records is published, and restore the previous (or, if unavailable, default) TTL value at a later occasion (but not before the previous DS RRset's TTL has expired).<a href="#appendix-A.1-1.2.1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-1.2.2">Besides a prudent choice of TTL, prompt DS changes also require
+      timely discovery of update requests.  For recommended methods,
+      see <a href="#ttls-and-caching" class="auto internal xref">Section 4.2.2</a>.<a href="#appendix-A.1-1.2.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.1-1.3">
+            <p id="appendix-A.1-1.3.1">DNS operators <span class="bcp14">MUST</span> publish both CDNSKEY and CDS records (unless the parent's preference is known) and follow best practice for the choice of hash digest type <span>[<a href="#DS-IANA" class="cite xref">DS-IANA</a>]</span>.<a href="#appendix-A.1-1.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="reporting-and-transparency">
+<section id="appendix-A.2">
+        <h3 id="name-reporting-and-transparency-2">
+<a href="#appendix-A.2" class="section-number selfRef">A.2. </a><a href="#name-reporting-and-transparency-2" class="section-name selfRef">Reporting and Transparency</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="appendix-A.2-1">
+   <li id="appendix-A.2-1.1">
+            <p id="appendix-A.2-1.1.1">For certain DS updates (see <span><a href="#analysis_reporting" class="internal xref">analysis</a> (<a href="#analysis_reporting" class="auto internal xref">Section 5.2</a>)</span>) and for DS deactivation, relevant points of contact known to the parent-side entity (registry or registrar) <span class="bcp14">SHOULD</span> be notified.<a href="#appendix-A.2-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.2-1.2">
+            <p id="appendix-A.2-1.2.1">For error conditions, the child DNS operator and the domain's technical contact (if applicable) <span class="bcp14">SHOULD</span> be notified first. The registrant <span class="bcp14">SHOULD NOT</span> be notified unless the problem persists for a prolonged amount of time (e.g., three days).<a href="#appendix-A.2-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.2-1.3">
+            <p id="appendix-A.2-1.3.1">Child DNS operators <span class="bcp14">SHOULD</span> be notified of errors using a report query <span>[<a href="#RFC9567" class="cite xref">RFC9567</a>]</span> to the agent domain as described in <span><a href="https://rfc-editor.org/rfc/rfc9859#section-4" class="relref">Section 4</a> of [<a href="#RFC9859" class="cite xref">RFC9859</a>]</span>. Note that this requires listening to notifications and that appropriate notification targets are in place (<span><a href="https://rfc-editor.org/rfc/rfc9859#section-3" class="relref">Section 3</a> of [<a href="#RFC9859" class="cite xref">RFC9859</a>]</span>).<a href="#appendix-A.2-1.3.1" class="pilcrow">¶</a></p>
+<p id="appendix-A.2-1.3.2">Notifications to humans (domain holder) will be performed in accordance with the communication preferences established with the parent-side entity. The same condition <span class="bcp14">SHOULD NOT</span> be reported unnecessarily frequently to the same recipient.<a href="#appendix-A.2-1.3.2" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.2-1.4">
+            <p id="appendix-A.2-1.4.1">In the RRR model, registries performing DS automation <span class="bcp14">SHOULD</span> inform the registrar of any DS record changes via the EPP Change Poll Extension <span>[<a href="#RFC8590" class="cite xref">RFC8590</a>]</span> or a similar channel.<a href="#appendix-A.2-1.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.2-1.5">
+            <p id="appendix-A.2-1.5.1">The currently active DS configuration <span class="bcp14">SHOULD</span> be made accessible to the registrant (or their designated party) through the customer portal available for domain management. The DS update history <span class="bcp14">MAY</span> be made available in the same way.<a href="#appendix-A.2-1.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="registration-locks">
+<section id="appendix-A.3">
+        <h3 id="name-registration-locks-2">
+<a href="#appendix-A.3" class="section-number selfRef">A.3. </a><a href="#name-registration-locks-2" class="section-name selfRef">Registration Locks</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="appendix-A.3-1">
+   <li id="appendix-A.3-1.1">
+            <p id="appendix-A.3-1.1.1">To secure ongoing operations, automated DS maintenance <span class="bcp14">MUST NOT</span> be suspended based on a registrar update lock alone (such as EPP status clientUpdateProhibited <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>).<a href="#appendix-A.3-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.3-1.2">
+            <p id="appendix-A.3-1.2.1">When performed by the registry, automated DS maintenance <span class="bcp14">MUST NOT</span> be suspended based on a registry update lock alone (such as EPP status serverUpdateProhibited <span>[<a href="#RFC5731" class="cite xref">RFC5731</a>]</span>).<a href="#appendix-A.3-1.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="multiple-submitting-parties-and-suspension-of-automation">
+<section id="appendix-A.4">
+        <h3 id="name-multiple-submitting-parties-">
+<a href="#appendix-A.4" class="section-number selfRef">A.4. </a><a href="#name-multiple-submitting-parties-" class="section-name selfRef">Multiple Submitting Parties and Suspension of Automation</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="appendix-A.4-1">
+   <li id="appendix-A.4-1.1">
+            <p id="appendix-A.4-1.1.1">Registries and registrars <span class="bcp14">MUST</span> provide another (e.g., manual) channel for DS maintenance in order to enable recovery when the Child has lost access to its signing key(s). This out-of-band channel is also needed when a DNS operator does not support DS automation or refuses to cooperate.<a href="#appendix-A.4-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.4-1.2">
+            <p id="appendix-A.4-1.2.1">DS bootstrapping and update requests <span class="bcp14">MUST</span> be executed at the next publication opportunity after verification of their authenticity, regardless of whether they are received in-band or via an out-of-band channel.<a href="#appendix-A.4-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.4-1.3">
+            <p id="appendix-A.4-1.3.1">When processing a CDS/CDNSKEY "delete" signal to remove the entire DS record set (<span>[<a href="#RFC8078" class="cite xref">RFC8078</a>], <a href="https://rfc-editor.org/rfc/rfc8078#section-4" class="relref">Section 4</a></span>), DS automation <span class="bcp14">MUST NOT</span> be suspended. For all other removal requests (such as when received via EPP or a web form), DS automation <span class="bcp14">SHOULD</span> be suspended until a new DS record set has been provisioned, in order to prevent accidental re-initialization when the registrant intended to disable DNSSEC.<a href="#appendix-A.4-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.4-1.4">
+            <p id="appendix-A.4-1.4.1">Whenever a non-empty DS record set is provisioned, through whichever channel, DS automation <span class="bcp14">SHOULD NOT</span> (or no longer) be suspended (including after an earlier removal).<a href="#appendix-A.4-1.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="appendix-A.4-1.5">
+            <p id="appendix-A.4-1.5.1">In the RRR model, a registry <span class="bcp14">MUST NOT</span> automatically initialize DS records when it is known that the registrar does not provide a way for the domain holder to later disable DNSSEC. If the registrar has declared that it performs automated DS maintenance, the registry <span class="bcp14">SHOULD</span> publish the registrar's notification endpoint <span>[<a href="#RFC9859" class="cite xref">RFC9859</a>]</span> (if applicable) instead of their own and refrain from registry-side DS automation.<a href="#appendix-A.4-1.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1">The authors would like to thank the members of ICANN's Security and Stability Advisory Committee (SSAC) who wrote the <span>[<a href="#SAC126" class="cite xref">SAC126</a>]</span> report on which this document is based.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">Additional thanks are extended to the following individuals (in the order of their first contribution or review): <span class="contact-name">Barbara Jantzen</span>, <span class="contact-name">Matt Pounsett</span>, <span class="contact-name">Matthijs Mekking</span>, <span class="contact-name">Ondřej Caletka</span>, <span class="contact-name">Oli Schacher</span>, <span class="contact-name">Kim Davies</span>, <span class="contact-name">Jim Reid</span>, <span class="contact-name">Q Misell</span>, <span class="contact-name">Scott Hollenbeck</span>, <span class="contact-name">Tamás Csillag</span>, <span class="contact-name">Philip Homburg</span>, <span class="contact-name">Shumon Huque</span> (Document Shepherd), <span class="contact-name">Libor Peltan</span>, <span class="contact-name">Josh Simpson</span>, <span class="contact-name">Johan Stenstam</span>, <span class="contact-name">Stefan Ubbink</span>, <span class="contact-name">Viktor Dukhovni</span>, <span class="contact-name">Hugo Salgado</span>, <span class="contact-name">Wes Hardaker</span>, <span class="contact-name">Mohamed Boucadair</span> (responsible Area Director), <span class="contact-name">Meir Goldman</span>, <span class="contact-name">Thomas Fossati</span>, <span class="contact-name">Peter van Dijk</span>, <span class="contact-name">Jiankang Yao</span>, <span class="contact-name">Donald Eastlake</span>, <span class="contact-name">James Gannon</span>, <span class="contact-name">Roman Danyliw</span>, <span class="contact-name">Andy Newton</span>, <span class="contact-name">Éric Vyncke</span>, <span class="contact-name">Mike Bishop</span>, <span class="contact-name">Mahesh Jethanandani</span>, <span class="contact-name">Deb Cooley</span>, <span class="contact-name">Charles Eckel</span>, <span class="contact-name">Christopher Inacio</span>, and <span class="contact-name">Ketan Talaulikar</span>.<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Steve Sheng</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:steve.sheng@gmail.com" class="email">steve.sheng@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Peter Thomassen</span></div>
+<div dir="auto" class="left"><span class="org">deSEC</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:peter@desec.io" class="email">peter@desec.io</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
