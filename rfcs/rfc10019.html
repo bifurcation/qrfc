@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10019: Zeroconf Multicast Address Allocation Problem Statement and Requirements</title>
+<meta content="Nate Karstens" name="author">
+<meta content="Dino Farinacci" name="author">
+<meta content="Mike McBride" name="author">
+<meta content="
+       This document surveys current problems with existing protocols for automatically assigning multicast IP addresses in zero-configuration (zeroconf) networking environments. It addresses key challenges, such as link-layer address collisions, hardware limitations, multicast snooping inefficiencies, and the need to avoid manual configuration. Based on these challenges, it derives requirements for a lightweight, decentralized solution for dynamically allocating unique multicast group addresses without central coordination. 
+       The document presents explicit requirements covering discovery, allocation, conflict detection and resolution, and lease management. It also evaluates considerations specific to IPv6 and IPv4 multicast address ranges, and identifies approaches that are unsuited for zeroconf deployment. This foundation serves as a reference for developing future solutions for multicast address allocation that operate autonomously within local networks. 
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="snooping" name="keyword">
+<meta content="peer-to-peer" name="keyword">
+<meta content="collision" name="keyword">
+<meta content="decentralized" name="keyword">
+<meta content="dynamic" name="keyword">
+<meta content="zero-configuration" name="keyword">
+<meta content="10019" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.0
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.8.1
+    weasyprint 69.0
+-->
+<link href="rfc10019.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-pim-zeroconf-mcast-addr-alloc-ps-13" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc10019" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10019</td>
+<td class="center">Zeroconf Multicast Addr Alloc Problem St</td>
+<td class="right">July 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Karstens, et al.</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10019" class="eref">10019</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-07" class="published">July 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">N. Karstens</div>
+<div class="org">Garmin</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Farinacci</div>
+<div class="org">lispers.net</div>
+</div>
+<div class="author">
+      <div class="author-name">M. McBride</div>
+<div class="org">Futurewei</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10019</h1>
+<h1 id="title">Zeroconf Multicast Address Allocation Problem Statement and Requirements</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document surveys current problems with existing protocols for automatically assigning multicast IP addresses in zero-configuration (zeroconf) networking environments. It addresses key challenges, such as link-layer address collisions, hardware limitations, multicast snooping inefficiencies, and the need to avoid manual configuration. Based on these challenges, it derives requirements for a lightweight, decentralized solution for dynamically allocating unique multicast group addresses without central coordination.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">The document presents explicit requirements covering discovery, allocation, conflict detection and resolution, and lease management. It also evaluates considerations specific to IPv6 and IPv4 multicast address ranges, and identifies approaches that are unsuited for zeroconf deployment. This foundation serves as a reference for developing future solutions for multicast address allocation that operate autonomously within local networks.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10019">https://www.rfc-editor.org/info/rfc10019</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-link-layer-address-collisio" class="internal xref">Link-Layer Address Collisions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-solution-requirements" class="internal xref">Solution Requirements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-ipv6-considerations" class="internal xref">IPv6 Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-ipv4-considerations" class="internal xref">IPv4 Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-excluded-solutions" class="internal xref">Excluded Solutions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgement" class="internal xref">Acknowledgement</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Multicast communication is commonly used in networks that need to distribute data from one sender to multiple receivers efficiently. In some environments, such as small or isolated networks, multicast operate without centralized servers or manual configuration. These are referred to as zero-configuration (zeroconf) multicast networks.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">One example of such an environment is marine networks, which typically include a mix of sensors, controls, and displays. These networks vary in complexity depending on the size and design of the vessel. Devices may range from low-cost temperature or fluid sensors to high-bandwidth sources such as radar, sonar, or video feeds. Many marine networks are built on a single subnet and rely on Layer 2 Ethernet switches to connect devices.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">In these networks, multicast is the most efficient method for distributing sensor data to multiple displays. However, challenges arise when high-bandwidth multicast streams overload links to low-bandwidth devices. Cost-effective switches often do not support source-specific multicast (SSM) because their address table only maps destination Media Access Control (MAC) addresses. Instead, each multicast stream is assigned a unique destination multicast IP address, and IGMP/MLD snooping <span>[<a href="#RFC4541" class="cite xref">RFC4541</a>]</span> is used to control multicast delivery. This method introduces limitations, especially in environments where switch hardware lacks advanced multicast filtering capabilities.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">While marine networks illustrate these issues well, the challenges they face are not unique. Many other zeroconf multicast environments, such as industrial automation, small-scale audio-visual (AV) systems, or ad hoc sensor networks, share similar constraints.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">The Multicast Address Dynamic Client Allocation Protocol (MADCAP) <span>[<a href="#RFC2730" class="cite xref">RFC2730</a>]</span> is a method for multicast IP address allocation, but its server-based model does not suit a zeroconf environment. <span>[<a href="#RFC3306" class="cite xref">RFC3306</a>]</span> and <span>[<a href="#RFC4489" class="cite xref">RFC4489</a>]</span> both discuss similar approaches to host-based multicast IPv6 address allocation, but neither adequately prevents link-layer address collisions. Although <span>[<a href="#RFC3307" class="cite xref">RFC3307</a>]</span> establishes a framework to avoid multicast address collisions at both IPv6 and link layers, additional refinement is needed to put this into practice (see <a href="#ipv6-considerations" class="auto internal xref">Section 4</a>).<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">This document outlines the problem space for zeroconf multicast address allocation, describes the key limitations of current protocols, details sources of link-layer address collisions, and defines a set of requirements for decentralized, zero-configuration multicast address allocation solutions. Multicast applications deployed in a zeroconf environment can use these solutions to dynamically allocate multicast group addresses. The manner in which a multicast group address is used after allocation is outside the scope of this document.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">The organization of IPv6 multicast and immense volume of possible multicast addresses makes IPv6 well-suited for zeroconf multicast networks. However, IPv4 is still considered by this document for networks where transitioning to IPv6 remains impractical.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<section id="section-1.1">
+        <h3 id="name-requirements-language">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-1.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">The requirements language is used in <a href="#solution-requirements" class="auto internal xref">Section 3</a> and applies to implementations conformant to the listed requirements.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+</section>
+</section>
+<section id="section-2">
+      <h2 id="name-link-layer-address-collisio">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-link-layer-address-collisio" class="section-name selfRef">Link-Layer Address Collisions</a>
+      </h2>
+<p id="section-2-1">Link-layer address collisions are a key concern in multicast networks, particularly when devices rely on zero-configuration operation. Collisions occur when two or more multicast groups are assigned the same link-layer (MAC) address, leading to performance or forwarding issues. This section outlines three scenarios where such collisions can cause problems.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">First, many host network interfaces allow filtering of multicast traffic directly in hardware. When an application joins a multicast group, the host network stack typically programs the hardware to accept only traffic for that group. However, if two groups share the same link-layer address, the network interface cannot distinguish them. The network stack is then forced to process unwanted traffic in software, reducing performance and increasing CPU usage.<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3">Second, link-layer address collisions reduce the benefit of using multicast snooping switches on a network. <span><a href="https://rfc-editor.org/rfc/rfc4541#section-4" class="relref">Section 4</a> of [<a href="#RFC4541" class="cite xref">RFC4541</a>]</span> indicates some switches forward multicast traffic based solely on the link-layer address, without considering the network-layer group (see the results for Q2 and Q3). Although the survey is outdated, switches with these limitations still exist in some of the target deployments. In such cases, if two multicast streams share the same MAC address, traffic may be sent to devices that did not request it. This is especially problematic when low-bandwidth links are overwhelmed by high-bandwidth streams. Additional concerns related to the overlap of IPv6 and link-layer addresses are discussed in <span><a href="https://rfc-editor.org/rfc/rfc4541#section-3" class="relref">Section 3</a> of [<a href="#RFC4541" class="cite xref">RFC4541</a>]</span>.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4">Third, the internal design of some switches can also contribute to collisions. For example, certain switch implementations use a hash table with fixed buckets to store forwarding entries based on MAC addresses (see <span>[<a href="#US6690667B1" class="cite xref">US6690667B1</a>]</span>). If multiple addresses hash to the same location and the bucket fills up, additional entries may be dropped or rejected, resulting in forwarding failures.<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5">These examples highlight why a collision-resistant multicast address allocation mechanism is essential in zeroconf environments. The success of this approach depends on the capabilities of the hardware (such as the number of addresses supported by the filters in host network interfaces and the size of the tables maintained in switches/routers) and on the number of multicast groups that are subscribed to by a particular receiver. When the number of entries in the filter tables exceeds availability, a typical fallback mechanism is to bypass the filter entirely and flood traffic to the receiver. This subsequently incurs a per-packet cost for any software-based filtering that is needed.<a href="#section-2-5" class="pilcrow">¶</a></p>
+</section>
+<div id="solution-requirements">
+<section id="section-3">
+      <h2 id="name-solution-requirements">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-solution-requirements" class="section-name selfRef">Solution Requirements</a>
+      </h2>
+<p id="section-3-1">A solution intended for decentralized, zero-configuration multicast IP address assignment is expected to operate in dynamic, infrastructure-free environments. To be effective in such contexts, the solution needs to exhibit the following characteristics:<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-3-2">
+        <dt>[REQ-1]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.1">Unique Address Assignment: Use of the solution <span class="bcp14">SHALL</span> result in a unique address being assigned to the multicast group at both the network and link layers.<a href="#section-3-2.1" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-2]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.2">Resilience to Single Points of Failure: The solution <span class="bcp14">SHALL</span> be designed to minimize introduction of a single point of failure, ensuring that operation continues even if individual devices or links become unavailable.<a href="#section-3-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-3]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.3">Zero User Configuration: It <span class="bcp14">SHALL</span> operate without requiring user or administrator configuration, allowing seamless deployment in unmanaged networks.<a href="#section-3-2.3" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-4]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.4">Coexistence with Multicast Address Allocation Solutions: The design <span class="bcp14">SHALL</span> allow coexistence with other multicast IP address allocation solutions, including both manual assignment and existing dynamic protocols.<a href="#section-3-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-5]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.5">Single-Subnet Operation: It <span class="bcp14">SHALL</span> support operation within a single IP subnet, which is typical in link-local or isolated network environments.<a href="#section-3-2.5" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-6]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.6">No External Connectivity: The solution <span class="bcp14">SHALL NOT</span> require Internet access or connectivity to external infrastructure.<a href="#section-3-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-7]</dt>
+<dd style="margin-left: 4.5em" id="section-3-2.7">Supports Multiple Host Applications: It <span class="bcp14">SHALL</span> support multiple applications on the same host, each independently allocating multicast addresses and transmitting to those addresses.<a href="#section-3-2.7" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[REQ-8]</dt>
+<dd id="section-3-2.8" style="margin-left: 4.5em">
+<div id="collision_det">Collision Detection and Resolution: The solution <span class="bcp14">SHALL</span> include mechanisms to detect and resolve multicast address collisions at both the network and link layers.<a href="#collision_det" class="pilcrow">¶</a>
+</div>
+      </dd>
+<dd class="break"></dd>
+</dl>
+<p id="section-3-3">Note: In rare cases, collisions may arise after a temporary network partition, when different parts of the network allocate the same multicast address independently. Upon reconnection, such collisions <span class="bcp14">SHALL</span> be detectable and resolved gracefully by ensuring that conflicting streams are migrated to unique addresses.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">In addition to the above, the following characteristics are considered desirable, but are left as recommendations to allow for flexibility in solution design:<a href="#section-3-4" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="olPercent" id="section-3-5">
+        <dt>[CONS-1]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.1">Multi-Subnet Support: Operation across multiple subnets is beneficial in more complex or routed environments and <span class="bcp14">SHOULD</span> be supported.<a href="#section-3-5.1" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[CONS-2]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.2">Standards Compatibility: The solution <span class="bcp14">SHOULD</span> aim to minimize the need for changes to existing protocols or standards that affect backwards compatibility or deployment in existing networks.<a href="#section-3-5.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[CONS-3]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.3">Cross-Platform Availability: It <span class="bcp14">SHOULD</span> use capabilities that are widely available across host platforms and operating systems.<a href="#section-3-5.3" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[CONS-4]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.4">Minimal Dependency on Manufacturing Data: It <span class="bcp14">SHOULD</span> avoid reliance on preloaded configuration or device-specific manufacturing data.<a href="#section-3-5.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[CONS-5]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.5">Low Overhead: The solution <span class="bcp14">SHOULD</span> minimize the volume and frequency of network traffic generated during normal operation.<a href="#section-3-5.5" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[CONS-6]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.6">Advertisement: The solution <span class="bcp14">SHOULD</span> describe a mechanism for advertising and discovering multicast addresses allocated for an application.<a href="#section-3-5.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt>[CONS-7]</dt>
+<dd style="margin-left: 5.0em" id="section-3-5.7">Network Topology: To allow compatibility with a variety of networks, the solution <span class="bcp14">SHOULD</span> work independently of the dynamics of the underlying topology and adjacencies.<a href="#section-3-5.7" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="ipv6-considerations">
+<section id="section-4">
+      <h2 id="name-ipv6-considerations">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-ipv6-considerations" class="section-name selfRef">IPv6 Considerations</a>
+      </h2>
+<p id="section-4-1">The rules for IPv6 multicast addresses, described in <span>[<a href="#RFC3307" class="cite xref">RFC3307</a>]</span>, are comprehensive and well-organized. These rules must be followed by any solution allocating IPv6 multicast addresses, including solutions that meet the requirements defined in this document. However, some aspects of the organization of <span>[<a href="#RFC3307" class="cite xref">RFC3307</a>]</span> need to be improved to ensure that a zeroconf multicast address assignment solution can coexist with other IPv6 multicast address assignment protocols.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">For example, <span><a href="https://rfc-editor.org/rfc/rfc3307#section-2" class="relref">Section 2</a> of [<a href="#RFC3307" class="cite xref">RFC3307</a>]</span> explains that the last 32 bits of an IPv6 multicast address, called the group ID, are mapped directly to the Ethernet MAC address. Different parts of the group ID range are assigned based on how the address is allocated. <span><a href="https://rfc-editor.org/rfc/rfc3307#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC3307" class="cite xref">RFC3307</a>]</span> describes two ways to assign group IDs dynamically: one where a server assigns addresses, and another where hosts assign addresses themselves. However, both methods use the same group ID range, which creates a risk of address collisions if both are used at the same time.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">An additional concern is that the group IDs used for this dynamic range overlap with the range used for Solicited-Node multicast addresses, a special type of multicast used by IPv6 for neighbor discovery (see <span><a href="https://rfc-editor.org/rfc/rfc4291#section-2.7.1" class="relref">Section 2.7.1</a> of [<a href="#RFC4291" class="cite xref">RFC4291</a>]</span>). This overlap increases the risk of unintentional conflicts with link-layer addresses.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">Note that <span>[<a href="#RFC3307" class="cite xref">RFC3307</a>]</span> focuses on 48-bit addresses on Ethernet, but similar issues would be seen on any medium that generates link-layer multicast addresses by truncating an IPv6 multicast address.<a href="#section-4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-5">
+      <h2 id="name-ipv4-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-ipv4-considerations" class="section-name selfRef">IPv4 Considerations</a>
+      </h2>
+<p id="section-5-1">In IPv4, multicast addresses can sometimes cause conflicts at the data link layer. For example, as explained in <span><a href="https://rfc-editor.org/rfc/rfc1112#section-6.4" class="relref">Section 6.4</a> of [<a href="#RFC1112" class="cite xref">RFC1112</a>]</span>, this happens with Ethernet because only the lower 23 bits of an IPv4 multicast address are used to generate the Ethernet multicast address. Since an IPv4 multicast address is 32 bits and starts with a fixed 4-bit prefix (leaving 28 bits), this means up to 2<sup>(28-23)</sup> = 32 different multicast IP addresses can map to the same Ethernet address. As a result, devices may receive multicast traffic they didn't ask for.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">The address allocation guidelines in <span>[<a href="#RFC5771" class="cite xref">RFC5771</a>]</span> did not account for this type of collision when they were created. Because of this limitation, the recommended approach for new designs that need dynamic multicast IP address assignment is to use IPv6 instead of IPv4.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">However, if using IPv4 is necessary, then multicast addresses <span class="bcp14">SHOULD</span> be chosen carefully from within the Administratively Scoped Block (239.0.0.0/8). Additionally, solutions for zeroconf multicast address allocation <span class="bcp14">SHOULD</span> try to avoid using addresses that may already be in use by other applications on the same network, to minimize the risk of conflicts.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">Zeroconf coexistence with other IPv4 multicast address allocation solutions may not be possible; in that case, it may be necessary to require manual configuration or to limit the solutions that are deployed.<a href="#section-5-4" class="pilcrow">¶</a></p>
+</section>
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">Zeroconf multicast address allocation mechanisms are vulnerable to accidental or malicious address collisions, which may lead to denial of service or misdirection of traffic. Solutions derived from these requirements <span class="bcp14">SHALL</span> include measures for collision detection and conflict resolution <a href="#collision_det" class="internal xref">[REQ-8]</a>, and <span class="bcp14">SHOULD</span> include measures to prevent unauthorized address use. Specific security mechanisms are outside the scope of this document.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1112">[RFC1112]</dt>
+        <dd>
+<span class="refAuthor">Deering, S.</span>, <span class="refTitle">"Host extensions for IP multicasting"</span>, <span class="seriesInfo">STD 5</span>, <span class="seriesInfo">RFC 1112</span>, <span class="seriesInfo">DOI 10.17487/RFC1112</span>, <time datetime="1989-08" class="refDate">August 1989</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1112">https://www.rfc-editor.org/info/rfc1112</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2464">[RFC2464]</dt>
+        <dd>
+<span class="refAuthor">Crawford, M.</span>, <span class="refTitle">"Transmission of IPv6 Packets over Ethernet Networks"</span>, <span class="seriesInfo">RFC 2464</span>, <span class="seriesInfo">DOI 10.17487/RFC2464</span>, <time datetime="1998-12" class="refDate">December 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2464">https://www.rfc-editor.org/info/rfc2464</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3307">[RFC3307]</dt>
+        <dd>
+<span class="refAuthor">Haberman, B.</span>, <span class="refTitle">"Allocation Guidelines for IPv6 Multicast Addresses"</span>, <span class="seriesInfo">RFC 3307</span>, <span class="seriesInfo">DOI 10.17487/RFC3307</span>, <time datetime="2002-08" class="refDate">August 2002</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3307">https://www.rfc-editor.org/info/rfc3307</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4291">[RFC4291]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span> and <span class="refAuthor">S. Deering</span>, <span class="refTitle">"IP Version 6 Addressing Architecture"</span>, <span class="seriesInfo">RFC 4291</span>, <span class="seriesInfo">DOI 10.17487/RFC4291</span>, <time datetime="2006-02" class="refDate">February 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4291">https://www.rfc-editor.org/info/rfc4291</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4541">[RFC4541]</dt>
+        <dd>
+<span class="refAuthor">Christensen, M.</span>, <span class="refAuthor">Kimball, K.</span>, and <span class="refAuthor">F. Solensky</span>, <span class="refTitle">"Considerations for Internet Group Management Protocol (IGMP) and Multicast Listener Discovery (MLD) Snooping Switches"</span>, <span class="seriesInfo">RFC 4541</span>, <span class="seriesInfo">DOI 10.17487/RFC4541</span>, <time datetime="2006-05" class="refDate">May 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4541">https://www.rfc-editor.org/info/rfc4541</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5771">[RFC5771]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Vegoda, L.</span>, and <span class="refAuthor">D. Meyer</span>, <span class="refTitle">"IANA Guidelines for IPv4 Multicast Address Assignments"</span>, <span class="seriesInfo">BCP 51</span>, <span class="seriesInfo">RFC 5771</span>, <span class="seriesInfo">DOI 10.17487/RFC5771</span>, <time datetime="2010-03" class="refDate">March 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5771">https://www.rfc-editor.org/info/rfc5771</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2730">[RFC2730]</dt>
+        <dd>
+<span class="refAuthor">Hanna, S.</span>, <span class="refAuthor">Patel, B.</span>, and <span class="refAuthor">M. Shah</span>, <span class="refTitle">"Multicast Address Dynamic Client Allocation Protocol (MADCAP)"</span>, <span class="seriesInfo">RFC 2730</span>, <span class="seriesInfo">DOI 10.17487/RFC2730</span>, <time datetime="1999-12" class="refDate">December 1999</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2730">https://www.rfc-editor.org/info/rfc2730</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3306">[RFC3306]</dt>
+        <dd>
+<span class="refAuthor">Haberman, B.</span> and <span class="refAuthor">D. Thaler</span>, <span class="refTitle">"Unicast-Prefix-based IPv6 Multicast Addresses"</span>, <span class="seriesInfo">RFC 3306</span>, <span class="seriesInfo">DOI 10.17487/RFC3306</span>, <time datetime="2002-08" class="refDate">August 2002</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3306">https://www.rfc-editor.org/info/rfc3306</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4489">[RFC4489]</dt>
+        <dd>
+<span class="refAuthor">Park, J.</span>, <span class="refAuthor">Shin, M.</span>, and <span class="refAuthor">H. Kim</span>, <span class="refTitle">"A Method for Generating Link-Scoped IPv6 Multicast Addresses"</span>, <span class="seriesInfo">RFC 4489</span>, <span class="seriesInfo">DOI 10.17487/RFC4489</span>, <time datetime="2006-04" class="refDate">April 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4489">https://www.rfc-editor.org/info/rfc4489</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="US6690667B1">[US6690667B1]</dt>
+      <dd>
+<span class="refAuthor">Warren, D.</span>, <span class="refTitle">"Switch with adaptive address lookup hashing scheme"</span>, <span class="refContent">United States Patent 6690667B1</span>, <time datetime="2004-02-10" class="refDate">10 February 2004</time>, <span>&lt;<a href="https://patents.google.com/patent/US6690667B1/en">https://patents.google.com/patent/US6690667B1/en</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-excluded-solutions">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-excluded-solutions" class="section-name selfRef">Excluded Solutions</a>
+      </h2>
+<p id="appendix-A-1">The way multicast IP addresses are mapped to link-layer multicast addresses is already defined in existing standards, such as <span>[<a href="#RFC1112" class="cite xref">RFC1112</a>]</span> for IPv4 over Ethernet and <span>[<a href="#RFC2464" class="cite xref">RFC2464</a>]</span> for IPv6 over Ethernet. These standards specify a fixed prefix used in creating the Ethernet multicast address. Changing this prefix would open the door to new solutions, but those are not being considered here for practical reasons.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">One idea is to reduce the size of the fixed prefix, which would leave more bits available for the group ID. This would make address collisions less likely. Another idea is to create a new protocol that dynamically maps multicast IP addresses to link-layer addresses, similar to how DHCP assigns IP addresses. This protocol could work locally on a subnet, and routers could adjust the mapping for incoming multicast traffic at the network edge.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3">However, these ideas would require significant changes to how network devices handle multicast traffic. Since existing hardware and operating systems are built around the current standards, it's unlikely that such changes would be widely supported anytime soon.<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+<p id="appendix-A-4">Another potential solution for IPv4 was to assign 32 separate, non-overlapping address ranges to avoid collisions altogether (e.g., assign 224.0.0.254, 224.128.0.254, 225.0.0.254, etc.). However, this was rejected because <span>[<a href="#RFC5771" class="cite xref">RFC5771</a>]</span> discourages new allocations, given how limited the IPv4 multicast address space already is.<a href="#appendix-A-4" class="pilcrow">¶</a></p>
+</section>
+<section id="appendix-B">
+      <h2 id="name-acknowledgement">
+<a href="#name-acknowledgement" class="section-name selfRef">Acknowledgement</a>
+      </h2>
+<p id="appendix-B-1">Special thanks to the National Marine Electronics Association for their contributions in developing marine industry standards and their support for this research.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">Thanks also to the members of the PIM Working Group for their early brainstorming sessions and review of this document, and to <span class="contact-name">Gunter van de Velde</span> for his review and suggestions.<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Nate Karstens</span></div>
+<div dir="auto" class="left"><span class="org">Garmin International, Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">1200 E. 151st St.</span></div>
+<div dir="auto" class="left">
+<span class="locality">Olathe</span>, <span class="region">KS</span> <span class="postal-code">66062-3426</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:nate.karstens@gmail.com" class="email">nate.karstens@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Dino Farinacci</span></div>
+<div dir="auto" class="left"><span class="org">lispers.net</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Jose</span>, <span class="region">CA</span> </div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:farinacci@gmail.com" class="email">farinacci@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mike McBride</span></div>
+<div dir="auto" class="left"><span class="org">Futurewei</span></div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:michael.mcbride@futurewei.com" class="email">michael.mcbride@futurewei.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
