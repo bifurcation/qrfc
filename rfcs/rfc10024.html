@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10024: Post-Quantum Traditional (PQ/T) Hybrid Key Agreement Mechanisms for TLS 1.3</title>
+<meta content="Krzysztof Kwiatkowski" name="author">
+<meta content="Panos Kampanakis" name="author">
+<meta content="Bas Westerbaan" name="author">
+<meta content="Douglas Stebila" name="author">
+<meta content="
+       This document defines three hybrid key agreement mechanisms for TLS 1.3 -- X25519MLKEM768,
+SecP256r1MLKEM768, and SecP384r1MLKEM1024 -- that combine the post-quantum ML-KEM (Module-Lattice-Based Key Encapsulation Mechanism) 
+with an ECDHE (Ephemeral Elliptic Curve Diffie-Hellman) exchange. 
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="ECDH" name="keyword">
+<meta content="ECDHE" name="keyword">
+<meta content="hybrid" name="keyword">
+<meta content="ML-KEM" name="keyword">
+<meta content="post-quantum" name="keyword">
+<meta content="x25519" name="keyword">
+<meta content="10024" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.0
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.8.1
+    weasyprint 69.0
+-->
+<link href="rfc10024.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-tls-ecdhe-mlkem-05" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc10024" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10024</td>
+<td class="center">PQ/T Hybrids for TLS 1.3</td>
+<td class="right">August 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Kwiatkowski, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10024" class="eref">10024</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-08" class="published">August 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">K. Kwiatkowski</div>
+<div class="org">PQShield</div>
+</div>
+<div class="author">
+      <div class="author-name">P. Kampanakis</div>
+<div class="org">AWS</div>
+</div>
+<div class="author">
+      <div class="author-name">B. E. Westerbaan</div>
+<div class="org">Cloudflare</div>
+</div>
+<div class="author">
+      <div class="author-name">D. Stebila</div>
+<div class="org">University of Waterloo</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10024</h1>
+<h1 id="title">Post-Quantum Traditional (PQ/T) Hybrid Key Agreement Mechanisms for TLS 1.3</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines three hybrid key agreement mechanisms for TLS 1.3 -- X25519MLKEM768,
+SecP256r1MLKEM768, and SecP384r1MLKEM1024 -- that combine the post-quantum ML-KEM (Module-Lattice-Based Key Encapsulation Mechanism) 
+with an ECDHE (Ephemeral Elliptic Curve Diffie-Hellman) exchange.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10024">https://www.rfc-editor.org/info/rfc10024</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-motivation" class="internal xref">Motivation</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-negotiated-groups" class="internal xref">Negotiated Groups</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-client-share" class="internal xref">Client Share</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-server-share" class="internal xref">Server Share</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-shared-secret" class="internal xref">Shared Secret</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-regulatory-context" class="internal xref">Regulatory Context</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-x25519mlkem768" class="internal xref">X25519MLKEM768</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-secp256r1mlkem768" class="internal xref">SecP256r1MLKEM768</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-secp384r1mlkem1024" class="internal xref">SecP384r1MLKEM1024</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
+                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-obsoleted-supported-groups" class="internal xref">Obsoleted Supported Groups</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">ML-KEM is a key encapsulation mechanism (KEM) defined in <span>[<a href="#NIST-FIPS-203" class="cite xref">NIST-FIPS-203</a>]</span>. It is designed to
+withstand cryptanalytic attacks from quantum computers.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2"><span>[<a href="#RFC9954" class="cite xref">RFC9954</a>]</span> defines a framework for combining traditional key exchanges with next-generation key
+exchange in TLS 1.3. The goal of this approach is to provide security against both classical and quantum
+adversaries while maintaining compatibility with existing infrastructure and protocols.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">This document applies the framework in <span>[<a href="#RFC9954" class="cite xref">RFC9954</a>]</span> to ML-KEM and specifies code points for the hybrid groups.<a href="#section-1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="motivation">
+<section id="section-2">
+      <h2 id="name-motivation">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-motivation" class="section-name selfRef">Motivation</a>
+      </h2>
+<p id="section-2-1">This document introduces three new supported groups for Post-Quantum Traditional (PQ/T) hybrid key agreements <span>[<a href="#RFC9794" class="cite xref">RFC9794</a>]</span> in TLS 1.3 -- X25519MLKEM768,
+SecP256r1MLKEM768, and SecP384r1MLKEM1024 -- that combine ML-KEM with Ephemeral Elliptic Curve Diffie-Hellman (ECDHE) in the manner described in <span>[<a href="#RFC9954" class="cite xref">RFC9954</a>]</span>. Any of the hybrid groups
+specified in this document may be implemented in a FIPS-approved way as discussed in <a href="#regulatory-context" class="auto internal xref">Section 5</a>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1">
+          <p id="section-2-2.1.1">The first group uses X25519 <span>[<a href="#RFC7748" class="cite xref">RFC7748</a>]</span>, is widely deployed, and often serves as the most practical choice for a single PQ/T hybrid combiner <span>[<a href="#RFC9794" class="cite xref">RFC9794</a>]</span> in TLS 1.3.<a href="#section-2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.2">
+          <p id="section-2-2.2.1">The second group uses secp256r1 (NIST P-256) <span>[<a href="#NIST-FIPS-186" class="cite xref">NIST-FIPS-186</a>]</span>. This group supports use cases that require both shared secrets to be generated by FIPS-approved mechanisms.<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.3">
+          <p id="section-2-2.3.1">The third group uses secp384r1 (NIST P-384) <span>[<a href="#NIST-FIPS-186" class="cite xref">NIST-FIPS-186</a>]</span>. This group is intended for high-security environments that require FIPS-approved mechanisms with an increased security margin.<a href="#section-2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-2-3">Key establishment using NIST curves is outlined in Section 6.1.2.2 of <span>[<a href="#NIST-SP-800-56A" class="cite xref">NIST-SP-800-56A</a>]</span>.<a href="#section-2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-3">
+      <h2 id="name-terminology">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-3-1"><span>[<a href="#RFC9954" class="cite xref">RFC9954</a>]</span> defines "traditional" algorithms as those that are already widely adopted and "next-generation" algorithms
+as those that are not yet widely adopted, such as post-quantum algorithms. In this document, ECDHE using Curve25519, P-256, or
+P-384 is considered traditional, while ML-KEM is considered next-generation.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2"><span>[<a href="#RFC9954" class="cite xref">RFC9954</a>]</span> also defines a "hybrid" key exchange as the simultaneous use of multiple key exchange algorithms, with their
+outputs combined to provide security as long as at least one of the component algorithms remains secure, even if the others are
+compromised. This document uses the term "hybrid" with the same meaning.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="negotiated-groups">
+<section id="section-4">
+      <h2 id="name-negotiated-groups">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-negotiated-groups" class="section-name selfRef">Negotiated Groups</a>
+      </h2>
+<div id="client-share">
+<section id="section-4.1">
+        <h3 id="name-client-share">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-client-share" class="section-name selfRef">Client Share</a>
+        </h3>
+<p id="section-4.1-1">When the X25519MLKEM768 group is negotiated, the client's key_exchange value
+is the concatenation of the client's ML-KEM-768 encapsulation key
+and the client's X25519 ephemeral share.
+The size of the client share is 1216 bytes (1184 bytes for the ML-KEM part and 32 bytes for X25519).<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<aside id="section-4.1-2">
+          <p id="section-4.1-2.1">Note: The group name X25519MLKEM768 does not adhere to the naming convention outlined in
+<span><a href="https://rfc-editor.org/rfc/rfc9954#section-3.2" class="relref">Section 3.2</a> of [<a href="#RFC9954" class="cite xref">RFC9954</a>]</span>. Specifically, the order of shares in the concatenation has been
+reversed. This is due to historical reasons.<a href="#section-4.1-2.1" class="pilcrow">¶</a></p>
+</aside>
+<p id="section-4.1-3">When the SecP256r1MLKEM768 group is negotiated, the client's key_exchange value
+is the concatenation of the secp256r1 ephemeral share and ML-KEM-768 encapsulation key.
+The ECDHE share is the serialized value of the uncompressed ECDHE point representation as
+defined  in <span><a href="https://rfc-editor.org/rfc/rfc9846#section-4.3.8.2" class="relref">Section 4.3.8.2</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>. The size of the client share is 1249 bytes
+(65 bytes for the secp256r1 part and 1184 bytes for ML-KEM).<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">When the SecP384r1MLKEM1024 group is negotiated, the client's key_exchange value
+is the concatenation of the secp384r1 ephemeral share and the ML-KEM-1024
+encapsulation key. The ECDHE share is the serialized value of the uncompressed ECDHE point
+representation as defined in <span><a href="https://rfc-editor.org/rfc/rfc9846#section-4.3.8.2" class="relref">Section 4.3.8.2</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>. The size of the
+client share is 1665 bytes (97 bytes for the secp384r1 part and 1568 for ML-KEM).<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="server-share">
+<section id="section-4.2">
+        <h3 id="name-server-share">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-server-share" class="section-name selfRef">Server Share</a>
+        </h3>
+<p id="section-4.2-1">When the X25519MLKEM768 group is negotiated, the server's key_exchange
+value is the concatenation of an ML-KEM ciphertext returned from encapsulation
+to the client's encapsulation key and the server's ephemeral X25519 share.
+The size of the server share is 1120 bytes (1088 bytes for the ML-KEM part and 32 bytes for X25519).<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">When the SecP256r1MLKEM768 group is negotiated, the server's key_exchange
+value is the concatenation of the server's ephemeral secp256r1 share encoded
+in the same way as the client share and an ML-KEM ciphertext returned from encapsulation
+to the client's encapsulation key. The size of the server share is 1153 bytes (1088 bytes
+for the ML-KEM part and 65 bytes for secp256r1).<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">When the SecP384r1MLKEM1024 group is negotiated, the server's key_exchange
+value is the concatenation of the server's ephemeral secp384r1 share
+encoded in the same way as the client share and an ML-KEM ciphertext returned
+from encapsulation to the client's encapsulation key. The size of the server
+share is 1665 bytes (1568 bytes for the ML-KEM part and 97 bytes for
+secp384r1).<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">For all groups, the server <span class="bcp14">MUST</span> perform the encapsulation key check
+described in Section 7.2 of <span>[<a href="#NIST-FIPS-203" class="cite xref">NIST-FIPS-203</a>]</span> on the client's encapsulation
+key and abort with an illegal_parameter alert if it fails.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2-5">For all groups, the client <span class="bcp14">MUST</span> check if the ciphertext length matches
+the selected group and abort with an illegal_parameter alert if it fails.
+If ML-KEM decapsulation fails for any other reason, the connection <span class="bcp14">MUST</span>
+be aborted with an internal_error alert.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.2-6">For all groups, both client and server <span class="bcp14">MUST</span> process the ECDHE part
+as described in <span><a href="https://rfc-editor.org/rfc/rfc9846#section-4.3.8.2" class="relref">Section 4.3.8.2</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>, including all validity checks,
+and abort with an illegal_parameter alert if it fails.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="shared-secret">
+<section id="section-4.3">
+        <h3 id="name-shared-secret">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-shared-secret" class="section-name selfRef">Shared Secret</a>
+        </h3>
+<p id="section-4.3-1">For X25519MLKEM768, the shared secret is the concatenation of the ML-KEM
+shared secret and the X25519 shared secret. The shared secret is 64 bytes
+(32 bytes for each part).<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">For SecP256r1MLKEM768, the shared secret is the concatenation of the
+ECDHE and ML-KEM shared secrets. The ECDHE shared secret is the x-coordinate of the ECDHE
+shared secret elliptic curve point represented as an octet string as
+defined in <span><a href="https://rfc-editor.org/rfc/rfc9846#section-7.4.2" class="relref">Section 7.4.2</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>.
+The size of the shared secret is 64 bytes (32 bytes for each part).<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">For SecP384r1MLKEM1024, the shared secret is the concatenation of the
+ECDHE and ML-KEM shared secrets. The ECDHE shared secret is the x-coordinate of the ECDHE
+shared secret elliptic curve point represented as an octet string as
+defined in <span><a href="https://rfc-editor.org/rfc/rfc9846#section-7.4.2" class="relref">Section 7.4.2</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>.
+The size of the shared secret is 80 bytes (48 bytes for the ECDHE part and
+32 bytes for the ML-KEM part).<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-4">For all groups, both client and server <span class="bcp14">MUST</span> calculate the ECDHE part of the
+shared secret as described in <span><a href="https://rfc-editor.org/rfc/rfc9846#section-7.4.2" class="relref">Section 7.4.2</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>, including the
+all-zero shared secret check for X25519, and abort the connection with an
+illegal_parameter alert if it fails.<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="regulatory-context">
+<section id="section-5">
+      <h2 id="name-regulatory-context">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-regulatory-context" class="section-name selfRef">Regulatory Context</a>
+      </h2>
+<p id="section-5-1">This section provides informal notes on how the hybrid key agreement mechanisms defined
+in this document relate to existing NIST guidance on key derivation and hybrid
+key establishment.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-2.1">
+          <p id="section-5-2.1.1"><strong>FIPS-compliance</strong>. All groups defined in this document permit FIPS-approved key derivation as per <span>[<a href="#NIST-SP-800-56C" class="cite xref">NIST-SP-800-56C</a>]</span>
+and <span>[<a href="#NIST-SP-800-135" class="cite xref">NIST-SP-800-135</a>]</span>. NIST Special Publication 800-56Cr2 <span>[<a href="#NIST-SP-800-56C" class="cite xref">NIST-SP-800-56C</a>]</span> approves the
+usage of the HMAC-based Key Derivation Function (HKDF) <span>[<a href="#RFC5869" class="cite xref">RFC5869</a>]</span> with two distinct shared secrets, with the condition that the first
+one is computed by a FIPS-approved key-establishment scheme. FIPS also requires a certified
+implementation of the scheme, which will remain more ubiquitous for secp256r1 in the coming years. For this reason,
+the ML-KEM shared secret is placed first in X25519MLKEM768, while the ECDHE shared secret is placed first
+in SecP256r1MLKEM768 and SecP384r1MLKEM1024. This means that for SecP256r1MLKEM768 and SecP384r1MLKEM1024,
+the ECDHE implementation must be certified, whereas the ML-KEM implementation does not require certification. In
+contrast, for X25519MLKEM768, the ML-KEM implementation must be certified.<a href="#section-5-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-2.2">
+          <p id="section-5-2.2.1"><strong>SP800-227 compliance</strong>. NIST Special Publication 800-227 <span>[<a href="#NIST-SP-800-227" class="cite xref">NIST-SP-800-227</a>]</span> provides general guidance on the design and use of key encapsulation mechanisms, including hybrid constructions. The key agreements defined in this 
+            document follow the principles described in Section 4.6 of <span>[<a href="#NIST-SP-800-227" class="cite xref">NIST-SP-800-227</a>]</span>, which discusses the combination of post-quantum and classical key-establishment schemes and the use of approved key combiners. In particular, the shared-secret concatenation 
+            and HKDF-based derivation used by TLS 1.3 are consistent with the composite-KEM constructions and key-combiner recommendations outlined in Sections 4.6.1 and 4.6.2 of <span>[<a href="#NIST-SP-800-227" class="cite xref">NIST-SP-800-227</a>]</span>. Section 4.6.3 of <span>[<a href="#NIST-SP-800-227" class="cite xref">NIST-SP-800-227</a>]</span> further provides 
+            relevant security considerations for hybrid KEM designs underlying the approach used in this document.<a href="#section-5-2.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">The same security considerations as those described in <span>[<a href="#RFC9954" class="cite xref">RFC9954</a>]</span> apply to the approach used by this document.
+The security analysis relies crucially on the TLS 1.3 message transcript, and one cannot assume a similar
+hybridization is secure in other protocols.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2"><span>[<a href="#NIST-SP-800-227" class="cite xref">NIST-SP-800-227</a>]</span> includes guidelines and requirements for implementations on using KEMs securely. Implementers are encouraged to use implementations resistant to side-channel attacks,
+especially those that can be applied by remote attackers.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">All groups defined in this document use and generate fixed-length public keys, ciphertexts,
+and shared secrets, which complies with the requirements described in <span><a href="https://rfc-editor.org/rfc/rfc9954#section-6" class="relref">Section 6</a> of [<a href="#RFC9954" class="cite xref">RFC9954</a>]</span>.<a href="#section-6-3" class="pilcrow">¶</a></p>
+<p id="section-6-4">During ML-KEM encapsulation, encapsulation randomness <code>m</code> is drawn from
+   a random bit generator and encrypted (see <span>[<a href="#NIST-FIPS-203" class="cite xref">NIST-FIPS-203</a>]</span>, Algorithms
+   17 and 20); the client, which holds the decapsulation key, then
+   recovers <code>m</code> exactly during decapsulation (see <span>[<a href="#NIST-FIPS-203" class="cite xref">NIST-FIPS-203</a>]</span>,
+   Algorithm 18).  Consequently, any information <code>m</code> carries about the
+   generator's other outputs is also exposed to the client.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">The disclosure of the output(s) of an insecure random number
+   generator (RNG) when used in TLS can be used in an attack to
+   compromise the state of the insecure RNG itself as described in
+   <span>[<a href="#DUALECTLS" class="cite xref">DUALECTLS</a>]</span>.  The encapsulation randomness <code>m</code> in ML-KEM is an
+   additional place where RNG output is disclosed to an active attacker.
+   Implementers should follow the RBG guidance in <span>[<a href="#NIST-FIPS-203" class="cite xref">NIST-FIPS-203</a>]</span> and
+   the random number generation guidance in <span><a href="https://rfc-editor.org/rfc/rfc9846#appendix-C.1" class="relref">Appendix C.1</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span>.
+   Implementers can choose to implement mechanisms from <span>[<a href="#RFC8937" class="cite xref">RFC8937</a>]</span> for
+   additional protection across sessions.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<p id="section-6-6">In contrast, the ECDH ephemeral scalars taken from the RNG are never directly disclosed to the peer.  However, any passive observer with
+   access to a cryptographically relevant quantum computer (CRQC) can
+   recover the scalar, which is derived directly from RNG output.
+   Regardless, ephemeral scalars should always be generated using a
+   cryptographically secure RNG: for secp256r1 and secp384r1 as required
+   by <span>[<a href="#NIST-SP-800-56A" class="cite xref">NIST-SP-800-56A</a>]</span>, and for X25519 as described in <span>[<a href="#RFC7748" class="cite xref">RFC7748</a>]</span>; the
+   guidance in <span><a href="https://rfc-editor.org/rfc/rfc9846#appendix-C.1" class="relref">Appendix C.1</a> of [<a href="#RFC9846" class="cite xref">RFC9846</a>]</span> applies here as well.<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-6-7">If the same insecure RNG is used by both algorithms, then a disclosure of state by one of the algorithms will also affect
+the security of the other algorithm.<a href="#section-6-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-7">
+      <h2 id="name-iana-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-7-1">Per this document, IANA has registered three new entries in the <a href="https://www.iana.org/assignments/tls-parameters">"TLS Supported Groups" registry</a>, according to the procedures in <span><a href="https://rfc-editor.org/rfc/rfc9847#section-6" class="relref">Section 6</a> of [<a href="#RFC9847" class="cite xref">RFC9847</a>]</span>. These identifiers are to be used with the final version of ML-KEM
+ratified by NIST, which is specified in <span>[<a href="#NIST-FIPS-203" class="cite xref">NIST-FIPS-203</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div id="x25519mlkem768">
+<section id="section-7.1">
+        <h3 id="name-x25519mlkem768">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-x25519mlkem768" class="section-name selfRef">X25519MLKEM768</a>
+        </h3>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-7.1-1">
+          <dt id="section-7.1-1.1">Value:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-1.2">
+            <p id="section-7.1-1.2.1">4588 (0x11EC)<a href="#section-7.1-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-1.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-1.4">
+            <p id="section-7.1-1.4.1">X25519MLKEM768<a href="#section-7.1-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-1.5">DTLS-OK:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-1.6">
+            <p id="section-7.1-1.6.1">Y<a href="#section-7.1-1.6.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-1.7">Recommended:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-1.8">
+            <p id="section-7.1-1.8.1">Y<a href="#section-7.1-1.8.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-1.9">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-1.10">
+            <p id="section-7.1-1.10.1">RFC 10024<a href="#section-7.1-1.10.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.1-1.11">Comment:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-1.12">
+            <p id="section-7.1-1.12.1">Combining X25519 ECDH with ML-KEM-768<a href="#section-7.1-1.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="secp256r1mlkem768">
+<section id="section-7.2">
+        <h3 id="name-secp256r1mlkem768">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-secp256r1mlkem768" class="section-name selfRef">SecP256r1MLKEM768</a>
+        </h3>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-7.2-1">
+          <dt id="section-7.2-1.1">Value:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.2-1.2">
+            <p id="section-7.2-1.2.1">4587 (0x11EB)<a href="#section-7.2-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.2-1.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.2-1.4">
+            <p id="section-7.2-1.4.1">SecP256r1MLKEM768<a href="#section-7.2-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.2-1.5">DTLS-OK:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.2-1.6">
+            <p id="section-7.2-1.6.1">Y<a href="#section-7.2-1.6.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.2-1.7">Recommended:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.2-1.8">
+            <p id="section-7.2-1.8.1">N<a href="#section-7.2-1.8.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.2-1.9">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.2-1.10">
+            <p id="section-7.2-1.10.1">RFC 10024<a href="#section-7.2-1.10.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.2-1.11">Comment:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.2-1.12">
+            <p id="section-7.2-1.12.1">Combining secp256r1 ECDH with ML-KEM-768<a href="#section-7.2-1.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="secp384r1mlkem1024">
+<section id="section-7.3">
+        <h3 id="name-secp384r1mlkem1024">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-secp384r1mlkem1024" class="section-name selfRef">SecP384r1MLKEM1024</a>
+        </h3>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-7.3-1">
+          <dt id="section-7.3-1.1">Value:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.3-1.2">
+            <p id="section-7.3-1.2.1">4589 (0x11ED)<a href="#section-7.3-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.3-1.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.3-1.4">
+            <p id="section-7.3-1.4.1">SecP384r1MLKEM1024<a href="#section-7.3-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.3-1.5">DTLS-OK:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.3-1.6">
+            <p id="section-7.3-1.6.1">Y<a href="#section-7.3-1.6.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.3-1.7">Recommended:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.3-1.8">
+            <p id="section-7.3-1.8.1">N<a href="#section-7.3-1.8.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.3-1.9">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.3-1.10">
+            <p id="section-7.3-1.10.1">RFC 10024<a href="#section-7.3-1.10.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-7.3-1.11">Comment:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.3-1.12">
+            <p id="section-7.3-1.12.1">Combining secp384r1 ECDH with ML-KEM-1024<a href="#section-7.3-1.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="obsoleted-supported-groups">
+<section id="section-7.4">
+        <h3 id="name-obsoleted-supported-groups">
+<a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-obsoleted-supported-groups" class="section-name selfRef">Obsoleted Supported Groups</a>
+        </h3>
+<p id="section-7.4-1">Experimental code points for pre-standard versions of Kyber768 were added to the "TLS Supported Groups" registry as X25519Kyber768Draft00 (25497) and SecP256r1Kyber768Draft00 (25498). This document obsoletes these entries. For both entries, IANA has modified the Recommended field to 'D', added this document as a reference, and updated the Comment field to "Pre-standards version of Kyber768. Obsoleted by RFC 10024."<a href="#section-7.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="NIST-FIPS-186">[NIST-FIPS-186]</dt>
+        <dd>
+<span class="refAuthor">NIST</span>, <span class="refTitle">"Digital Signature Standard (DSS)"</span>, <span class="seriesInfo">NIST FIPS 186-5</span>, <span class="seriesInfo">DOI 10.6028/NIST.FIPS.186-5</span>, <time datetime="2023-02" class="refDate">February 2023</time>, <span>&lt;<a href="https://doi.org/10.6028/NIST.FIPS.186-5">https://doi.org/10.6028/NIST.FIPS.186-5</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST-FIPS-203">[NIST-FIPS-203]</dt>
+        <dd>
+<span class="refAuthor">NIST</span>, <span class="refTitle">"Module-Lattice-Based Key-Encapsulation Mechanism Standard"</span>, <span class="seriesInfo">NIST FIPS 203</span>, <span class="seriesInfo">DOI 10.6028/NIST.FIPS.203</span>, <time datetime="2024-08" class="refDate">August 2024</time>, <span>&lt;<a href="https://doi.org/10.6028/NIST.FIPS.203">https://doi.org/10.6028/NIST.FIPS.203</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST-SP-800-56C">[NIST-SP-800-56C]</dt>
+        <dd>
+<span class="refAuthor">Barker, E.</span>, <span class="refAuthor">Chen, L.</span>, and <span class="refAuthor">R. Davis</span>, <span class="refTitle">"Recommendation for Key-Derivation Methods in Key-Establishment Schemes"</span>, <span class="refContent">National Institute of Standards and Technology</span>, <span class="seriesInfo">NIST SP 800-56Cr2</span>, <span class="seriesInfo">DOI 10.6028/nist.sp.800-56cr2</span>, <time datetime="2020-08" class="refDate">August 2020</time>, <span>&lt;<a href="https://doi.org/10.6028/nist.sp.800-56cr2">https://doi.org/10.6028/nist.sp.800-56cr2</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST-SP-800-135">[NIST-SP-800-135]</dt>
+        <dd>
+<span class="refAuthor">Dang, Q.</span>, <span class="refTitle">"Recommendation for Existing Application-Specific Key Derivation Functions"</span>, <span class="refContent">National Institute of Standards and Technology</span>, <span class="seriesInfo">NIST SP 800-135r1</span>, <span class="seriesInfo">DOI 10.6028/nist.sp.800-135r1</span>, <time datetime="2011-12" class="refDate">December 2011</time>, <span>&lt;<a href="https://doi.org/10.6028/nist.sp.800-135r1">https://doi.org/10.6028/nist.sp.800-135r1</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST-SP-800-227">[NIST-SP-800-227]</dt>
+        <dd>
+<span class="refAuthor">Alagic, G.</span>, <span class="refAuthor">Barker, E.</span>, <span class="refAuthor">Chen, L.</span>, <span class="refAuthor">Moody, D.</span>, <span class="refAuthor">Robinson, A.</span>, <span class="refAuthor">Silberg, H.</span>, and <span class="refAuthor">N. Waller</span>, <span class="refTitle">"Recommendations for Key-Encapsulation Mechanisms"</span>, <span class="refContent">National Institute of Standards and Technology</span>, <span class="seriesInfo">NIST SP 800-227</span>, <span class="seriesInfo">DOI 10.6028/nist.sp.800-227</span>, <time datetime="2025-09" class="refDate">September 2025</time>, <span>&lt;<a href="https://doi.org/10.6028/nist.sp.800-227">https://doi.org/10.6028/nist.sp.800-227</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7748">[RFC7748]</dt>
+        <dd>
+<span class="refAuthor">Langley, A.</span>, <span class="refAuthor">Hamburg, M.</span>, and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"Elliptic Curves for Security"</span>, <span class="seriesInfo">RFC 7748</span>, <span class="seriesInfo">DOI 10.17487/RFC7748</span>, <time datetime="2016-01" class="refDate">January 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7748">https://www.rfc-editor.org/info/rfc7748</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9846">[RFC9846]</dt>
+        <dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 9846</span>, <span class="seriesInfo">DOI 10.17487/RFC9846</span>, <time datetime="2026-07" class="refDate">July 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9846">https://www.rfc-editor.org/info/rfc9846</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9954">[RFC9954]</dt>
+      <dd>
+<span class="refAuthor">Stebila, D.</span>, <span class="refAuthor">Fluhrer, S.</span>, and <span class="refAuthor">S. Gueron</span>, <span class="refTitle">"Hybrid Key Exchange in TLS 1.3"</span>, <span class="seriesInfo">RFC 9954</span>, <span class="seriesInfo">DOI 10.17487/RFC9954</span>, <time datetime="2026-07" class="refDate">July 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9954">https://www.rfc-editor.org/info/rfc9954</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="DUALECTLS">[DUALECTLS]</dt>
+        <dd>
+<span class="refAuthor">Checkoway, S.</span>, <span class="refAuthor">Fredrikson, M.</span>, <span class="refAuthor">Niederhagen, R.</span>, <span class="refAuthor">Everspaugh, A.</span>, <span class="refAuthor">Green, M.</span>, <span class="refAuthor">Lange, T.</span>, <span class="refAuthor">Ristenpart, T.</span>, <span class="refAuthor">Bernstein, D. J.</span>, <span class="refAuthor">Maskiewicz, J.</span>, and <span class="refAuthor">H. Shacham</span>, <span class="refTitle">"On the Practical Exploitability of Dual EC in TLS Implementations"</span>, <span class="refContent">23rd USENIX Security Symposium (USENIX Security 14)</span>, <time datetime="2014" class="refDate">2014</time>, <span>&lt;<a href="https://www.usenix.org/system/files/conference/usenixsecurity14/sec14-paper-checkoway.pdf">https://www.usenix.org/system/files/conference/usenixsecurity14/sec14-paper-checkoway.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="NIST-SP-800-56A">[NIST-SP-800-56A]</dt>
+        <dd>
+<span class="refAuthor">Barker, E.</span>, <span class="refAuthor">Chen, L.</span>, <span class="refAuthor">Roginsky, A.</span>, <span class="refAuthor">Vassilev, A.</span>, and <span class="refAuthor">R. Davis</span>, <span class="refTitle">"Recommendation for Pair-Wise Key-Establishment Schemes Using Discrete Logarithm Cryptography"</span>, <span class="refContent">National Institute of Standards and Technology</span>, <span class="seriesInfo">NIST SP 800-56Ar3</span>, <span class="seriesInfo">DOI 10.6028/nist.sp.800-56ar3</span>, <time datetime="2018-04" class="refDate">April 2018</time>, <span>&lt;<a href="https://doi.org/10.6028/nist.sp.800-56ar3">https://doi.org/10.6028/nist.sp.800-56ar3</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5869">[RFC5869]</dt>
+        <dd>
+<span class="refAuthor">Krawczyk, H.</span> and <span class="refAuthor">P. Eronen</span>, <span class="refTitle">"HMAC-based Extract-and-Expand Key Derivation Function (HKDF)"</span>, <span class="seriesInfo">RFC 5869</span>, <span class="seriesInfo">DOI 10.17487/RFC5869</span>, <time datetime="2010-05" class="refDate">May 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5869">https://www.rfc-editor.org/info/rfc5869</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8937">[RFC8937]</dt>
+        <dd>
+<span class="refAuthor">Cremers, C.</span>, <span class="refAuthor">Garratt, L.</span>, <span class="refAuthor">Smyshlyaev, S.</span>, <span class="refAuthor">Sullivan, N.</span>, and <span class="refAuthor">C. Wood</span>, <span class="refTitle">"Randomness Improvements for Security Protocols"</span>, <span class="seriesInfo">RFC 8937</span>, <span class="seriesInfo">DOI 10.17487/RFC8937</span>, <time datetime="2020-10" class="refDate">October 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8937">https://www.rfc-editor.org/info/rfc8937</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9794">[RFC9794]</dt>
+        <dd>
+<span class="refAuthor">Driscoll, F.</span>, <span class="refAuthor">Parsons, M.</span>, and <span class="refAuthor">B. Hale</span>, <span class="refTitle">"Terminology for Post-Quantum Traditional Hybrid Schemes"</span>, <span class="seriesInfo">RFC 9794</span>, <span class="seriesInfo">DOI 10.17487/RFC9794</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9794">https://www.rfc-editor.org/info/rfc9794</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9847">[RFC9847]</dt>
+      <dd>
+<span class="refAuthor">Salowey, J.</span> and <span class="refAuthor">S. Turner</span>, <span class="refTitle">"IANA Registry Updates for TLS and DTLS"</span>, <span class="seriesInfo">RFC 9847</span>, <span class="seriesInfo">DOI 10.17487/RFC9847</span>, <time datetime="2025-12" class="refDate">December 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9847">https://www.rfc-editor.org/info/rfc9847</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-A">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Krzysztof Kwiatkowski</span></div>
+<div dir="auto" class="left"><span class="org">PQShield</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kris@amongbytes.com" class="email">kris@amongbytes.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Panos Kampanakis</span></div>
+<div dir="auto" class="left"><span class="org">AWS</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kpanos@amazon.com" class="email">kpanos@amazon.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Bas Westerbaan</span></div>
+<div dir="auto" class="left"><span class="org">Cloudflare</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:bas@cloudflare.com" class="email">bas@cloudflare.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Douglas Stebila</span></div>
+<div dir="auto" class="left"><span class="org">University of Waterloo</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:dstebila@uwaterloo.ca" class="email">dstebila@uwaterloo.ca</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
