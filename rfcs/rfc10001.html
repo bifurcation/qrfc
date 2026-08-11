@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en" class="BCP RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10001: Operational Guidelines for DNS Transport in Mixed IPv4/IPv6 Environments</title>
+<meta content="Momoka Yamamoto" name="author">
+<meta content="Tobias Fiebig" name="author">
+<meta content="
+       
+                This document provides guidelines and documents best current practice for operating authoritative DNS servers, recursive resolvers, and stub resolvers in a mixed IPv4/IPv6 environment.
+                This document recommends that both authoritative DNS servers and recursive resolvers support IPv4 and IPv6.
+                It also provides guidance on how recursive DNS resolvers should select upstream DNS servers, including when IPv4-embedded IPv6 addresses are available.
+       
+       
+                This document obsoletes RFC 3901.
+       
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="DNS" name="keyword">
+<meta content="IPv6" name="keyword">
+<meta content="10001" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.0
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.7.0
+    weasyprint 69.0
+-->
+<link href="rfc10001.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-dnsop-3901bis-17" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc10001" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10001</td>
+<td class="center">Guidelines for DNS Transport</td>
+<td class="right">August 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Momoka &amp; Fiebig</td>
+<td class="center">Best Current Practice</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10001" class="eref">10001</a></dd>
+<dt class="label-bcp">BCP:</dt>
+<dd class="bcp">91</dd>
+<dt class="label-obsoletes">Obsoletes:</dt>
+<dd class="obsoletes">
+<a href="https://www.rfc-editor.org/rfc/rfc3901" class="eref">3901</a> </dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Best Current Practice</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-08" class="published">August 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">Momoka</div>
+<div class="org">WIDE Project</div>
+</div>
+<div class="author">
+      <div class="author-name">T. Fiebig</div>
+<div class="org">MPI-INF</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10001</h1>
+<h1 id="title">Operational Guidelines for DNS Transport in Mixed IPv4/IPv6 Environments</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+                This document provides guidelines and documents best current practice for operating authoritative DNS servers, recursive resolvers, and stub resolvers in a mixed IPv4/IPv6 environment.
+                This document recommends that both authoritative DNS servers and recursive resolvers support IPv4 and IPv6.
+                It also provides guidance on how recursive DNS resolvers should select upstream DNS servers, including when IPv4-embedded IPv6 addresses are available.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">
+                This document obsoletes RFC 3901.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This memo documents an Internet Best Current Practice.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further information
+            on BCPs is available in Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10001">https://www.rfc-editor.org/info/rfc10001</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-name-space-partitioning" class="internal xref">Name Space Partitioning</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-misconfigurations-causing-n" class="internal xref">Misconfigurations Causing Name Space Partitioning Due to IP Address Family Support</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-network-conditions-causing-" class="internal xref">Network Conditions Causing Name Space Partitioning Due to IP Address Family Support</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-reasons-for-intentional-nam" class="internal xref">Reasons for Intentional Name Space Partitioning Due to IP Address Family Support</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-policy-based-avoidance-of-n" class="internal xref">Policy-Based Avoidance of Name Space Partitioning</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-guidelines-for-authoritativ" class="internal xref">Guidelines for Authoritative DNS Server Configuration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-guidelines-for-recursive-dn" class="internal xref">Guidelines for Recursive DNS Resolvers</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-guidelines-for-dns-stub-res" class="internal xref">Guidelines for DNS Stub Resolvers</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-changes-since-rfc-3901" class="internal xref">Changes Since RFC 3901</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">
+                Despite IPv6 being first discussed in the mid-1990s <span>[<a href="#RFC2460" class="cite xref">RFC2460</a>]</span>, consistent deployment throughout the whole Internet has not yet been accomplished <span>[<a href="#RFC9386" class="cite xref">RFC9386</a>]</span>.
+                Hence, the Internet still consists of IPv4-only, dual-stack (networks supporting both IP address families), and IPv6-only networks.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+                This creates a complex landscape where authoritative DNS servers might be accessible only via specific network protocols <span>[<a href="#V6DNSRDY-23" class="cite xref">V6DNSRDY-23</a>]</span>.
+                At the same time, DNS resolvers may only be able to access the Internet via either IPv4 or IPv6 connectivity.
+                This poses a challenge for such resolvers because they may receive queries for names whose authoritative DNS servers do not support the same IP address family as the resolver itself.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">
+                <span>[<a href="#RFC3901" class="cite xref">RFC3901</a>]</span> was written at a time when IPv6 deployment was not widespread and focuses primarily on maintaining name space continuity within the IPv4 landscape.
+                Two decades later, IPv6 is widely deployed and is also becoming the de facto standard in many areas, such as mobile and access networks and data-center underlays.
+                Furthermore, since 2012, IPv6 support being required for all IP-capable nodes has been established as a best current practice <span>[<a href="#RFC6540" class="cite xref">RFC6540</a>]</span>.
+                This document broadens the scope of <span>[<a href="#RFC3901" class="cite xref">RFC3901</a>]</span> by recommending IPv6 connectivity for authoritative DNS servers, recursive resolvers, and stub resolvers.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">
+                This document provides:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-5.1">
+          <p id="section-1-5.1.1">Guidance on name space partitioning due to differences in IP address family support and best practices for avoiding it.<a href="#section-1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.2">
+          <p id="section-1-5.2.1">Guidelines for configuring authoritative DNS servers for zones.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.3">
+          <p id="section-1-5.3.1">Guidelines for operating recursive DNS resolvers.<a href="#section-1-5.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.4">
+          <p id="section-1-5.4.1">Guidelines for DNS stub resolvers.<a href="#section-1-5.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-1-6">
+                While transition and coexistence setups may mitigate some of the DNS resolution issues in a mixed IP address family Internet, making DNS data accessible over both IPv4 and IPv6 is the most robust and flexible approach.
+                This approach allows resolvers to retrieve the information they need without requiring intermediary translation or encapsulation services, which may introduce additional failure cases.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">Refer to <a href="#constraints" class="auto internal xref">Appendix A</a> for an overview of the main changes since <span>[<a href="#RFC3901" class="cite xref">RFC3901</a>]</span>.<a href="#section-1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+                This document uses DNS terminology as described in <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span>.
+                Furthermore, the following terms are used with a defined meaning:<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-2-2">
+        <dt id="section-2-2.1">
+                    IPv4-reachable name server:
+        </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">
+                    A name server that provides either authoritative or recursive DNS services via IPv4.
+                    This does not imply anything about the DNS data served but rather indicates that the name server receives and answers queries over IPv4.<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">
+                    IPv6-reachable name server:
+        </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">
+                    A name server that provides either authoritative or recursive DNS services via IPv6.
+                    This does not imply anything about the DNS data served but rather indicates that the name server receives and answers queries over IPv6.<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">
+Dual-stack name server (or resolver):
+        </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">
+A name server (or resolver) that is both IPv4-reachable and IPv6-reachable.<a href="#section-2-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">
+                    Effective PMTU:
+        </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">
+                    The effective Path Maximum Transmission Unit (PMTU) is the largest IP packet size (in octets) that can successfully traverse a network path from source to destination without requiring fragmentation.<a href="#section-2-2.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<div id="requirements-language">
+<section id="section-2.1">
+        <h3 id="name-requirements-language">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.1-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span>
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="name-space-partitioning">
+<section id="section-3">
+      <h2 id="name-name-space-partitioning">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-name-space-partitioning" class="section-name selfRef">Name Space Partitioning</a>
+      </h2>
+<p id="section-3-1">
+                When a resolver looks up a name, it starts at the root and follows referrals until it reaches a name server set that is authoritative for the name.
+                However, if the referrals lead to a name server set that only contains name servers reachable via an IP address family not supported by the resolver, the resolver is unable to continue DNS resolution.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">
+                If this occurs, the DNS has been effectively partitioned due to mismatching IP address family support between the recursive DNS resolver and the authoritative DNS server.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">
+                With the deployment of both IPv4 and IPv6, name space partitioning can occur for different reasons.
+                One reason is that DNS zones are consistently configured to support only either IPv4 or IPv6.
+                Another reason is misconfigurations that make a zone unresolvable by either IPv4-only or IPv6-only resolvers.
+                The latter is often hard to identify because the impact of misconfigurations affecting one IP address family (IPv4 or IPv6) may be hidden in a dual-stack setting.
+                In the worst case, where both IP address families must be fully supported by a resolver, a specific name may only be resolvable via dual-stack enabled resolvers.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<div id="misconfigurations-causing-ip-version-related-name-space-partitioning">
+<section id="section-3.1">
+        <h3 id="name-misconfigurations-causing-n">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-misconfigurations-causing-n" class="section-name selfRef">Misconfigurations Causing Name Space Partitioning Due to IP Address Family Support</a>
+        </h3>
+<p id="section-3.1-1">
+                    Even when an administrator assumes that they have enabled support for a specific IP address family on their authoritative DNS server, various misconfigurations may break the DNS delegation chain of a zone for that IP address family, preventing any of its records from being resolved by clients that only support that IP address family.
+                    Such misconfigurations may remain undetected if most clients can successfully fall back to the other IP address family.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">
+                    The following name-related misconfigurations can cause broken delegation for one IP address family:<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.1-3">
+          <dt id="section-3.1-3.1">
+                        No A/AAAA records for NS names:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.2">
+                        If all of the NS resource records (RRs) for a zone in their parent zone have either only A RRs or only AAAA RRs, then resolution via the other IP address family is not possible.<a href="#section-3.1-3.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.3">
+                        Missing glue:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.4">
+                        If the name from an NS record for a zone is in-domain (i.e., the name is within the zone or below), a parent zone needs to contain both IPv4 and IPv6 glue records.
+                        A parent needs to serve the corresponding A and AAAA RRs in the additional section when returning the NS RRs as the referral response <span>[<a href="#RFC9471" class="cite xref">RFC9471</a>]</span>.<a href="#section-3.1-3.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.5">
+                        No A/AAAA RR for in-domain NS:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.6">
+                        If the parent provides glue records for both IP address families but the child zone itself lacks corresponding A or AAAA RRs for the names of its in-domain NS, resolution via the missing IP address family will fail during delegation revalidation (see, e.g., <span>[<a href="#I-D.ietf-dnsop-ns-revalidation" class="cite xref">NS-REVALIDATION</a>]</span>).<a href="#section-3.1-3.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.7">
+                        Zone of sibling domain NSes not resolving:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.8">
+                        If the name from an NS RR for a zone is in a sibling domain, the corresponding zone needs to be resolvable via the IP address family in question as well.
+                        It is insufficient if the name pointed to by the NS RR has an associated A or AAAA RR.<a href="#section-3.1-3.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.1-3.9">
+                        Parent zone not resolvable via one IP address family:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.1-3.10">
+                        For a zone to be resolvable via an IP address family, the parent zones up to the root zone need to be resolvable via that IP address family as well.
+                        Any zone not resolvable via the concerned IP address family breaks the delegation chain for all its children.<a href="#section-3.1-3.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-3.1-4">
+                    The above misconfigurations are not mutually exclusive.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1-5">
+                    Furthermore, any of the misconfigurations above may  materialize not only via a missing RR but also via an RR providing the IP address of a name server that is not configured to answer queries via that IP address family <span>[<a href="#V6DNSRDY-23" class="cite xref">V6DNSRDY-23</a>]</span>.<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+<p id="section-3.1-6">
+                    Finally, at the time of this writing, addresses (A or AAAA RRs) for a delegation's authoritative name servers are the only type of glue defined for the DNS.
+                    In the future, alternative, yet related, delegation systems may be available, where other considerations apply.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="misconfigurations-causing-network-related-name-space-partitioning">
+<section id="section-3.2">
+        <h3 id="name-network-conditions-causing-">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-network-conditions-causing-" class="section-name selfRef">Network Conditions Causing Name Space Partitioning Due to IP Address Family Support</a>
+        </h3>
+<p id="section-3.2-1">
+                    In addition to explicit misconfigurations in the served DNS zones, network conditions may also influence a resolver's ability to resolve names in a zone.
+                    The most common issue is silent MTU discards for packets that would require fragmentation to fit a reduced effective PMTU, i.e., packets being dropped on-path when they exceed the MTU of the link to the next hop without the sender being notified.
+                    This can manifest in the following ways:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-3.2-2">
+          <dt id="section-3.2-2.1">
+                        DNS-over-UDP packets requiring fragmentation:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-2.2">
+            <p id="section-3.2-2.2.1">
+                            When using Extension Mechanisms for DNS (EDNS(0)) to communicate support for DNS messages larger than 512 octets <span>[<a href="#RFC6891" class="cite xref">RFC6891</a>]</span> via conventional DNS-over-UDP transport according to <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span>, an IP packet carrying a DNS response may exceed the PMTU for the path to a resolver.
+                            If an authoritative DNS server does not follow <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span>, i.e., honors EDNS(0) sizes larger than 1232 octets, it will try to fragment the packet according to the discovered PMTU.
+                            Such packets mostly occur for DNSKEY responses with DNSSEC <span>[<a href="#RFC4034" class="cite xref">RFC4034</a>]</span>.<a href="#section-3.2-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.2.2">
+                            In general, DNS servers <span class="bcp14">SHOULD</span> follow <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span>, which provides additional guidance on preventing fragmentation.
+                            <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span> suggests setting an upper bound for received EDNS(0) sizes of 1400 octets to avoid the need for fragmentation.
+                            However, the DNS Flag Day 2020 initiative <span>[<a href="#DNSFlagDay2020" class="cite xref">DNSFlagDay2020</a>]</span> suggests using an upper bound EDNS(0) size of only 1232 octets, which is also adopted by most implementations.
+                            Setting the upper bound at 1232 octets ensures that generated packets do not exceed 1280 octets, i.e., the minimum MTU for IPv6 <span>[<a href="#RFC8200" class="cite xref">RFC8200</a>]</span>, which avoids IPv6 host fragmentation by the server.
+                            Hence, for clarity, the present document specifically notes that clients <span class="bcp14">MAY</span> use an EDNS(0) size of 1232 octets as well.<a href="#section-3.2-2.2.2" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.2.3">
+                            As an additional precaution or because the DNS implementation in use does not support limiting the effective EDNS(0) size, DNS servers <span class="bcp14">MAY</span> opt to explicitly not rely on Path MTU Discovery (PMTUD) <span>[<a href="#RFC4821" class="cite xref">RFC4821</a>]</span> or Packetization Layer Path MTU Discovery (PLPMTUD) <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>.
+                            It can do so, for example, by setting IPV6_USE_MIN_MTU=1 from <span>[<a href="#RFC3542" class="cite xref">RFC3542</a>]</span> to avoid the need to perform PMTU discovery.<a href="#section-3.2-2.2.3" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-2.3">
+                        DNS-over-TCP packets requiring fragmentation:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-2.4">
+            <p id="section-3.2-2.4.1">
+                            For various reasons, a resolver can initiate connections via TCP for resolution to an authoritative server.
+                            However, similar to the case of DNS-over-UDP, DNS-over-TCP may encounter MTU discards if PMTUD is not possible on a given path.
+                            This can occur, for example, if PMTUD-related ICMP/ICMPv6 messages are dropped (i.e., cannot be returned to the sender) or if the size communicated in these messages is incorrect (i.e., an on-path device alters the size of packets).
+                            Under these conditions, the Maximum Segment Size (MSS) honored by the authoritative DNS server leads to IP packets exceeding the effective PMTU of the path taken by responses.
+                            In that case, similar to the case of DNS-over-UDP, DNS resolution will time out when the recursive DNS resolver does not receive a response in time.<a href="#section-3.2-2.4.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.4.2">
+                            <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span> does not provide explicit guidance on mitigating this issue.<a href="#section-3.2-2.4.2" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.4.3">
+                            <span>[<a href="#RFC8200" class="cite xref">RFC8200</a>]</span> recommends that IPv6 nodes implement Path MTU Discovery (PMTUD) in order to discover and take advantage of PMTUs greater than 1280 octets.
+                            Usually, when a transport protocol can use PMTU (or PLPMTUD <span>[<a href="#RFC8201" class="cite xref">RFC8201</a>]</span> or Datagram PLPMTUD <span>[<a href="#RFC4821" class="cite xref">RFC4821</a>]</span> <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>), this <span class="bcp14">SHOULD</span> be used to determine an effective PMTU.<a href="#section-3.2-2.4.3" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.4.4">
+                            However, DNS generally benefits from low latency, and performing PMTU (or PLPMTUD <span>[<a href="#RFC8201" class="cite xref">RFC8201</a>]</span> or Datagram PLPMTUD <span>[<a href="#RFC4821" class="cite xref">RFC4821</a>]</span> <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>) increases the time needed to process a DNS request.
+                            This overhead could even lead to DNS requests timing out before the effective PMTU can be established by the server.
+                            Furthermore, at the time of writing, most DNS messages fit into less than 1280 octets <span>[<a href="#DNSv6MTU" class="cite xref">DNSv6MTU</a>]</span>, which means that the benefits of being able to leverage a larger effective PMTU only affect corner cases, e.g., requests for DNSKEY RRs.
+                            Additionally, not having to rely on PMTUD benefits the time budget for DNS, as the time needed for PMTUD could already exceed the timeout budget for DNS resolution, i.e., it could prevent resolution for cases where PMTUD is needed.<a href="#section-3.2-2.4.4" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.4.5">
+                            Hence, DNS servers <span class="bcp14">SHOULD</span> configure the maximum response size to avoid fragmentation or on-path discarding of packets larger than the effective PMTU.
+                            For TCP, this can be accomplished by restricting the used MSS, either by the host limiting the MSS on its own or by rewriting the MSS field in packets during a TCP handshake.<a href="#section-3.2-2.4.5" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.4.6">
+                            Therefore, it is <span class="bcp14">RECOMMENDED</span> that DNS servers set a Sender MSS (MSS_S) of no more than 1388 octets for TCP connections.
+                            Setting this MSS ensures that packets do not exceed a size of 1448 octets, i.e., the same packet size recommended to avoid fragmentation for DNS-over-UDP packets in <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span>.
+                            Furthermore, to provide additional clarity similar to the above guidance on UDP, DNS servers <span class="bcp14">MAY</span> ensure that a total packet size of 1280 octets is not exceeded by setting the MSS_S to 1220 octets, as suggested by the DNS Flag Day 2020 initiative <span>[<a href="#DNSFlagDay2020" class="cite xref">DNSFlagDay2020</a>]</span>. See <span><a href="https://rfc-editor.org/rfc/rfc9293#section-3.7.1" class="relref">Section 3.7.1</a> of [<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>.<a href="#section-3.2-2.4.6" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.4.7">
+                            As an additional precaution or because the DNS implementation in use does not support limiting the effective MSS size, DNS servers <span class="bcp14">MAY</span> opt to explicitly not rely on PMTUD <span>[<a href="#RFC4821" class="cite xref">RFC4821</a>]</span> or PLPMTUD <span>[<a href="#RFC8899" class="cite xref">RFC8899</a>]</span>.
+                            It can do so, for example, by setting IPV6_USE_MIN_MTU=1 from <span>[<a href="#RFC3542" class="cite xref">RFC3542</a>]</span>.<a href="#section-3.2-2.4.7" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-3.2-2.5">
+                        Broken IP connectivity at the resolver:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-3.2-2.6">
+            <p id="section-3.2-2.6.1">
+                            Similar to authoritative servers, stub and recursive resolvers may face broken IP connectivity for either IPv4 or IPv6.<a href="#section-3.2-2.6.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.6.2">
+                            IPv4 connectivity for a DNS resolver may experience issues, e.g., if the resolver is deployed behind a Carrier-Grade NAT (CGN) <span>[<a href="#RFC6888" class="cite xref">RFC6888</a>]</span> that implements strict timeouts on active sessions or limits the number of available TCP and UDP ports numbers for connections below the number required by the multiple connections necessary during recursive DNS resolution.
+                            Similarly, addressing in <span>[<a href="#RFC1918" class="cite xref">RFC1918</a>]</span> may be in use on the resolver, while address translation is not performed.
+                            Or, similar to the case for IPv6, when the DNS resolver has a global IPv4 address, but that address is not forwarded on the resolver's network.<a href="#section-3.2-2.6.2" class="pilcrow">¶</a></p>
+<p id="section-3.2-2.6.3">
+      IPv6 connectivity for a DNS resolver may experience issues, if,
+      e.g., a client has been assigned a global unicast IPv6 address
+      but IPv6 traffic is not forwarded on the resolver's network.
+                            Also, a resolver may only have received a unique local IPv6 unicast address <span>[<a href="#RFC4193" class="cite xref">RFC4193</a>]</span>, which does not allow it to reach global addresses without translation.
+                            Similarly, IPv6 connectivity can experience issues when IPv4-IPv6 transition technologies like NAT64 <span>[<a href="#RFC6146" class="cite xref">RFC6146</a>]</span> on IPv6-mostly networks <span>[<a href="#RFC9313" class="cite xref">RFC9313</a>]</span> are in use, where the use of NAT64 can be, e.g., discovered through PREF64 in Router Advertisements (RAs) <span>[<a href="#RFC8781" class="cite xref">RFC8781</a>]</span> or DNS64 <span>[<a href="#RFC7050" class="cite xref">RFC7050</a>]</span>.
+                            There, the synthesized IPv6 addresses used in 464XLAT <span>[<a href="#RFC6877" class="cite xref">RFC6877</a>]</span> (for example) encounter additional PMTU fluctuation due to the difference in header size between IPv4 and IPv6, possibly impacting DNS resolution.<a href="#section-3.2-2.6.3" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<aside id="section-3.2-3">
+          <p id="section-3.2-3.1">
+                        Note: This document only explicitly discusses DNS-over-TCP and DNS-over-UDP.
+                        However, several other transport methods between recursive and authoritative DNS servers exist, including DNS over various encrypted transports.
+                        Some of these technologies provide additional mechanisms for preventing the impact of reduced PMTU or MTU discards.
+                        Guidance in this document focuses on IP address family support and the underlying transport protocol (TCP or UDP).
+                        If DNS servers use an additional protocol layer, e.g., DNS-over-TLS <span>[<a href="#RFC7858" class="cite xref">RFC7858</a>]</span> or DNS-over-QUIC <span>[<a href="#RFC9250" class="cite xref">RFC9250</a>]</span>, for their communication and that protocol supports additional measures to prevent issues related to fragmentation on the IP layer, these measures <span class="bcp14">SHOULD</span> be used for the connection.
+                        If the protocol is not resilient to issues related to IP layer fragmentation by default, the above guidance for TCP- and UDP-based connections <span class="bcp14">SHOULD</span> be applied analogously.<a href="#section-3.2-3.1" class="pilcrow">¶</a></p>
+</aside>
+</section>
+</div>
+<div id="reasons-for-intentional-ip-version-related-name-space-partitioning">
+<section id="section-3.3">
+        <h3 id="name-reasons-for-intentional-nam">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-reasons-for-intentional-nam" class="section-name selfRef">Reasons for Intentional Name Space Partitioning Due to IP Address Family Support</a>
+        </h3>
+<p id="section-3.3-1">
+                    Intentional name space partitioning due to IP address family support occurs if an operator consciously decides not to deploy IPv4 or IPv6 for a part of the resolution chain.
+                    Most commonly, this is realized by intentionally not listing A/AAAA RRs for NS names.
+                    Based on a 2023 study, the share of zones not resolvable via IPv4 is negligible, while a little less than 40% of zones are not resolvable via IPv6 <span>[<a href="#V6DNSRDY-23" class="cite xref">V6DNSRDY-23</a>]</span>.
+                    However, as IPv4 address exhaustion progresses, IPv6 adoption is expected to increase.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="policy-based-avoidance-of-name-space-partitioning">
+<section id="section-4">
+      <h2 id="name-policy-based-avoidance-of-n">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-policy-based-avoidance-of-n" class="section-name selfRef">Policy-Based Avoidance of Name Space Partitioning</a>
+      </h2>
+<p id="section-4-1">
+                IPv4 and IPv6 have become comparably relevant with the final exhaustion of IPv4 address pools in Regional Internet Registries (RIRs) (see, e.g., <span>[<a href="#RIPEV4" class="cite xref">RIPEV4</a>]</span>) and the progressing deployment of IPv6.
+                Yet, while the first zones that are exclusively IPv6 resolvable can now be observed, exclusively IPv4 resolvable zones are considerably more common <span>[<a href="#V6DNSRDY-23" class="cite xref">V6DNSRDY-23</a>]</span>.
+                Hence, dual-stack connectivity is still instrumental to be able to resolve zones and avoid name space partitioning.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">
+                Having zones served only by name servers reachable via one IP address family would partition the DNS.
+                Hence, a way to avoid this partitioning is needed.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">
+                The recommended approach to maintain name space continuity is to use administrative policies, as described in this section.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<div id="guidelines-for-authoritative-dns-configuration">
+<section id="section-4.1">
+        <h3 id="name-guidelines-for-authoritativ">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-guidelines-for-authoritativ" class="section-name selfRef">Guidelines for Authoritative DNS Server Configuration</a>
+        </h3>
+<p id="section-4.1-1">
+                    It is usually recommended that DNS zones contain at least two name servers (<span><a href="https://rfc-editor.org/rfc/rfc1034#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC1034" class="cite xref">RFC1034</a>]</span>).
+                    Typically, these servers are geographically diverse and operate under different routing policies <span>[<a href="#RFC2182" class="cite xref">RFC2182</a>]</span>, as also discussed in, e.g., the IANA requirements for Top-Level Domain (TLD) authoritative name servers <span>[<a href="#IANANS" class="cite xref">IANANS</a>]</span>.
+                    To prevent DNS name space partitioning, at least two IPv4-reachable and two IPv6-reachable name servers <span class="bcp14">MUST</span> be configured for a zone.
+                    A single name server that is reachable over both IPv4 and IPv6 counts once per address family.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">
+                    Please note that a name set in an NS RR that has either only an A or AAAA record may add overhead to the resolution process for resolvers only supporting the IP address family for which no corresponding A or AAAA RR is present.
+                    When selecting such an authoritative name server during DNS resolution, a query for the missing A or AAAA record would return NODATA, requiring the client to query for the A or AAAA record of another NS RR.
+                    To prevent this, it is <span class="bcp14">RECOMMENDED</span> that all names used in NS RRs have an A and AAAA record set.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">
+                    Specifically, the key requirements for a zone are:<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-4.1-4">
+          <dt id="section-4.1-4.1">
+                            IPv4 adoption:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.2">
+                            To maintain name space continuity, every DNS zone <span class="bcp14">MUST</span> be served by at least two authoritative DNS servers providing services via IPv4.
+                            Furthermore, the delegation configuration of an NS (resolution of the parent, resolution of sibling domain names, glue) <span class="bcp14">MUST NOT</span> rely on IPv6 connectivity being available.<a href="#section-4.1-4.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.3">
+                            IPv6 adoption:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.4">
+                            To maintain name space continuity, every DNS zone <span class="bcp14">MUST</span> be served by at least two authoritative DNS servers providing services via IPv6.
+                            To avoid reachability issues, authoritative DNS servers <span class="bcp14">MUST NOT</span> use IPv4-embedded addresses <span>[<a href="#RFC6052" class="cite xref">RFC6052</a>]</span> (including IPv4-Mapped IPv6 addresses and deprecated IPv4-compatible addresses <span>[<a href="#RFC4291" class="cite xref">RFC4291</a>]</span>) for receiving queries.
+                            Furthermore, the delegation configuration of an NS (resolution of the parent, resolution of sibling domain names, glue) <span class="bcp14">MUST NOT</span> rely on IPv4 connectivity being available.<a href="#section-4.1-4.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.5">
+                            Consistency:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.6">
+                            Both IPv4 and IPv6 transports <span class="bcp14">MUST</span> serve equivalent DNS data to ensure a consistent resolution experience across different network types.<a href="#section-4.1-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.1-4.7">
+                            Avoiding IP Fragmentation:
+          </dt>
+          <dd style="margin-left: 1.5em" id="section-4.1-4.8">
+                            IP fragmentation has been reported to be fragile <span>[<a href="#RFC8900" class="cite xref">RFC8900</a>]</span>.
+                            Furthermore, IPv6 transition technologies can introduce unexpected reductions in the effective PMTU (e.g., when NAT64 is used (<span><a href="https://rfc-editor.org/rfc/rfc7269#section-7" class="relref">Section 7</a> of [<a href="#RFC7269" class="cite xref">RFC7269</a>]</span>)).
+                            Therefore, IP fragmentation <span class="bcp14">SHOULD</span> be avoided by following guidance on maximum DNS payload sizes <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span>.
+                            Furthermore, as per <span><a href="https://rfc-editor.org/rfc/rfc7766#section-5" class="relref">Section 5</a> of [<a href="#RFC7766" class="cite xref">RFC7766</a>]</span>, DNS-over-TCP <span class="bcp14">MUST</span> be available as a fallback option, instead of relying on fragmented UDP packets.
+                            Similar to the guidance in <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span>, authoritative DNS servers <span class="bcp14">MAY</span> set an MSS of either 1388 (analogous to <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span>) or 1220 (analogous to the <span>[<a href="#DNSFlagDay2020" class="cite xref">DNSFlagDay2020</a>]</span> suggestions) in TCP sessions carrying DNS responses.<a href="#section-4.1-4.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-4.1-5">
+                    To prevent name space partitioning, zone validation processes <span class="bcp14">SHOULD</span> ensure that:<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-6.1">
+            <p id="section-4.1-6.1.1">There are at least two IPv4 address records and two IPv6 address records available for the name servers of any child delegation within the zone.<a href="#section-4.1-6.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-6.2">
+            <p id="section-4.1-6.2.1">The zone's authoritative servers follow <span>[<a href="#RFC9715" class="cite xref">RFC9715</a>]</span> for avoiding fragmentation on DNS-over-UDP.<a href="#section-4.1-6.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-6.3">
+            <p id="section-4.1-6.3.1">The zone's authoritative servers support DNS-over-TCP <span>[<a href="#RFC9210" class="cite xref">RFC9210</a>]</span>.<a href="#section-4.1-6.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-6.4">
+            <p id="section-4.1-6.4.1">The zone's authoritative servers can be reached via IPv4 and IPv6 when performing DNS resolution via IPv4-only and IPv6-only networks, respectively.<a href="#section-4.1-6.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="guidelines-for-dns-resolvers">
+<section id="section-4.2">
+        <h3 id="name-guidelines-for-recursive-dn">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-guidelines-for-recursive-dn" class="section-name selfRef">Guidelines for Recursive DNS Resolvers</a>
+        </h3>
+<p id="section-4.2-1">
+                    To ensure robust DNS resolution even when facing name space partitioning, every recursive DNS resolver <span class="bcp14">SHOULD</span> be dual-stack.
+                    Exceptions apply if one of the methods to prevent name space partitioning described in this section is in place.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">
+                    While the zones that IPv6-only recursive DNS resolvers can resolve are growing, they do not yet cover all zones.
+                    Hence, a recursive DNS resolver <span class="bcp14">MAY</span> be IPv6-only if it uses a transition mechanism that allows it to also query IPv4-only authoritative DNS servers or uses a configuration where it forwards queries failing IPv6-only DNS resolution to a dual-stack recursive DNS resolver (i.e., a resolver that is also able to perform DNS resolution over IPv4).
+                    If a recursive DNS resolver is aware of a PREF64 to use for NAT64 <span>[<a href="#RFC6146" class="cite xref">RFC6146</a>]</span>, either through static configuration or by discovering it (e.g., using the option described in <span>[<a href="#RFC8781" class="cite xref">RFC8781</a>]</span>), it <span class="bcp14">MAY</span> synthesize IPv6 addresses for remote authoritative DNS servers.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">
+                    Similarly, a recursive DNS resolver <span class="bcp14">MAY</span> be IPv4-only if it uses a configuration where such resolvers forward queries failing IPv4-only DNS resolution to a dual-stack recursive DNS resolver (i.e., a resolver that is also able to perform DNS resolution over IPv6).<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">
+                    Finally, when responding to recursive queries (i.e., a query with the Recursion Desired (RD) bit set <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span>), a DNS resolver <span class="bcp14">SHOULD</span> follow the above guidance on fragmentation avoidance (see <a href="#guidelines-for-authoritative-dns-configuration" class="auto internal xref">Section 4.1</a>) for communication between authoritative DNS servers and recursive DNS resolvers analogously.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="guidelines-for-dns-stub">
+<section id="section-4.3">
+        <h3 id="name-guidelines-for-dns-stub-res">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-guidelines-for-dns-stub-res" class="section-name selfRef">Guidelines for DNS Stub Resolvers</a>
+        </h3>
+<p id="section-4.3-1">
+                    Contrary to authoritative DNS servers and recursive DNS resolvers, DNS stub resolvers are more likely to find themselves in either an IPv6-mostly or IPv4-only environment, as they are usually run on end hosts or clients.
+                    Furthermore, a DNS stub resolver has to rely on recursive DNS servers discovered for the local network, e.g., using DHCPv4 <span>[<a href="#RFC2131" class="cite xref">RFC2131</a>]</span>, DHCPv6 <span>[<a href="#RFC9915" class="cite xref">RFC9915</a>]</span>, and/or router advertisements <span>[<a href="#RFC8106" class="cite xref">RFC8106</a>]</span>.
+                    In that case, the stub resolver may obtain multiple different IPv4 and IPv6 DNS resolver addresses to use.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">
+                    To prioritize different IPv4 and IPv6 DNS resolver addresses, a stub resolver <span class="bcp14">SHOULD</span> follow <span>[<a href="#RFC6724" class="cite xref">RFC6724</a>]</span>.
+                    However, a DNS stub resolver <span class="bcp14">SHOULD NOT</span> utilize IPv4-embedded IPv6 addresses if it is able to identify them as such, e.g., by having discovered the PREF64 in use for the network <span>[<a href="#RFC8781" class="cite xref">RFC8781</a>]</span>.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">
+                    When providing multiple recursive DNS servers to stub resolvers, network operators have to consider that, at the time of writing, various implementations can only configure a small set of possible DNS resolver addresses, e.g., only up to three for glibc <span>[<a href="#MAN" class="cite xref">MAN</a>]</span>, and additional resolver addresses provided may be non-deterministically ignored by clients.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-4">
+                    Hence, when providing more than three recursive server addresses to stub resolvers, operators <span class="bcp14">SHOULD</span> ensure that either:<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-4.3-5">
+                    <li id="section-4.3-5.1">all supplied recursive server IP addresses are from
+                    the same address family, based on knowledge as to clients
+                    being IPv4-only or IPv6-mostly; or<a href="#section-4.3-5.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-4.3-5.2">
+exactly two IP addresses are from one address family (IPv4 or IPv6) and
+exactly one is from the other address family.<a href="#section-4.3-5.2" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-4.3-6">
+                    Furthermore, all supplied resolvers <span class="bcp14">SHOULD</span> be able to perform dual-stack DNS resolution to avoid name space partitioning due to IP address family support.<a href="#section-4.3-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">
+                The guidelines described in this memo introduce no new security considerations into the DNS protocol itself.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">
+                Nevertheless, corner cases exist where forwarding queries requiring an IP address family for resolution that is not supported by the initial resolver leads to an infinite forwarding loop under the following conditions:<a href="#section-5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1">
+          <p id="section-5-3.1.1">Two resolvers handle queries for a set of clients, each of these resolvers supports one and only one address family that is distinct from the address family supported by the other resolver;<a href="#section-5-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-3.2">
+          <p id="section-5-3.2.1">Both resolvers are configured to forward queries requiring DNS resolution via the IP address family they do not support to the other; and<a href="#section-5-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-3.3">
+          <p id="section-5-3.3.1">A query for a zone that is not resolvable via IPv4 and not resolvable via IPv6 is received.<a href="#section-5-3.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-5-4">
+                In such cases, a query for the non-resolvable zone would be endlessly forwarded between these resolvers.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">
+                To prevent such cases, single-stack recursive DNS resolvers <span class="bcp14">SHOULD</span> be configured to forward queries they cannot resolve due to lacking support for one address family to dual-stack recursive DNS resolvers.
+                Furthermore, recursive DNS resolvers <span class="bcp14">MUST NOT</span> be configured to forward queries to DNS resolvers that are configured to forward queries to them in the first place.<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-5-6">
+                Recommendations for recursive and stub resolvers rely on a correctly discovered PREF64.
+                Security issues may materialize if an incorrect PREF64 is used.
+                Hence, guidance from <span>[<a href="#RFC9872" class="cite xref">RFC9872</a>]</span> on securely discovering PREF64 <span class="bcp14">SHOULD</span> be followed.<a href="#section-5-6" class="pilcrow">¶</a></p>
+<p id="section-5-7">
+                Preventing fragmentation according to the guidance in this document may increase load on DNS servers, as more TCP fallbacks might be required.
+                While measurements have shown this to be (at the time of writing) in the range of 3-5% of connections <span>[<a href="#DNSv6MTU" class="cite xref">DNSv6MTU</a>]</span>, operators <span class="bcp14">SHOULD</span> monitor the actual impact on their servers when implementing guidance from this document to detect unexpected load increases early on.<a href="#section-5-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">
+                However, IANA should consider updating its technical requirements for authoritative DNS servers to require both IPv4 and IPv6 addresses for each authoritative server <span>[<a href="#IANANS" class="cite xref">IANANS</a>]</span>, in accordance with the processes for reviewing and revising these procedures.<a href="#section-6-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1034">[RFC1034]</dt>
+        <dd>
+<span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - concepts and facilities"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1034</span>, <span class="seriesInfo">DOI 10.17487/RFC1034</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1034">https://www.rfc-editor.org/info/rfc1034</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1035">[RFC1035]</dt>
+        <dd>
+<span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - implementation and specification"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1035</span>, <span class="seriesInfo">DOI 10.17487/RFC1035</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1035">https://www.rfc-editor.org/info/rfc1035</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4291">[RFC4291]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span> and <span class="refAuthor">S. Deering</span>, <span class="refTitle">"IP Version 6 Addressing Architecture"</span>, <span class="seriesInfo">RFC 4291</span>, <span class="seriesInfo">DOI 10.17487/RFC4291</span>, <time datetime="2006-02" class="refDate">February 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4291">https://www.rfc-editor.org/info/rfc4291</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4821">[RFC4821]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span> and <span class="refAuthor">J. Heffner</span>, <span class="refTitle">"Packetization Layer Path MTU Discovery"</span>, <span class="seriesInfo">RFC 4821</span>, <span class="seriesInfo">DOI 10.17487/RFC4821</span>, <time datetime="2007-03" class="refDate">March 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4821">https://www.rfc-editor.org/info/rfc4821</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6052">[RFC6052]</dt>
+        <dd>
+<span class="refAuthor">Bao, C.</span>, <span class="refAuthor">Huitema, C.</span>, <span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Boucadair, M.</span>, and <span class="refAuthor">X. Li</span>, <span class="refTitle">"IPv6 Addressing of IPv4/IPv6 Translators"</span>, <span class="seriesInfo">RFC 6052</span>, <span class="seriesInfo">DOI 10.17487/RFC6052</span>, <time datetime="2010-10" class="refDate">October 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6052">https://www.rfc-editor.org/info/rfc6052</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6724">[RFC6724]</dt>
+        <dd>
+<span class="refAuthor">Thaler, D., Ed.</span>, <span class="refAuthor">Draves, R.</span>, <span class="refAuthor">Matsumoto, A.</span>, and <span class="refAuthor">T. Chown</span>, <span class="refTitle">"Default Address Selection for Internet Protocol Version 6 (IPv6)"</span>, <span class="seriesInfo">RFC 6724</span>, <span class="seriesInfo">DOI 10.17487/RFC6724</span>, <time datetime="2012-09" class="refDate">September 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6724">https://www.rfc-editor.org/info/rfc6724</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6891">[RFC6891]</dt>
+        <dd>
+<span class="refAuthor">Damas, J.</span>, <span class="refAuthor">Graff, M.</span>, and <span class="refAuthor">P. Vixie</span>, <span class="refTitle">"Extension Mechanisms for DNS (EDNS(0))"</span>, <span class="seriesInfo">STD 75</span>, <span class="seriesInfo">RFC 6891</span>, <span class="seriesInfo">DOI 10.17487/RFC6891</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6891">https://www.rfc-editor.org/info/rfc6891</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7766">[RFC7766]</dt>
+        <dd>
+<span class="refAuthor">Dickinson, J.</span>, <span class="refAuthor">Dickinson, S.</span>, <span class="refAuthor">Bellis, R.</span>, <span class="refAuthor">Mankin, A.</span>, and <span class="refAuthor">D. Wessels</span>, <span class="refTitle">"DNS Transport over TCP - Implementation Requirements"</span>, <span class="seriesInfo">RFC 7766</span>, <span class="seriesInfo">DOI 10.17487/RFC7766</span>, <time datetime="2016-03" class="refDate">March 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7766">https://www.rfc-editor.org/info/rfc7766</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8200">[RFC8200]</dt>
+        <dd>
+<span class="refAuthor">Deering, S.</span> and <span class="refAuthor">R. Hinden</span>, <span class="refTitle">"Internet Protocol, Version 6 (IPv6) Specification"</span>, <span class="seriesInfo">STD 86</span>, <span class="seriesInfo">RFC 8200</span>, <span class="seriesInfo">DOI 10.17487/RFC8200</span>, <time datetime="2017-07" class="refDate">July 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8200">https://www.rfc-editor.org/info/rfc8200</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8899">[RFC8899]</dt>
+        <dd>
+<span class="refAuthor">Fairhurst, G.</span>, <span class="refAuthor">Jones, T.</span>, <span class="refAuthor">Tüxen, M.</span>, <span class="refAuthor">Rüngeler, I.</span>, and <span class="refAuthor">T. Völker</span>, <span class="refTitle">"Packetization Layer Path MTU Discovery for Datagram Transports"</span>, <span class="seriesInfo">RFC 8899</span>, <span class="seriesInfo">DOI 10.17487/RFC8899</span>, <time datetime="2020-09" class="refDate">September 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8899">https://www.rfc-editor.org/info/rfc8899</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9210">[RFC9210]</dt>
+        <dd>
+<span class="refAuthor">Kristoff, J.</span> and <span class="refAuthor">D. Wessels</span>, <span class="refTitle">"DNS Transport over TCP - Operational Requirements"</span>, <span class="seriesInfo">BCP 235</span>, <span class="seriesInfo">RFC 9210</span>, <span class="seriesInfo">DOI 10.17487/RFC9210</span>, <time datetime="2022-03" class="refDate">March 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9210">https://www.rfc-editor.org/info/rfc9210</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9293">[RFC9293]</dt>
+        <dd>
+<span class="refAuthor">Eddy, W., Ed.</span>, <span class="refTitle">"Transmission Control Protocol (TCP)"</span>, <span class="seriesInfo">STD 7</span>, <span class="seriesInfo">RFC 9293</span>, <span class="seriesInfo">DOI 10.17487/RFC9293</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9293">https://www.rfc-editor.org/info/rfc9293</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9471">[RFC9471]</dt>
+        <dd>
+<span class="refAuthor">Andrews, M.</span>, <span class="refAuthor">Huque, S.</span>, <span class="refAuthor">Wouters, P.</span>, and <span class="refAuthor">D. Wessels</span>, <span class="refTitle">"DNS Glue Requirements in Referral Responses"</span>, <span class="seriesInfo">RFC 9471</span>, <span class="seriesInfo">DOI 10.17487/RFC9471</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9471">https://www.rfc-editor.org/info/rfc9471</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9715">[RFC9715]</dt>
+      <dd>
+<span class="refAuthor">Fujiwara, K.</span> and <span class="refAuthor">P. Vixie</span>, <span class="refTitle">"IP Fragmentation Avoidance in DNS over UDP"</span>, <span class="seriesInfo">RFC 9715</span>, <span class="seriesInfo">DOI 10.17487/RFC9715</span>, <time datetime="2025-01" class="refDate">January 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9715">https://www.rfc-editor.org/info/rfc9715</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="DNSFlagDay2020">[DNSFlagDay2020]</dt>
+        <dd>
+<span class="refTitle">"DNS flag day 2020"</span>, <span>&lt;<a href="https://dnsflagday.net/2020/">https://dnsflagday.net/2020/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DNSv6MTU">[DNSv6MTU]</dt>
+        <dd>
+<span class="refAuthor">Fiebig, T.</span> and <span class="refAuthor">A. Feldmann</span>, <span class="refTitle">"'How I learned to stop worrying and love IPv6': Measuring the Internet's Readiness for DNS over IPv6"</span>, <span class="refContent">IMC '25: Proceedings of the 2025 ACM Internet Measurement Conference, pp. 359-380</span>, <span class="seriesInfo">DOI 10.1145/3730567.3764439</span>, <time datetime="2025-10" class="refDate">October 2025</time>, <span>&lt;<a href="https://doi.org/10.1145/3730567.3764439">https://doi.org/10.1145/3730567.3764439</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IANANS">[IANANS]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Technical requirements for authoritative name servers"</span>, <span>&lt;<a href="https://www.iana.org/help/nameserver-requirements">https://www.iana.org/help/nameserver-requirements</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="MAN">[MAN]</dt>
+        <dd>
+<span class="refTitle">"resolv.conf(5) - Linux manual page"</span>, <time datetime="2025" class="refDate">2025</time>, <span>&lt;<a href="https://man7.org/linux/man-pages/man5/resolv.conf.5.html">https://man7.org/linux/man-pages/man5/resolv.conf.5.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-dnsop-ns-revalidation">[NS-REVALIDATION]</dt>
+        <dd>
+<span class="refAuthor">Huque, S.</span>, <span class="refAuthor">Vixie, P. A.</span>, and <span class="refAuthor">W. Toorop</span>, <span class="refTitle">"Delegation Revalidation by DNS Resolvers"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-dnsop-ns-revalidation-13</span>, <time datetime="2026-07-06" class="refDate">6 July 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-dnsop-ns-revalidation-13">https://datatracker.ietf.org/doc/html/draft-ietf-dnsop-ns-revalidation-13</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1918">[RFC1918]</dt>
+        <dd>
+<span class="refAuthor">Rekhter, Y.</span>, <span class="refAuthor">Moskowitz, B.</span>, <span class="refAuthor">Karrenberg, D.</span>, <span class="refAuthor">de Groot, G. J.</span>, and <span class="refAuthor">E. Lear</span>, <span class="refTitle">"Address Allocation for Private Internets"</span>, <span class="seriesInfo">BCP 5</span>, <span class="seriesInfo">RFC 1918</span>, <span class="seriesInfo">DOI 10.17487/RFC1918</span>, <time datetime="1996-02" class="refDate">February 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1918">https://www.rfc-editor.org/info/rfc1918</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2131">[RFC2131]</dt>
+        <dd>
+<span class="refAuthor">Droms, R.</span>, <span class="refTitle">"Dynamic Host Configuration Protocol"</span>, <span class="seriesInfo">RFC 2131</span>, <span class="seriesInfo">DOI 10.17487/RFC2131</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2131">https://www.rfc-editor.org/info/rfc2131</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2182">[RFC2182]</dt>
+        <dd>
+<span class="refAuthor">Elz, R.</span>, <span class="refAuthor">Bush, R.</span>, <span class="refAuthor">Bradner, S.</span>, and <span class="refAuthor">M. Patton</span>, <span class="refTitle">"Selection and Operation of Secondary DNS Servers"</span>, <span class="seriesInfo">BCP 16</span>, <span class="seriesInfo">RFC 2182</span>, <span class="seriesInfo">DOI 10.17487/RFC2182</span>, <time datetime="1997-07" class="refDate">July 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2182">https://www.rfc-editor.org/info/rfc2182</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2460">[RFC2460]</dt>
+        <dd>
+<span class="refAuthor">Deering, S.</span> and <span class="refAuthor">R. Hinden</span>, <span class="refTitle">"Internet Protocol, Version 6 (IPv6) Specification"</span>, <span class="seriesInfo">RFC 2460</span>, <span class="seriesInfo">DOI 10.17487/RFC2460</span>, <time datetime="1998-12" class="refDate">December 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2460">https://www.rfc-editor.org/info/rfc2460</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3542">[RFC3542]</dt>
+        <dd>
+<span class="refAuthor">Stevens, W.</span>, <span class="refAuthor">Thomas, M.</span>, <span class="refAuthor">Nordmark, E.</span>, and <span class="refAuthor">T. Jinmei</span>, <span class="refTitle">"Advanced Sockets Application Program Interface (API) for IPv6"</span>, <span class="seriesInfo">RFC 3542</span>, <span class="seriesInfo">DOI 10.17487/RFC3542</span>, <time datetime="2003-06" class="refDate">June 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3542">https://www.rfc-editor.org/info/rfc3542</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3901">[RFC3901]</dt>
+        <dd>
+<span class="refAuthor">Durand, A.</span> and <span class="refAuthor">J. Ihren</span>, <span class="refTitle">"DNS IPv6 Transport Operational Guidelines"</span>, <span class="seriesInfo">BCP 91</span>, <span class="seriesInfo">RFC 3901</span>, <span class="seriesInfo">DOI 10.17487/RFC3901</span>, <time datetime="2004-09" class="refDate">September 2004</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3901">https://www.rfc-editor.org/info/rfc3901</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4034">[RFC4034]</dt>
+        <dd>
+<span class="refAuthor">Arends, R.</span>, <span class="refAuthor">Austein, R.</span>, <span class="refAuthor">Larson, M.</span>, <span class="refAuthor">Massey, D.</span>, and <span class="refAuthor">S. Rose</span>, <span class="refTitle">"Resource Records for the DNS Security Extensions"</span>, <span class="seriesInfo">RFC 4034</span>, <span class="seriesInfo">DOI 10.17487/RFC4034</span>, <time datetime="2005-03" class="refDate">March 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4034">https://www.rfc-editor.org/info/rfc4034</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4193">[RFC4193]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span> and <span class="refAuthor">B. Haberman</span>, <span class="refTitle">"Unique Local IPv6 Unicast Addresses"</span>, <span class="seriesInfo">RFC 4193</span>, <span class="seriesInfo">DOI 10.17487/RFC4193</span>, <time datetime="2005-10" class="refDate">October 2005</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4193">https://www.rfc-editor.org/info/rfc4193</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6146">[RFC6146]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Matthews, P.</span>, and <span class="refAuthor">I. van Beijnum</span>, <span class="refTitle">"Stateful NAT64: Network Address and Protocol Translation from IPv6 Clients to IPv4 Servers"</span>, <span class="seriesInfo">RFC 6146</span>, <span class="seriesInfo">DOI 10.17487/RFC6146</span>, <time datetime="2011-04" class="refDate">April 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6146">https://www.rfc-editor.org/info/rfc6146</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6540">[RFC6540]</dt>
+        <dd>
+<span class="refAuthor">George, W.</span>, <span class="refAuthor">Donley, C.</span>, <span class="refAuthor">Liljenstolpe, C.</span>, and <span class="refAuthor">L. Howard</span>, <span class="refTitle">"IPv6 Support Required for All IP-Capable Nodes"</span>, <span class="seriesInfo">BCP 177</span>, <span class="seriesInfo">RFC 6540</span>, <span class="seriesInfo">DOI 10.17487/RFC6540</span>, <time datetime="2012-04" class="refDate">April 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6540">https://www.rfc-editor.org/info/rfc6540</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6877">[RFC6877]</dt>
+        <dd>
+<span class="refAuthor">Mawatari, M.</span>, <span class="refAuthor">Kawashima, M.</span>, and <span class="refAuthor">C. Byrne</span>, <span class="refTitle">"464XLAT: Combination of Stateful and Stateless Translation"</span>, <span class="seriesInfo">RFC 6877</span>, <span class="seriesInfo">DOI 10.17487/RFC6877</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6877">https://www.rfc-editor.org/info/rfc6877</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6888">[RFC6888]</dt>
+        <dd>
+<span class="refAuthor">Perreault, S., Ed.</span>, <span class="refAuthor">Yamagata, I.</span>, <span class="refAuthor">Miyakawa, S.</span>, <span class="refAuthor">Nakagawa, A.</span>, and <span class="refAuthor">H. Ashida</span>, <span class="refTitle">"Common Requirements for Carrier-Grade NATs (CGNs)"</span>, <span class="seriesInfo">BCP 127</span>, <span class="seriesInfo">RFC 6888</span>, <span class="seriesInfo">DOI 10.17487/RFC6888</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6888">https://www.rfc-editor.org/info/rfc6888</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7050">[RFC7050]</dt>
+        <dd>
+<span class="refAuthor">Savolainen, T.</span>, <span class="refAuthor">Korhonen, J.</span>, and <span class="refAuthor">D. Wing</span>, <span class="refTitle">"Discovery of the IPv6 Prefix Used for IPv6 Address Synthesis"</span>, <span class="seriesInfo">RFC 7050</span>, <span class="seriesInfo">DOI 10.17487/RFC7050</span>, <time datetime="2013-11" class="refDate">November 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7050">https://www.rfc-editor.org/info/rfc7050</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7269">[RFC7269]</dt>
+        <dd>
+<span class="refAuthor">Chen, G.</span>, <span class="refAuthor">Cao, Z.</span>, <span class="refAuthor">Xie, C.</span>, and <span class="refAuthor">D. Binet</span>, <span class="refTitle">"NAT64 Deployment Options and Experience"</span>, <span class="seriesInfo">RFC 7269</span>, <span class="seriesInfo">DOI 10.17487/RFC7269</span>, <time datetime="2014-06" class="refDate">June 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7269">https://www.rfc-editor.org/info/rfc7269</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7858">[RFC7858]</dt>
+        <dd>
+<span class="refAuthor">Hu, Z.</span>, <span class="refAuthor">Zhu, L.</span>, <span class="refAuthor">Heidemann, J.</span>, <span class="refAuthor">Mankin, A.</span>, <span class="refAuthor">Wessels, D.</span>, and <span class="refAuthor">P. Hoffman</span>, <span class="refTitle">"Specification for DNS over Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 7858</span>, <span class="seriesInfo">DOI 10.17487/RFC7858</span>, <time datetime="2016-05" class="refDate">May 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7858">https://www.rfc-editor.org/info/rfc7858</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8106">[RFC8106]</dt>
+        <dd>
+<span class="refAuthor">Jeong, J.</span>, <span class="refAuthor">Park, S.</span>, <span class="refAuthor">Beloeil, L.</span>, and <span class="refAuthor">S. Madanapalli</span>, <span class="refTitle">"IPv6 Router Advertisement Options for DNS Configuration"</span>, <span class="seriesInfo">RFC 8106</span>, <span class="seriesInfo">DOI 10.17487/RFC8106</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8106">https://www.rfc-editor.org/info/rfc8106</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8201">[RFC8201]</dt>
+        <dd>
+<span class="refAuthor">McCann, J.</span>, <span class="refAuthor">Deering, S.</span>, <span class="refAuthor">Mogul, J.</span>, and <span class="refAuthor">R. Hinden, Ed.</span>, <span class="refTitle">"Path MTU Discovery for IP version 6"</span>, <span class="seriesInfo">STD 87</span>, <span class="seriesInfo">RFC 8201</span>, <span class="seriesInfo">DOI 10.17487/RFC8201</span>, <time datetime="2017-07" class="refDate">July 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8201">https://www.rfc-editor.org/info/rfc8201</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8781">[RFC8781]</dt>
+        <dd>
+<span class="refAuthor">Colitti, L.</span> and <span class="refAuthor">J. Linkova</span>, <span class="refTitle">"Discovering PREF64 in Router Advertisements"</span>, <span class="seriesInfo">RFC 8781</span>, <span class="seriesInfo">DOI 10.17487/RFC8781</span>, <time datetime="2020-04" class="refDate">April 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8781">https://www.rfc-editor.org/info/rfc8781</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8900">[RFC8900]</dt>
+        <dd>
+<span class="refAuthor">Bonica, R.</span>, <span class="refAuthor">Baker, F.</span>, <span class="refAuthor">Huston, G.</span>, <span class="refAuthor">Hinden, R.</span>, <span class="refAuthor">Troan, O.</span>, and <span class="refAuthor">F. Gont</span>, <span class="refTitle">"IP Fragmentation Considered Fragile"</span>, <span class="seriesInfo">BCP 230</span>, <span class="seriesInfo">RFC 8900</span>, <span class="seriesInfo">DOI 10.17487/RFC8900</span>, <time datetime="2020-09" class="refDate">September 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8900">https://www.rfc-editor.org/info/rfc8900</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9250">[RFC9250]</dt>
+        <dd>
+<span class="refAuthor">Huitema, C.</span>, <span class="refAuthor">Dickinson, S.</span>, and <span class="refAuthor">A. Mankin</span>, <span class="refTitle">"DNS over Dedicated QUIC Connections"</span>, <span class="seriesInfo">RFC 9250</span>, <span class="seriesInfo">DOI 10.17487/RFC9250</span>, <time datetime="2022-05" class="refDate">May 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9250">https://www.rfc-editor.org/info/rfc9250</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9313">[RFC9313]</dt>
+        <dd>
+<span class="refAuthor">Lencse, G.</span>, <span class="refAuthor">Palet Martinez, J.</span>, <span class="refAuthor">Howard, L.</span>, <span class="refAuthor">Patterson, R.</span>, and <span class="refAuthor">I. Farrer</span>, <span class="refTitle">"Pros and Cons of IPv6 Transition Technologies for IPv4-as-a-Service (IPv4aaS)"</span>, <span class="seriesInfo">RFC 9313</span>, <span class="seriesInfo">DOI 10.17487/RFC9313</span>, <time datetime="2022-10" class="refDate">October 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9313">https://www.rfc-editor.org/info/rfc9313</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9386">[RFC9386]</dt>
+        <dd>
+<span class="refAuthor">Fioccola, G.</span>, <span class="refAuthor">Volpato, P.</span>, <span class="refAuthor">Palet Martinez, J.</span>, <span class="refAuthor">Mishra, G.</span>, and <span class="refAuthor">C. Xie</span>, <span class="refTitle">"IPv6 Deployment Status"</span>, <span class="seriesInfo">RFC 9386</span>, <span class="seriesInfo">DOI 10.17487/RFC9386</span>, <time datetime="2023-04" class="refDate">April 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9386">https://www.rfc-editor.org/info/rfc9386</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9499">[RFC9499]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">K. Fujiwara</span>, <span class="refTitle">"DNS Terminology"</span>, <span class="seriesInfo">BCP 219</span>, <span class="seriesInfo">RFC 9499</span>, <span class="seriesInfo">DOI 10.17487/RFC9499</span>, <time datetime="2024-03" class="refDate">March 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9499">https://www.rfc-editor.org/info/rfc9499</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9872">[RFC9872]</dt>
+        <dd>
+<span class="refAuthor">Buraglio, N.</span>, <span class="refAuthor">Jensen, T.</span>, and <span class="refAuthor">J. Linkova</span>, <span class="refTitle">"Recommendations for Discovering IPv6 Prefix Used for IPv6 Address Synthesis"</span>, <span class="seriesInfo">RFC 9872</span>, <span class="seriesInfo">DOI 10.17487/RFC9872</span>, <time datetime="2025-09" class="refDate">September 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9872">https://www.rfc-editor.org/info/rfc9872</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9915">[RFC9915]</dt>
+        <dd>
+<span class="refAuthor">Mrugalski, T.</span>, <span class="refAuthor">Volz, B.</span>, <span class="refAuthor">Richardson, M.</span>, <span class="refAuthor">Jiang, S.</span>, and <span class="refAuthor">T. Winters</span>, <span class="refTitle">"Dynamic Host Configuration Protocol for IPv6 (DHCPv6)"</span>, <span class="seriesInfo">STD 102</span>, <span class="seriesInfo">RFC 9915</span>, <span class="seriesInfo">DOI 10.17487/RFC9915</span>, <time datetime="2026-01" class="refDate">January 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9915">https://www.rfc-editor.org/info/rfc9915</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RIPEV4">[RIPEV4]</dt>
+        <dd>
+<span class="refAuthor">RIPE NCC</span>, <span class="refTitle">"The RIPE NCC has run out of IPv4 Addresses"</span>, <time datetime="2019-11" class="refDate">November 2019</time>, <span>&lt;<a href="https://www.ripe.net/publications/news/about-ripe-ncc-and-ripe/the-ripe-ncc-has-run-out-of-ipv4-addresses">https://www.ripe.net/publications/news/about-ripe-ncc-and-ripe/the-ripe-ncc-has-run-out-of-ipv4-addresses</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="V6DNSRDY-23">[V6DNSRDY-23]</dt>
+      <dd>
+<span class="refAuthor">Streibelt, F.</span>, <span class="refAuthor">Sattler, P.</span>, <span class="refAuthor">Lichtblau, F.</span>, <span class="refAuthor">Hernandez-Gañán, C.</span>, <span class="refAuthor">Feldmann, A.</span>, <span class="refAuthor">Gasser, O.</span>, and <span class="refAuthor">T. Fiebig</span>, <span class="refTitle">"How Ready is DNS for an IPv6-Only World?"</span>, <span class="refContent">Passive and Active Measurement (PAM 2023), Lecture Notes in Computer Science, vol. 13882, pp. 525-549</span>, <span class="seriesInfo">DOI 10.1007/978-3-031-28486-1_22</span>, <time datetime="2023-03" class="refDate">March 2023</time>, <span>&lt;<a href="https://link.springer.com/chapter/10.1007/978-3-031-28486-1_22">https://link.springer.com/chapter/10.1007/978-3-031-28486-1_22</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+<div id="constraints">
+<section id="appendix-A">
+      <h2 id="name-changes-since-rfc-3901">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-changes-since-rfc-3901" class="section-name selfRef">Changes Since RFC 3901</a>
+      </h2>
+<p id="appendix-A-1">
+                The following changes have been made to the guidance published in <span>[<a href="#RFC3901" class="cite xref">RFC3901</a>]</span>:<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-A-2.1">
+          <p id="appendix-A-2.1.1">Expanded the terminology section, also taking considerations from <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span> into account.<a href="#appendix-A-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-A-2.2">
+          <p id="appendix-A-2.2.1">Expanded name space partitioning, independently discussing intentional choices, misconfigurations, and network conditions, which lead to name space partitioning due to differences in IP address family support.<a href="#appendix-A-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-A-2.3">
+          <p id="appendix-A-2.3.1">Now recommends the use of IPv4 and IPv6 for authoritative DNS servers instead of leaving IPv6 optional.<a href="#appendix-A-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-A-2.4">
+          <p id="appendix-A-2.4.1">Now recommends testing IPv4 and IPv6 resolvability when delegating zones instead of only testing IPv4 resolvability.<a href="#appendix-A-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-A-2.5">
+          <p id="appendix-A-2.5.1">Added guidance on handling IP layer fragmentation.<a href="#appendix-A-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-A-2.6">
+          <p id="appendix-A-2.6.1">Added guidance for IP address family handling for recursive and stub resolvers.<a href="#appendix-A-2.6.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1">Valuable input for this document was provided by the following individuals: <span class="contact-name">Bob Harold</span>, <span class="contact-name">Andreas Schulze</span>,
+            <span class="contact-name">Tommy Jensen</span>, <span class="contact-name">Nick             Buraglio</span>, <span class="contact-name">Jen Linkova</span>, <span class="contact-name">Tim Chown</span>, <span class="contact-name">Brian E. Carpenter</span>,
+            <span class="contact-name">Tom Petch</span>, <span class="contact-name">Philipp             S. Tiesel</span>, <span class="contact-name">Mark Andrews</span>, <span class="contact-name">Stefan Ubbink</span>, <span class="contact-name">Joe Abley</span>,
+            <span class="contact-name">Gorry Fairhurst</span>, <span class="contact-name">Paul             Vixie</span>, <span class="contact-name">Lorenzo Colitti</span>, <span class="contact-name">David Farmer</span>, <span class="contact-name">Pieter Lexis</span>,
+            <span class="contact-name">Ralf Weber</span>, <span class="contact-name">Philip             Homburg</span>, <span class="contact-name">Marco Davids</span>, <span class="contact-name">Mohamed Boucadair</span>, <span class="contact-name">Thomas             Fossati</span>, <span class="contact-name">Aihua Guo</span>, <span class="contact-name">Bernie Volz</span>, <span class="contact-name">David Dong</span>,
+            <span class="contact-name">Roman Danyliw</span>, <span class="contact-name">Éric             Vyncke</span>, and <span class="contact-name">Erik Nygren</span>.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-2">Furthermore, the authors express their thanks to the
+            authors of <span>[<a href="#RFC3901" class="cite xref">RFC3901</a>]</span>, <span class="contact-name">Alain             Durand</span> and <span class="contact-name">Johan Ihren</span>, and provide their
+            original acknowledgements verbatim below:<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+<blockquote id="appendix-B-3">
+        <p id="appendix-B-3.1">This document is the result of many conversations
+            that happened in the DNS community at IETF and elsewhere since
+            2001.  During that period of time, a number of Internet drafts
+            have been published to clarify various aspects of the issues at
+            stake.  This document focuses on the conclusion of those
+            discussions.<a href="#appendix-B-3.1" class="pilcrow">¶</a></p>
+<p id="appendix-B-3.2">The authors would like to acknowledge the role of <span class="contact-name">Pekka Savola</span> in his thorough review of the document.<a href="#appendix-B-3.2" class="pilcrow">¶</a></p>
+</blockquote>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Momoka Yamamoto</span></div>
+<div dir="auto" class="left"><span class="org">WIDE Project</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:momoka.my6@gmail.com" class="email">momoka.my6@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tobias Fiebig</span></div>
+<div dir="auto" class="left"><span class="org">Max-Planck-Institut fuer Informatik</span></div>
+<div dir="auto" class="left"><span class="street-address">Campus E14</span></div>
+<div dir="auto" class="left">
+<span class="postal-code">66123</span> <span class="locality">Saarbruecken</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="tel">
+<span>Phone:</span>
+<a href="tel:+49%20681%209325%203527" class="tel">+49 681 9325 3527</a>
+</div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:tfiebig@mpi-inf.mpg.de" class="email">tfiebig@mpi-inf.mpg.de</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
