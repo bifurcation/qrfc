@@ -1,0 +1,3433 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10039: Interconnecting EVPN and IPVPN Domains</title>
+<meta content="Jorge Rabadan" name="author">
+<meta content="Ali Sajassi" name="author">
+<meta content="John Drake" name="author">
+<meta content="Wen Lin" name="author">
+<meta content="James Uttaro" name="author">
+<meta content="Adam Simpson" name="author">
+<meta content="
+       Ethernet Virtual Private Network (EVPN) provides a unified BGP
+      control plane for both intra- and inter-subnet forwarding within tenant
+      networks. When a tenant network spans multiple domains, including any
+      combination of EVPN and IPVPN domains, it becomes necessary to define
+      the interworking mechanisms among these BGP domains (EVPN and IPVPN) to
+      ensure seamless end-to-end tenant connectivity. This document defines
+      these interworking procedures. 
+       In addition, this document defines a new BGP Path Attribute, referred
+      to as Domain Path (D-PATH), which provides loop prevention for gateway
+      nodes by protecting against control plane loops. The introduction of
+      D-PATH modifies the BGP best-path selection process for Multiprotocol
+      BGP inter-subnet forwarding (ISF) routes of Subsequent Address Family Identifiers (SAFIs) 128 (IPVPN) and 70 (EVPN). 
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="10039" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.0
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.8.1
+    weasyprint 69.0
+-->
+<link href="rfc10039.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-bess-evpn-ipvpn-interworking-18" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc10039" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10039</td>
+<td class="center">EVPN and IPVPN Interworking</td>
+<td class="right">September 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Rabadan, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10039" class="eref">10039</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-09" class="published">September 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">J. Rabadan, <span class="editor">Ed.</span>
+</div>
+<div class="org">Nokia</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Sajassi, <span class="editor">Ed.</span>
+</div>
+<div class="org">Cisco</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Drake</div>
+<div class="org">Independent</div>
+</div>
+<div class="author">
+      <div class="author-name">W. Lin</div>
+<div class="org">HPE</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Uttaro</div>
+<div class="org">Independent</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Simpson</div>
+<div class="org">Nokia</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10039</h1>
+<h1 id="title">Interconnecting EVPN and IPVPN Domains</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Ethernet Virtual Private Network (EVPN) provides a unified BGP
+      control plane for both intra- and inter-subnet forwarding within tenant
+      networks. When a tenant network spans multiple domains, including any
+      combination of EVPN and IPVPN domains, it becomes necessary to define
+      the interworking mechanisms among these BGP domains (EVPN and IPVPN) to
+      ensure seamless end-to-end tenant connectivity. This document defines
+      these interworking procedures.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">In addition, this document defines a new BGP Path Attribute, referred
+      to as Domain Path (D-PATH), which provides loop prevention for gateway
+      nodes by protecting against control plane loops. The introduction of
+      D-PATH modifies the BGP best-path selection process for Multiprotocol
+      BGP inter-subnet forwarding (ISF) routes of Subsequent Address Family Identifiers (SAFIs) 128 (IPVPN) and 70 (EVPN).<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10039">https://www.rfc-editor.org/info/rfc10039</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction-and-problem-st" class="internal xref">Introduction and Problem Statement</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-used-in-this-do" class="internal xref">Conventions Used in This Document</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-terminology-and-interworkin" class="internal xref">Terminology and Interworking PE Components</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-domain-path-d-path-attribut" class="internal xref">Domain Path (D-PATH) Attribute</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-bgp-path-attribute-propagat" class="internal xref">BGP Path Attribute Propagation Across Domains</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-no-propagation-mode" class="internal xref">No Propagation Mode</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-uniform-propagation-mode" class="internal xref">Uniform Propagation Mode</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-aggregation-of-routes-and-p" class="internal xref">Aggregation of Routes and Path Attribute Propagation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-route-selection-process-for" class="internal xref">Route Selection Process for ISF Routes</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-tie-breaking-and-selection-" class="internal xref">Tie-Breaking and Selection Rules</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-examples" class="internal xref">Examples</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-composite-pe-procedures" class="internal xref">Composite PE Procedures</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-gateway-pe-procedures" class="internal xref">Gateway PE Procedures</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-export-conditions" class="internal xref">Export Conditions</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-advertisement-behavior" class="internal xref">Advertisement Behavior</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-interworking-use-cases" class="internal xref">Interworking Use Cases</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-bgp-error-handling-on-inter" class="internal xref">BGP Error Handling on Interworking PEs</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.1">
+                <p id="section-toc.1-1.13.2.1.1"><a href="#section-13.1" class="auto internal xref">13.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.2">
+                <p id="section-toc.1-1.13.2.2.1"><a href="#section-13.2" class="auto internal xref">13.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="sect-1">
+<section id="section-1">
+      <h2 id="name-introduction-and-problem-st">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction-and-problem-st" class="section-name selfRef">Introduction and Problem Statement</a>
+      </h2>
+<p id="section-1-1">EVPN is used as a unified BGP control plane to support both
+      intra- and inter-subnet forwarding for tenant networks. In
+      deployments where a tenant network spans multiple domains, some that
+      use EVPN and others that rely on BGP VPN-IPv4/VPN-IPv6 address
+      families for inter-subnet forwarding (ISF), it becomes necessary to define
+      interworking procedures to enable seamless end-to-end tenant
+      connectivity across these heterogeneous domains.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This document specifies procedures for interworking between EVPN and
+      other BGP address families, including VPN-IPv4 and VPN-IPv6, for the
+      purpose of ISF. It also defines procedures for the
+      interconnection of domains that may use EVPN, IPVPN, or a combination of
+      both. Examples include the interconnection of two EVPN domains, two
+      IPVPN domains, or an EVPN domain with an IPVPN domain.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">To support loop prevention in scenarios where redundant gateway
+      Provider Edges (PEs) interconnect distinct domains, this specification
+      introduces a new BGP Path Attribute called the Domain Path (D-PATH). In
+      topologies where multiple gateways connect domains, control plane loops
+      may occur if routes are redistributed between domains without proper
+      safeguards. For example, if gateway PE1 imports an IPVPN route for a
+      given prefix and redistributes it as an EVPN IP Prefix route into the
+      EVPN domain, and a second gateway PE2 receives this EVPN route and
+      re-advertises it back into the IPVPN domain, a loop may form. The D-PATH
+      Path Attribute is designed to prevent such scenarios by providing
+      domain-level loop detection and avoidance.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">The D-PATH Path Attribute alters the BGP best-path selection logic for
+      Multiprotocol BGP routes of SAFI 128 (VPN-IPv4/IPv6) and for EVPN IP
+      Prefix routes. Accordingly, this document updates the BGP best-path
+      selection procedures specified in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span>, but only for
+      the IPVPN and EVPN families when the D-PATH Path Attribute is used for
+      inter-domain connectivity.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">EVPN supports the advertisement of IPv4 or IPv6 prefixes through two
+      route types:<a href="#section-1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-6.1">
+          <p id="section-1-6.1.1">Route Type 2 - EVPN MAC / IP Advertisement route, as defined in
+          <span>[<a href="#RFC9135" class="cite xref">RFC9135</a>]</span>, supporting host routes (i.e., /32 or
+          /128).<a href="#section-1-6.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-6.2">
+          <p id="section-1-6.2.1">Route Type 5 - EVPN IP Prefix route, as defined in <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span>.<a href="#section-1-6.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-1-7">When interworking with other BGP address families for inter-subnet
+      forwarding, the IP prefixes conveyed in these EVPN route types are
+      re-originated into corresponding address families (e.g., IPVPN), and
+      vice versa. Several aspects of this re-origination require clarified
+      procedures, including route selection, loop prevention, and BGP Path
+      Attribute handling across AFI/SAFI boundaries.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">This document defines the concept of an Interworking PE (<a href="#sect-3" class="auto internal xref">Section 3</a>), which is responsible for interconnecting different
+      domains. An Interworking PE implements the following behavior: It
+      imports routes from one domain (along with the domain-specific
+      encapsulation parameters), installs them in an IP Virtual
+      Routing and Forwarding (IP-VRF) table <span>[<a href="#RFC9135" class="cite xref">RFC9135</a>]</span>, and
+      re-originates the routes with the encapsulation attributes suitable for
+      the adjacent domain before advertisement. This re-origination process
+      enables the solution to operate independently of the transport
+      encapsulation mechanisms used within each domain and serves as a service
+      interworking function.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">The procedures defined herein ensure that tenant inter-subnet
+      connectivity can be maintained across a mix of EVPN and non-EVPN
+      domains, while preventing routing loops and maintaining protocol
+      consistency across BGP address families.<a href="#section-1-9" class="pilcrow">¶</a></p>
+<p id="section-1-10">As a summary, the following key procedures are specified by this
+      document:<a href="#section-1-10" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-11.1">
+          <p id="section-1-11.1.1">A route selection algorithm that enables a PE to
+          deterministically select the best path among candidates learned via
+          EVPN and other ISF SAFIs.<a href="#section-1-11.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-11.2">
+          <p id="section-1-11.2.1">A new BGP Path Attribute, referred to as the D-PATH
+          Path Attribute, which provides loop prevention capabilities and conveys
+          domain traversal information for a given route.<a href="#section-1-11.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-11.3">
+          <p id="section-1-11.3.1">The rules governing BGP Path Attribute propagation across domains
+          to maintain semantic consistency and enable cross-domain route
+          processing.<a href="#section-1-11.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-11.4">
+          <p id="section-1-11.4.1">The operational procedures required for Interworking PEs that
+          function as composite PEs, gateway PEs, or devices supporting both
+          roles.<a href="#section-1-11.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-1-12">Collectively, these procedures equip operators with the necessary
+      mechanisms to deploy scalable tenant networks spanning multiple
+      administrative or routing domains, employing different ISF SAFIs for IP
+      prefix dissemination while maintaining deterministic forwarding behavior
+      and routing loop protection.<a href="#section-1-12" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-2">
+<section id="section-2">
+      <h2 id="name-conventions-used-in-this-do">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-used-in-this-do" class="section-name selfRef">Conventions Used in This Document</a>
+      </h2>
+<p id="section-2-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-3">
+<section id="section-3">
+      <h2 id="name-terminology-and-interworkin">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-terminology-and-interworkin" class="section-name selfRef">Terminology and Interworking PE Components</a>
+      </h2>
+<p id="section-3-1">This section summarizes the terminology related to the "Interworking
+      PE" concept that will be used throughout the rest of the document.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span id="name-evpn-ipvpn-interworking-pe"></span><div id="evpn-ipvpn-interworking-pe">
+<figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-3-2.1">
+<pre>
+   +-------------------------------------------------------------+
+   |                                                             |
+   |              +------------------+           Interworking PE |
+   | Attachment   | +------------------+                         |
+   | Circuit (AC1)| |  +----------+    |            MPLS/NVO/SRv6 tnl
+ ----------------------*Bridge    |    |                    +------
+MPLS/NVO          | |  |Table(BT1)|    |    +-----------+  / \     \
+/SRv6 tnl    +--------&gt;|          *---------*           |&lt;--&gt; | Eth |
+  -------+   |    | |  |Eth-Tag x |    |IRB1|           |  \ /     /
+ / Eth  / \&lt;-+    | |  +----------+    |    |           |   +------
+|      |   |      | |     ...          |    |  IP-VRF1  |MPLS/NVO/SRv6
+ \      \ /&lt;-+    | |  +----------+    |    |  RD2/RT2  |         tnl
+  -------+   |    | |  |Bridge    |    |    |           |   +------
+   |         +--------&gt;|Table(BT2)|    |IRB2|           |  / \     \
+   |              | |  |          *---------*           |&lt;--&gt; | IP  |
+ ----------------------*Eth-Tag y |    |    +-----*-----+  \ /     /
+   |  AC2         | |  +----------+    |       AC3|         +------
+   |              | |    MAC-VRF1      |          |              |
+   |              +-+    RD1/RT1       |          |              |
+   |                +------------------+          |  SAFIs       |
+   |                                              |  IPVPN +---+ |
+ -------------------------------------------------+  EVPN  |BGP| |
+   |                                                 IP    +---+ |
+   |                                                             |
+   +-------------------------------------------------------------+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-evpn-ipvpn-interworking-pe" class="selfRef">EVPN-IPVPN Interworking PE</a>
+        </figcaption></figure>
+</div>
+<p id="section-3-3">Note: "tnl" refers to "tunnel".<a href="#section-3-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3-4">
+        <dt id="section-3-4.1">AC:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.2">
+          <p id="section-3-4.2.1">An Attachment Circuit or logical interface associated to a given
+          Bridge Table (BT) or IP-VRF. To determine the AC on which a packet arrived, the PE
+          will examine the combination of a physical port and VLAN tags (where
+          the VLAN tags can be individual VLAN tags, Q-in-Q tags, or ranges of
+          both).<a href="#section-3-4.2.1" class="pilcrow">¶</a></p>
+<p id="section-3-4.2.2">Example: In <a href="#evpn-ipvpn-interworking-pe" class="auto internal xref">Figure 1</a>, AC1 is
+          associated to BT1, AC2 to BT2, and AC3 to IP-VRF1.<a href="#section-3-4.2.2" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.3">BT:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.4">
+          <p id="section-3-4.4.1">A Bridge Table, as defined in <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>,
+          represents the instantiation of a broadcast domain on a PE. When an
+          EVPN Instance (EVI) contains a single broadcast domain, the associated MAC-VRF on
+          each PE includes a single BT. In cases where multiple Broadcast
+          Domains exist within the same MAC-VRF, each BT is associated with a
+          distinct Ethernet Tag. EVPN routes specific to a given BT include
+          the corresponding Ethernet Tag to indicate the broadcast domain to
+          which the route pertains.<a href="#section-3-4.4.1" class="pilcrow">¶</a></p>
+<p id="section-3-4.4.2">Example: In <a href="#evpn-ipvpn-interworking-pe" class="auto internal xref">Figure 1</a>, MAC-VRF1 has
+          two BTs: BT1 and BT2. Ethernet Tag x is defined in BT1 and Ethernet
+          Tag y in BT2.<a href="#section-3-4.4.2" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.5">CE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.6">A Customer Edge device.<a href="#section-3-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.7">Composite Domain:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.8">A domain in which multiple control plane ISF
+          SAFIs, i.e., IPVPN and/or EVPN, are used and that is composed of
+          regular PEs and composite PEs; see below.<a href="#section-3-4.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.9">Composite PE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.10">
+          <p id="section-3-4.10.1">An Interworking PE that is connected to at least
+          one composite domain and is capable of advertising a given prefix
+          to multiple types of peers using appropriate route types.
+          Specifically, a composite PE advertises the prefix to an IPVPN peer
+          using an IPVPN ISF route, to an EVPN peer using an EVPN ISF route,
+          and to a Route Reflector (RR) <span>[<a href="#RFC4456" class="cite xref">RFC4456</a>]</span> using both
+          IPVPN and EVPN ISF routes (assuming the same RR is used for IPVPN
+          and EVPN). A composite PE implements the procedures defined in <a href="#sect-7" class="auto internal xref">Section 7</a>.<a href="#section-3-4.10.1" class="pilcrow">¶</a></p>
+<p id="section-3-4.10.2">Example: <a href="#ure-interworking-composite-pe-example" class="auto internal xref">Figure 2</a>
+          illustrates a scenario where PE1 is a composite PE, as PE1 has both EVPN and IPVPN enabled toward the same RR. PE1
+          advertises a given IP prefix (IPn/x) twice: once using EVPN and
+          once using IPVPN. PE2 and PE3 are not composite PEs.<a href="#section-3-4.10.2" class="pilcrow">¶</a></p>
+<span id="name-interworking-composite-pe-e"></span><div id="ure-interworking-composite-pe-example">
+<figure id="figure-2">
+            <div class="alignLeft art-text artwork" id="section-3-4.10.3.1">
+<pre>
+                                +---+
+                                |PE2|
+                                +---+
+                                 ^
+            Interworking         |EVPN
+                    PE    EVPN   v
+                   +---+  IPVPN +--+       +---+
+                   |PE1| &lt;----&gt; |RR| &lt;---&gt; |PE3|
+                   +---+        +--+ IPVPN +---+
+                 Composite</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-interworking-composite-pe-e" class="selfRef">Interworking Composite PE Example</a>
+            </figcaption></figure>
+</div>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.11">Composite/Gateway PE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.12">
+          <p id="section-3-4.12.1">An Interworking PE that simultaneously
+          performs the functions of both a composite PE and a gateway PE. This
+          type of PE is connected to two or more domains: one or more
+          regular domains and one or more composite domains. It operates as
+          follows:<a href="#section-3-4.12.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-4.12.2.1">
+              <p id="section-3-4.12.2.1.1">Re-originates an ISF route received from the regular domain
+              into the composite domain. Within the composite domain, it
+              performs the behavior of a composite PE.<a href="#section-3-4.12.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-3-4.12.2.2">
+              <p id="section-3-4.12.2.2.1">Re-originates an ISF route received from the composite domain
+              into the regular domain. In the regular domain, the route is
+              advertised using the ISF SAFI applicable to that domain.<a href="#section-3-4.12.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-3-4.12.3">This functionality is particularly
+          useful in scenarios where a tenant network spans multiple domains
+          using different ISF SAFIs (e.g., IPVPN and EVPN) and where
+          any-to-any tenant connectivity is required. In such deployments,
+          maintaining consistent end-to-end control plane behavior across
+          domains is desirable when feasible.<a href="#section-3-4.12.3" class="pilcrow">¶</a></p>
+<p id="section-3-4.12.4">Example:
+          <a href="#interworking-gateway-composite" class="auto internal xref">Figure 3</a> illustrates a
+          scenario where PE1 is a composite/gateway PE.<a href="#section-3-4.12.4" class="pilcrow">¶</a></p>
+<span id="name-interworking-composite-gate"></span><div id="interworking-gateway-composite">
+<figure id="figure-3">
+            <div class="alignLeft art-text artwork" id="section-3-4.12.5.1">
+<pre>
+                          +---+
+                          |PE2|
+                          +---+
+                           ^
+         Interworking      |EVPN
+              PE    EVPN   v
++---+  EVPN  +---+  IPVPN +--+       +---+
+|PE4| &lt;----&gt; |PE1| &lt;----&gt; |RR| &lt;---&gt; |PE3|
++---+        +---+        +--+ IPVPN +---+
+        Composite/Gateway</pre>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-interworking-composite-gate" class="selfRef">Interworking Composite/Gateway PE Example</a>
+            </figcaption></figure>
+</div>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.13">Domain:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.14">
+          <p id="section-3-4.14.1">Two PEs belong to the same domain if they are attached to
+          the same tenant and the packets exchanged between them do not
+          require a data-path IP lookup (in the tenant space) at any transit
+          router. A gateway PE interconnects multiple DOMAIN-IDs. Domain
+          boundaries are not restricted to an Autonomous System or an IGP
+          instance. The PEs in a domain may reside within the same or in
+          different Autonomous Systems, and a single Autonomous System may
+          also encompass multiple domains.<a href="#section-3-4.14.1" class="pilcrow">¶</a></p>
+<p id="section-3-4.14.2">Example 1:
+          <a href="#ure-multiple-domain-dci-example" class="auto internal xref">Figure 4</a> depicts a scenario
+          where Tenant Systems TS1 and TS2 belong to the same tenant, and they
+          are located in different data centers that are connected by gateway
+          PEs (see the "Gateway PE" definition below). These gateway PEs use
+          IPVPN in the WAN. When TS1 sends traffic to TS2, the intermediate
+          routers between PE1 and PE2 require a tenant IP lookup in their
+          IP-VRFs so that the packets can be forwarded. In this example, there
+          are three different domains. The gateway PEs connect the EVPN
+          domains to the IPVPN domain.<a href="#section-3-4.14.2" class="pilcrow">¶</a></p>
+<span id="name-multiple-domain-data-center"></span><div id="ure-multiple-domain-dci-example">
+<figure id="figure-4">
+            <div class="alignLeft art-text artwork" id="section-3-4.14.3.1">
+<pre>
+                        GW1------------GW3
+                      +------+       +------+
+        +-------------|IP-VRF|       |IP-VRF|-------------+
+       PE1            +------+       +------+            PE2
+     +------+   DC1      |     WAN      |     DC2     +------+
+ TS1-|IP-VRF|   EVPN     |    IPVPN     |     EVPN    |IP-VRF|-TS2
+     +------+           GW2            GW4            +---+--+
+        |             +------+       +------+             |
+        +-------------|IP-VRF|       |IP-VRF|-------------+
+                      +------+       +------+
+                         +--------------+
+            DOMAIN 1         DOMAIN 2       DOMAIN 3
+        &lt;---------------&gt; &lt;------------&gt; &lt;----------------&gt;</pre>
+</div>
+<figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
+<a href="#name-multiple-domain-data-center" class="selfRef">Multiple Domain Data Center Interconnects (DCIs) Example</a>
+            </figcaption></figure>
+</div>
+<p id="section-3-4.14.4">Example 2: <a href="#ure-single-domain-dci-example" class="auto internal xref">Figure 5</a>
+          illustrates a similar scenario, but PE1 and PE2 are now connected by
+          a BGP Labeled Unicast (BGP-LU) tunnel, and they have a BGP peer
+          relationship for EVPN. Contrary to Example 1, there is no need for
+          tenant IP lookups on the intermediate routers in order to forward
+          packets between PE1 and PE2. Therefore, there is only one domain in
+          the network, and PE1/PE2 belong to it.<a href="#section-3-4.14.4" class="pilcrow">¶</a></p>
+<span id="name-single-domain-dci-example"></span><div id="ure-single-domain-dci-example">
+<figure id="figure-5">
+            <div class="alignLeft art-text artwork" id="section-3-4.14.5.1">
+<pre>
+                             EVPN
+        &lt;-------------------------------------------------&gt;
+                             BGP-LU
+        &lt;-------------------------------------------------&gt;
+
+                       ASBR------------ASBR
+                      +------+       +------+
+        +-------------|      |       |      |-------------+
+       PE1            +------+       +--+---+            PE2
+     +------+   DC1      |     WAN      |     DC2     +------+
+ TS1-|IP-VRF|   EVPN     |              |     EVPN    |IP-VRF|-TS2
+     +------+          ASBR            ASBR           +---+--+
+        |             +------+       +------+             |
+        +-------------|      |       |      |-------------+
+                      +------+       +------+
+                         +--------------+
+
+        &lt;--------------------DOMAIN-1---------------------&gt;</pre>
+</div>
+<figcaption><a href="#figure-5" class="selfRef">Figure 5</a>:
+<a href="#name-single-domain-dci-example" class="selfRef">Single Domain DCI Example</a>
+            </figcaption></figure>
+</div>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.15">Ethernet Tag:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.16">Used to represent a broadcast domain <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.<a href="#section-3-4.16" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.17">EVI:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.18">An EVPN Instance spanning the PE devices
+          participating in that EVPN <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.<a href="#section-3-4.18" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.19">Gateway PE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.20">
+          <p id="section-3-4.20.1">An Interworking PE that connects two or more distinct
+          domains, where each domain may be either a regular domain or a
+          composite domain. A gateway PE may establish either Internal
+          BGP (IBGP) <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> or External BGP (EBGP) <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> sessions with peers in the connected domains.
+          Depending on its configuration, the gateway PE performs one of the
+          following functions:<a href="#section-3-4.20.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-4.20.2.1">
+              <p id="section-3-4.20.2.1.1">Re-originates ISF routes using the same ISF SAFI between the
+              connected domains.<a href="#section-3-4.20.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-3-4.20.2.2">
+              <p id="section-3-4.20.2.2.1">Translates an ISF route received via one
+              ISF SAFI and re-originates it into a domain that uses a different ISF SAFI.<a href="#section-3-4.20.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-3-4.20.3">A gateway PE follows the procedures defined in <a href="#sect-8" class="auto internal xref">Section 8</a>. A gateway PE interconnects multiple domains. If
+          the gateway PE is configured to use D-PATH, each domain is
+          identified by a DOMAIN-ID, and these DOMAIN-IDs are encoded in the
+          D-PATH and included in ISF SAFI route advertisements. The
+          structure and behavior of the D-PATH Path Attribute are described in
+          <a href="#sect-4" class="auto internal xref">Section 4</a>.<a href="#section-3-4.20.3" class="pilcrow">¶</a></p>
+<p id="section-3-4.20.4">Example: <a href="#ure-interworking-gateway-pe-example" class="auto internal xref">Figure 6</a> illustrates a
+          scenario where PE1 is a gateway PE since the EVPN and IPVPN SAFIs are
+          enabled on different BGP peers, and a given local IP prefix IPn/x is
+          sent to both BGP peers for the same tenant. PE2 and PE1 are in one
+          domain, and PE3 and PE1 are in another domain.<a href="#section-3-4.20.4" class="pilcrow">¶</a></p>
+<span id="name-interworking-gateway-pe-exa"></span><div id="ure-interworking-gateway-pe-example">
+<figure id="figure-6">
+            <div class="alignLeft art-text artwork" id="section-3-4.20.5.1">
+<pre>
+                            Interworking PE
+                    +---+ EVPN   +---+ IPVPN  +---+
+                    |PE2| &lt;----&gt; |PE1| &lt;----&gt; |PE3|
+                    +---+        +---+        +---+
+                                Gateway</pre>
+</div>
+<figcaption><a href="#figure-6" class="selfRef">Figure 6</a>:
+<a href="#name-interworking-gateway-pe-exa" class="selfRef">Interworking Gateway PE Example</a>
+            </figcaption></figure>
+</div>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.21">Interworking PE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.22">
+          <p id="section-3-4.22.1">A PE that is capable of advertising a given IP
+          prefix using one or more of the following route types: an EVPN
+          ISF route, either an EVPN MAC/IP
+          Advertisement route or an EVPN IP Prefix route, and an IPVPN ISF
+          route. An Interworking PE maintains a single IP-VRF per tenant and
+          zero, one, or more MAC-VRFs per tenant. Each MAC-VRF may include one
+          or more BTs, and each BT may be associated with the
+          tenant's IP-VRF via an Integrated Routing and Bridging (IRB)
+          interface. There are two types of Interworking PEs:<a href="#section-3-4.22.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-4.22.2.1">
+              <p id="section-3-4.22.2.1.1">Composite PE<a href="#section-3-4.22.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-3-4.22.2.2">
+              <p id="section-3-4.22.2.2.1">Gateway PE<a href="#section-3-4.22.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-3-4.22.3">These two functions may be implemented independently on a
+          per-tenant basis and may also coexist for the same tenant on a
+          single PE.<a href="#section-3-4.22.3" class="pilcrow">¶</a></p>
+<p id="section-3-4.22.4">Example: <a href="#evpn-ipvpn-interworking-pe" class="auto internal xref">Figure 1</a> shows an Interworking PE
+          where ISF SAFIs are enabled. IP-VRF1 and MAC-VRF1 are instantiated
+          on the PE and together provide ISF for the
+          tenant.<a href="#section-3-4.22.4" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.23">IP-VRF:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.24">An IP Virtual Routing and Forwarding table, as defined in
+          <span>[<a href="#RFC4364" class="cite xref">RFC4364</a>]</span> and <span>[<a href="#RFC9135" class="cite xref">RFC9135</a>]</span>. Route
+          Distinguisher and Route Target(s) are required properties of an
+          IP-VRF. An IP-VRF is programmed with ISF routes.<a href="#section-3-4.24" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.25">IRB:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.26">An Integrated Routing and Bridging interface <span>[<a href="#RFC9135" class="cite xref">RFC9135</a>]</span>. It refers to the logical interface that connects
+          a BT to an IP-VRF and allows the forwarding of packets with the destination in
+          a different subnet.<a href="#section-3-4.26" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.27">ISF route:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.28">An ISF route for a given prefix,
+          whose ISF SAFI may change as it transits different domains. IPVPN
+          routes as in <span>[<a href="#RFC4364" class="cite xref">RFC4364</a>]</span> and <span>[<a href="#RFC4659" class="cite xref">RFC4659</a>]</span>,
+          EVPN IP Prefix routes as in <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span>, or EVPN MAC/IP
+          Advertisement routes when they are programmed within an IP-VRF <span>[<a href="#RFC9135" class="cite xref">RFC9135</a>]</span> are considered ISF routes in this document.<a href="#section-3-4.28" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.29">ISF SAFI:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.30">The ISF Subsequent Address
+          Family Identifier defines a Multiprotocol BGP (MP-BGP) <span>[<a href="#RFC4760" class="cite xref">RFC4760</a>]</span> Sub-Address Family used
+          to advertise IP prefix reachability for ISF
+          within a tenant network. The SAFIs used for ISF include 1
+          (applicable only to IPv4 and IPv6 AFIs), 128 (applicable only to
+          IPv4 and IPv6 AFIs), and 70 (EVPN, applicable only to AFI 25). The
+          procedures defined in this document apply only to SAFI 128 and SAFI
+          70. Accordingly, for the purposes of this document, the term
+          "ISF SAFI" refers exclusively to SAFI 128 or SAFI 70.
+          The routes for these ISF SAFIs are referred to as IPVPN and EVPN
+          routes. Note that the term "ISF SAFI" does not define a
+          new SAFI; it is used solely as a collective reference to SAFI 128
+          and SAFI 70.<a href="#section-3-4.30" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.31">MAC-VRF:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.32">A MAC Virtual Routing and Forwarding table, as defined
+          in <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>. A MAC-VRF represents the instantiation
+          of an EVI on a PE. Each MAC-VRF is associated with a
+          unique Route Distinguisher (RD) and one or more Route Targets (RTs),
+          which are required attributes for its operation. These RD and RT
+          values are typically distinct from those used by any associated
+          IP-VRF, when such an IP-VRF is linked to the MAC-VRF through a
+          BT via an IRB interface
+          <span>[<a href="#RFC9135" class="cite xref">RFC9135</a>]</span>.<a href="#section-3-4.32" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.33">MPLS/NVO/SRv6 tunnel:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.34">
+          <p id="section-3-4.34.1">A tunnel that may be based on Multiprotocol 
+          Label Switching (MPLS), a Network Virtualization Overlay (NVO)
+          technology <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span>, or Segment Routing over IPv6 (SRv6)
+          <span>[<a href="#RFC9252" class="cite xref">RFC9252</a>]</span>. Such tunnels are utilized by both MAC-VRFs
+          and IP-VRFs. Regardless of the underlying tunneling technology, the
+          tunnel may carry either Ethernet or IP payloads. MAC-VRFs are
+          restricted to using tunnels that carry Ethernet payloads -- such as Ethernet
+          NVO tunnels <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span> and SRv6 tunnels with Ethernet
+          payload -- which are typically established via EVPN signaling. In
+          contrast, IP-VRFs may utilize tunnels carrying Ethernet payloads
+          (signaled via EVPN) or IP payloads (signaled via EVPN or IPVPN
+          mechanisms). IPVPN-only PEs support IP-VRFs but do not support
+          sending or receiving traffic over tunnels carrying Ethernet
+          payloads.<a href="#section-3-4.34.1" class="pilcrow">¶</a></p>
+<p id="section-3-4.34.2">Example: <a href="#evpn-ipvpn-interworking-pe" class="auto internal xref">Figure 1</a> illustrates the use of an
+          MPLS, NVO-based, or SRv6 tunnel to transport Ethernet frames
+          associated with MAC-VRF1. The PE identifies the corresponding
+          MAC-VRF and BT based on the EVPN label -- an MPLS label, a Virtual
+          Network Identifier (VNI), or an SRv6 Segment ID -- depending on the
+          encapsulation type. Additionally, <a href="#evpn-ipvpn-interworking-pe" class="auto internal xref">Figure 1</a> shows two distinct
+          MPLS/NVO/SRv6 tunnels used by IP-VRF1: one tunnel transports
+          Ethernet frames, while the other carries IP packets. This
+          demonstrates that IP-VRFs may concurrently utilize multiple tunnel
+          types, depending on the payload and the signaling mechanism (EVPN or
+          IPVPN).<a href="#section-3-4.34.2" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.35">NVE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.36">A Network Virtualization Edge router <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span>.<a href="#section-3-4.36" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.37">PE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.38">A Provider Edge device.<a href="#section-3-4.38" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.39">Regular Domain:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.40">A domain in which a single control plane ISF
+          SAFI, i.e., IPVPN or EVPN, is used. A regular domain is composed of
+          regular PEs; see the definition below. In Figures <a href="#ure-multiple-domain-dci-example" class="auto internal xref">4</a> and <a href="#ure-single-domain-dci-example" class="auto internal xref">5</a>, all domains are
+          regular domains.<a href="#section-3-4.40" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.41">Regular PE:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.42">A PE that is attached to a domain, either regular or
+          composite, and that uses one of the control plane ISF SAFIs (IPVPN
+          or EVPN) operating in the domain.<a href="#section-3-4.42" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.43">RT-2:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.44">Route Type 2 or MAC/IP route, as per <span>[<a href="#RFC7432" class="cite xref">RFC7432</a>]</span>.<a href="#section-3-4.44" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.45">RT-5:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.46">Route Type 5 or IP Prefix route, as per <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span>.<a href="#section-3-4.46" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-4">
+<section id="section-4">
+      <h2 id="name-domain-path-d-path-attribut">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-domain-path-d-path-attribut" class="section-name selfRef">Domain Path (D-PATH) Attribute</a>
+      </h2>
+<p id="section-4-1">The BGP D-PATH Path Attribute is an optional and transitive BGP Path
+      Attribute.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Similar to AS_PATH, D-PATH is composed of a sequence of domain
+      segments. Each domain segment is composed of &lt;domain segment length,
+      domain segment value&gt;, where the domain segment value is a sequence
+      of one or more domains, as illustrated in <a href="#Domain-Segment" class="auto internal xref">Figure 7</a>. Each domain is represented by
+      &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt;.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<span id="name-d-path-domain-segment"></span><div id="Domain-Segment">
+<figure id="figure-7">
+        <div class="alignLeft art-text artwork" id="section-4-3.1">
+<pre>
+Octets
+0               1                    8                         n
++---------------+----------------//--+----//-------------------+
+|Domain Segment |   Last Domain      |        Domain of Origin |
+|    Length     |                    |                         |
++---------------+----------------//--+----//-------------------+
+                 \__________________/
+                             |
+           Octets            v
+           0                         6                7
+           +------------------//-----+----------------+
+           |    DOMAIN-ID            | ISF_SAFI_TYPE  |
+           +------------------//-----+----------------+
+           \________________________/
+                        |
+        Octets          v
+        0     1     2     3     4     5     6
+        +-----------------------+-----------+
+        |        Global         |  Local    |
+        |        Admin          |  Admin    |
+        +-----------------------+-----------+</pre>
+</div>
+<figcaption><a href="#figure-7" class="selfRef">Figure 7</a>:
+<a href="#name-d-path-domain-segment" class="selfRef">D-PATH Domain Segment</a>
+        </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-4-4">
+        <dt id="section-4-4.1">Domain Segment Length:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-4.2">A 1-octet length field. Contains the number of
+          domains in the segment.<a href="#section-4-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-4.3">Last Domain:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-4.4"> Refers to the most recently added
+          domain.<a href="#section-4-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-4.5">Domain of Origin:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-4.6"> Refers to the first
+          domain added by the gateway PE that initialized the D-PATH for the
+          ISF route. Multiple domains may exist between the Last Domain and the Domain of Origin.<a href="#section-4-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-4.7">DOMAIN-ID:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-4.8">A 6-octet field that represents a domain. It is
+          composed of a 4-octet Global Administrator sub-field and a 2-octet
+          Local Administrator sub-field. The Global Administrator sub-field
+          <span class="bcp14">MAY</span> be filled with a public or private Autonomous System Number (ASN), an IPv4 address, or any value. The combined Global
+          Administrator and Local Administrator can use any value that
+          guarantees the uniqueness of the DOMAIN-ID (when the tenant network
+          is connected to multiple Operators) and helps troubleshooting and
+          debugging of D-PATH in ISF routes. A gateway PE that interconnects
+          two domains is associated with two distinct DOMAIN-IDs, one per
+          domain. All gateway PEs attached to the same domain <span class="bcp14">MUST</span> use the
+          same DOMAIN-ID value to represent that domain. Expressing the Global
+          Administrator and Local Administrator values as opaque unsigned
+          integers in user interface and reporting (e.g., command-line interface (CLI) and YANG) is <span class="bcp14">RECOMMENDED</span>.<a href="#section-4-4.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-4-4.9">ISF_SAFI_TYPE:</dt>
+        <dd style="margin-left: 1.5em" id="section-4-4.10">
+          <p id="section-4-4.10.1">A 1-octet field that indicates the inter-subnet
+          forwarding SAFI type in which a route was received by the gateway
+          PE before the route is re-exported by the gateway PE into a
+          different domain. The ISF_SAFI_TYPE field is informational and does
+          not have any impact on the loop detection or BGP path selection
+          procedures. Encoding the ISF_SAFI_TYPE provides operational
+          benefits, as it allows operators to verify that the intended
+          interworking is in place and that the route has traversed the
+          expected domains using the intended ISF SAFIs in each domain. The
+          non-zero ISF_SAFI_TYPE values come from the IANA "SAFI Values" registry <span>[<a href="#IANA-SAFI" class="cite xref">IANA-SAFI</a>]</span>. These are the values allowed by this
+          document:<a href="#section-4-4.10.1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+            <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Value</th>
+                <th class="text-left" rowspan="1" colspan="1">ISF_SAFI_TYPE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">0</td>
+                <td class="text-left" rowspan="1" colspan="1">Gateway PE local ISF route</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">70</td>
+                <td class="text-left" rowspan="1" colspan="1">EVPN (BGP EVPNs)</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">128</td>
+                <td class="text-left" rowspan="1" colspan="1">IPVPN (MPLS-labeled VPN address)</td>
+              </tr>
+            </tbody>
+          </table>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-4-5">The BGP D-PATH Path Attribute is supported on ISF routes of types IPVPN and
+      EVPN and <span class="bcp14">MUST NOT</span> be advertised along with routes different from IPVPN
+      and EVPN routes. By default, the BGP D-PATH Path Attribute is not advertised
+      and <span class="bcp14">MUST</span> be explicitly enabled by configuration on the gateway PEs. The
+      rest of this section specifies procedures related to D-PATH:<a href="#section-4-5" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4-6">
+<li id="section-4-6.1">
+          <p id="section-4-6.1.1">D-PATH identifies the sequence of domains, each identified by a
+          &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt; through which a given ISF route of
+          type IPVPN or EVPN has passed.<a href="#section-4-6.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.1.2.1">
+              <p id="section-4-6.1.2.1.1">This attribute list <span class="bcp14">MAY</span> contain one or more segments. Each
+              segment's Domain Segment Length <span class="bcp14">MUST</span> be equal to or greater than
+              one.<a href="#section-4-6.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.1.2.2">
+              <p id="section-4-6.1.2.2.1">The first entry in the list (leftmost) is the
+              &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt; from which a gateway PE is
+              re-originating an ISF IPVPN or EVPN route. The last entry in the
+              list (rightmost) is the &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt; from
+              which a gateway PE received an ISF IPVPN or EVPN route without a
+              D-PATH Path Attribute (the Domain of Origin). Intermediate entries in
+              the list are domains that the ISF IPVPN or EVPN route has
+              transited.<a href="#section-4-6.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.1.2.3">
+              <p id="section-4-6.1.2.3.1">As an example, an ISF IPVPN or EVPN route received with a
+              D-PATH Path Attribute containing a domain segment of {length=2,
+              &lt;6500:2:IPVPN&gt;,&lt;6500:1:EVPN&gt;} indicates that the
+              route was originated in EVPN domain 6500:1 and re-originated
+              into IPVPN domain 6500:2.<a href="#section-4-6.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.1.2.4">
+              <p id="section-4-6.1.2.4.1">In order to minimize the number of segments in the D-PATH
+              Path Attribute, the local gateway PE <span class="bcp14">MUST</span> prepend its own domain as
+              the last element of the domain segment. If the act of prepending
+              a new domain causes an overflow in the domain segment (i.e.,
+              more than 255 domains), the local gateway PE <span class="bcp14">MUST</span> prepend a new
+              segment and prepend its own domain to this new segment.<a href="#section-4-6.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li id="section-4-6.2">
+          <p id="section-4-6.2.1">D-PATH is added/modified by a gateway PE when re-originating an
+          update to a different domain (which runs the same or different ISF
+          SAFI), assuming the use of D-PATH is configured as follows:<a href="#section-4-6.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.2.2.1">
+              <p id="section-4-6.2.2.1.1">The IP-VRF of a gateway PE that interconnects two domains is
+              associated with two distinct DOMAIN-IDs, one per domain. These
+              DOMAIN-IDs <span class="bcp14">MUST</span> be different. Each domain <span class="bcp14">MUST</span> be identified by
+              a unique DOMAIN-ID. All gateway PEs attached to the same domain
+              <span class="bcp14">MUST</span> use the same DOMAIN-ID value to represent that domain.<a href="#section-4-6.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.2.2.2">
+              <p id="section-4-6.2.2.2.1">Whenever a prefix arrives at a gateway PE in a particular ISF
+              SAFI route, if the gateway PE needs to export that prefix to a
+              BGP peer, the gateway PE <span class="bcp14">MUST</span> prepend a
+              &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt; to the list of domains in the
+              D-PATH of the received route, as long as the gateway PE works in
+              Uniform Propagation Mode (as explained in <a href="#sect-5.2" class="auto internal xref">Section 5.2</a>) and the use of D-PATH is configured as
+              described at the beginning of this section.<a href="#section-4-6.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.2.2.3">
+              <p id="section-4-6.2.2.3.1">For instance, consider an IP-VRF configured with DOMAIN-IDs
+              6500:1 for EVPN and 6500:2 for IPVPN. If an EVPN route for
+              prefix P is received and P is installed in the IP-VRF, then the
+              corresponding IPVPN route for P, when exported to an IPVPN peer,
+              will include the domain identifier &lt;6500:1:EVPN&gt; prepended
+              to the existing D-PATH Path Attribute, assuming the use of D-PATH is
+              configured, as described in the beginning of this section.
+              Similarly, prefixes received in the IP-VRF from an IPVPN peer
+              will be exported to EVPN peers with the domain identifier
+              &lt;6500:2:IPVPN&gt; appended to the D-PATH Path Attribute, again
+              assuming the use of D-PATH is configured.<a href="#section-4-6.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.2.2.4">
+              <p id="section-4-6.2.2.4.1">In the above example, if the EVPN route is received without
+              D-PATH, the gateway PE will add the D-PATH Path Attribute with one
+              segment {length=1, &lt;6500:1:EVPN&gt;} when re-advertising to
+              domain 6500:2.<a href="#section-4-6.2.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.2.2.5">
+              <p id="section-4-6.2.2.5.1">Within the Domain of Origin, the update does not contain a
+              D-PATH Path Attribute because the update has not passed through a
+              gateway PE yet.<a href="#section-4-6.2.2.5.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li id="section-4-6.3">
+          <p id="section-4-6.3.1">For a local ISF route, i.e., a configured static route or a route
+          learned from a local Attachment Circuit, a gateway PE following this
+          specification has three choices:<a href="#section-4-6.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.3.2.1">
+              <p id="section-4-6.3.2.1.1">The gateway PE advertises that ISF route without a D-PATH
+              Path Attribute into one or more of its configured domains, in which
+              case the D-PATH Path Attribute will be added by the other gateway PEs
+              in each of those domains.<a href="#section-4-6.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.3.2.2">
+              <p id="section-4-6.3.2.2.1">The gateway PE advertises that ISF route with a D-PATH
+              Path Attribute into one or more of its configured domains (assuming
+              the use of D-PATH is configured), in which case the D-PATH
+              Path Attribute in each copy of the ISF route is initialized with an
+              ISF_SAFI_TYPE of 0 and the DOMAIN-ID of the domain with which
+              the ISF route is associated.<a href="#section-4-6.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.3.2.3">
+              <p id="section-4-6.3.2.3.1">The gateway PE advertises the ISF route with a D-PATH
+              Path Attribute (assuming the use of D-PATH is configured) containing
+              a locally configured domain identifier associated with its local
+              ISF routes into one or more of its configured domains. In this
+              case, the D-PATH Path Attribute in each copy of the ISF route is
+              initialized with an ISF_SAFI_TYPE value of 0 and the DOMAIN-ID
+              representing the local ISF domain. The DOMAIN-ID <span class="bcp14">MUST</span> be
+              globally unique and <span class="bcp14">MAY</span> be shared across multiple gateway PEs.<a href="#section-4-6.3.2.3.1" class="pilcrow">¶</a></p>
+<p id="section-4-6.3.2.3.2">Although all three options provide
+              mechanisms for detecting control plane loops, this third option
+              is <span class="bcp14">RECOMMENDED</span>, as it conveys additional information about the
+              origin of the route. Specifically, it allows the receiving PE to
+              identify the route as having originated from a local gateway
+              based on the combination of the DOMAIN-ID and the ISF_SAFI_TYPE
+              value.<a href="#section-4-6.3.2.3.2" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li id="section-4-6.4">
+          <p id="section-4-6.4.1">An ISF route of type IPVPN or EVPN received by a gateway PE that
+          includes a D-PATH Path Attribute containing one or more DOMAIN-ID values
+          locally associated with the corresponding IP-VRF <span class="bcp14">MUST</span> be considered
+          a looped ISF route for the purposes of re-advertisement into
+          adjacent domains. In such cases:<a href="#section-4-6.4.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.4.2.1">
+              <p id="section-4-6.4.2.1.1">The ISF route <span class="bcp14">MUST</span> be flagged as "looped".<a href="#section-4-6.4.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.4.2.2">
+              <p id="section-4-6.4.2.2.1">The route <span class="bcp14">MUST NOT</span> be re-exported to any other domain.<a href="#section-4-6.4.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.4.2.3">
+              <p id="section-4-6.4.2.3.1">The route is installed in the IP-VRF only if it is selected
+              as the best path according to the procedures defined in <a href="#sect-6" class="auto internal xref">Section 6</a>.<a href="#section-4-6.4.2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4-6.4.3">For the purpose of loop detection, the ISF_SAFI_TYPE value
+          associated with a DOMAIN-ID in the D-PATH Path Attribute is irrelevant.
+          That is, a route is considered looped if it contains at least one
+          DOMAIN-ID that matches any local DOMAIN-ID configured on the gateway
+          PE, regardless of the ISF_SAFI_TYPE value.<a href="#section-4-6.4.3" class="pilcrow">¶</a></p>
+<p id="section-4-6.4.4">Example: In the scenario illustrated in <a href="#ure-multiple-domain-dci-example" class="auto internal xref">Figure 4</a>, gateway GW1 receives two
+          ISF routes for the same prefix associated with TS1:<a href="#section-4-6.4.4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.4.5.1">
+              <p id="section-4-6.4.5.1.1">An EVPN IP Prefix route with a next hop of PE1 and no D-PATH
+              Path Attribute.<a href="#section-4-6.4.5.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.4.5.2">
+              <p id="section-4-6.4.5.2.1">An IPVPN route with a next hop of GW2 and a D-PATH Path Attribute
+              containing a single segment: {length=1, &lt;6500:1:EVPN&gt;},
+              where 6500:1 is assumed to be the DOMAIN-ID for domain 1, which
+              is local to GW1.<a href="#section-4-6.4.5.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4-6.4.6">Upon receiving the IPVPN route, GW1 identifies 6500:1 as a
+          locally configured DOMAIN-ID and therefore flags the route as
+          "looped". As a result, GW1 does not install this route in the tenant
+          IP-VRF because the route selection process prefers the EVPN IP
+          Prefix route (due to its shorter D-PATH Path Attribute, as specified in
+          <a href="#sect-6" class="auto internal xref">Section 6</a>). Loop detection is applied even if the
+          ISF_SAFI_TYPE value in the D-PATH Path Attribute is unknown to GW1 or
+          does not match any SAFI defined in this specification.<a href="#section-4-6.4.6" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-4-6.5">
+          <p id="section-4-6.5.1">A DOMAIN-ID configured on a gateway PE <span class="bcp14">MAY</span> be either assigned at
+          the domain interconnection level or scoped individually per tenant
+          IP-VRF.<a href="#section-4-6.5.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.5.2.1">
+              <p id="section-4-6.5.2.1.1">When the DOMAIN-ID is allocated at the peering domain level,
+              it <span class="bcp14">SHALL</span> apply to all tenant IP-VRFs associated with that
+              domain.<a href="#section-4-6.5.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.5.2.2">
+              <p id="section-4-6.5.2.2.1">When the DOMAIN-ID is allocated for a specific tenant IP-VRF,
+              the processing of received D-PATH Path Attributes and their
+              subsequent propagation <span class="bcp14">SHALL</span> be performed in the context of that
+              IP-VRF's DOMAIN-ID.<a href="#section-4-6.5.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+<p id="section-4-6.5.3">A per-tenant IP-VRF DOMAIN-ID assignment is particularly
+          useful in scenarios involving route leaking. For example, consider
+          two gateway PEs, PE1 and PE2, both associated with different tenant
+          IP-VRFs and denoted as IP-VRF-1 and IP-VRF-2, respectively. If PE1 advertises ISF
+          SAFI routes for IP-VRF-1 with a DOMAIN-ID of 6500:1, and these
+          routes are received on PE2 and subsequently leaked from IP-VRF-1
+          into IP-VRF-2, the re-advertisement of the routes from PE2 back to
+          PE1 in the context of IP-VRF-2 will not be considered looped by PE1.
+          This is because PE1 processes the route in the context of IP-VRF-2,
+          for which DOMAIN-ID 6500:1 is not locally configured.<a href="#section-4-6.5.3" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-4-6.6">
+          <p id="section-4-6.6.1">The number of domains encoded in the D-PATH Path Attribute reflects
+          the number of gateway PEs that the corresponding ISF route update
+          has traversed. If a transit gateway PE performs route leaking
+          between two local tenant IP-VRFs, it <span class="bcp14">MAY</span> prepend a domain to the
+          D-PATH Path Attribute with an ISF_SAFI_TYPE value of 0 when exporting the
+          leaked route into an ISF SAFI. In such cases, the total number of
+          domain entries in the D-PATH Path Attribute reflects not only the number
+          of gateway PEs through which the ISF route has been re-originated
+          but also the number of tenant IP-VRF instances across those gateway
+          PEs.<a href="#section-4-6.6.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-4-6.7">
+          <p id="section-4-6.7.1">The following error-handling procedures apply to the D-PATH Path
+          Attribute:<a href="#section-4-6.7.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.7.2.1">
+              <p id="section-4-6.7.2.1.1">A received D-PATH Path Attribute <span class="bcp14">MUST</span> be considered malformed if
+              it contains a malformed domain segment or if the total length of
+              the D-PATH Path Attribute is less than 8 octets.<a href="#section-4-6.7.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.7.2.2">
+              <p id="section-4-6.7.2.2.1">A domain segment <span class="bcp14">MUST</span> be considered malformed under any of
+              the following conditions:<a href="#section-4-6.7.2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-6.7.2.2.2.1">
+                  <p id="section-4-6.7.2.2.2.1.1">The length of the domain segment is zero.<a href="#section-4-6.7.2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                <li class="normal" id="section-4-6.7.2.2.2.2">
+                  <p id="section-4-6.7.2.2.2.2.1">The length of the domain segment exceeds the remaining
+                  length of the enclosing D-PATH Path Attribute.<a href="#section-4-6.7.2.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                <li class="normal" id="section-4-6.7.2.2.2.3">
+                  <p id="section-4-6.7.2.2.2.3.1">Less than 8 octets remain after the last
+                  successfully parsed domain segment.<a href="#section-4-6.7.2.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+                <li class="normal" id="section-4-6.7.2.2.2.4">
+                  <p id="section-4-6.7.2.2.2.4.1">Each domain segment consists of a 1-octet length field
+                  indicating the number of domains in the segment, with each
+                  domain encoded in 7 octets. If the total length of the
+                  domain segment (i.e., 1 + 7 x number of domains)
+                  exceeds the remaining length of the D-PATH Path Attribute, the
+                  domain segment is considered malformed.<a href="#section-4-6.7.2.2.2.4.1" class="pilcrow">¶</a></p>
+</li>
+              </ul>
+</li>
+            <li class="normal" id="section-4-6.7.2.3">
+              <p id="section-4-6.7.2.3.1">A BGP speaker receiving an UPDATE message containing a
+              malformed D-PATH Path Attribute <span class="bcp14">SHALL</span> apply the "treat-as-withdraw"
+              procedure, as specified in <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>.<a href="#section-4-6.7.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.7.2.4">
+              <p id="section-4-6.7.2.4.1">Domains within the D-PATH Path Attribute that contain unrecognized
+              ISF_SAFI_TYPE values <span class="bcp14">MAY</span> be accepted and <span class="bcp14">MUST NOT</span> be considered
+              an error.<a href="#section-4-6.7.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.7.2.5">
+              <p id="section-4-6.7.2.5.1">The D-PATH Path Attribute <span class="bcp14">MUST NOT</span> appear more than once in
+              the Path Attributes of a given BGP UPDATE message. If multiple
+              instances of the D-PATH Path Attribute are present, all instances
+              other than the first <span class="bcp14">MUST</span> be discarded, and the UPDATE message
+              <span class="bcp14">MUST</span> continue to be processed. This behavior follows <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>, including the associated logging
+              considerations.<a href="#section-4-6.7.2.5.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-4-6.7.2.6">
+              <p id="section-4-6.7.2.6.1">The D-PATH Path Attribute <span class="bcp14">MAY</span> be included only in UPDATE
+              messages that carry IPVPN or EVPN routes. It <span class="bcp14">MUST NOT</span> be
+              included with any other AFI/SAFI combinations. If a D-PATH
+              Path Attribute is received in an UPDATE message associated with an
+              unsupported AFI/SAFI, the "treat-as-withdraw" procedure <span class="bcp14">MUST</span> be
+              applied in accordance with <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>.<a href="#section-4-6.7.2.6.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+      </ol>
+</section>
+</div>
+<div id="sect-5">
+<section id="section-5">
+      <h2 id="name-bgp-path-attribute-propagat">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-bgp-path-attribute-propagat" class="section-name selfRef">BGP Path Attribute Propagation Across Domains</a>
+      </h2>
+<p id="section-5-1">A gateway PE, depending on its local configuration, is required to
+      re-originate an ISF route between two domains that utilize either the
+      same or different ISF SAFIs. This requires defining how a gateway PE
+      handles the BGP Path Attributes associated with the ISF route during
+      such re-origination.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">This section specifies the BGP Path Attribute propagation behaviors
+      that a gateway PE <span class="bcp14">MAY</span> apply when it receives an ISF route with ISF SAFI
+      x, installs the route into the relevant IP-VRF, and subsequently
+      re-advertises the route as an ISF route using ISF SAFI y. The values of
+      ISF SAFI x and SAFI y <span class="bcp14">MAY</span> be the same or different.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<div id="sect-5.1">
+<section id="section-5.1">
+        <h3 id="name-no-propagation-mode">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-no-propagation-mode" class="section-name selfRef">No Propagation Mode</a>
+        </h3>
+<p id="section-5.1-1">The No Propagation Mode is the default operational mode for Gateway
+        PEs when re-exporting ISF routes from one domain into another. In this
+        mode, the gateway PE re-initializes the BGP Path Attributes during the
+        re-origination of an ISF route, treating it in the same manner as a
+        directly connected or locally originated IP prefix.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">This mode is suitable for deployment scenarios where the source
+        domain -- for example, an EVPN domain -- is "abstracted" and treated as
+        a virtual Customer Edge (CE) and where remote IPVPN or IP-based PEs do not rely on
+        the BGP Path Attributes of the source EVPN domain for best-path
+        selection or the application of routing policy.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">It is important to note that, in No Propagation Mode, the D-PATH
+        Path Attribute is not propagated. As a result, redundant gateway PEs may be
+        susceptible to routing loops. While such loops may be mitigated using
+        routing policies or additional attributes, such as the Route Origin
+        extended community <span>[<a href="#RFC4360" class="cite xref">RFC4360</a>]</span>, this approach does not
+        guarantee detection or prevention of all potential loop scenarios.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-5.2">
+<section id="section-5.2">
+        <h3 id="name-uniform-propagation-mode">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-uniform-propagation-mode" class="section-name selfRef">Uniform Propagation Mode</a>
+        </h3>
+<p id="section-5.2-1">In Uniform Propagation Mode, the gateway PE retains and copies a
+        consistent set of commonly used BGP Path Attributes when
+        re-originating an ISF route between domains. This mode is typically
+        employed in deployments where IP prefixes are seamlessly distributed
+        using EVPN and/or IPVPN SAFIs. This specification permits the
+        propagation of a limited set of commonly used attributes, while
+        discouraging indiscriminate copying and re-advertisement, primarily
+        for security reasons.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">The following normative behavior <span class="bcp14">MUST</span> be followed by a gateway PE
+        operating in Uniform Propagation Mode:<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2-3">
+<li id="section-5.2-3.1">
+            <p id="section-5.2-3.1.1">Upon receiving an ISF route, and provided that no validation
+            errors are detected and the route is permitted by local policy,
+            the gateway PE imports the route into the associated IP-VRF and
+            retains the original BGP Path Attributes. When re-advertising the
+            route into a different domain, the gateway PE <span class="bcp14">SHOULD</span>, by default,
+            propagate only the following set of attributes. All other Path
+            Attributes <span class="bcp14">SHOULD NOT</span> be propagated unless explicitly permitted by
+            local import/export policies:<a href="#section-5.2-3.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-3.1.2.1">
+                <p id="section-5.2-3.1.2.1.1">AS_PATH<a href="#section-5.2-3.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-3.1.2.2">
+                <p id="section-5.2-3.1.2.2.1">D-PATH (only when advertising IPVPN or EVPN routes)<a href="#section-5.2-3.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-3.1.2.3">
+                <p id="section-5.2-3.1.2.3.1">IBGP-only attributes (when advertising to IBGP peers):
+                LOCAL_PREF, ORIGINATOR_ID, and CLUSTER_ID<a href="#section-5.2-3.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-3.1.2.4">
+                <p id="section-5.2-3.1.2.4.1">MULTI_EXIT_DISC (MED)<a href="#section-5.2-3.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-3.1.2.5">
+                <p id="section-5.2-3.1.2.5.1"> Accumulated IGP (AIGP) <span>[<a href="#RFC7311" class="cite xref">RFC7311</a>]</span><a href="#section-5.2-3.1.2.5.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-5.2-3.1.2.6">
+                <p id="section-5.2-3.1.2.6.1">COMMUNITY, EXTENDED_COMMUNITY, and LARGE_COMMUNITY, except
+                where explicitly excluded in Item 4 below.<a href="#section-5.2-3.1.2.6.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li id="section-5.2-3.2">
+            <p id="section-5.2-3.2.1">When re-advertising an ISF route to an IBGP peer, the gateway
+            PE <span class="bcp14">SHOULD</span> preserve the AS_PATH of the original ISF route without
+            modification. When re-advertising to an EBGP peer, the gateway PE
+            <span class="bcp14">SHOULD</span> prepend the IP-VRF's ASN to the preserved AS_PATH.<a href="#section-5.2-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-3.3">
+            <p id="section-5.2-3.3.1">When re-originating an ISF route to IBGP peers, the gateway PE
+            <span class="bcp14">SHOULD</span> retain IBGP-only attributes (e.g., LOCAL_PREF,
+            ORIGINATOR_ID, and CLUSTER_ID) from the original ISF route. As the
+            route is re-originated, the gateway PE is not required to perform
+            the RR function described in <span>[<a href="#RFC4456" class="cite xref">RFC4456</a>]</span>.<a href="#section-5.2-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-3.4">
+            <p id="section-5.2-3.4.1">As stated in Item 1, the gateway PE <span class="bcp14">SHOULD</span> preserve the
+            COMMUNITY, EXTENDED_COMMUNITY, and LARGE_COMMUNITY attributes from
+            the original ISF route. However, the following exceptions
+            apply:<a href="#section-5.2-3.4.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-5.2-3.4.2">
+<li id="section-5.2-3.4.2.1">
+                <p id="section-5.2-3.4.2.1.1">BGP Encapsulation Extended Communities, as defined in <span>[<a href="#RFC9012" class="cite xref">RFC9012</a>]</span>, <span class="bcp14">SHOULD NOT</span> be propagated.<a href="#section-5.2-3.4.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-5.2-3.4.2.2">
+                <p id="section-5.2-3.4.2.2.1">Route Target Extended Communities <span class="bcp14">SHOULD NOT</span> be propagated
+                and <span class="bcp14">SHOULD</span> be re-initialized when re-advertising the ISF route
+                into a different domain. The re-initialized Route Target value
+                <span class="bcp14">MAY</span> match the value used in the original route.<a href="#section-5.2-3.4.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-5.2-3.4.2.3">
+                <p id="section-5.2-3.4.2.3.1">All EVPN-specific Extended Communities <span class="bcp14">SHOULD NOT</span> be
+                propagated.<a href="#section-5.2-3.4.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-5.2-3.4.2.4">
+                <p id="section-5.2-3.4.2.4.1">Gateway PEs <span class="bcp14">SHOULD</span> support import/export policies capable
+                of matching COMMUNITY, EXTENDED_COMMUNITY, and LARGE_COMMUNITY
+                values to permit or deny their propagation between domains
+                when the default propagation behavior needs to be
+                overridden.<a href="#section-5.2-3.4.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+<p id="section-5.2-3.4.3">The gateway PE <span class="bcp14">SHOULD NOT</span> copy the above Extended
+            Community types in "a", "b", and "c" from the original ISF route
+            into the re-advertised ISF route. Certain Extended Communities may
+            influence how the receiving PE processes the route. Propagating
+            such attributes into another domain could therefore lead to
+            unintended behavior. For example, if the BGP Encapsulation
+            Extended Community is propagated into a destination domain that
+            uses a different encapsulation, a receiving PE in that domain
+            might interpret the label field of the EVPN ISF route according to
+            an encapsulation context that does not apply locally <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span>. This could result in the route being discarded
+            or programmed with incorrect encapsulation parameters.<a href="#section-5.2-3.4.3" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-3.5">
+            <p id="section-5.2-3.5.1">For a given ISF route, only the BGP Path Attributes associated
+            with the best path <span class="bcp14">MAY</span> be propagated when re-advertising the route
+            into a different domain. If multiple paths are received for the
+            same prefix within the same ISF SAFI, the standard BGP best-path
+            selection procedure <span class="bcp14">MUST</span> be applied to determine the active path
+            and its associated attributes. Even when Equal-Cost Multipath
+            (ECMP) is enabled for the IP-VRF, only the Path Attributes of the
+            selected best path <span class="bcp14">SHOULD</span> be propagated.<a href="#section-5.2-3.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="sect-5.3">
+<section id="section-5.3">
+        <h3 id="name-aggregation-of-routes-and-p">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-aggregation-of-routes-and-p" class="section-name selfRef">Aggregation of Routes and Path Attribute Propagation</a>
+        </h3>
+<p id="section-5.3-1">Instead of re-originating a high number of (host) ISF routes
+        between domains, a gateway PE that receives multiple ISF routes from a
+        domain <span class="bcp14">MAY</span> choose to re-originate a single ISF aggregate route into a
+        different domain. In this document, aggregation is used to combine the
+        characteristics of multiple ISF routes in such a way that a single
+        aggregate ISF route can be re-originated to the destination domain.
+        Aggregation of multiple ISF routes of one ISF SAFI into an aggregate
+        ISF route is only done by a gateway PE.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">Aggregation on gateway PEs may use either the No Propagation Mode
+        or the Uniform Propagation Mode explained in Sections <a href="#sect-5.1" class="auto internal xref">5.1</a>
+        and <a href="#sect-5.2" class="auto internal xref">5.2</a>, respectively.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">When using Uniform Propagation Mode, Path Attributes of the same
+        type code <span class="bcp14">MAY</span> be aggregated according to the following rules:<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.3-4.1">
+            <p id="section-5.3-4.1.1">AS_PATH is aggregated based on the rules in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span>. The gateway PEs are not expected to receive
+            AS_PATH attributes with path segments of type AS_SET <span>[<a href="#RFC9774" class="cite xref">RFC9774</a>]</span>. Routes received with AS_PATH attributes
+            including AS_SET path segments <span class="bcp14">MUST NOT</span> be aggregated.<a href="#section-5.3-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.3-4.2">
+            <p id="section-5.3-4.2.1">An ISF aggregate route <span class="bcp14">SHOULD NOT</span> be advertised unless all the
+            contributing ISF routes have the same D-PATH DOMAIN-ID members,
+            regardless of their order. If there is at least one contributing
+            ISF route that has a different D-PATH DOMAIN-ID, the gateway PE
+            <span class="bcp14">SHOULD</span> advertise each contributing ISF route with its own D-PATH
+            (prepended with the gateway's domain). An implementation <span class="bcp14">MAY</span>, by
+            local policy, override this behavior and advertise an ISF
+            aggregate route without the D-PATH Path Attribute when the contributing
+            routes do not share identical D-PATH DOMAIN-ID members. In such
+            cases, redundant gateway PEs <span class="bcp14">SHOULD</span> apply a consistent policy to
+            prevent the advertisement of aggregate routes with inconsistent
+            D-PATH usage into the destination domain.<a href="#section-5.3-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.3-4.3">
+            <p id="section-5.3-4.3.1">The Community, Extended Community, and Large Community
+            attributes of an aggregated ISF route <span class="bcp14">SHOULD</span> include the union of
+            the corresponding attributes from all constituent ISF routes that
+            were aggregated, with the exception of those Extended Community
+            types explicitly excluded from propagation as specified in <a href="#sect-5.2" class="auto internal xref">Section 5.2</a> or those for which the applicable
+            specifications define different handling.<a href="#section-5.3-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.3-4.4">
+            <p id="section-5.3-4.4.1">For other attributes, the rules described in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> or the
+            attribute-applicable specifications are followed.<a href="#section-5.3-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.3-5">If the conditions for route aggregation, as specified above, are
+        satisfied, operators <span class="bcp14">SHOULD</span> consider enabling aggregation in
+        environments with large-scale tenant networks where a significant
+        number of host routes are present. This practice is particularly
+        applicable to deployments such as large-scale data centers.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-6">
+<section id="section-6">
+      <h2 id="name-route-selection-process-for">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-route-selection-process-for" class="section-name selfRef">Route Selection Process for ISF Routes</a>
+      </h2>
+<p id="section-6-1">A PE router may receive the same IP prefix via ISF routes with
+      different ISF SAFIs and from either the same or different BGP peers.
+      Additionally, the same IP prefix (e.g., a host route) may be received in
+      both an EVPN MAC/IP Advertisement route and an EVPN IP Prefix route. To
+      ensure consistent and deterministic forwarding behavior, a route
+      selection procedure across all ISF SAFIs is required.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The objectives of this route selection process are as follows:<a href="#section-6-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-3.1">
+          <p id="section-6-3.1.1">To ensure that all composite and gateway PEs have a consistent
+          and deterministic view of the preferred path to reach a given IP
+          prefix.<a href="#section-6-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.2">
+          <p id="section-6-3.2.1">To enable meaningful comparison of routes advertised in EVPN and
+          non-EVPN ISF SAFIs based on commonly used path attributes.<a href="#section-6-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.3">
+          <p id="section-6-3.3.1">To support ECMP forwarding across EVPN
+          and non-EVPN ISF SAFI routes, where applicable.<a href="#section-6-3.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-6-4">For a given prefix received via one or more non-EVPN ISF routes, the
+      standard BGP best-path selection procedure, as defined in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span>, is applied to determine the "non-EVPN best paths".
+      Similarly, for a given prefix received via one or more EVPN ISF routes,
+      the same procedure is applied to determine the "EVPN best paths".<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">When both EVPN and non-EVPN ISF routes are present for the same
+      prefix within a single IP-VRF, the PE <span class="bcp14">MUST</span> perform a tie-breaking
+      selection procedure on the union of these best-path sets. The process
+      treats all candidate ISF routes as equally preferable initially, then
+      iteratively removes routes until a single best path (or a valid ECMP
+      set) remains.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<div id="sect-6.1">
+<section id="section-6.1">
+        <h3 id="name-tie-breaking-and-selection-">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-tie-breaking-and-selection-" class="section-name selfRef">Tie-Breaking and Selection Rules</a>
+        </h3>
+<p id="section-6.1-1">The selection procedure <span class="bcp14">MUST</span> follow the standard route selection
+        rules defined in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span>, with the following
+        additional rules and exceptions applied in the specified order:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-6.1-2">
+<li id="section-6.1-2.1">
+            <p id="section-6.1-2.1.1">Immediately after applying the Local Preference comparison step
+            from <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span>, the PE <span class="bcp14">MUST</span> remove from
+            consideration any routes that do not have the shortest D-PATH
+            Path Attribute. Routes with no D-PATH Path Attribute are considered to have
+            a D-PATH length of zero. This rule <span class="bcp14">MUST NOT</span> be applied to ISF
+            routes that are not imported into an IP-VRF.<a href="#section-6.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-6.1-2.2">
+            <p id="section-6.1-2.2.1">After applying Rule 1, the standard 
+            selection steps in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> <span class="bcp14">MUST</span> continue in order.<a href="#section-6.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-6.1-2.3">
+            <p id="section-6.1-2.3.1">If, after the previous steps, one or more candidate routes
+            remain and at least one of them is an EVPN MAC/IP Advertisement
+            route (EVPN Route Type 2), then all EVPN IP Prefix routes (EVPN
+            Route Type 5) <span class="bcp14">MUST</span> be removed from consideration.<a href="#section-6.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-6.1-2.4">
+            <p id="section-6.1-2.4.1">If ECMP is enabled by policy and the remaining candidate routes
+            after Steps 1 through 3 include both EVPN and non-EVPN paths, then
+            both paths <span class="bcp14">MUST</span> be retained. If ECMP is not enabled, and such a
+            case arises, the EVPN path <span class="bcp14">MUST</span> be selected, and the non-EVPN path
+            <span class="bcp14">MUST</span> be removed from consideration.<a href="#section-6.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-6.1-3">This procedure extends the standard BGP best-path selection
+        behavior as specified in <span>[<a href="#RFC4271" class="cite xref">RFC4271</a>]</span> for IPVPN and EVPN
+        IP Prefix routes by incorporating D-PATH-based tie-breaking to prefer
+        routes that traverse the fewest Gateway PEs or domains. These rules
+        <span class="bcp14">MUST NOT</span> be applied to routes received under AFI/SAFI combinations
+        other than IPVPN or EVPN; such routes -- different from IPVPN or EVPN --
+        get treat-as-withdraw procedures if they are received with a D-PATH
+        Path Attribute, as described in <a href="#sect-4" class="auto internal xref">Section 4</a>.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-6.2">
+<section id="section-6.2">
+        <h3 id="name-examples">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-examples" class="section-name selfRef">Examples</a>
+        </h3>
+<p id="section-6.2-1">Example 1: PE1 receives three candidate routes for prefix IP1/32, all eligible
+        for import into IP-VRF-1:<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-2">
+<pre>
+{SAFI=EVPN, RT-2, Local-Pref=100, AS_PATH=(65536,65537)}
+{SAFI=EVPN, RT-5, Local-Pref=100, AS_PATH=(65536,65537)}
+{SAFI=128, Local-Pref=100, AS_PATH=(65536,65537)}</pre><a href="#section-6.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-3">Selected route:<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-4">
+<pre>
+{SAFI=EVPN, RT-2, Local-Pref=100, AS_PATH=(65536,65537)}</pre><a href="#section-6.2-4" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-5">This outcome is due to Step 3 above, which gives preference to Route Type
+        2 when both Type 2 and Type 5 EVPN routes exist.<a href="#section-6.2-5" class="pilcrow">¶</a></p>
+<p id="section-6.2-6">Example 2: PE1 receives two candidate routes for prefix IP2/24, both eligible
+        for import into IP-VRF-1:<a href="#section-6.2-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-7">
+<pre>
+{SAFI=EVPN, RT-5, D-PATH=(6500:3:IPVPN), AS_PATH=(65536,65537), MED=10}
+{SAFI=128, D-PATH=(6500:1:EVPN,6500:2:IPVPN), AS_PATH=(65537), MED=200}</pre><a href="#section-6.2-7" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-8">Selected route:<a href="#section-6.2-8" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-9">
+<pre>
+{SAFI=EVPN, RT-5, D-PATH=(6500:3:IPVPN), AS_PATH=(65536,65537), MED=10}</pre><a href="#section-6.2-9" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-10">This result is due to Step 1 above, which prefers the route with the
+        shortest D-PATH.<a href="#section-6.2-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-7">
+<section id="section-7">
+      <h2 id="name-composite-pe-procedures">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-composite-pe-procedures" class="section-name selfRef">Composite PE Procedures</a>
+      </h2>
+<p id="section-7-1">As described in <a href="#sect-3" class="auto internal xref">Section 3</a>, composite PEs are typically
+      used in tenant networks where EVPN and IPVPN are both used to provide
+      ISF within the same composite domain.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2"><a href="#composite-pe-example" class="auto internal xref">Figure 8</a> depicts an example of a
+      composite domain, where PE1/PE2/PE4 are composite PEs (they support EVPN
+      and IPVPN ISF SAFIs on their peering to the RR), and PE3 is
+      a regular IPVPN PE.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<span id="name-composite-pe-example"></span><div id="composite-pe-example">
+<figure id="figure-8">
+        <div class="alignLeft art-text artwork" id="section-7-3.1">
+<pre>
+             +-----------------------------------+
+             |                                   |
+             |        MPLS/SRv6             IPVPN PE3
+             |        Network              +----------+ IP3/24
+             |                     IPVPN   |+------+  |   +---+
+             |                      +-----&gt;||IP-VRF|------|CE3|
+        Composite PE1               |      |+------+  |   +---+
+       +---------------+            |      +----------+
+       |      +------+ |  EVPN      v             |
+       |      |IP-VRF| |  IPVPN   +--+            |
+       | +----|      | | &lt;------&gt; |RR|            |
++---+  | |    +------+ |          +--+         Composite PE4
+|CE2|----|MAC-VRF|     |          ^  ^         +---------+ IP4/24
++---+  | +-------+     |    EVPN  |  | EVPN    |+------+ |   +---+
+       +---|-----------+    IPVPN |  | IPVPN   ||IP-VRF|-----|CE4|
+           |  |              +----+  +--------&gt;|+------+ |   +---+
+    IP1/24 |  |              v                 +---------+
+    +---+  |  |    +---------------+              |
+    |CE1|--+  +----|      +------+ +--------------+
+    +---+          |      |IP-VRF| |
+      |            | +----|      | |
+      |            | |    +------+ |
+      +--------------|MAC-VRF|     |
+                   | +-------+     |
+                   +---------------+
+                      Composite PE2</pre>
+</div>
+<figcaption><a href="#figure-8" class="selfRef">Figure 8</a>:
+<a href="#name-composite-pe-example" class="selfRef">Composite PE Example</a>
+        </figcaption></figure>
+</div>
+<p id="section-7-4">In a composite domain comprising both composite and regular PEs, the
+      following behaviors apply:<a href="#section-7-4" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlNewline" id="section-7-5">
+        <dt id="section-7-5.1">Prefix Advertisement Consistency:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-5.2">Composite
+          PEs <span class="bcp14">MUST</span> advertise the same IP prefixes using each ISF SAFI to the RR, assuming the same RR is used for both ISF
+          SAFIs. For example, as shown in <a href="#composite-pe-example" class="auto internal xref">Figure 8</a>, the prefix IP1/24 is advertised by
+          PE1 and PE2 to the RR in two separate Network Layer Reachability Information (NLRI) entries: one
+          for AFI/SAFI 1/128 (IPVPN) and another for EVPN. If both routes are
+          advertised with the same set of BGP Path Attributes, the receiving
+          composite PE will select the EVPN route over the IPVPN route,
+          following the route selection procedures defined in <a href="#sect-6" class="auto internal xref">Section 6</a>. Prioritizing the advertisement of the EVPN route
+          before the IPVPN route is an <span class="bcp14">OPTIONAL</span> optimization. This ensures
+          that the EVPN route is more likely to be selected first, avoiding
+          unnecessary replacement if the IPVPN route arrives later.<a href="#section-7-5.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-5.3">Route Reflector SAFI-Specific Forwarding Behavior:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-5.4">The RR does not forward EVPN routes to
+          peers for which the EVPN SAFI is not enabled and likewise does not
+          forward IPVPN routes to peers lacking IPVPN SAFI support. For
+          instance, in <a href="#composite-pe-example" class="auto internal xref">Figure 8</a>, the RR
+          does not forward EVPN routes to PE3 if the EVPN SAFI is
+          not enabled on its BGP session with PE3. However, the IPVPN routes
+          are forwarded to all PEs since they all have IPVPN SAFI enabled.<a href="#section-7-5.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-5.5">IPVPN PE Route Processing:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-5.6">Regular IPVPN
+          PEs process and import IPVPN routes as specified in <span>[<a href="#RFC4364" class="cite xref">RFC4364</a>]</span> and <span>[<a href="#RFC9252" class="cite xref">RFC9252</a>]</span>. For example, PE3
+          receives only the IPVPN route for prefix IP1/24 and resolves the BGP
+          next hop to an MPLS/SRv6 tunnel (with IP payload) toward PE1 and/or
+          PE2.<a href="#section-7-5.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-5.7">Composite PE Route Selection:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-5.8">
+          <p id="section-7-5.8.1">Composite PEs
+          <span class="bcp14">MUST</span> perform route selection for prefixes received via multiple ISF
+          SAFIs, applying the procedures described in <a href="#sect-6" class="auto internal xref">Section 6</a>:<a href="#section-7-5.8.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-5.8.2.1">
+              <p id="section-7-5.8.2.1.1">For example, PE4 receives prefix IP1/24 via both an EVPN
+              route and a non-EVPN ISF route (e.g., an IPVPN route). Route
+              selection is performed as specified in <a href="#sect-6" class="auto internal xref">Section 6</a>.<a href="#section-7-5.8.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-7-5.8.2.2">
+              <p id="section-7-5.8.2.2.1">If the EVPN route is selected, PE4 resolves the BGP next hop
+              to a tunnel (which may carry either Ethernet or IP payloads) to
+              PE1 and/or PE2. As described in <a href="#sect-3" class="auto internal xref">Section 3</a>, the
+              tunnel type used between EVPN PEs depends on the supported model per <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span>.<a href="#section-7-5.8.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-7-5.8.2.3">
+              <p id="section-7-5.8.2.3.1">Other composite PEs (e.g., PE1 and PE2) receiving the same
+              prefix via both EVPN and IPVPN SAFIs must also apply the route
+              selection process defined in <a href="#sect-6" class="auto internal xref">Section 6</a>.<a href="#section-7-5.8.2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-5.9">Forwarding Behavior Based on Selected Route:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-5.10">Once a route has been selected for a given IP
+          prefix, packet forwarding <span class="bcp14">MUST</span> follow the forwarding rules
+          associated with the AFI/SAFI of the selected route.<a href="#section-7-5.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-5.11">Applicability of EVPN Forwarding Enhancements:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-5.12">In composite domains such as the one depicted in
+          <a href="#composite-pe-example" class="auto internal xref">Figure 8</a>, the advanced forwarding
+          features provided by EVPN are available only to composite and
+          EVPN-capable PEs that select an EVPN IP Prefix route as the best
+          path. These enhancements are not available to IPVPN-only PEs. For
+          example, if PE1 advertises IP1/24 using both EVPN and IPVPN routes,
+          and the EVPN route is selected as the best path, only composite PEs
+          such as PE2 and PE4 can leverage EVPN-specific recursive resolution
+          and forwarding mechanisms <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span>. IPVPN PEs, such
+          as PE3, cannot utilize these capabilities. Consequently, the
+          benefits of EVPN-based indirection and route resolution in
+          large-scale deployments may not be available uniformly across all
+          PEs in the network.<a href="#section-7-5.12" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sect-8">
+<section id="section-8">
+      <h2 id="name-gateway-pe-procedures">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-gateway-pe-procedures" class="section-name selfRef">Gateway PE Procedures</a>
+      </h2>
+<p id="section-8-1">As defined in <a href="#sect-3" class="auto internal xref">Section 3</a>, a gateway PE is an
+      Interworking PE that connects two or more domains and facilitates the
+      re-origination of ISF routes between those domains. Typical examples
+      include data center gateway devices that interconnect domains utilizing
+      different ISF SAFIs, such as EVPN and IPVPN, for the same tenant
+      network.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">The gateway PE procedures specified in this document define the
+      mechanisms required to support ISF route interconnection across such
+      domains. These procedures extend the concept of a gateway PE beyond the
+      scope of <a href="#sect-3" class="auto internal xref">Section 3</a>, which focuses on Layer 2
+      interconnection by providing an analogous interconnection model for ISF
+      route exchange at Layer 3.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">The procedures described in this section apply to both of the
+      following scenarios:<a href="#section-8-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8-4.1">
+          <p id="section-8-4.1.1">Interconnection between domains utilizing different ISF SAFIs
+          (e.g., EVPN to IPVPN).<a href="#section-8-4.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-4.2">
+          <p id="section-8-4.2.1">Interconnection between domains utilizing the same ISF SAFI
+          (e.g., EVPN to EVPN).<a href="#section-8-4.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-8-5"><a href="#gateway-pe-example" class="auto internal xref">Figure 9</a> provides an illustrative
+      example of this model, wherein PE1 and PE2 (as well as PE3 and PE4)
+      operate as gateway PEs interconnecting different domains associated with
+      the same tenant.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<span id="name-gateway-pe-example"></span><div id="gateway-pe-example">
+<figure id="figure-9">
+        <div class="alignLeft art-text artwork" id="section-8-6.1">
+<pre>
+   &lt;----EVPN----&gt;    &lt;----------IPVPN---------&gt;   &lt;----EVPN----&gt;
+     6500:1:EVPN             6500:2:IPVPN           6500:3:EVPN
+&lt;DOMAIN-ID:ISF_SAFI_TYPE&gt;
+                      +-----------------------+
+               Gateway PE1              Gateway PE3
+               +----------+             +----------+
+   +-----------|+------+  |  MPLS tnls  |+------+  |------------+
+   |           ||IP-VRF|  |  SRv6       ||IP-VRF|  |            |
+ PE5           |+------+  |             |+------+  |           PE6
++------+       +----------+             +----------+         +------+
+|IP-VRF| NVO tnls |   |                       |  | NVO tnls  |IP-VRF|
+|      |          |   |                       |  |           |      |
++------+       +----------+             +----------+         +------+
+IP1/24--&gt;      |+------+  |             |+------+  |            |
+   |           ||IP-VRF|  |             ||IP-VRF|  |            |
+   +-----------|+------+  |             |+------+  |------------+
+               +----------+             +----------+
+               Gateway PE2   +------+   Gateway PE4
+                     +-------|IP-VRF|---------+
+                             |      |
+                             +------+
+                               PE7</pre>
+</div>
+<figcaption><a href="#figure-9" class="selfRef">Figure 9</a>:
+<a href="#name-gateway-pe-example" class="selfRef">Gateway PE Example</a>
+        </figcaption></figure>
+</div>
+<p id="section-8-7">Note: "tnls" refers to "tunnels".<a href="#section-8-7" class="pilcrow">¶</a></p>
+<p id="section-8-8">A gateway PE that is enabled for two ISF SAFIs on the same IP-VRF, referred to here as
+      SAFI x and SAFI y, <span class="bcp14">MUST</span> follow the procedures
+      described below for re-originating routes between domains.<a href="#section-8-8" class="pilcrow">¶</a></p>
+<div id="sect-8.1">
+<section id="section-8.1">
+        <h3 id="name-export-conditions">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-export-conditions" class="section-name selfRef">Export Conditions</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-8.1-1">
+<li id="section-8.1-1.1">
+            <p id="section-8.1-1.1.1">A gateway PE that imports an ISF SAFI x route for prefix P into
+            an IP-VRF <span class="bcp14">MUST</span> export P using ISF SAFI y if all of the following
+            conditions are met:<a href="#section-8.1-1.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-8.1-1.1.2">
+       <li id="section-8.1-1.1.2.1">
+                <p id="section-8.1-1.1.2.1.1">The route for P is installed in the IP-VRF, indicating that
+                the SAFI x route is well-formed, valid, and selected as the
+                best route.<a href="#section-8.1-1.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-8.1-1.1.2.2">
+                <p id="section-8.1-1.1.2.2.1">The PE has an active BGP session with a peer supporting
+                SAFI y, enabled for the same IP-VRF.<a href="#section-8.1-1.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-8.1-1.1.2.3">
+                <p id="section-8.1-1.1.2.3.1">Export policy permits the advertisement of the route.<a href="#section-8.1-1.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-8.1-1.1.2.4">
+                <p id="section-8.1-1.1.2.4.1">SAFI x and SAFI y are valid ISF SAFIs as defined in <a href="#sect-3" class="auto internal xref">Section 3</a>. SAFI x and SAFI y <span class="bcp14">MAY</span> be the same.<a href="#section-8.1-1.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+<p id="section-8.1-1.1.3">Example: In <a href="#gateway-pe-example" class="auto internal xref">Figure 9</a>, Gateway
+            PEs PE1 and PE2 receive an EVPN IP Prefix route for prefix IP1/24,
+            install the route in their respective IP-VRFs, and re-advertise it
+            using IPVPN.<a href="#section-8.1-1.1.3" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-8.1-1.2">
+            <p id="section-8.1-1.2.1">A gateway PE that receives an ISF SAFI x route for prefix P
+            into an IP-VRF <span class="bcp14">MUST NOT</span> export P using SAFI y under any of the
+            following conditions:<a href="#section-8.1-1.2.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="normal type-a" id="section-8.1-1.2.2">
+<li id="section-8.1-1.2.2.1">
+                <p id="section-8.1-1.2.2.1.1">The SAFI x route is not well-formed or valid. Criteria for
+                route validity are defined in the corresponding ISF SAFI
+                specification. For example, an EVPN IP Prefix route that
+                contains both a non-zero Ethernet Segment Identifier (ESI) and a Gateway IP address is
+                invalid, as specified in <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>], <a href="https://rfc-editor.org/rfc/rfc9136#section-3.2" class="relref">Section 3.2</a></span>.<a href="#section-8.1-1.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+              <li id="section-8.1-1.2.2.2">
+                <p id="section-8.1-1.2.2.2.1">The D-PATH Path Attribute of the SAFI x route includes one or
+                more DOMAIN-ID values locally configured on the gateway PE for
+                the associated IP-VRF. In this case, the route is considered a
+                looped ISF route, as described in <a href="#sect-4" class="auto internal xref">Section 4</a>, and
+                <span class="bcp14">MUST NOT</span> be exported using SAFI y.<a href="#section-8.1-1.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            </ol>
+</li>
+        </ol>
+</section>
+</div>
+<div id="sect-8.2">
+<section id="section-8.2">
+        <h3 id="name-advertisement-behavior">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-advertisement-behavior" class="section-name selfRef">Advertisement Behavior</a>
+        </h3>
+<p id="section-8.2-1">If the export conditions are satisfied, the gateway PE <span class="bcp14">MUST</span>
+        advertise prefix P using ISF SAFI y in accordance with the following
+        procedures:<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-8.2-2">
+   <li id="section-8.2-2.1">
+            <p id="section-8.2-2.1.1">If Uniform Propagation Mode (see <a href="#sect-5.2" class="auto internal xref">Section 5.2</a>) is
+            enabled, the gateway PE <span class="bcp14">MUST</span> follow the procedures defined in
+            <a href="#sect-5.2" class="auto internal xref">Section 5.2</a>, and the gateway PE <span class="bcp14">MUST</span> include the
+            D-PATH Path Attribute when SAFI y is either IPVPN or EVPN. This enables
+            loop detection at downstream gateway PEs.<a href="#section-8.2-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-8.2-2.1.2">When re-originating an ISF route, the gateway PE
+            <span class="bcp14">MUST</span> prepend a &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt; element to the
+            received D-PATH Path Attribute. The DOMAIN-ID reflects the domain from
+            which the route was received, and the ISF_SAFI_TYPE reflects the
+            SAFI of the received route.<a href="#section-8.2-2.1.2" class="pilcrow">¶</a></p>
+<p id="section-8.2-2.1.3">If the received
+            route does not include a D-PATH Path Attribute, the gateway PE <span class="bcp14">MUST</span>
+            create and attach a new D-PATH Path Attribute containing a single
+            segment: the &lt;DOMAIN-ID:ISF_SAFI_TYPE&gt; corresponding to the
+            received route.<a href="#section-8.2-2.1.3" class="pilcrow">¶</a></p>
+<p id="section-8.2-2.1.4">Example: In <a href="#gateway-pe-example" class="auto internal xref">Figure 9</a>, gateway PEs PE1 and PE2 receive an
+            EVPN IP Prefix route from PE5 that does not include a D-PATH
+            Path Attribute. PE1 and PE2 add domain &lt;6500:1:EVPN&gt; to form the
+            new D-PATH. Gateway PEs PE3 and PE4, upon re-advertising the
+            route, prepend &lt;6500:2:IPVPN&gt;, resulting in PE6 receiving
+            the route with D-PATH {&lt;6500:2:IPVPN&gt;, &lt;6500:1:EVPN&gt;}.
+            This information is then used by PE6 in BGP path selection.<a href="#section-8.2-2.1.4" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-8.2-2.2">
+            <p id="section-8.2-2.2.1">The gateway PE uses the RD of the IP-VRF
+            when re-advertising prefix P via ISF SAFI y.<a href="#section-8.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-8.2-2.3">
+            <p id="section-8.2-2.3.1">The encapsulation-specific context (e.g., label) allocation is
+            a local matter. The gateway PE <span class="bcp14">MAY</span> use per-VRF, per-prefix, or
+            other label allocation models.<a href="#section-8.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-8.2-2.4">
+            <p id="section-8.2-2.4.1">The gateway PE <span class="bcp14">MUST</span> support the use of distinct
+            RT sets per domain on the same IP-VRF. If multiple domains
+            associated with a tenant use different RT sets, the gateway PE
+            <span class="bcp14">MUST</span> be capable of importing and exporting routes according to
+            each domain's RT configuration.<a href="#section-8.2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-8.2-2.5">
+            <p id="section-8.2-2.5.1">Although <a href="#gateway-pe-example" class="auto internal xref">Figure 9</a> illustrates a
+            scenario with only two domains per gateway PE, gateway PEs may
+            interconnect more than two domains.<a href="#section-8.2-2.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-8.2-2.6">
+            <p id="section-8.2-2.6.1">There is no restriction on the number of gateway PEs that a
+            given prefix P may traverse before reaching its destination.<a href="#section-8.2-2.6.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-8.2-3">Informative Note: If prefix P is originated in an EVPN domain
+            and subsequently traverses one or more non-EVPN ISF SAFI domains,
+            it will lose EVPN-specific attributes used for advanced EVPN
+            procedures. For example, if PE1 advertises prefix IP1/24 along
+            with a non-zero ESI (for recursive resolution to that ESI), the
+            ESI value will be reset to zero by the time the route reaches PE6,
+            as it passed through an ISF SAFI domain that is not EVPN-capable.
+            Consequently, certain EVPN-specific functionalities may not be
+            preserved end to end.<a href="#section-8.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sect-9">
+<section id="section-9">
+      <h2 id="name-interworking-use-cases">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-interworking-use-cases" class="section-name selfRef">Interworking Use Cases</a>
+      </h2>
+<p id="section-9-1">While network deployments involving Interworking PEs may align with
+      the scenarios described in Sections <a href="#sect-7" class="auto internal xref">7</a> and <a href="#sect-8" class="auto internal xref">8</a>, there are cases where a combination of both gateway
+      PE and composite PE functionality is required. <a href="#ure-gateway-and-composite-combined-functions-example" class="auto internal xref">Figure 10</a>
+      illustrates an example in which gateway PEs also operate as composite
+      PEs. In such scenarios, the devices must not only re-originate ISF
+      routes between domains, such as between EVPN and IPVPN SAFIs or across
+      multiple EVPN domains, but also interoperate with IPVPN-only PEs within
+      domains that include a mix of composite and IPVPN-only PEs.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<span id="name-gateway-and-composite-combi"></span><div id="ure-gateway-and-composite-combined-functions-example">
+<figure id="figure-10">
+        <div class="alignLeft art-text artwork" id="section-9-2.1">
+<pre>
+                      +-----------------------------------+
+                      |                                   |
+                      |        MPLS                 IPVPN PE3
+                      |        Network              +---------+
+                      |                     IPVPN   |+------+ |
+                      |                      +-----&gt;||IP-VRF|---TS3
+               (GW+composite) PE1            |      |+------+ |
+                +---------------+            |      +---------+
+                |      +------+ |  EVPN      v            |
+                |      |IP+VRF| |  IPVPN  +--+            |
+                | +----|      | | &lt;------&gt;|RR|            |
+       +--------| |    +------+ |         +--+       Composite PE4
+       |        | |MAC+VRF|     |         ^  ^        +---------+
+       |        | +-------+     |   EVPN  |  | EVPN   |+------+ |
+    +----+      +---------------+   IPVPN |  | IPVPN  ||IP-VRF|---TS4
+TS1-|NVE1|             |             +----+  +-------&gt;|+------+ |
+    +----+             |             v                +---------+
+       |    EVPN DC    |    +---------------+             |
+       |    NVO tnls   +----|      +------+ |-------------+
+       |                    |      |IP+VRF| |
+       |                    | +----|      | |
+       |                    | |    +------+ |
+       |     +----+         | |MAC+VRF|     |
+       +-----|NVE2|---------| +-------+     |
+             +----+         +---------------+
+               |           (GW+composite) PE2
+              TS2</pre>
+</div>
+<figcaption><a href="#figure-10" class="selfRef">Figure 10</a>:
+<a href="#name-gateway-and-composite-combi" class="selfRef">Gateway and Composite Combined Functions Example</a>
+        </figcaption></figure>
+</div>
+<p id="section-9-3">Note: "tnls" refers to "tunnels".<a href="#section-9-3" class="pilcrow">¶</a></p>
+<p id="section-9-4">In <a href="#ure-gateway-and-composite-combined-functions-example" class="auto internal xref">Figure 10</a>, PE1 and PE2 follow the procedures defined
+      in Sections <a href="#sect-7" class="auto internal xref">7</a> and <a href="#sect-8" class="auto internal xref">8</a>. Unlike the
+      scenario described in <a href="#sect-8" class="auto internal xref">Section 8</a>, PE1 and PE2 are
+      additionally required to re-originate ISF routes between EVPN domains
+      (i.e., EVPN-to-EVPN), in addition to EVPN-to-IPVPN re-origination. It is
+      important to note that PE1 and PE2 will receive the IP prefix associated
+      with TS4 via both IPVPN and EVPN IP Prefix routes. When re-advertising
+      the selected route to NVE1 and NVE2, PE1 and PE2 <span class="bcp14">MUST</span> apply the D-PATH
+      handling rules and related attribute processing as described in <a href="#sect-6" class="auto internal xref">Section 6</a> ("Route Selection Process for ISF Routes").<a href="#section-9-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-10">
+<section id="section-10">
+      <h2 id="name-bgp-error-handling-on-inter">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-bgp-error-handling-on-inter" class="section-name selfRef">BGP Error Handling on Interworking PEs</a>
+      </h2>
+<p id="section-10-1">BGP speakers following this specification <span class="bcp14">MUST</span> adhere to the
+      following error-handling procedures when processing ISF routes:<a href="#section-10-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10-2.1">
+          <p id="section-10-2.1.1">Any BGP UPDATE message for an ISF route that includes a D-PATH
+          Path Attribute <span class="bcp14">MUST</span> be handled in accordance with the error-handling
+          rules defined in <a href="#sect-4" class="auto internal xref">Section 4</a> of this document.<a href="#section-10-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-10-2.2">
+          <p id="section-10-2.2.1">All received BGP UPDATE messages for ISF routes <span class="bcp14">MUST</span> conform to
+          the general error-handling procedures specified in <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>.<a href="#section-10-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-10-2.3">
+          <p id="section-10-2.3.1">This specification introduces no new error-handling behaviors for
+          BGP UPDATE messages that contain NLRI and BGP Path Attributes
+          defined in other specifications. Implementations <span class="bcp14">SHOULD</span> apply the
+          relevant error-handling rules specified for each supported route
+          type.<a href="#section-10-2.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-10-3">If a gateway PE is configured to propagate BGP Path Attributes for
+      ISF routes between domains, the procedures specified in <a href="#sect-5.2" class="auto internal xref">Section 5.2</a> are intended to ensure that receiving BGP speakers
+      do not encounter UPDATE messages containing well-formed but semantically
+      inappropriate BGP Path Attributes. However, if a gateway PE incorrectly
+      propagates such attributes in violation of the procedures in <a href="#sect-5.2" class="auto internal xref">Section 5.2</a>, receiving PEs <span class="bcp14">MUST</span> apply the error-handling rules
+      defined in the applicable specifications for the relevant route type and
+      attribute.<a href="#section-10-3" class="pilcrow">¶</a></p>
+<p id="section-10-4">The following are examples of such scenarios and their handling:<a href="#section-10-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10-5.1">
+          <p id="section-10-5.1.1">If a gateway PE erroneously propagates the BGP Encapsulation
+          Extended Community or the equivalent Encapsulation TLV in the Tunnel
+          Encapsulation attribute <span>[<a href="#RFC9012" class="cite xref">RFC9012</a>]</span> from one EVPN
+          domain to another, the receiving PE <span class="bcp14">MAY</span> receive two encapsulation
+          indications with different values. In such a case, the PE <span class="bcp14">MUST</span>
+          follow the procedures in <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span>, which permit
+          signaling multiple encapsulation types. As specified in <span>[<a href="#RFC9012" class="cite xref">RFC9012</a>]</span>, encapsulations carried via the Tunnel
+          Encapsulation attribute <span class="bcp14">MUST</span> be treated as equivalent to those
+          conveyed via the Encapsulation Extended Community.<a href="#section-10-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-10-5.2">
+          <p id="section-10-5.2.1">If a gateway PE propagates an EVPN Extended Community from an
+          EVPN domain into an IPVPN domain, the receiving IPVPN PE <span class="bcp14">MUST</span> ignore
+          such communities, as their semantics are not applicable to the IPVPN
+          SAFI.<a href="#section-10-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-10-5.3">
+          <p id="section-10-5.3.1">If a gateway PE erroneously propagates a BGP Prefix-SID attribute
+          containing SRv6 Service TLVs <span>[<a href="#RFC9252" class="cite xref">RFC9252</a>]</span> for an ISF
+          route between domains, and the receiving PE receives multiple SRv6
+          TLV instances, it <span class="bcp14">MUST</span> apply the procedures specified in <span>[<a href="#RFC9252" class="cite xref">RFC9252</a>]</span> for resolving multiple TLVs.<a href="#section-10-5.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="sect-12">
+<section id="section-11">
+      <h2 id="name-security-considerations">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-11-1">The security considerations outlined in <span>[<a href="#RFC9136" class="cite xref">RFC9136</a>]</span>
+      and <span>[<a href="#RFC8365" class="cite xref">RFC8365</a>]</span> for ISF EVPN routes and <span>[<a href="#RFC4364" class="cite xref">RFC4364</a>]</span> for ISF IPVPN routes are applicable to this
+      specification. In addition, the security considerations sections in
+      <span>[<a href="#RFC9252" class="cite xref">RFC9252</a>]</span> and <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>, as well as the
+      entire text in <span>[<a href="#RFC4272" class="cite xref">RFC4272</a>]</span>, are relevant to this
+      document.<a href="#section-11-1" class="pilcrow">¶</a></p>
+<p id="section-11-2">This document introduces the D-PATH Path Attribute (<a href="#sect-4" class="auto internal xref">Section 4</a>), which provides a mechanism for control plane loop
+      prevention when ISF IPVPN and EVPN routes are re-originated across
+      multiple domains via gateway PEs. When configured and supported
+      correctly, the use of the D-PATH Path Attribute helps prevent both
+      control plane and data plane loops. However, incorrect configuration of
+      DOMAIN-ID values or inconsistent support for D-PATH among gateway PEs
+      may result in false-positive loop detection, traffic discarding, or
+      suboptimal and inconsistent routing behavior. Furthermore, as D-PATH is
+      a transitive BGP attribute, a malicious actor may attempt to inject
+      incorrect domain information that propagates across multiple
+      administrative boundaries.<a href="#section-11-2" class="pilcrow">¶</a></p>
+<p id="section-11-3">To mitigate such risks, the use of D-PATH is explicitly restricted to
+      IPVPN and EVPN routes within "walled garden" Virtual Private Networks,
+      as specified in <a href="#sect-4" class="auto internal xref">Section 4</a>. A PE that conforms to this
+      specification <span class="bcp14">MUST</span> remove the D-PATH Path Attribute prior to advertising a
+      prefix to a CE router in a SAFI 1 (NLRI used for unicast forwarding)
+      route. If a non-upgraded PE that does not support D-PATH receives such a
+      route and is connected to a CE with Internet access, it may erroneously
+      propagate the D-PATH Path Attribute in a SAFI 1 UPDATE to the CE. If the CE
+      further propagates the route, the D-PATH Path Attribute could inadvertently
+      escape into the public Internet.<a href="#section-11-3" class="pilcrow">¶</a></p>
+<p id="section-11-4">However, the presence of the D-PATH Path Attribute in SAFI 1 routes <span class="bcp14">MUST NOT</span> impact BGP best-path selection for those routes and, as such, cannot
+      introduce routing loops or instability in the Internet. Additionally,
+      BGP speakers beyond the "walled garden" that support D-PATH and receive
+      the attribute in SAFI 1 routes <span class="bcp14">MUST</span> apply the "treat-as-withdraw"
+      behavior, as described in <a href="#sect-4" class="auto internal xref">Section 4</a> and consistent with
+      <span>[<a href="#RFC7606" class="cite xref">RFC7606</a>]</span>.<a href="#section-11-4" class="pilcrow">¶</a></p>
+<p id="section-11-5">As a further safeguard, implementations <span class="bcp14">SHOULD</span> enforce local policy
+      on upgraded PEs to discard any ISF EVPN or IPVPN routes received from
+      non-upgraded peers if such routes include a D-PATH Path Attribute to prevent
+      unintended propagation. The mechanism by which an implementation
+      determines that ISF EVPN or IPVPN routes are received from non-upgraded
+      peers is outside the scope of this document.<a href="#section-11-5" class="pilcrow">¶</a></p>
+<p id="section-11-6"><a href="#sect-5.2" class="auto internal xref">Section 5.2</a> of this document introduces Uniform
+      Propagation Mode, which enables gateway PEs to propagate a consistent
+      set of BGP Path Attributes across domain boundaries. This mode enhances
+      operational visibility by preserving attributes end to end along the
+      route path. However, it also introduces the possibility that an attacker
+      could inject malformed or semantically inappropriate, but syntactically
+      correct, attributes that influence BGP path selection in remote
+      domains.<a href="#section-11-6" class="pilcrow">¶</a></p>
+<p id="section-11-7">To mitigate this risk, an operator <span class="bcp14">MAY</span> choose to deploy
+      No Propagation Mode (<a href="#sect-5.1" class="auto internal xref">Section 5.1</a>), wherein BGP Path
+      Attributes are re-initialized upon domain transition. While this limits
+      attribute-based attack vectors, it also eliminates the ability of
+      downstream PEs to inspect the original set of BGP Path Attributes as
+      intended by the route originator.<a href="#section-11-7" class="pilcrow">¶</a></p>
+<p id="section-11-8">Operators <span class="bcp14">SHOULD</span> carefully weigh the trade-offs between visibility
+      and control when selecting the appropriate propagation mode and ensure
+      that policies are in place to validate attribute contents at domain
+      boundaries.<a href="#section-11-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sect-13">
+<section id="section-12">
+      <h2 id="name-iana-considerations">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-12-1">This document defines a new BGP Path Attribute known as the BGP
+      D-PATH Path Attribute.<a href="#section-12-1" class="pilcrow">¶</a></p>
+<p id="section-12-2">IANA has assigned a new attribute code type from the "BGP Path
+      Attributes" registry in the "Border Gateway Protocol (BGP) Parameters"
+      registry group as follows:<a href="#section-12-2" class="pilcrow">¶</a></p>
+<table class="center" id="table-2">
+        <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Value</th>
+            <th class="text-left" rowspan="1" colspan="1">Code</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">36</td>
+            <td class="text-left" rowspan="1" colspan="1">BGP Domain Path (D-PATH)</td>
+            <td class="text-left" rowspan="1" colspan="1">RFC 10039</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<section id="section-13">
+      <h2 id="name-references">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-13.1">
+        <h3 id="name-normative-references">
+<a href="#section-13.1" class="section-number selfRef">13.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC7432">[RFC7432]</dt>
+        <dd>
+<span class="refAuthor">Sajassi, A., Ed.</span>, <span class="refAuthor">Aggarwal, R.</span>, <span class="refAuthor">Bitar, N.</span>, <span class="refAuthor">Isaac, A.</span>, <span class="refAuthor">Uttaro, J.</span>, <span class="refAuthor">Drake, J.</span>, and <span class="refAuthor">W. Henderickx</span>, <span class="refTitle">"BGP MPLS-Based Ethernet VPN"</span>, <span class="seriesInfo">RFC 7432</span>, <span class="seriesInfo">DOI 10.17487/RFC7432</span>, <time datetime="2015-02" class="refDate">February 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7432">https://www.rfc-editor.org/info/rfc7432</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8365">[RFC8365]</dt>
+        <dd>
+<span class="refAuthor">Sajassi, A., Ed.</span>, <span class="refAuthor">Drake, J., Ed.</span>, <span class="refAuthor">Bitar, N.</span>, <span class="refAuthor">Shekhar, R.</span>, <span class="refAuthor">Uttaro, J.</span>, and <span class="refAuthor">W. Henderickx</span>, <span class="refTitle">"A Network Virtualization Overlay Solution Using Ethernet VPN (EVPN)"</span>, <span class="seriesInfo">RFC 8365</span>, <span class="seriesInfo">DOI 10.17487/RFC8365</span>, <time datetime="2018-03" class="refDate">March 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8365">https://www.rfc-editor.org/info/rfc8365</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4271">[RFC4271]</dt>
+        <dd>
+<span class="refAuthor">Rekhter, Y., Ed.</span>, <span class="refAuthor">Li, T., Ed.</span>, and <span class="refAuthor">S. Hares, Ed.</span>, <span class="refTitle">"A Border Gateway Protocol 4 (BGP-4)"</span>, <span class="seriesInfo">RFC 4271</span>, <span class="seriesInfo">DOI 10.17487/RFC4271</span>, <time datetime="2006-01" class="refDate">January 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4271">https://www.rfc-editor.org/info/rfc4271</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4364">[RFC4364]</dt>
+        <dd>
+<span class="refAuthor">Rosen, E.</span> and <span class="refAuthor">Y. Rekhter</span>, <span class="refTitle">"BGP/MPLS IP Virtual Private Networks (VPNs)"</span>, <span class="seriesInfo">RFC 4364</span>, <span class="seriesInfo">DOI 10.17487/RFC4364</span>, <time datetime="2006-02" class="refDate">February 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4364">https://www.rfc-editor.org/info/rfc4364</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7606">[RFC7606]</dt>
+        <dd>
+<span class="refAuthor">Chen, E., Ed.</span>, <span class="refAuthor">Scudder, J., Ed.</span>, <span class="refAuthor">Mohapatra, P.</span>, and <span class="refAuthor">K. Patel</span>, <span class="refTitle">"Revised Error Handling for BGP UPDATE Messages"</span>, <span class="seriesInfo">RFC 7606</span>, <span class="seriesInfo">DOI 10.17487/RFC7606</span>, <time datetime="2015-08" class="refDate">August 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7606">https://www.rfc-editor.org/info/rfc7606</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4760">[RFC4760]</dt>
+        <dd>
+<span class="refAuthor">Bates, T.</span>, <span class="refAuthor">Chandra, R.</span>, <span class="refAuthor">Katz, D.</span>, and <span class="refAuthor">Y. Rekhter</span>, <span class="refTitle">"Multiprotocol Extensions for BGP-4"</span>, <span class="seriesInfo">RFC 4760</span>, <span class="seriesInfo">DOI 10.17487/RFC4760</span>, <time datetime="2007-01" class="refDate">January 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4760">https://www.rfc-editor.org/info/rfc4760</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9136">[RFC9136]</dt>
+        <dd>
+<span class="refAuthor">Rabadan, J., Ed.</span>, <span class="refAuthor">Henderickx, W.</span>, <span class="refAuthor">Drake, J.</span>, <span class="refAuthor">Lin, W.</span>, and <span class="refAuthor">A. Sajassi</span>, <span class="refTitle">"IP Prefix Advertisement in Ethernet VPN (EVPN)"</span>, <span class="seriesInfo">RFC 9136</span>, <span class="seriesInfo">DOI 10.17487/RFC9136</span>, <time datetime="2021-10" class="refDate">October 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9136">https://www.rfc-editor.org/info/rfc9136</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9135">[RFC9135]</dt>
+        <dd>
+<span class="refAuthor">Sajassi, A.</span>, <span class="refAuthor">Salam, S.</span>, <span class="refAuthor">Thoria, S.</span>, <span class="refAuthor">Drake, J.</span>, and <span class="refAuthor">J. Rabadan</span>, <span class="refTitle">"Integrated Routing and Bridging in Ethernet VPN (EVPN)"</span>, <span class="seriesInfo">RFC 9135</span>, <span class="seriesInfo">DOI 10.17487/RFC9135</span>, <time datetime="2021-10" class="refDate">October 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9135">https://www.rfc-editor.org/info/rfc9135</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9252">[RFC9252]</dt>
+        <dd>
+<span class="refAuthor">Dawra, G., Ed.</span>, <span class="refAuthor">Talaulikar, K., Ed.</span>, <span class="refAuthor">Raszuk, R.</span>, <span class="refAuthor">Decraene, B.</span>, <span class="refAuthor">Zhuang, S.</span>, and <span class="refAuthor">J. Rabadan</span>, <span class="refTitle">"BGP Overlay Services Based on Segment Routing over IPv6 (SRv6)"</span>, <span class="seriesInfo">RFC 9252</span>, <span class="seriesInfo">DOI 10.17487/RFC9252</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9252">https://www.rfc-editor.org/info/rfc9252</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4659">[RFC4659]</dt>
+        <dd>
+<span class="refAuthor">De Clercq, J.</span>, <span class="refAuthor">Ooms, D.</span>, <span class="refAuthor">Carugi, M.</span>, and <span class="refAuthor">F. Le Faucheur</span>, <span class="refTitle">"BGP-MPLS IP Virtual Private Network (VPN) Extension for IPv6 VPN"</span>, <span class="seriesInfo">RFC 4659</span>, <span class="seriesInfo">DOI 10.17487/RFC4659</span>, <time datetime="2006-09" class="refDate">September 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4659">https://www.rfc-editor.org/info/rfc4659</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7311">[RFC7311]</dt>
+      <dd>
+<span class="refAuthor">Mohapatra, P.</span>, <span class="refAuthor">Fernando, R.</span>, <span class="refAuthor">Rosen, E.</span>, and <span class="refAuthor">J. Uttaro</span>, <span class="refTitle">"The Accumulated IGP Metric Attribute for BGP"</span>, <span class="seriesInfo">RFC 7311</span>, <span class="seriesInfo">DOI 10.17487/RFC7311</span>, <time datetime="2014-08" class="refDate">August 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7311">https://www.rfc-editor.org/info/rfc7311</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-13.2">
+        <h3 id="name-informative-references">
+<a href="#section-13.2" class="section-number selfRef">13.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC4360">[RFC4360]</dt>
+        <dd>
+<span class="refAuthor">Sangli, S.</span>, <span class="refAuthor">Tappan, D.</span>, and <span class="refAuthor">Y. Rekhter</span>, <span class="refTitle">"BGP Extended Communities Attribute"</span>, <span class="seriesInfo">RFC 4360</span>, <span class="seriesInfo">DOI 10.17487/RFC4360</span>, <time datetime="2006-02" class="refDate">February 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4360">https://www.rfc-editor.org/info/rfc4360</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9012">[RFC9012]</dt>
+        <dd>
+<span class="refAuthor">Patel, K.</span>, <span class="refAuthor">Van de Velde, G.</span>, <span class="refAuthor">Sangli, S.</span>, and <span class="refAuthor">J. Scudder</span>, <span class="refTitle">"The BGP Tunnel Encapsulation Attribute"</span>, <span class="seriesInfo">RFC 9012</span>, <span class="seriesInfo">DOI 10.17487/RFC9012</span>, <time datetime="2021-04" class="refDate">April 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9012">https://www.rfc-editor.org/info/rfc9012</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9774">[RFC9774]</dt>
+        <dd>
+<span class="refAuthor">Kumari, W.</span>, <span class="refAuthor">Sriram, K.</span>, <span class="refAuthor">Hannachi, L.</span>, and <span class="refAuthor">J. Haas</span>, <span class="refTitle">"Deprecation of AS_SET and AS_CONFED_SET in BGP"</span>, <span class="seriesInfo">RFC 9774</span>, <span class="seriesInfo">DOI 10.17487/RFC9774</span>, <time datetime="2025-05" class="refDate">May 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9774">https://www.rfc-editor.org/info/rfc9774</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4456">[RFC4456]</dt>
+        <dd>
+<span class="refAuthor">Bates, T.</span>, <span class="refAuthor">Chen, E.</span>, and <span class="refAuthor">R. Chandra</span>, <span class="refTitle">"BGP Route Reflection: An Alternative to Full Mesh Internal BGP (IBGP)"</span>, <span class="seriesInfo">RFC 4456</span>, <span class="seriesInfo">DOI 10.17487/RFC4456</span>, <time datetime="2006-04" class="refDate">April 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4456">https://www.rfc-editor.org/info/rfc4456</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4272">[RFC4272]</dt>
+        <dd>
+<span class="refAuthor">Murphy, S.</span>, <span class="refTitle">"BGP Security Vulnerabilities Analysis"</span>, <span class="seriesInfo">RFC 4272</span>, <span class="seriesInfo">DOI 10.17487/RFC4272</span>, <time datetime="2006-01" class="refDate">January 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4272">https://www.rfc-editor.org/info/rfc4272</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IANA-SAFI">[IANA-SAFI]</dt>
+      <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"SAFI Values"</span>, <span>&lt;<a href="https://www.iana.org/assignments/safi-namespace">https://www.iana.org/assignments/safi-namespace</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="sect-14">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">The authors want to thank 
+      <span class="contact-name">Russell Kelly</span>,
+      <span class="contact-name">Dhananjaya Rao</span>, <span class="contact-name">Suresh       Basavarajappa</span>, <span class="contact-name">Mallika Gautam</span>, <span class="contact-name">Senthil Sathappan</span>, <span class="contact-name">Arul Mohan Jovel</span>,
+      <span class="contact-name">Naveen Tubugere</span>, <span class="contact-name">Mathanraj       Petchimuthu</span>, <span class="contact-name">Eduard Vasilenko</span>, <span class="contact-name">Amit Kumar</span>, <span class="contact-name">Mohit Kumar</span>, <span class="contact-name">Lukas Krattiger</span>, <span class="contact-name">Gyan Mishra</span>, and
+      <span class="contact-name">Stephane Litkowski</span> for their reviews and
+      suggestions. Thanks to <span class="contact-name">Sue Hares</span> and <span class="contact-name">Jeff Haas</span> as well for their detailed reviews to clarify the
+      procedures of the D-PATH Path Attribute. The authors want to also
+      especially thank <span class="contact-name">Eric Rosen</span>, <span class="contact-name">Gunter Van de Velde</span>, and <span class="contact-name">Ketan Talaulikar</span> for the thorough reviews that helped raise
+      the quality of the document significantly.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jorge Rabadan (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+<div dir="auto" class="left"><span class="street-address">520 Almanor Avenue</span></div>
+<div dir="auto" class="left">
+<span class="locality">Sunnyvale</span>, <span class="region">CA</span> <span class="postal-code">94085</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jorge.rabadan@nokia.com" class="email">jorge.rabadan@nokia.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ali Sajassi (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">Cisco</span></div>
+<div dir="auto" class="left"><span class="street-address">225 West Tasman Drive</span></div>
+<div dir="auto" class="left">
+<span class="locality">San Jose</span>, <span class="region">CA</span> <span class="postal-code">95134</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:sajassi@cisco.com" class="email">sajassi@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">John Drake</span></div>
+<div dir="auto" class="left"><span class="org">Independent</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:je_drake@yahoo.com" class="email">je_drake@yahoo.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Wen Lin</span></div>
+<div dir="auto" class="left"><span class="org">HPE</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:wen.lin@hpe.com" class="email">wen.lin@hpe.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">James Uttaro</span></div>
+<div dir="auto" class="left"><span class="org">Independent</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jimmy.uttaro@gmail.com" class="email">jimmy.uttaro@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Adam Simpson</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:adam.1.simpson@nokia.com" class="email">adam.1.simpson@nokia.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
