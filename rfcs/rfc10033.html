@@ -1,0 +1,2555 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10033: Hash-Based Signatures: State and Backup Management</title>
+<meta content="Thom Wiggers" name="author">
+<meta content="Kaveh Bashiri" name="author">
+<meta content="Stefan Kölbl" name="author">
+<meta content="Jim Goodman" name="author">
+<meta content="Stavros Kousidis" name="author">
+<meta content="
+       Stateful Hash-Based Signature Schemes (Stateful HBS) such as Leighton-Micali
+Signature (LMS), Hierarchical Signature System (HSS), eXtended Merkle Signature Scheme (XMSS), and
+XMSS MT  combine Merkle trees with One-Time Signatures (OTSs) to
+provide signatures that are resistant against attacks using large-scale quantum
+computers. Unlike conventional stateless digital signature schemes, Stateful HBS have
+a state to keep track of which OTS keys have been used, as double-signing with
+the same OTS key allows forgeries. 
+       This document provides guidance and catalogs security considerations for the
+operational and technical aspects of deploying systems that rely on Stateful HBS.
+Management of the state of the Stateful HBS, including any handling of redundant key
+material, is a sensitive topic. This document describes some approaches to handle the
+associated challenges. It also describes the challenges that need to be resolved
+before certain approaches should be considered. 
+    " name="description">
+<meta content="xml2rfc 3.34.1" name="generator">
+<meta content="stateful hash-based signatures" name="keyword">
+<meta content="XMSS" name="keyword">
+<meta content="LMS" name="keyword">
+<meta content="state management" name="keyword">
+<meta content="10033" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.1
+    Python 3.14.7
+    ConfigArgParse 1.7.7
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.3
+    natsort 8.4.0
+    platformdirs 4.11.8
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.8.3
+    weasyprint 70.0
+-->
+<link href="rfc10033.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+sub,
+sup {
+ white-space: nowrap;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://dx.doi.org/10.17487/rfc10033" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  <link href="https://datatracker.ietf.org/doc/draft-ietf-pquip-hbs-state-04" rel="prev">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10033</td>
+<td class="center">HBS: State and Backup</td>
+<td class="right">September 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Wiggers, et al.</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10033" class="eref">10033</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-09" class="published">September 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">T. Wiggers</div>
+<div class="org">PQShield</div>
+</div>
+<div class="author">
+      <div class="author-name">K. Bashiri</div>
+<div class="org">BSI</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Kölbl</div>
+<div class="org">Google</div>
+</div>
+<div class="author">
+      <div class="author-name">J. Goodman</div>
+<div class="org">Crypto4A Technologies</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Kousidis</div>
+<div class="org">BSI</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10033</h1>
+<h1 id="title">Hash-Based Signatures: State and Backup Management</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Stateful Hash-Based Signature Schemes (Stateful HBS) such as Leighton-Micali
+Signature (LMS), Hierarchical Signature System (HSS), eXtended Merkle Signature Scheme (XMSS), and
+XMSS<sup>MT</sup> combine Merkle trees with One-Time Signatures (OTSs) to
+provide signatures that are resistant against attacks using large-scale quantum
+computers. Unlike conventional stateless digital signature schemes, Stateful HBS have
+a state to keep track of which OTS keys have been used, as double-signing with
+the same OTS key allows forgeries.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document provides guidance and catalogs security considerations for the
+operational and technical aspects of deploying systems that rely on Stateful HBS.
+Management of the state of the Stateful HBS, including any handling of redundant key
+material, is a sensitive topic. This document describes some approaches to handle the
+associated challenges. It also describes the challenges that need to be resolved
+before certain approaches should be considered.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10033">https://www.rfc-editor.org/info/rfc10033</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-when-are-stateful-hbs-appro" class="internal xref">When are Stateful HBS Appropriate?</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-specific-terminology-in-the" class="internal xref">Specific Terminology in the Context of Stateful HBS</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-private-key-components" class="internal xref">Private Key Components</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-state-management" class="internal xref">State Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-backup-management" class="internal xref">Backup Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4">
+                <p id="section-toc.1-1.2.2.4.1"><a href="#section-2.4" class="auto internal xref">2.4</a>.  <a href="#name-key-export-key-import-and-k" class="internal xref">Key Export, Key Import, and Key Transfer</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-assessing-operational-costs" class="internal xref">Assessing Operational Costs</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-ensuring-long-lived-resilie" class="internal xref">Ensuring Long-Lived Resilient Solutions</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-training-and-skills" class="internal xref">Training and Skills</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-configurable-warning-thresh" class="internal xref">Configurable Warning Thresholds</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-selection-of-appropriate-pa" class="internal xref">Selection of Appropriate Parameter Set</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.6">
+                <p id="section-toc.1-1.3.2.6.1"><a href="#section-3.6" class="auto internal xref">3.6</a>.  <a href="#name-external-dependencies" class="internal xref">External Dependencies</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-requirements-for-secure-sta" class="internal xref">Requirements for Secure State Management</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-potential-state-management-" class="internal xref">Potential State Management Approaches</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-multiple-public-keys-sp-800" class="internal xref">Multiple Public Keys (SP 800-208)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-distributed-multi-trees-sp-" class="internal xref">Distributed Multi-trees (SP 800-208)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-sectorization" class="internal xref">Sectorization</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-key-state-transfer" class="internal xref">Key/State Transfer</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-key-rotation" class="internal xref">Key Rotation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
+                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-variable-length-signature-c" class="internal xref">Variable-Length Signature Chains</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.7">
+                <p id="section-toc.1-1.5.2.7.1"><a href="#section-5.7" class="auto internal xref">5.7</a>.  <a href="#name-pre-assigning-states" class="internal xref">Pre-Assigning States</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.8">
+                <p id="section-toc.1-1.5.2.8.1"><a href="#section-5.8" class="auto internal xref">5.8</a>.  <a href="#name-time-based-state-management" class="internal xref">Time-Based State Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.9">
+                <p id="section-toc.1-1.5.2.9.1"><a href="#section-5.9" class="auto internal xref">5.9</a>.  <a href="#name-interval-based-approaches" class="internal xref">Interval-Based Approaches</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-backup-management-beyond-ni" class="internal xref">Backup Management Beyond NIST SP 800-208</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-contributors" class="internal xref">Contributors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Stateful Hash-Based Signature Schemes (Stateful HBS) such as Leighton-Micali
+Signature (LMS), Hierarchical Signature System (HSS), eXtended Merkle Signature Scheme (XMSS), and
+XMSS<sup>MT</sup> combine Merkle trees with One-Time Signatures (OTSs) in order
+to provide digital signature schemes that remain secure even when large-scale
+quantum computers become available. The theoretic security of Stateful HBS is
+well understood and depends only on the security of the underlying hash
+function. As such, Stateful HBS can serve as an important building block for
+quantum-resistant information and communication technology. Stateful HBS are
+specified in <span>[<a href="#RFC8391" class="cite xref">RFC8391</a>]</span>, <span>[<a href="#RFC8554" class="cite xref">RFC8554</a>]</span>, and NIST <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>, and we recommend Sections 1 and 3 of <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> as background for this document.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The private key of a Stateful HBS is a finite collection of OTS keys (typically
+generated on-demand from a seed) and an associated data structure that keeps
+track of which OTS keys have been used. This data structure is typically a
+simple counter and often called an index; this document refers to it as the <strong>state</strong> of the
+private key. Each Stateful HBS private key can be used to sign a finite number
+of messages and the state must be updated with each generated signature.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">One must not reuse any OTS key that is part of a Stateful HBS private key. If
+an attacker is able to obtain signatures for two different messages created
+using the same OTS key, it is computationally feasible for that attacker to
+create forgeries <span>[<a href="#BH16" class="cite xref">BH16</a>]</span> <span>[<a href="#Fluhrer23" class="cite xref">Fluhrer23</a>]</span>. As noted in
+<span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span> and <span>[<a href="#ETSI-TR-103-692" class="cite xref">ETSI-TR-103-692</a>]</span>, extreme care should be taken in order to avoid
+the risk that an OTS key will be reused accidentally. Whereas <span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span>
+identifies the fundamental failure modes of Stateful HBS and
+proposes architectural strategies such as a reservation approach, and
+<span>[<a href="#ETSI-TR-103-692" class="cite xref">ETSI-TR-103-692</a>]</span> provides a broad analysis of state management challenges and
+risks, this document complements both by cataloging concrete operational
+patterns in <a href="#pot-sol" class="auto internal xref">Section 5</a> and by addressing backup and recovery considerations
+in <a href="#alt-backup-mgmt" class="auto internal xref">Section 6</a> that are not covered in prior work.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">In particular, the challenges below highlight why careful state and backup management are essential in Stateful HBS:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-5.1">
+          <p id="section-1-5.1.1">Implementers must ensure that each creation of a signature updates the state
+correctly.<a href="#section-1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.2">
+          <p id="section-1-5.2.1">If the Stateful HBS private key is distributed to multiple signers at the same time,
+implementers must ensure that they never use the same OTS key. This may
+require synchronization between all signers.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.3">
+          <p id="section-1-5.3.1">Additional operational complexity arises when part of the available OTSs are allocated to different devices (partial state transfer), or when state from different devices needs merging; these introduce risks of overlap, failure, and require careful coordination.<a href="#section-1-5.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.4">
+          <p id="section-1-5.4.1">If key backups are required, implementers must ensure that any backup
+mechanism cannot lead to re-using a previously used OTS key.<a href="#section-1-5.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-1-6">The following sections present, recall, and discuss various strategies for a
+correct state and backup management for Stateful HBS.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<div id="when-are-stateful-hbs-appropriate">
+<section id="section-1.1">
+        <h3 id="name-when-are-stateful-hbs-appro">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-when-are-stateful-hbs-appro" class="section-name selfRef">When are Stateful HBS Appropriate?</a>
+        </h3>
+<p id="section-1.1-1">The issues with state management described above, as well as (for most parameter
+sets) the limited number of signatures, lead to new requirements that most
+developers will not be familiar with and that require careful handling in
+practice; Stateful HBS are not general-purpose signature schemes. Most
+applications, especially those that may produce unrestricted numbers of
+signatures, should use <em>stateless</em> hash-based signature schemes like SLH-DSA
+<span>[<a href="#FIPS205" class="cite xref">FIPS205</a>]</span>, which use the same security assumptions, or schemes based on other
+assumptions, such as ML-DSA <span>[<a href="#FIPS204" class="cite xref">FIPS204</a>]</span>. However, if run time, implementation
+size, or signature or key sizes of stateless alternatives are prohibitive, and the
+specific use case allows a very tight control of the signing environment, using
+Stateful HBS may be an appropriate solution. It seems likely that in many
+scenarios, it is only possible to meet the requirements set out in <a href="#req-state" class="auto internal xref">Section 4</a>
+when using purpose-designed hardware such as hardware-security modules.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">Stateful HBS are already profiled or discussed in several deployment-focused specifications and guidance documents. For example, <span>[<a href="#RFC9802" class="cite xref">RFC9802</a>]</span> discusses suitable use cases for stateful HBS in X.509 (including firmware/software signing and CA certificates). <span>[<a href="#I-D.ietf-suit-mti" class="cite xref">CRYPTO-IoT</a>]</span> defines an asymmetric profile that uses HSS-LMS, providing an interoperability target for software/firmware update IoT ecosystems. Additionally, the NSA <span>[<a href="#CNSA2.0" class="cite xref">CNSA2.0</a>]</span> allows LMS (and XMSS) in specific application scenarios such as firmware/software signing.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="specific-terminology-in-the-context-of-stateful-hbs">
+<section id="section-2">
+      <h2 id="name-specific-terminology-in-the">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-specific-terminology-in-the" class="section-name selfRef">Specific Terminology in the Context of Stateful HBS</a>
+      </h2>
+<p id="section-2-1">This section defines key notions that are important in the
+context of Stateful HBS.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<div id="private-key-components">
+<section id="section-2.1">
+        <h3 id="name-private-key-components">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-private-key-components" class="section-name selfRef">Private Key Components</a>
+        </h3>
+<p id="section-2.1-1">This section describes the two conceptual components that make up the private
+key material used in Stateful HBS.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2"><strong>private key:</strong>
+The static, long-lived secret(s) from which the underlying OTS private keys are derived.
+This material is stateless; given the scheme parameters, it deterministically
+defines the set of OTS private keys but does not change over time.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3"><strong>state:</strong>
+The dynamically updated data structure that records which OTS key indices
+have been consumed (often a monotone counter). This material is mutable and
+must change on every successful signature.<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<p id="section-2.1-4">Conceptually, the private key and the state are distinct and should be handled
+accordingly: the private key is a static secret, while the state is mutable,
+evolves with each signature, and must be maintained with integrity and correctness. In some
+implementations, these two components may be packaged together and not directly
+separable; in such cases, this document's guidance applies to the combined
+artifact.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="state-management">
+<section id="section-2.2">
+        <h3 id="name-state-management">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-state-management" class="section-name selfRef">State Management</a>
+        </h3>
+<p id="section-2.2-1">In this document, <em>state management</em> refers to the handling and implementation
+of the state of the private key.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2">This includes mechanisms that aim to:<a href="#section-2.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.2-3.1">
+            <p id="section-2.2-3.1.1">securely update the state before the signature is released,<a href="#section-2.2-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-3.2">
+            <p id="section-2.2-3.2.1">set up Stateful HBS where the state is separated in distinct, non-overlapping parts so that signatures can
+be generated from either part without risk of state reuse,<a href="#section-2.2-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-3.3">
+            <p id="section-2.2-3.3.1">enable partial transfer of unused signature capacity between devices and optionally merging state fragments without overlap,<a href="#section-2.2-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-3.4">
+            <p id="section-2.2-3.4.1">enable effective but secure handling of private key and state backup
+material, and<a href="#section-2.2-3.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-3.5">
+            <p id="section-2.2-3.5.1">guarantee the availability of both the private key and its state across
+the lifetime of the key.<a href="#section-2.2-3.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.2-4">In particular, the state and private key might be inseparable in implementations
+of Stateful HBS or in alternative signature mechanisms. For
+example, puncturable schemes <span>[<a href="#BSW16" class="cite xref">BSW16</a>]</span> represent such an alternative; they are
+research-level constructions and are not (at the time of writing) standardized or deployed in
+practice. However, even in these scenarios, this document's guidance should
+still apply.<a href="#section-2.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="backup-management">
+<section id="section-2.3">
+        <h3 id="name-backup-management">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-backup-management" class="section-name selfRef">Backup Management</a>
+        </h3>
+<p id="section-2.3-1">In order to mitigate failure of, e.g., devices storing key material and to
+facilitate other types of disaster recovery, backups of private keys and their
+associated states should be considered as part of a security architecture.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<p id="section-2.3-2">In this document, <em>backup management</em> refers to all mechanisms surrounding the
+goal to guarantee the availability of the private key and state, but with
+special care to avoid state reuse by not rolling back to a state in which
+already-used OTS keys are still available.<a href="#section-2.3-2" class="pilcrow">¶</a></p>
+<p id="section-2.3-3">These mechanisms include procedures and protocols that aim to:<a href="#section-2.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.3-4.1">
+            <p id="section-2.3-4.1.1">securely store this private key and state material outside the in-use
+signing device,<a href="#section-2.3-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-4.2">
+            <p id="section-2.3-4.2.1">import an externally stored private key and state to a newly initiated
+signing device, and<a href="#section-2.3-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-4.3">
+            <p id="section-2.3-4.3.1">allow practicing with backup recovery and to ensure backups are valid.<a href="#section-2.3-4.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.3-5">Backup management can be viewed as a more specific type of state management. The document
+makes this distinction to clarify the aims of our recommendations.<a href="#section-2.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="keymovement">
+<section id="section-2.4">
+        <h3 id="name-key-export-key-import-and-k">
+<a href="#section-2.4" class="section-number selfRef">2.4. </a><a href="#name-key-export-key-import-and-k" class="section-name selfRef">Key Export, Key Import, and Key Transfer</a>
+        </h3>
+<p id="section-2.4-1">As part of state and backup management, this section discusses mechanisms to export,
+import, or transfer private key and state material. In order to avoid
+misunderstandings, these notions are specified more precisely.<a href="#section-2.4-1" class="pilcrow">¶</a></p>
+<p id="section-2.4-2"><strong>key export:</strong>
+A mechanism of exporting secret data, which yields
+private key and state material, from the signing device to external storage.<a href="#section-2.4-2" class="pilcrow">¶</a></p>
+<p id="section-2.4-3"><strong>key import:</strong>
+A mechanism of importing secret data, which loads private
+key and state material, from external storage to the signing device.<a href="#section-2.4-3" class="pilcrow">¶</a></p>
+<p id="section-2.4-4"><strong>key transfer:</strong>
+A cryptographically protected transfer of ownership of private key and
+state material from one signing device to another.<a href="#section-2.4-4" class="pilcrow">¶</a></p>
+<p id="section-2.4-5">Systems and architectures relying on key transfer are generally expected to
+require fewer operational and manually-executed steps and checks to avoid state
+reuse, because the transfer mechanism can provide controlled handover of
+key and state material, instead of relying on separate export, storage, and
+re-import procedures.<a href="#section-2.4-5" class="pilcrow">¶</a></p>
+<p id="section-2.4-6">Note that, at times, secure variants of the aforementioned primitives may be
+required (e.g., securely importing/exporting the key). In these situations,
+cryptographic mechanisms should be utilized to provide assurances related to
+the confidentiality (e.g., utilizing symmetric or asymmetric encryption
+mechanisms) and/or integrity/authenticity (e.g., utilizing digital signatures,
+hash functions, and keyed message authentication codes) of the associated
+operations.<a href="#section-2.4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="operational-considerations">
+<section id="section-3">
+      <h2 id="name-operational-considerations">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<div id="assessing-operational-costs">
+<section id="section-3.1">
+        <h3 id="name-assessing-operational-costs">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-assessing-operational-costs" class="section-name selfRef">Assessing Operational Costs</a>
+        </h3>
+<p id="section-3.1-1">An important aspect of the evaluation of various HBS state and
+backup management options is to consider the operational costs associated with
+the options being evaluated.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">In the past, a conventional trust infrastructure
+solution could utilize straightforward archival procedures to make copies of
+the keys, which may then be distributed geographically to ensure their
+availability and deliver a sufficiently resilient solution, all the while
+enforcing whatever security protocols and procedures were required.
+Unfortunately, Stateful HBS introduce an additional
+constraint in that they need to ensure the state is never reused. Hence,
+archival procedures used for conventional trust infrastructures have to be
+amended (including redesigned) to be used as viable options.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ensuring-long-lived-resilient-solutions">
+<section id="section-3.2">
+        <h3 id="name-ensuring-long-lived-resilie">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-ensuring-long-lived-resilie" class="section-name selfRef">Ensuring Long-Lived Resilient Solutions</a>
+        </h3>
+<p id="section-3.2-1">One of the most problematic aspects of providing a long-lived resilient
+solution is simply managing the physical media on which the keys/state are
+stored externally (i.e., outside of the signing device) throughout the course
+of their lifetime.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">Physical media/devices degrade over time, and the more
+complex the media/device is, the more likely it is to fail at some point in time
+(e.g., data stored on a CD vs. data stored on a USB drive vs. data stored in a
+Hardware Security Module). Combine that with the long lifetimes associated
+with Stateful HBS keys (e.g., 10-20+ years) and the
+difficulties associated with transferring keys between devices, and one finds
+oneself with a perplexing set of challenges that needs to be accounted for in
+any state selection process of a proper state and backup management solution.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">Compounding these complexities is that any resilient state management
+system should also provide some means to verify the integrity of these
+long-lived backups to ensure they will be valid when they are required and to
+ensure the operators know how to execute the necessary recovery procedures.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="training-and-skills">
+<section id="section-3.3">
+        <h3 id="name-training-and-skills">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-training-and-skills" class="section-name selfRef">Training and Skills</a>
+        </h3>
+<p id="section-3.3-1">Many of the prescribed state management options require a high
+degree of operator involvement, so one should consider the costs
+associated with training the operator element. This training is needed to
+ensure processes and procedures are adhered to and failures are caught
+early and corrected before a catastrophic loss of security can occur (e.g., accidentally instantiating multiple instances of a Stateful HBS key/state).<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">Note that training is not a
+fixed one-time cost either, as long lifetimes will necessitate succession
+planning amongst the operator element and training of each successive generation
+of participants. Mechanisms should be put in place to mitigate the ever-present
+insider threat; these include M-of-N controls, least-privileges
+amongst participants, and a separation of duties, which
+ensure that an attack would require collusion by multiple parties.
+The separation of duties must persist across successive
+generations to ensure participants do not acquire multiple roles over time,
+thereby undermining the intended separation.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="configurable-warning-thresholds">
+<section id="section-3.4">
+        <h3 id="name-configurable-warning-thresh">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-configurable-warning-thresh" class="section-name selfRef">Configurable Warning Thresholds</a>
+        </h3>
+<p id="section-3.4-1">In addition to the state management, implementers may consider implementing
+mechanisms to prevent abrupt signature exhaustion.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">Implementations may
+consider providing a configurable warning threshold, M, which is triggered
+when M signatures remain. When the number of available signatures reaches
+this threshold, the system should return a 'signatures nearing exhaustion' warning.
+This warning condition should require explicit acknowledgment from the user
+through a mechanism that cannot be trivially skipped.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">In distributed or partitioned deployments (e.g., sectorized or multi-tree
+architectures), warning thresholds may apply per device, per sector, or per
+subtree rather than globally. In such systems, coordination mechanisms may be
+required if a global exhaustion condition must be detected. In centrally
+managed deployments, warnings may be directed to system operators or
+management services rather than end users. The mechanism for acknowledging
+or acting upon such warnings therefore depends on the operational model and
+need not involve the end signer directly.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="selection-of-appropriate-parameter-set">
+<section id="section-3.5">
+        <h3 id="name-selection-of-appropriate-pa">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-selection-of-appropriate-pa" class="section-name selfRef">Selection of Appropriate Parameter Set</a>
+        </h3>
+<p id="section-3.5-1">Another important consideration in deploying Stateful HBS is
+the selection of an appropriate parameter set.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">Given the flexibility of these schemes -- such as adjustable tree heights or Winternitz parameters -- there
+exists a large variety of possible configurations. The availability of these
+different configurations offers many trade-offs between signature
+generation/verification time, signature size, and key generation time. Hence,
+careful attention during the design phase is essential to ensure that the chosen
+parameter set aligns optimally with the specific requirements of the intended
+use case.<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="external-dependencies">
+<section id="section-3.6">
+        <h3 id="name-external-dependencies">
+<a href="#section-3.6" class="section-number selfRef">3.6. </a><a href="#name-external-dependencies" class="section-name selfRef">External Dependencies</a>
+        </h3>
+<p id="section-3.6-1">Costs associated with any external dependencies required by a
+particular solution (e.g., access to a public ledger or transparency log,
+providing accurate time references and synchronization mechanisms, access to
+attestation facilities, etc.) must be accounted for as well, particularly if a
+system is operating in an offline mode that makes delivering these additional
+capabilities all the more complicated and expensive.<a href="#section-3.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="req-state">
+<section id="section-4">
+      <h2 id="name-requirements-for-secure-sta">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-requirements-for-secure-sta" class="section-name selfRef">Requirements for Secure State Management</a>
+      </h2>
+<p id="section-4-1">A system deploying Stateful HBS should fulfill certain requirements to allow securely
+handling the state. The system must ensure that no two signing operations can
+ever be issued from the same state. In addition, the generation of a signature
+and update of the state should appear to be an <em>atomic transaction</em>. This means
+that the system must not release a signature without irrevocably and correctly
+updating the state.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">State management systems should satisfy all <em>ACID</em> properties:<a href="#section-4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-3.1">
+          <p id="section-4-3.1.1"><em>Atomicity</em>: Each operation on the state must be indivisible -- such that it
+either commits completely or leaves the state unchanged.<a href="#section-4-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-3.2">
+          <p id="section-4-3.2.1"><em>Consistency</em>: The state before and after each update must reflect a valid
+progression of available OTS indices, and no invalid or conflicting state is
+ever observable.<a href="#section-4-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-3.3">
+          <p id="section-4-3.3.1"><em>Isolation</em>: Concurrent or overlapping operations (e.g., from separate
+processes or devices) must not interfere in ways that could lead to state
+reuse.<a href="#section-4-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-3.4">
+          <p id="section-4-3.4.1"><em>Durability</em>: Once a state transition (e.g., before issuing a signature) is
+committed, that transition must survive crashes, power loss, or device
+failure.<a href="#section-4-3.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-4-4">These requirements impose significant restrictions on the underlying technical
+approach and a careful implementation of how the state will be updated or
+synchronized. The abstraction layers of modern systems can make it particularly
+difficult to guarantee that no two versions of the same state are present. The
+main concerns are as follows:<a href="#section-4-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-5.1">
+          <p id="section-4-5.1.1">how the actual storage for the state is implemented,<a href="#section-4-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-5.2">
+          <p id="section-4-5.2.1">how it is modified, and<a href="#section-4-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-5.3">
+          <p id="section-4-5.3.1">how an accidental/intentional failure/glitch might affect the state security.<a href="#section-4-5.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-4-6">A system may have a version of the private key stored in non-volatile memory
+(e.g., a disk) and will load it into volatile memory (e.g., RAM) while processing.
+Here, an implementer must ensure that these are always perfectly synchronized
+<span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span>, meaning that no other parts of the system are allowed to read any version of
+the key during procedures that are currently loading, writing, or modifying keys. This can be
+particularly challenging if there are additional abstraction layers present in
+the system, like additional caches that may affect reading/writing the state
+and its potential existence in multiple locations.<a href="#section-4-6" class="pilcrow">¶</a></p>
+<p id="section-4-7">Cloning is another concern, as it can easily lead to re-using the same state.
+This can happen for instance if a process that issues a signing operation is
+forked and no proper synchronization is enforced in the implementation to
+guarantee correct state update. Virtual Machine (VM) cloning is another
+potential security risk here, as both backing up a VM into non-volatile memory
+or live cloning of a VM can easily lead to a state reuse <span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span>. With users
+shifting workloads to cloud service providers, the issue of VM cloning may
+become more prevalent.<a href="#section-4-7" class="pilcrow">¶</a></p>
+<p id="section-4-8">Using dedicated cryptographic hardware is recommended to enforce these
+requirements, ensure correct behavior, and handle the complexity of state
+management. In particular, this enables implementing rollback resistant
+counters, which can be difficult to achieve in a software-only fashion.<a href="#section-4-8" class="pilcrow">¶</a></p>
+<p id="section-4-9">On the verifier side, no state management is required. However, the verifier
+needs to trust the signer to not have reused the state. A verifier may want to
+check that no state reuse happened in the past by a signer before accepting a
+signature.<a href="#section-4-9" class="pilcrow">¶</a></p>
+<p id="section-4-10">In practice, this can be done if the verifier has access to all signatures
+issued by the signer. As the signatures contain the index of the OTS key used,
+detecting if an index was used more than once becomes trivial. In practice,
+such a (public) data structure that contains all signatures may already be
+present in some use cases (e.g., Certificate Transparency <span>[<a href="#RFC9162" class="cite xref">RFC9162</a>]</span>) or could
+be built. It is worth noting that while trusting the signer to not reuse the
+state is a strong assumption, other signature schemes like the Elliptic Curve 
+Digital Signature Algorithm (ECDSA)  introduce similar assumptions by requiring 
+the signer to never reuse the nonce.<a href="#section-4-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="pot-sol">
+<section id="section-5">
+      <h2 id="name-potential-state-management-">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-potential-state-management-" class="section-name selfRef">Potential State Management Approaches</a>
+      </h2>
+<p id="section-5-1">A variety of potential solutions have been proposed both within the
+<span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> specification, as well as from external sources. This section
+describes a number of approaches and their potential advantages and disadvantages.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Each approach involves trade-offs in complexity, cost, and operational
+risk. The purpose of this section is to analyze these trade-offs rather than
+to recommend a single universally applicable solution.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<div id="multiple-public-keys-sp-800-208">
+<section id="section-5.1">
+        <h3 id="name-multiple-public-keys-sp-800">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-multiple-public-keys-sp-800" class="section-name selfRef">Multiple Public Keys (SP 800-208)</a>
+        </h3>
+<p id="section-5.1-1"><span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> proposes generating multiple Stateful HBS key pairs and
+configuring devices and clients to accept signatures created by any of these
+keys. Secondary Stateful HBS keys can be kept in storage until the first keypair
+is exhausted or lost.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">Accepting multiple public keys negatively impacts one of the advantages of using
+Stateful HBS by increasing the public key footprint within the client, which can
+be problematic if it has limited public key storage capacity. (Though public
+keys are typically equivalently sized to ECDSA rather than larger classical RSA
+keys often currently found.) <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> addresses storage capacity concerns
+by suggesting using a mechanism such as that proposed in <span>[<a href="#RFC8649" class="cite xref">RFC8649</a>]</span> to update
+the stored public key by having the current key endorse the next key that is to
+be installed. Unfortunately, for many constrained devices, the public key is
+embedded in immutable ROM or fuses due to security reasons, so it cannot be
+updated in this manner.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">The proposal of using multiple Stateful HBS key pairs for a single instance also
+generates questions as to how to establish that approach in existing public key
+infrastructures. For example, issuing multiple certificates adds the storage
+needs of the certificate material to the public key footprint. In order to
+alternatively issue multiple public keys encoded inside a single certificate,
+one would need a standardized format if interoperability is a concern.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="nist-dist-multi-tree">
+<section id="section-5.2">
+        <h3 id="name-distributed-multi-trees-sp-">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-distributed-multi-trees-sp-" class="section-name selfRef">Distributed Multi-trees (SP 800-208)</a>
+        </h3>
+<p id="section-5.2-1"><span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> also proposes creating multiple Stateful HBS keys across multiple
+cryptographic modules using a distributed multi-tree approach that is a variant
+of the standard hyper-tree-based Stateful HBS schemes HSS and XMSS<sup>MT</sup>.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">This architecture reflects the constraints in <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>, which does not
+permit export of private key material from cryptographic modules. The
+separation between root and subordinate devices enables compliance with this
+non-export model while maintaining a hierarchical signing structure.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<p id="section-5.2-3">Trees are instantiated on a root device (HSM<sub>root</sub>), as
+well as one or more subordinate devices (HSM<sub>{sub<sub>i</sub>}</sub>), and the root
+tree is used to sign the root nodes of the subordinate trees to synthesize a
+multi-level Stateful HBS key. The root device is only ever used to sign subordinate
+device root nodes, while the subordinate device(s) are used to sign
+messages. This is relatively straightforward to do using HSS, and <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>
+describes the necessary algorithmic modifications when using XMSS<sup>MT</sup>.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-5.2-4">One drawback of this approach is the increased signature size as an additional
+OTS needs to be generated, effectively doubling the overall signature size.
+Another concern is the single point of failure nature of relying on the root
+tree module to sign all of the subordinate trees; if the root tree device fails
+then no new subordinate trees can be signed. <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> suggested that as
+many subordinate trees as possible be generated during the initial root key
+generation and subordinate-signing procedure. Unfortunately, this can incur a
+large capital expenditure to procure all of the necessary devices, many of
+which may not be used for a long period of time, if at all. The subordinate
+tree root node signing process must also be carefully managed to ensure
+top-level trees are only ever used to sign the root nodes of trusted/approved
+subordinate trees to ensure that no malicious signing request is accepted,
+which would effectively give a rogue entity the ability to generate valid
+signatures, thereby undermining the security of the entire system.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2-5"><span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> also suggests combining distributed multi-trees with multiple
+root public keys as a means to mitigate some of the concerns regarding having a
+single point of failure in the root tree. However, even if a system operator
+does everything right, use cases with exceptionally long lifetimes of 10-20+
+years (e.g., automotive and aerospace/satellite applications) will require
+system operators to rely on devices well beyond their expected lifetimes of
+5-10 years, which may constitute an unacceptable business risk.<a href="#section-5.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sectorization">
+<section id="section-5.3">
+        <h3 id="name-sectorization">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-sectorization" class="section-name selfRef">Sectorization</a>
+        </h3>
+<p id="section-5.3-1">Distributed multi-trees attempt to partition a Stateful HBS signing space
+amongst multiple cryptographic modules by breaking up the signing space along
+the boundaries of the subordinate trees generated during the multi-tree key
+generation process. An alternative approach based on the state reservation concept
+described in Section 5 of <span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span> would be to use only a single tree
+and partition its signature space along some power-of-2 less than the total
+number of leaves in the tree (e.g., 2<sup>s</sup> for a tree of height h &gt; s),
+creating N = 2<sup>h-s</sup> partitions or sectors, which are instantiated as N
+height-s Merkle trees whose root nodes are considered interior nodes of the
+overall height-h Merkle tree. Hence, there is no additional OTS required to sign
+their root nodes; their values are used as-is in the tree ascent mechanism of
+the underlying Stateful HBS scheme, yielding a common public key (i.e., root
+node) for all sectors. Care must be taken to ensure that each sector uses the
+same root tree identifier (i.e., the "I" value for HSS/LMS and "root" value for
+XMSS/XMSS<sup>MT</sup>).<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">Each of the N sectors' OTS private key values can be generated pseudorandomly
+from a unique seed value generated from an appropriate source of randomness. The
+private keys from different sectors are independent when generated by this
+process. This requires that the path information for the root node of each
+sector (i.e., all off-path nodes between the sector root node and the top level
+node value) be stored with each sector's private key at key generation time
+since a sector will not know the seed information required to compute any of the
+other sectors' root nodes during the tree ascent phase of a signature generation
+operation. During signature generation, the signer appends the stored path
+information to the path information it computes to ascend from the leaf OTS to
+the sector's root node (which it can compute given that it knows its own seed
+value).<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+<p id="section-5.3-3">Hence, sectorized key generation results in a single public key value and
+2<sup>h-s</sup> private key values, each capable of generating 2<sup>s</sup>
+signatures after which the sectorized key is exhausted.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-4">In addition to avoiding an increased signature size; when unique seeds are
+utilized, sectorization breaks a given Stateful HBS key/state into multiple independent
+fragments that can be managed as independent objects. As a result, system
+operators may distribute sectors to multiple cryptographic devices, providing
+scalability through parallelization and improved resiliency/availability. This
+approach offers isolation between sectors, ensuring that a compromise in one
+does not extend to others, thereby supporting damage containment. At the same
+time, it simplifies operational robustness by removing the need for
+cross-device state coordination since each sector is restricted to its own
+signature space.<a href="#section-5.3-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="keystate-transfer">
+<section id="section-5.4">
+        <h3 id="name-key-state-transfer">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-key-state-transfer" class="section-name selfRef">Key/State Transfer</a>
+        </h3>
+<p id="section-5.4-1">Stateful HBS key/state transfer between cryptographic modules entails having a means
+to migrate one instance of a Stateful HBS key/state on a source device to a separate
+destination device while ensuring that any copy of the key/state is deleted
+from the source device.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.4-2">This capability may help alleviate the aforementioned concern regarding
+operating devices beyond their expected lifetimes by allowing operators to
+migrate Stateful HBS key/state to a newer device when the original device begins to
+approach its end-of-life. However, it still leaves the operator vulnerable to
+having the source device fail before the key/state can be transferred,
+effectively causing the loss of the key/state. Hence, it will not be of much
+help addressing the single point of failure issue identified for root trees,
+but may be useful for managing subordinate trees.<a href="#section-5.4-2" class="pilcrow">¶</a></p>
+<p id="section-5.4-3">In addition to complete key/state transfer, a device holding part of the total
+available OTSs may transfer some unused capacity to another device
+(partial state transfer). In more advanced deployments, state fragments from
+two devices may be merged to reconstruct or continue signature operations.
+These operations carry risk: ensuring no overlap in used indices, ensuring
+atomicity of transfer/merge operations, managing consistency, possible
+conflicts, and durability of state across devices. Such approaches require
+robust synchronization, auditability, and appropriate backup mechanisms to
+avoid double-signing or loss of capacity.<a href="#section-5.4-3" class="pilcrow">¶</a></p>
+<p id="section-5.4-4">A more elaborate variant of key transfer, going beyond what <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>
+allows, is described in <a href="#alt-backup-mgmt" class="auto internal xref">Section 6</a>, where key transfer is
+accomplished using a two-step export and import process with hash-based
+transfer validation to yield a more robust transfer mechanism.<a href="#section-5.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="key-rotation">
+<section id="section-5.5">
+        <h3 id="name-key-rotation">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-key-rotation" class="section-name selfRef">Key Rotation</a>
+        </h3>
+<p id="section-5.5-1">Key rotation, such as that defined in <span>[<a href="#RFC8649" class="cite xref">RFC8649</a>]</span>, would generate new Stateful HBS
+keys on an as-needed basis and provide a means to transition the system on to
+using this new Stateful HBS key while generating the next key in the chain in
+preparation of a future rotation/update. However, this just shifts the problem
+to the PKI and certificate handling.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<p id="section-5.5-2">In most use cases, key rotation is not foolproof since it will require
+redundancy to ensure there is at least one Stateful HBS signing key available to
+attest to newly generated keys. In addition, for many applications, the device
+keys cannot be updated due to engineering constraints or security reasons.<a href="#section-5.5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="variable-length-signature-chains">
+<section id="section-5.6">
+        <h3 id="name-variable-length-signature-c">
+<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-variable-length-signature-c" class="section-name selfRef">Variable-Length Signature Chains</a>
+        </h3>
+<p id="section-5.6-1">A variant of the key rotation approach is to have an available signing
+tree endorse a new subordinate tree when it is about to become exhausted (e.g.,
+use its final OTS to sign the root node of a new subordinate tree, creating an
+{n+1}-layer multi-tree from an {n}-layer multi-tree). In theory, this process can be repeated as many times as necessary. However, this entails having a
+multi-tree scheme with a variable number of levels, and hence, variable-length
+signatures. Such dynamically extensible constructions are research-class and
+are not currently standardized or deployed.<a href="#section-5.6-1" class="pilcrow">¶</a></p>
+<p id="section-5.6-2">In addition to departing quite significantly from the current Stateful HBS
+specifications and <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>, this approach has a number of significant
+challenges on both the engineering and operational fronts. Firstly, the
+variable-length nature of the signature can lead to variable-length
+verification of signatures, which may cause significant issues for use cases
+with strict time constraints (e.g., secure booting of a semiconductor device).
+From an operational perspective, the ability of a subordinate tree to sign
+either messages or new subordinate trees leads to severe security implications
+as the rigor around authorizing those two types of operations will vary
+dramatically, leading to either a much more onerous message signing operation
+or a much riskier subordinate tree signing operation. This approach may put the
+system operator in an untenable situation where no users are satisfied with the
+resulting solution, and hence, should not be considered as a viable solution.<a href="#section-5.6-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="pre-assigning-states">
+<section id="section-5.7">
+        <h3 id="name-pre-assigning-states">
+<a href="#section-5.7" class="section-number selfRef">5.7. </a><a href="#name-pre-assigning-states" class="section-name selfRef">Pre-Assigning States</a>
+        </h3>
+<p id="section-5.7-1">In some applications, individual one-time signatures (or states) can be
+pre-assigned to the to-be-signed objects. This may, for example, be possible if
+the signed objects are monotonically increasingly numbered. One example of such
+a use case may be software signing. This solution basically externalizes the
+state management to the to-be-signed messages.<a href="#section-5.7-1" class="pilcrow">¶</a></p>
+<p id="section-5.7-2">Expanding on the given example, for software that is released with strictly
+increasing, simple, single-position version numbers (i.e., versions 1, 2, 3, ...),
+this can be trivially implemented. As versions have a one-to-one correspondence
+to a Stateful HBS signing state, operators must ensure that versions can only be
+minted a single time. This may require skipping version numbers if a release
+process failed to avoid double-signing.<a href="#section-5.7-2" class="pilcrow">¶</a></p>
+<p id="section-5.7-3">This scheme can be adapted to more complicated release schemes. For example,
+minor update-releases 1.0 to 1.99 can be accommodated by assigning signatures
+1-100 for these version numbers, while release 2.0-2.99 would get signatures
+101-200. The assignments must be fixed as the scheme is set up, and operators
+should take into account that they are strictly limiting the number of update
+releases. In the described solution to state management, one must move up a
+major release number after 99 minor releases, even if this would break, e.g.,
+semantic versioning conventions.<a href="#section-5.7-3" class="pilcrow">¶</a></p>
+<p id="section-5.7-4">A variant of pre-assigning signatures is doing this on the basis of time, which
+is described in the next section.<a href="#section-5.7-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="time-based-state-management">
+<section id="section-5.8">
+        <h3 id="name-time-based-state-management">
+<a href="#section-5.8" class="section-number selfRef">5.8. </a><a href="#name-time-based-state-management" class="section-name selfRef">Time-Based State Management</a>
+        </h3>
+<p id="section-5.8-1">As a variant of pre-assigning one-time signatures based on external counters,
+it is possible to base the selection of one-time signature indexes on
+the current date and time in theory. For example, if a given Stateful HBS instance offers 1024
+total signatures, they could be broken up into 8 groups of 128 OTS instances
+each, with the first 128 allowed to be used in the first time window, the
+second 128 in the second time window, and so on, until the signature space is
+effectively exhausted after 8 time windows. Note that a time-based approach to
+state management will "waste" any OTS keys that are unused in past time
+windows. One must not attempt to use these keys after the time window has gone
+by.<a href="#section-5.8-1" class="pilcrow">¶</a></p>
+<p id="section-5.8-2">Any time-based approach has a very strict reliance on accurate timekeeping and
+synchronization of clocks. In particular, we identify that at least the
+following engineering-related challenges need to be considered:<a href="#section-5.8-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.8-3.1">
+            <p id="section-5.8-3.1.1">Signing devices must have accurate timekeeping (which is a very challenging
+engineering problem <span>[<a href="#TIMEFALSEHOODS" class="cite xref">TIMEFALSEHOODS</a>]</span>).<a href="#section-5.8-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.2">
+            <p id="section-5.8-3.2.1">Time on signing devices must not be allowed to ever move backwards, as this
+can cause double-signing.<a href="#section-5.8-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.3">
+            <p id="section-5.8-3.3.1">Within time windows, signers must track the number of signatures produced to
+ensure it does not exceed the number allowed within the window.<a href="#section-5.8-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.4">
+            <p id="section-5.8-3.4.1">Signing devices must still operate consistently with the requirements of
+state keeping for Stateful HBS. The signature index within a time window should
+still appear to be updated atomically and signatures must not be released
+before state changes have been recorded.<a href="#section-5.8-3.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.5">
+            <p id="section-5.8-3.5.1">A system should be robust against exhaustion of the number of signatures
+available in a time window, as in this case, it is required to wait until the
+next time window starts before new messages can be signed.<a href="#section-5.8-3.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.6">
+            <p id="section-5.8-3.6.1">Time on signing devices should not be allowed to be moved forward maliciously
+or accidentally, which would allow for a simple denial-of-service attack by
+skipping over portions of the signature space.<a href="#section-5.8-3.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.7">
+            <p id="section-5.8-3.7.1">If a signing device needs to be replaced, the replacement device must be set
+up with its time in sync with or ahead of the device it is to replace. This
+implies the current time on signing devices should be continuously recorded.<a href="#section-5.8-3.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.8">
+            <p id="section-5.8-3.8.1">Rate limiting may need to be considered, as exhausting the available
+signatures in a given time window may otherwise be easy.<a href="#section-5.8-3.8.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.8-3.9">
+            <p id="section-5.8-3.9.1">It may be necessary for signers to keep a separate clock for time-based state
+management, and one for not necessarily monotonically increasing "wall-time",
+e.g., if signed artifacts are expected to be time-stamped with real-world time.<a href="#section-5.8-3.9.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.8-4">If these concerns cannot be sufficiently addressed, time-based state
+management as described in this paragraph should not be used. Note that this
+list of concerns is not exhaustive, and other, unmentioned, concerns may also
+be relevant to the security of a time-based solution.<a href="#section-5.8-4" class="pilcrow">¶</a></p>
+<p id="section-5.8-5">Time-based systems can be backed up by simply recording the private keys and
+the configuration of the time windows. In case of loss of a signing device, a
+time-based state management system can be recovered by using this information
+to bring online a new device in the next time window. This approach may also be
+used as a recovery mechanism in the case of (suspected) state consistency
+problems during a time window. However, the operator must not allow new
+signatures to be produced before the new time window starts unless they know
+the exact state at which the previous device became unavailable and are able to
+set up the new device accordingly. Waiting until the start of the next time
+window avoids double signing, as the OTS keys assigned to future time windows
+are guaranteed to have not yet been used. However, this might incur significant
+downtime of the signing systems. Downtime may be avoided by forcibly moving the
+signing device to the next time window by incrementing its clock; however, this
+induced clock drift will then need to be accounted for in the future. If clock
+drift is to be avoided, this approach should account for availability
+considerations.<a href="#section-5.8-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="interval-based-approaches">
+<section id="section-5.9">
+        <h3 id="name-interval-based-approaches">
+<a href="#section-5.9" class="section-number selfRef">5.9. </a><a href="#name-interval-based-approaches" class="section-name selfRef">Interval-Based Approaches</a>
+        </h3>
+<p id="section-5.9-1">The State Reservation Strategy described in Section 5 of <span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span> provides
+another means of managing the state by allowing users to reserve intervals of
+the signing space, marking the interval's associated OTS keys as being used in
+the overall HBS state, which is then written back to non-volatile memory prior
+to their usage. The OTS keys within the reservation interval are then consumed
+as-needed without having to update the state again until they have all been
+consumed and additional OTS keys are required. Note that the reserved OTS keys
+are kept in dynamic memory so they will be lost if the signing device loses
+power or is reset, resulting in a reduction in the number of usable signatures
+for a given HBS instantiation.<a href="#section-5.9-1" class="pilcrow">¶</a></p>
+<p id="section-5.9-2">Over provisioning can be used to ensure a sufficient number of signatures can
+be provided in the presence of unexpected losses due to power loss or resets.
+Over provisioning will cause a minor increase between 2% and 12% on signature
+length as the MTS validation paths increase to accommodate the increased Merkle
+tree height. However, reservation eliminates the need to update the state
+after each OTS key is used, minimizing the likelihood of state reuse due to
+state update failures and coherency issues.<a href="#section-5.9-2" class="pilcrow">¶</a></p>
+<p id="section-5.9-3">In theory, multiple signing devices can utilize reservation intervals to
+carve out portions of signing space so that a single Stateful HBS key can be shared
+amongst multiple devices, leading to potential performance and
+disaster-recovery benefits. However, great care must be taken to manage the
+reservations to ensure there is no overlap or repeated reservation of a
+given interval, either in part or in whole.<a href="#section-5.9-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="alt-backup-mgmt">
+<section id="section-6">
+      <h2 id="name-backup-management-beyond-ni">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-backup-management-beyond-ni" class="section-name selfRef">Backup Management Beyond NIST SP 800-208</a>
+      </h2>
+<p id="section-6-1">This section presents in a generic form an alternative backup mechanism for Stateful HBS, which makes the strategy applicable for both multi-tree instances
+XMSS<sup>MT</sup> and HSS.  However, following the same arguments as in
+<a href="#sectorization" class="auto internal xref">Section 5.3</a>, with minor modifications, the presented strategy is also
+applicable for single-tree instances such as XMSS and LMS.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The strategy presented in this section builds upon the multi-tree variant
+approach from <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span> and aims to mitigate its limitations described in
+<a href="#nist-dist-multi-tree" class="auto internal xref">Section 5.2</a>.  Thus, it is assumed that a top-level Merkle
+tree (for signing the root-nodes of sub-trees) and several bottom-level Merkle
+trees (for signing messages) are already instantiated.  These bottom-level trees may be
+implemented on different hardware modules in order to obtain redundancy and
+improve availability.  Let R be the number of these already initiated
+bottom-level trees.  Let h<sub>0</sub> be the height of the top-level-tree.  It
+is assumed that R + 1 is strictly smaller than 2<sup>h<sub>0</sub></sup>, the
+number of leaves of the top-level tree.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">In this new strategy, after the completed key generation procedure from the
+multi-tree variant approach from <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>, further bottom-level trees are
+generated, one by one, in one of the hardware modules.  These new  bottom-level
+trees are each generated from a different seed, which is chosen uniformly at
+random.  The following notations are introduced for the sake of clarity:<a href="#section-6-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-4.1">
+          <p id="section-6-4.1.1">S denotes the number of these newly generated bottom-level trees.  Note that
+at most 2<sup>h<sub>0</sub></sup> - R new bottom-level trees can be
+generated, i.e., S is lower or equal to 2<sup>h<sub>0</sub></sup> - R.  In the
+following we suppose that S is <em>strictly smaller</em> than
+2<sup>h<sub>0</sub></sup> - R.<a href="#section-6-4.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-4.2">
+          <p id="section-6-4.2.1">I<sub>new</sub> denotes the set of indices that belong to these newly
+generated bottom-level trees, i.e., I<sub>new</sub> = {R, R+1, ..., R+S-1}.
+Bottom-level trees are indexed starting at 0.<a href="#section-6-4.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-6-5">For each new bottom-level tree, after it has been generated, the following
+steps must be performed:<a href="#section-6-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-6.1">
+          <p id="section-6-6.1.1">sign the corresponding root node with an unused OTS key from the top-level
+tree,<a href="#section-6-6.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-6.2">
+          <p id="section-6-6.2.1">securely <em>key export</em> (as described in <a href="#keymovement" class="auto internal xref">Section 2.4</a>) the seed, which was
+used to generate the bottom-level tree,<a href="#section-6-6.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-6.3">
+          <p id="section-6-6.3.1">export the signature of the root node, the corresponding OTS key index, and
+finally the hash of the seed, using appropriate domain separation (i.e.,
+ensuring there is no domain overlap with the hashes in the Stateful HBS scheme, and
+that the hash of the seed includes the public key and leaf index to mitigate
+multi-target attacks), and<a href="#section-6-6.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-6.4">
+          <p id="section-6-6.4.1">irreversibly delete the seed and the bottom-level tree from the hardware
+module.<a href="#section-6-6.4.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-6-7">The newly generated bottom-level trees (i.e., those bottom-level trees, whose
+indices belong to I<sub>new</sub>) are only used in order to guarantee
+availability in the <em>worst-case scenario</em>, where, at the same time, both
+of the following conditions hold:<a href="#section-6-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-8.1">
+          <p id="section-6-8.1.1">none of the R bottom-level Merkle trees (which were generated according to
+the multi-tree variant approach from <span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>) are available for signing
+messages, and<a href="#section-6-8.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-8.2">
+          <p id="section-6-8.2.1">the top-level Merkle tree (which is used for signing the root-nodes of
+sub-trees) is also not available anymore.<a href="#section-6-8.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-6-9">For example, this scenario may happen if all hardware modules are broken at
+the same time.<a href="#section-6-9" class="pilcrow">¶</a></p>
+<p id="section-6-10">As soon as this worst-case scenario occurs, the newly generated bottom-level
+trees (i.e., those bottom-level trees, whose indices belong to I<sub>new</sub>)
+need to be initiated in order to ensure availability. In order to do this, the
+following steps must be performed:<a href="#section-6-10" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-11.1">
+          <p id="section-6-11.1.1">initiate a new hardware module,<a href="#section-6-11.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-11.2">
+          <p id="section-6-11.2.1">securely <em>key import</em> (as described in <a href="#keymovement" class="auto internal xref">Section 2.4</a>) the first unused seed
+into this hardware module,<a href="#section-6-11.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-11.3">
+          <p id="section-6-11.3.1">generate the bottom-level tree corresponding to the seed,<a href="#section-6-11.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-11.4">
+          <p id="section-6-11.4.1">irreversibly delete the seed from the backup medium, and<a href="#section-6-11.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-11.5">
+          <p id="section-6-11.5.1">perform a correctness check by letting the hardware module output the hash of
+the seed.<a href="#section-6-11.5.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-6-12">Now this bottom-level tree can be used to sign messages. As soon as no more OTSs
+on the bottom-level tree are available or as soon as the hardware module is
+broken, the above steps with a new seed from the backup medium can be repeated.<a href="#section-6-12" class="pilcrow">¶</a></p>
+<p id="section-6-13">Note that the resulting signatures generated from these backed-up seeds do not
+require any special processing on the verifier side. The signature stored
+alongside the backed up seed and the signature generated from the bottom-level
+trees created from the backed up seed can be combined to match the format of a
+signature over the complete tree.<a href="#section-6-13" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">Security considerations are given throughout this document. Further security
+considerations, which are not already covered in this document, are given in
+<span>[<a href="#SP.800-208" class="cite xref">SP.800-208</a>]</span>, <span>[<a href="#MCGREW" class="cite xref">MCGREW</a>]</span>, <span>[<a href="#FIPS205" class="cite xref">FIPS205</a>]</span>, <span>[<a href="#RFC8391" class="cite xref">RFC8391</a>]</span>, and <span>[<a href="#RFC8554" class="cite xref">RFC8554</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-8">
+      <h2 id="name-iana-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-8-1">This document has no IANA actions.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC8391">[RFC8391]</dt>
+        <dd>
+<span class="refAuthor">Huelsing, A.</span>, <span class="refAuthor">Butin, D.</span>, <span class="refAuthor">Gazdag, S.</span>, <span class="refAuthor">Rijneveld, J.</span>, and <span class="refAuthor">A. Mohaisen</span>, <span class="refTitle">"XMSS: eXtended Merkle Signature Scheme"</span>, <span class="seriesInfo">RFC 8391</span>, <span class="seriesInfo">DOI 10.17487/RFC8391</span>, <time datetime="2018-05" class="refDate">May 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8391">https://www.rfc-editor.org/info/rfc8391</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8554">[RFC8554]</dt>
+        <dd>
+<span class="refAuthor">McGrew, D.</span>, <span class="refAuthor">Curcio, M.</span>, and <span class="refAuthor">S. Fluhrer</span>, <span class="refTitle">"Leighton-Micali Hash-Based Signatures"</span>, <span class="seriesInfo">RFC 8554</span>, <span class="seriesInfo">DOI 10.17487/RFC8554</span>, <time datetime="2019-04" class="refDate">April 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8554">https://www.rfc-editor.org/info/rfc8554</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SP.800-208">[SP.800-208]</dt>
+      <dd>
+<span class="refAuthor">Cooper, D.</span>, <span class="refAuthor">Apon, D.</span>, <span class="refAuthor">Dang, Q.</span>, <span class="refAuthor">Davidson, M.</span>, <span class="refAuthor">Dworkin, M.</span>, and <span class="refAuthor">C. Miller</span>, <span class="refTitle">"NIST SP 800-208: Recommendation for Stateful Hash-Based Signature Schemes"</span>, <span class="refContent">NIST</span>, <span class="seriesInfo">NIST SP 800-208</span>, <span class="seriesInfo">DOI 10.6028/NIST.SP.800-208</span>, <time datetime="2020-10" class="refDate">October 2020</time>, <span>&lt;<a href="https://doi.org/10.6028/NIST.SP.800-208">https://doi.org/10.6028/NIST.SP.800-208</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="BH16">[BH16]</dt>
+        <dd>
+<span class="refAuthor">Bruinderink, L.</span> and <span class="refAuthor">A. Hülsing</span>, <span class="refTitle">"Oops, I did it again -- Security of One-Time Signatures under Two-Message Attacks."</span>, <span class="refContent">Cryptology ePrint Archive, Paper 2016/1042, Selected Areas in Cryptography - SAC 2017, August 16-18, pp. 299-322</span>, <time datetime="2016" class="refDate">2016</time>, <span>&lt;<a href="https://eprint.iacr.org/2016/1042.pdf">https://eprint.iacr.org/2016/1042.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="BSW16">[BSW16]</dt>
+        <dd>
+<span class="refAuthor">Bellare, M.</span>, <span class="refAuthor">Stepanovs, I.</span>, and <span class="refAuthor">B. Waters</span>, <span class="refTitle">"New Negative Results on Differing-Inputs Obfuscation"</span>, <span class="refContent">Advances in Cryptology - EUROCRYPT 2016, Lecture Notes in Computer Science, vol. 9666, pp. 792-821</span>, <span class="seriesInfo">DOI 10.1007/978-3-662-49896-5_28</span>, <time datetime="2016-04-28" class="refDate">28 April 2016</time>, <span>&lt;<a href="https://link.springer.com/chapter/10.1007/978-3-662-49896-5_28">https://link.springer.com/chapter/10.1007/978-3-662-49896-5_28</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CNSA2.0">[CNSA2.0]</dt>
+        <dd>
+<span class="refAuthor">NSA</span>, <span class="refTitle">"Commercial National Security Algorithm Suite 2.0 (CNSA 2.0) Cybersecurity Advisory (CSA)"</span>, <time datetime="2022-09" class="refDate">September 2022</time>, <span>&lt;<a href="https://media.defense.gov/2025/May/30/2003728741/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS.PDF">https://media.defense.gov/2025/May/30/2003728741/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS.PDF</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-suit-mti">[CRYPTO-IoT]</dt>
+        <dd>
+<span class="refAuthor">Moran, B.</span>, <span class="refAuthor">Rønningstad, O.</span>, and <span class="refAuthor">A. Tsukamoto</span>, <span class="refTitle">"Cryptographic Algorithms for Internet of Things (IoT) Devices"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-suit-mti-23</span>, <time datetime="2025-07-22" class="refDate">22 July 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-suit-mti-23">https://datatracker.ietf.org/doc/html/draft-ietf-suit-mti-23</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="ETSI-TR-103-692">[ETSI-TR-103-692]</dt>
+        <dd>
+<span class="refAuthor">ETSI</span>, <span class="refTitle">"CYBER; State management for stateful authentication mechanisms"</span>, <span class="refContent">ETSI TR 103 692, V1.1.1</span>, <time datetime="2021-11" class="refDate">November 2021</time>, <span>&lt;<a href="https://www.etsi.org/deliver/etsi_tr/103600_103699/103692/01.01.01_60/tr_103692v010101p.pdf">https://www.etsi.org/deliver/etsi_tr/103600_103699/103692/01.01.01_60/tr_103692v010101p.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="FIPS204">[FIPS204]</dt>
+        <dd>
+<span class="refAuthor">NIST</span>, <span class="refTitle">"Module-Lattice-Based Digital Signature Standard"</span>, <span class="seriesInfo">NIST FIPS 204</span>, <span class="seriesInfo">DOI 10.6028/NIST.FIPS.204</span>, <time datetime="2024-08-13" class="refDate">13 August 2024</time>, <span>&lt;<a href="https://doi.org/10.6028/NIST.FIPS.204">https://doi.org/10.6028/NIST.FIPS.204</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="FIPS205">[FIPS205]</dt>
+        <dd>
+<span class="refAuthor">NIST</span>, <span class="refTitle">"Stateless Hash-Based Digital Signature Standard"</span>, <span class="seriesInfo">NIST FIPS 205</span>, <span class="seriesInfo">DOI 10.6028/NIST.FIPS.205</span>, <time datetime="2024-08-13" class="refDate">13 August 2024</time>, <span>&lt;<a href="https://doi.org/10.6028/NIST.FIPS.205">https://doi.org/10.6028/NIST.FIPS.205</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Fluhrer23">[Fluhrer23]</dt>
+        <dd>
+<span class="refAuthor">Fluhrer, S.</span>, <span class="refTitle">"Oops, I did it again revisited: another look at reusing one-time signatures"</span>, <span class="refContent"></span>, <time datetime="2017-12-23" class="refDate">23 December 2017</time>, <span>&lt;<a href="https://eprint.iacr.org/2023/1905">https://eprint.iacr.org/2023/1905</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.gazdag-x509-hash-sigs">[HBSX509]</dt>
+        <dd>
+<span class="refAuthor">Bashiri, K.</span>, <span class="refAuthor">Fluhrer, S.</span>, <span class="refAuthor">Gazdag, S.</span>, <span class="refAuthor">Van Geest, D.</span>, and <span class="refAuthor">S. Kousidis</span>, <span class="refTitle">"Internet X.509 Public Key Infrastructure: Algorithm Identifiers for Hash-based Signatures"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-gazdag-x509-hash-sigs-03</span>, <time datetime="2024-02-15" class="refDate">15 February 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-gazdag-x509-hash-sigs-03">https://datatracker.ietf.org/doc/html/draft-gazdag-x509-hash-sigs-03</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="MCGREW">[MCGREW]</dt>
+        <dd>
+<span class="refAuthor">McGrew, D.</span>, <span class="refAuthor">Kampanakis, P.</span>, <span class="refAuthor">Fluhrer, S.</span>, <span class="refAuthor">Gazdag, S.</span>, <span class="refAuthor">Butin, D.</span>, and <span class="refAuthor">J. Buchmann</span>, <span class="refTitle">"State Management for Hash-Based Signatures"</span>, <span class="refContent">Cryptology ePrint Archive, Paper 2016/357, Security Standardization Research 2016</span>, <time datetime="2016-11-02" class="refDate">2 November 2016</time>, <span>&lt;<a href="https://eprint.iacr.org/2016/357.pdf">https://eprint.iacr.org/2016/357.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8411">[RFC8411]</dt>
+        <dd>
+<span class="refAuthor">Schaad, J.</span> and <span class="refAuthor">R. Andrews</span>, <span class="refTitle">"IANA Registration for the Cryptographic Algorithm Object Identifier Range"</span>, <span class="seriesInfo">RFC 8411</span>, <span class="seriesInfo">DOI 10.17487/RFC8411</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8411">https://www.rfc-editor.org/info/rfc8411</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8649">[RFC8649]</dt>
+        <dd>
+<span class="refAuthor">Housley, R.</span>, <span class="refTitle">"Hash Of Root Key Certificate Extension"</span>, <span class="seriesInfo">RFC 8649</span>, <span class="seriesInfo">DOI 10.17487/RFC8649</span>, <time datetime="2019-08" class="refDate">August 2019</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8649">https://www.rfc-editor.org/info/rfc8649</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9162">[RFC9162]</dt>
+        <dd>
+<span class="refAuthor">Laurie, B.</span>, <span class="refAuthor">Messeri, E.</span>, and <span class="refAuthor">R. Stradling</span>, <span class="refTitle">"Certificate Transparency Version 2.0"</span>, <span class="seriesInfo">RFC 9162</span>, <span class="seriesInfo">DOI 10.17487/RFC9162</span>, <time datetime="2021-12" class="refDate">December 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9162">https://www.rfc-editor.org/info/rfc9162</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9802">[RFC9802]</dt>
+        <dd>
+<span class="refAuthor">Van Geest, D.</span>, <span class="refAuthor">Bashiri, K.</span>, <span class="refAuthor">Fluhrer, S.</span>, <span class="refAuthor">Gazdag, S.</span>, and <span class="refAuthor">S. Kousidis</span>, <span class="refTitle">"Use of the HSS and XMSS Hash-Based Signature Algorithms in Internet X.509 Public Key Infrastructure"</span>, <span class="seriesInfo">RFC 9802</span>, <span class="seriesInfo">DOI 10.17487/RFC9802</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9802">https://www.rfc-editor.org/info/rfc9802</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="TIMEFALSEHOODS">[TIMEFALSEHOODS]</dt>
+      <dd>
+<span class="refAuthor">Visée, T.</span>, <span class="refTitle">"Falsehoods programmers believe about time"</span>, <span>&lt;<a href="https://gist.github.com/timvisee/fcda9bbdff88d45cc9061606b4b923ca">https://gist.github.com/timvisee/fcda9bbdff88d45cc9061606b4b923ca</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">This document was inspired by discussions at the 2nd Oxford Post-Quantum
+Cryptography Summit 2023.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2">We gratefully acknowledge <span class="contact-name">Melissa Azouaoui</span> for her input to this document.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3">The abstract and the introduction are based on the introduction in <span>[<a href="#I-D.gazdag-x509-hash-sigs" class="cite xref">HBSX509</a>]</span>.
+Thanks go to the authors of that document. "Copying always makes things easier
+and less error prone." - <span>[<a href="#RFC8411" class="cite xref">RFC8411</a>]</span><a href="#appendix-A-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="contributors">
+<section id="appendix-B">
+      <h2 id="name-contributors">
+<a href="#name-contributors" class="section-name selfRef">Contributors</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jeff Andersen</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Bruno Couillard</span></div>
+<div dir="auto" class="left"><span class="org">Crypto4A Technologies</span></div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Stefan-Lukas Gazdag</span></div>
+<div dir="auto" class="left"><span class="org">genua GmbH</span></div>
+</address>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Thom Wiggers</span></div>
+<div dir="auto" class="left"><span class="org">PQShield</span></div>
+<div dir="auto" class="left"><span class="country-name">Netherlands</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:thom@thomwiggers.nl" class="email">thom@thomwiggers.nl</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Kaveh Bashiri</span></div>
+<div dir="auto" class="left"><span class="org">BSI</span></div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kaveh.bashiri.ietf@gmail.com" class="email">kaveh.bashiri.ietf@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Stefan Kölbl</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div dir="auto" class="left"><span class="country-name">Switzerland</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kste@google.com" class="email">kste@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Jim Goodman</span></div>
+<div dir="auto" class="left"><span class="org">Crypto4A Technologies</span></div>
+<div dir="auto" class="left"><span class="country-name">Canada</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:jimg@crypto4a.com" class="email">jimg@crypto4a.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Stavros Kousidis</span></div>
+<div dir="auto" class="left"><span class="org">BSI</span></div>
+<div dir="auto" class="left"><span class="country-name">Germany</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:kousidis.ietf@gmail.com" class="email">kousidis.ietf@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
