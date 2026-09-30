@@ -1,0 +1,2457 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10052: Performance Measurement with Asymmetrical Traffic Using the Simple Two-Way Active Measurement Protocol (STAMP)</title>
+<meta content="Greg Mirsky" name="author">
+<meta content="Ernesto Ruffini" name="author">
+<meta content="Henrik Nydell" name="author">
+<meta content="Richard Foote" name="author">
+<meta content="Will Hawkins" name="author">
+<meta content="
+       
+This document defines an optional extension to the Simple Two-way Active Measurement Protocol (STAMP)
+that enables a Session-Reflector to send asymmetrical packets, that is, response packets
+whose size or quantity differs from those sent by the Session-Sender.
+While standard STAMP exchanges are symmetrical, certain measurement scenarios benefit from reflected packets of different lengths
+or additional responses to better approximate application traffic conditions. The extension specifies the Reflected Test Packet Control TLV
+and associated procedures, analyzes challenges in active performance measurement (including in multicast environments),
+and describes STAMP behaviors to improve measurement efficiency and reduce network impact.
+       
+    " name="description">
+<meta content="xml2rfc 3.34.1" name="generator">
+<meta content="IPPM" name="keyword">
+<meta content="Performance Measurement" name="keyword">
+<meta content="10052" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.1
+    Python 3.14.7
+    ConfigArgParse 1.7.7
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.3
+    natsort 8.4.0
+    platformdirs 4.11.8
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.8.3
+    weasyprint 70.0
+-->
+<link href="rfc10052.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+sub,
+sup {
+ white-space: nowrap;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://datatracker.ietf.org/doc/draft-ietf-ippm-asymmetrical-pkts-14" rel="prev">
+  <link href="https://dx.doi.org/10.17487/rfc10052" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10052</td>
+<td class="center">Asymmetrical Traffic Using STAMP</td>
+<td class="right">September 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Mirsky, et al.</td>
+<td class="center">Standards Track</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10052" class="eref">10052</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Standards Track</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-09" class="published">September 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">G. Mirsky</div>
+<div class="org">Ciena Corporation</div>
+</div>
+<div class="author">
+      <div class="author-name">E. Ruffini</div>
+<div class="org">OutSys</div>
+</div>
+<div class="author">
+      <div class="author-name">H. Nydell</div>
+<div class="org">Cisco Systems</div>
+</div>
+<div class="author">
+      <div class="author-name">R. Foote</div>
+<div class="org">Nokia</div>
+</div>
+<div class="author">
+      <div class="author-name">W. Hawkins</div>
+<div class="org">University of Cincinnati</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10052</h1>
+<h1 id="title">Performance Measurement with Asymmetrical Traffic Using the Simple Two-Way Active Measurement Protocol (STAMP)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+This document defines an optional extension to the Simple Two-way Active Measurement Protocol (STAMP)
+that enables a Session-Reflector to send asymmetrical packets, that is, response packets
+whose size or quantity differs from those sent by the Session-Sender.
+While standard STAMP exchanges are symmetrical, certain measurement scenarios benefit from reflected packets of different lengths
+or additional responses to better approximate application traffic conditions. The extension specifies the Reflected Test Packet Control TLV
+and associated procedures, analyzes challenges in active performance measurement (including in multicast environments),
+and describes STAMP behaviors to improve measurement efficiency and reduce network impact.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by
+            the Internet Engineering Steering Group (IESG).  Further
+            information on Internet Standards is available in Section 2 of 
+            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10052">https://www.rfc-editor.org/info/rfc10052</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-used-in-this-do" class="internal xref">Conventions Used in This Document</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1" class="keepWithNext"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-acronyms" class="internal xref">Acronyms</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-requirements-language" class="internal xref">Requirements Language</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-reflected-test-packet-contr" class="internal xref">Reflected Test Packet Control TLV</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-address-group-sub-tlvs" class="internal xref">Address Group Sub-TLVs</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.1">
+                    <p id="section-toc.1-1.3.2.1.2.1.1"><a href="#section-3.1.1" class="auto internal xref">3.1.1</a>.  <a href="#name-layer-2-address-group-sub-t" class="internal xref">Layer 2 Address Group Sub-TLV</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.2">
+                    <p id="section-toc.1-1.3.2.1.2.2.1"><a href="#section-3.1.2" class="auto internal xref">3.1.2</a>.  <a href="#name-layer-3-address-group-sub-t" class="internal xref">Layer 3 Address Group Sub-TLV</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-operational-considerations" class="internal xref">Operational Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-rate-measurement" class="internal xref">Rate Measurement</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-operational-considerations-" class="internal xref">Operational Considerations for Performing Rate Measurement</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-active-performance-measurem" class="internal xref">Active Performance Measurement in a Multicast Environment</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-using-reflected-test-packet" class="internal xref">Using Reflected Test Packet Control TLV in Combination with Other TLVs</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-reflected-test-packet-control" class="internal xref">Reflected Test Packet Control TLV Type</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-conformant-reflected-packet" class="internal xref">Conformant Reflected Packet STAMP TLV Flag</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-layer-2-and-layer-3-address" class="internal xref">Layer 2 and Layer 3 Address Group Sub-TLV Types</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">
+    The Simple Two-way Active Measurement Protocol (STAMP) <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span> defines the base STAMP functionalities.
+    STAMP Optional Extensions <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span> introduces a TLV structure that allows
+ a Session-Sender to include optional instructions for Session-Reflectors
+ to extend the functionality of the base STAMP protocol.
+    New STAMP TLVs can be defined to support scenarios like the ones described in <span>[<a href="#RFC7497" class="cite xref">RFC7497</a>]</span>,
+    which discusses the coordination of messaging between the source
+    and destination to help deliver one of the fundamental principles
+    of IP performance metric measurements, minimizing the test traffic effect on user flows.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+      By default, a STAMP Session-Sender and a Session-Reflector exchange packets symmetrically:
+      The number of packets sent by the Session-Reflector and the Session-Sender are the same, and the length of the packets sent by
+      the Session-Reflector and the Session-Sender are the same.
+ However, in some scenarios, e.g., rate measurements discussed in <span>[<a href="#RFC7497" class="cite xref">RFC7497</a>]</span>,
+    it would be beneficial for a Session-Reflector to respond with asymmetrical test packets: packets whose length is not symmetrical
+    to the test packet sent by the Session-Sender and/or packets that are not sent in direct response to a packet received from a Session-Sender.
+    The optional extension defined in this document gives operators the tools to create such asymmetrical packets between a Session-Sender and a Session-Reflector.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">
+    Measurement of performance metrics in a multicast network using an active measurement method
+    (<span><a href="https://rfc-editor.org/rfc/rfc7799#section-3.4" class="relref">Section 3.4</a> of [<a href="#RFC7799" class="cite xref">RFC7799</a>]</span>) has specific challenges compared to what operators experience monitoring in a unicast network.
+    This document analyzes these challenges and specifies procedures and STAMP extensions to
+    achieve more efficient measurements with a lesser impact on a network.<a href="#section-1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-2">
+      <h2 id="name-conventions-used-in-this-do">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-used-in-this-do" class="section-name selfRef">Conventions Used in This Document</a>
+      </h2>
+<div id="terminology-sec">
+<section id="section-2.1">
+        <h3 id="name-terminology">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-2.1-1">
+          This document uses terms defined in <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span>, specifically Session-Sender, Session-Reflector, and symmetrical packets.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">
+          This document uses terms defined in <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>, specifically STAMP Session Identifier (SSID),
+          STAMP TLV Flags, and Sub-TLVs.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3">
+         This document uses terms defined in <span>[<a href="#RFC7497" class="cite xref">RFC7497</a>]</span>, specifically In-Service and Out-of-Service.<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<p id="section-2.1-4">
+          In this document, "asymmetrical packets" has two meanings, depending on the context.
+          The first aspect is asymmetry in packet size between a packet sent by a Session-Reflector and the packet it received from the Session-Sender.
+          The second aspect is asymmetry in the number of packets the Session-Reflector transmits in response to receiving a single STAMP-Test packet.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+<p id="section-2.1-5">
+          In this document, a multicast network means a communication network model where a sender transmits a single packet
+addressed to a multicast group, and the network delivers copies of that packet
+to multiple receivers that have joined the group.<a href="#section-2.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="acronyms-sec">
+<section id="section-2.2">
+        <h3 id="name-acronyms">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-acronyms" class="section-name selfRef">Acronyms</a>
+        </h3>
+<span class="break"></span><dl class="dlParallel" id="section-2.2-1">
+          <dt id="section-2.2-1.1">CE:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-1.2">Congestion Experienced<a href="#section-2.2-1.2" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.2-1.3">ECN:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-1.4">Explicit Congestion Notification<a href="#section-2.2-1.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.2-1.5">EUI:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-1.6">Extended Unique Identifier<a href="#section-2.2-1.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.2-1.7">MAC:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-1.8">Media Access Control<a href="#section-2.2-1.8" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.2-1.9">STAMP:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-1.10">Simple Two-way Active Measurement Protocol<a href="#section-2.2-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-2.2-1.11">TLV:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.2-1.12">Type-Length-Value<a href="#section-2.2-1.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<section id="section-2.3">
+        <h3 id="name-requirements-language">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-requirements-language" class="section-name selfRef">Requirements Language</a>
+        </h3>
+<p id="section-2.3-1">
+    The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+    "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+    described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> 
+    when, and only when, they appear in all capitals, as shown here.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+</section>
+</section>
+<div id="reflected-cntrl-tlv">
+<section id="section-3">
+      <h2 id="name-reflected-test-packet-contr">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-reflected-test-packet-contr" class="section-name selfRef">Reflected Test Packet Control TLV</a>
+      </h2>
+<p id="section-3-1">
+      This section defines an additional optional STAMP extension, the Reflected Test Packet Control TLV, and an additional bit flag in the STAMP TLV Flags field.
+The format of this TLV is presented in <a href="#reflected-cntrl-tlv-fig" class="auto internal xref">Figure 1</a>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<span id="name-reflected-test-packet-contro"></span><div id="reflected-cntrl-tlv-fig">
+<figure id="figure-1">
+        <div id="section-3-2.1">
+          <div class="alignLeft art-svg artwork" id="section-3-2.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="208" width="528" viewBox="0 0 528 208" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+              <path d="M 8,64 L 8,160" fill="none" stroke="black"></path>
+              <path d="M 136,64 L 136,96" fill="none" stroke="black"></path>
+              <path d="M 264,64 L 264,128" fill="none" stroke="black"></path>
+              <path d="M 520,64 L 520,160" fill="none" stroke="black"></path>
+              <path d="M 8,64 L 520,64" fill="none" stroke="black"></path>
+              <path d="M 8,96 L 520,96" fill="none" stroke="black"></path>
+              <path d="M 8,128 L 520,128" fill="none" stroke="black"></path>
+              <path d="M 8,160 L 520,160" fill="none" stroke="black"></path>
+              <path d="M 8,192 L 520,192" fill="none" stroke="black"></path>
+              <g class="text">
+                <text x="16" y="36">0</text>
+                <text x="176" y="36">1</text>
+                <text x="336" y="36">2</text>
+                <text x="496" y="36">3</text>
+                <text x="16" y="52">0</text>
+                <text x="32" y="52">1</text>
+                <text x="48" y="52">2</text>
+                <text x="64" y="52">3</text>
+                <text x="80" y="52">4</text>
+                <text x="96" y="52">5</text>
+                <text x="112" y="52">6</text>
+                <text x="128" y="52">7</text>
+                <text x="144" y="52">8</text>
+                <text x="160" y="52">9</text>
+                <text x="176" y="52">0</text>
+                <text x="192" y="52">1</text>
+                <text x="208" y="52">2</text>
+                <text x="224" y="52">3</text>
+                <text x="240" y="52">4</text>
+                <text x="256" y="52">5</text>
+                <text x="272" y="52">6</text>
+                <text x="288" y="52">7</text>
+                <text x="304" y="52">8</text>
+                <text x="320" y="52">9</text>
+                <text x="336" y="52">0</text>
+                <text x="352" y="52">1</text>
+                <text x="368" y="52">2</text>
+                <text x="384" y="52">3</text>
+                <text x="400" y="52">4</text>
+                <text x="416" y="52">5</text>
+                <text x="432" y="52">6</text>
+                <text x="448" y="52">7</text>
+                <text x="464" y="52">8</text>
+                <text x="480" y="52">9</text>
+                <text x="496" y="52">0</text>
+                <text x="512" y="52">1</text>
+                <text x="32" y="84">STAMP</text>
+                <text x="72" y="84">TLV</text>
+                <text x="112" y="84">Flags</text>
+                <text x="204" y="84">Type</text>
+                <text x="380" y="84">Length</text>
+                <text x="36" y="116">Length</text>
+                <text x="76" y="116">of</text>
+                <text x="104" y="116">the</text>
+                <text x="160" y="116">Reflected</text>
+                <text x="228" y="116">Packet</text>
+                <text x="292" y="116">Number</text>
+                <text x="332" y="116">of</text>
+                <text x="360" y="116">the</text>
+                <text x="416" y="116">Reflected</text>
+                <text x="488" y="116">Packets</text>
+                <text x="148" y="148">Interval</text>
+                <text x="216" y="148">Between</text>
+                <text x="264" y="148">the</text>
+                <text x="320" y="148">Reflected</text>
+                <text x="392" y="148">Packets</text>
+                <text x="8" y="180">~</text>
+                <text x="268" y="180">Sub-TLVs</text>
+                <text x="520" y="180">~</text>
+              </g>
+            </svg><a href="#section-3-2.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-reflected-test-packet-contro" class="selfRef">Reflected Test Packet Control TLV Format</a>
+        </figcaption></figure>
+</div>
+<p id="section-3-3">
+  The descriptions of the fields are as follows:<a href="#section-3-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3-4">
+        <dt id="section-3-4.1">STAMP TLV Flags:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.2">A one-octet field <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>.<a href="#section-3-4.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.3">Type:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.4">A one-octet field that identifies the Reflected Test Packet Control TLV.
+        This field is set to 12 (<a href="#iana-pkt-cntrl-tlv" class="auto internal xref">Section 6.1</a>).<a href="#section-3-4.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.5">Length:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.6">A two-octet field. The value is variable and <span class="bcp14">MUST NOT</span> be smaller than 12 octets.<a href="#section-3-4.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.7">Length of the Reflected Packet:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.8">A two-octet field.
+        The value is an unsigned integer that is the requested length of a reflected test packet in octets.<a href="#section-3-4.8" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.9">Number of the Reflected Packets:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.10">A two-octet field. The value is an unsigned integer that is the number of reflected test packets that
+        the Session-Reflector is requested to transmit in response to receiving a STAMP-Test packet with
+        the Reflected Test Packet Control TLV.<a href="#section-3-4.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.11">Interval Between the Reflected Packets:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.12">A four-octet field. The value is an unsigned integer set to the interval in nanoseconds between
+        the transmission of the consecutive reflected test packets in response to receiving
+        a STAMP-Test packet with the Reflected Test Packet Control TLV.<a href="#section-3-4.12" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-4.13">Sub-TLVs:</dt>
+        <dd style="margin-left: 1.5em" id="section-3-4.14">An optional field that includes additional information communicated by a Session-Sender.<a href="#section-3-4.14" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-5">
+      Also, an additional STAMP TLV flag <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>, the Conformant Reflected Packet, has been allocated
+      by IANA in the "STAMP TLV Flags" registry (<a href="#iana-tlv-flag-sec" class="auto internal xref">Section 6.2</a>): the one-bit C flag (3). A Session-Sender <span class="bcp14">MUST</span> zero
+      this flag on transmission, and the Session-Reflector <span class="bcp14">MUST</span> ignore its value on the receipt of a STAMP-Test packet with a STAMP TLV.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">
+   A Session-Sender <span class="bcp14">MAY</span> include the Reflected Test Packet Control TLV in a STAMP
+   test packet. If the received STAMP-Test packet includes the Reflected Test Packet Control TLV,
+   the Session-Reflector <span class="bcp14">MUST</span> transmit a sequence of reflected test packets according to the following rules:<a href="#section-3-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-7.1">
+          <p id="section-3-7.1.1">The length of the reflected test packet <span class="bcp14">MUST</span> be the largest of:<a href="#section-3-7.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="a" class="compact type-a" id="section-3-7.1.2">
+         <li id="section-3-7.1.2.1">
+         The length of a base Session-Reflector packet in the mode (unauthenticated
+or authenticated) of the received STAMP-Test packet, as defined in
+<span><a href="https://rfc-editor.org/rfc/rfc8762#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC8762" class="cite xref">RFC8762</a>]</span>, including all STAMP extension TLVs <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>
+present in the received STAMP-Test packet but excluding any Extra Padding TLVs.
+The rationale to exclude any Extra Padding TLVs present in combination with the 
+Reflected Test Packet Control TLV is to support a scenario in which a Session-Reflector
+is requested to transmit a sequence of packets shorter than the received STAMP packet.<a href="#section-3-7.1.2.1" class="pilcrow">¶</a>
+</li>
+            <li id="section-3-7.1.2.2">
+The value in the Length of the Reflected Packet
+field of the Reflected Test Packet Control TLV aligned at a four-octet
+boundary.<a href="#section-3-7.1.2.2" class="pilcrow">¶</a>
+</li>
+          </ol>
+</li>
+      </ul>
+<p id="section-3-8">In a case where the length of the reflected packet
+calculated by this rule is longer than the length of the reflected
+packet calculated by the rules in <span><a href="https://rfc-editor.org/rfc/rfc8972#section-4" class="relref">Section 4</a> of [<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>, the Session-Reflector
+<span class="bcp14">MUST</span> use the Extra Padding TLV (<span><a href="https://rfc-editor.org/rfc/rfc8972#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>) to increase
+the length of the reflected test packet. If the calculated length of the reflected packet exceeds
+the maximum transmission unit (MTU) of the interface to reach the Session-Sender,
+the Session-Reflector <span class="bcp14">MUST</span> set the Conformant Reflected Packet STAMP TLV flag (<a href="#iana-tlv-flag-sec" class="auto internal xref">Section 6.2</a>) to 1 
+and <span class="bcp14">MUST</span> transmit a single reflected packet of the length equal to the MTU of the egress interface.
+Otherwise, the Session-Reflector <span class="bcp14">MUST</span> set the C flag to 0 in each reflected test packet.<a href="#section-3-8" class="pilcrow">¶</a></p>
+<p id="section-3-9">The number of reflected test packets in the sequence <span class="bcp14">MUST</span> equal the value of the Number of the Reflected Packets field.<a href="#section-3-9" class="pilcrow">¶</a></p>
+<p id="section-3-10">
+  If the value of the Number of the Reflected Packets field is greater than 1,
+the interval between the transmission of two consecutive reflected packets in the sequence <span class="bcp14">MUST</span> be equal to the value
+  in the Interval Between the Reflected Packets field in nanoseconds.
+To prevent excessive congestion caused by reflected packets, a Session-Reflector that supports the Reflected Test Packet Control TLV
+<span class="bcp14">MUST</span> enforce limits on both the data rate (bytes per second) and the total data volume (bytes)
+of the STAMP payload it generates in response to an incoming test packet.
+If a test packet is received that would generate traffic that exceeds either of these limits, the Session-Reflector <span class="bcp14">MUST</span>
+set the C flag (<a href="#iana-tlv-flag-sec" class="auto internal xref">Section 6.2</a>) to 1 and <span class="bcp14">MUST</span> transmit a single reflected packet of the length calculated by the rules listed above.
+Otherwise, the Session-Reflector <span class="bcp14">MUST</span> set the C flag to 0 in each reflected test packet.<a href="#section-3-10" class="pilcrow">¶</a></p>
+<p id="section-3-11">
+If the Number of the Reflected Packets field is set to 0, the Session-Reflector <span class="bcp14">MUST NOT</span> send any reflected packets.
+Furthermore, in this case, the Session-Reflector <span class="bcp14">SHOULD</span> discard the received STAMP-Test packet.
+However, a local policy <span class="bcp14">MAY</span> override this default behavior and specify an alternative handling.
+Note that this behavior of the Session-Reflector is demonstrated when the Control Code Flags field
+of the Return Path Control Code sub-TLV (<span><a href="https://rfc-editor.org/rfc/rfc9503#section-4.1.1" class="relref">Section 4.1.1</a> of [<a href="#RFC9503" class="cite xref">RFC9503</a>]</span>)
+is set to No Reply Requested. If this is the intended behavior, use of the Return Path TLV is preferable.<a href="#section-3-11" class="pilcrow">¶</a></p>
+<p id="section-3-12">Each reflected test packet in the sequence is formed according to <span><a href="https://rfc-editor.org/rfc/rfc8762#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC8762" class="cite xref">RFC8762</a>]</span>.<a href="#section-3-12" class="pilcrow">¶</a></p>
+<p id="section-3-13">
+As defined above, there are two cases when a Session-Reflector will set the C flag in the reflected packet. To disambiguate
+which case led to the C flag being set to 1, an implementation of a Session-Sender can determine the cause as follows:<a href="#section-3-13" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-14.1">If the length of the received reflected STAMP packet is less than
+the value of the Length of the Reflected Packet field, the requested
+length exceeds the MTU of the egress interface of the
+Session-Reflector.<a href="#section-3-14.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-3-14.2">If the length of the received reflected STAMP packet equals the
+value of the Length of the Reflected Packet field, the requested data
+rate and/or the data volume exceed the limits set at the
+Session-Reflector.<a href="#section-3-14.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+<div id="address-group-sub-tlv">
+<section id="section-3.1">
+        <h3 id="name-address-group-sub-tlvs">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-address-group-sub-tlvs" class="section-name selfRef">Address Group Sub-TLVs</a>
+        </h3>
+<p id="section-3.1-1">
+      A multicast network that uses an active performance measurement method for In-Service rate estimation <span class="bcp14">MUST</span> include a rate control mechanism
+      that bounds and regulates the generation of measurement packets. Because multicast replication can amplify probe traffic across the distribution tree,
+      uncontrolled probe emission risks introducing congestion, altering traffic asymmetry, or otherwise perturbing the conditions being measured.
+      The rate control mechanism <span class="bcp14">MUST</span> ensure that probe traffic remains non-intrusive, predictable, and consistent
+      with the operational characteristics of the multicast topology. Aligning probe generation behavior
+      with the timing and packet selection semantics of the asymmetric packet measurement method makes it possible for observations collected at receivers to remain valid and comparable.
+      To allow for deployment on networks with different characteristics (i.e., latency, throughput, etc.), implementations <span class="bcp14">SHOULD</span> provide operators with the ability to configure rate limits and pacing parameters that prevent excessive
+      or uneven probe replication while still enabling statistically meaningful measurement samples.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<div id="l2-addr-grp-sub-tlv">
+<section id="section-3.1.1">
+          <h4 id="name-layer-2-address-group-sub-t">
+<a href="#section-3.1.1" class="section-number selfRef">3.1.1. </a><a href="#name-layer-2-address-group-sub-t" class="section-name selfRef">Layer 2 Address Group Sub-TLV</a>
+          </h4>
+<p id="section-3.1.1-1">
+An optional Layer 2 Address Group sub-TLV is a variable-length sub-TLV that includes a Layer 2 Address Group Mask and Address Group fields
+used by the Session-Sender to select the Session-Reflectors for a response.
+The Layer 2 Address Group sub-TLV can convey EUI-48 (Extended Unique Identifier), EUI-64 <span>[<a href="#IEEE-802.3-2022" class="cite xref">IEEE-802.3-2022</a>]</span>,
+and a 16-bit short address for local identification within a Personal Area Network <span>[<a href="#IEEE-802.15.4-2024" class="cite xref">IEEE-802.15.4-2024</a>]</span>.
+The format of the Layer 2 Address Group sub-TLV is presented in <a href="#l2-addr-grp-sub-tlv-fig" class="auto internal xref">Figure 2</a>.<a href="#section-3.1.1-1" class="pilcrow">¶</a></p>
+<span id="name-layer-2-address-group-sub-tl"></span><div id="l2-addr-grp-sub-tlv-fig">
+<figure id="figure-2">
+            <div id="section-3.1.1-2.1">
+              <div class="alignLeft art-svg artwork" id="section-3.1.1-2.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="176" width="528" viewBox="0 0 528 176" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                  <path d="M 8,64 L 8,96" fill="none" stroke="black"></path>
+                  <path d="M 120,64 L 120,96" fill="none" stroke="black"></path>
+                  <path d="M 248,64 L 248,96" fill="none" stroke="black"></path>
+                  <path d="M 520,64 L 520,96" fill="none" stroke="black"></path>
+                  <path d="M 8,64 L 520,64" fill="none" stroke="black"></path>
+                  <path d="M 8,96 L 520,96" fill="none" stroke="black"></path>
+                  <path d="M 8,128 L 520,128" fill="none" stroke="black"></path>
+                  <path d="M 8,160 L 520,160" fill="none" stroke="black"></path>
+                  <g class="text">
+                    <text x="16" y="36">0</text>
+                    <text x="176" y="36">1</text>
+                    <text x="336" y="36">2</text>
+                    <text x="496" y="36">3</text>
+                    <text x="16" y="52">0</text>
+                    <text x="32" y="52">1</text>
+                    <text x="48" y="52">2</text>
+                    <text x="64" y="52">3</text>
+                    <text x="80" y="52">4</text>
+                    <text x="96" y="52">5</text>
+                    <text x="112" y="52">6</text>
+                    <text x="128" y="52">7</text>
+                    <text x="144" y="52">8</text>
+                    <text x="160" y="52">9</text>
+                    <text x="176" y="52">0</text>
+                    <text x="192" y="52">1</text>
+                    <text x="208" y="52">2</text>
+                    <text x="224" y="52">3</text>
+                    <text x="240" y="52">4</text>
+                    <text x="256" y="52">5</text>
+                    <text x="272" y="52">6</text>
+                    <text x="288" y="52">7</text>
+                    <text x="304" y="52">8</text>
+                    <text x="320" y="52">9</text>
+                    <text x="336" y="52">0</text>
+                    <text x="352" y="52">1</text>
+                    <text x="368" y="52">2</text>
+                    <text x="384" y="52">3</text>
+                    <text x="400" y="52">4</text>
+                    <text x="416" y="52">5</text>
+                    <text x="432" y="52">6</text>
+                    <text x="448" y="52">7</text>
+                    <text x="464" y="52">8</text>
+                    <text x="480" y="52">9</text>
+                    <text x="496" y="52">0</text>
+                    <text x="512" y="52">1</text>
+                    <text x="40" y="84">Sub-TLV</text>
+                    <text x="96" y="84">Flags</text>
+                    <text x="160" y="84">Sub-TLV</text>
+                    <text x="212" y="84">Type</text>
+                    <text x="352" y="84">Sub-TLV</text>
+                    <text x="412" y="84">Length</text>
+                    <text x="8" y="116">~</text>
+                    <text x="120" y="116">Layer</text>
+                    <text x="152" y="116">2</text>
+                    <text x="192" y="116">Address</text>
+                    <text x="248" y="116">Group</text>
+                    <text x="292" y="116">Mask</text>
+                    <text x="352" y="116">(variable</text>
+                    <text x="424" y="116">length)</text>
+                    <text x="520" y="116">~</text>
+                    <text x="8" y="148">~</text>
+                    <text x="120" y="148">Layer</text>
+                    <text x="152" y="148">2</text>
+                    <text x="192" y="148">Address</text>
+                    <text x="248" y="148">Group</text>
+                    <text x="316" y="148">(variable</text>
+                    <text x="388" y="148">length)</text>
+                    <text x="520" y="148">~</text>
+                  </g>
+                </svg><a href="#section-3.1.1-2.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-layer-2-address-group-sub-tl" class="selfRef">Layer 2 Address Group Sub-TLV Format</a>
+            </figcaption></figure>
+</div>
+<p id="section-3.1.1-3">Where:<a href="#section-3.1.1-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.1.1-4">
+            <dt id="section-3.1.1-4.1">Sub-TLV Flags:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.1-4.2">An eight-bit field. The format, values, and interpretation of flags are as defined for STAMP TLV Flags <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>.  Flag values are taken from the "STAMP TLV Flags" registry <span>[<a href="#IANA-STAMP" class="cite xref">IANA-STAMP</a>]</span>.<a href="#section-3.1.1-4.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.1-4.3">Sub-TLV Type:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.1-4.4">A one-octet field. IANA has assigned value 10 (<a href="#iana-l2-l3-sub-tlv" class="auto internal xref">Section 6.3</a>).<a href="#section-3.1.1-4.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.1-4.5">Sub-TLV Length:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.1-4.6">A two-octet field whose value equals the length of the Value field of the Layer 2 Address Group sub-TLV in octets.
+      Because the lengths of the Layer 2 Address Group Mask and Layer 2 Address Group fields <span class="bcp14">MUST</span> be equal, valid values for the Sub-TLV Length
+      are 4, 12, and 16. Any other value <span class="bcp14">MUST</span> be considered by the Session-Reflector as a malformed sub-TLV.<a href="#section-3.1.1-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-3.1.1-5">
+        The Value field of the Layer 2 Address Group sub-TLV consists of the following fields:<a href="#section-3.1.1-5" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.1.1-6">
+            <dt id="section-3.1.1-6.1">Layer 2 Address Group Mask:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.1-6.2">A field that represents the bitmask to be applied to all MAC addresses associated with the Session-Reflector.
+      The length of the field is 1/2 the value of the sub-TLV Length field.<a href="#section-3.1.1-6.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.1-6.3">Layer 2 Address Group:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.1-6.4">A field that represents the group to which this TLV is addressed.
+      The length of the field is 1/2 the value of the sub-TLV Length field.<a href="#section-3.1.1-6.4" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-3.1.1-7">
+      If the Session-Reflector applies the value of the Layer 2 Address Group Mask field (using a bitwise AND) to any of its MAC addresses
+      with the same length and the result is equal to the value of the Layer 2 Address Group field, then the Session-Reflector
+      <span class="bcp14">MUST</span> stop processing the Layer 2 Address Group sub-TLV and continue processing the received test packet.
+      If no matches are found, the Session-Reflector <span class="bcp14">MUST</span> stop processing the received packet.<a href="#section-3.1.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="l3-addr-grp--sub-tlv">
+<section id="section-3.1.2">
+          <h4 id="name-layer-3-address-group-sub-t">
+<a href="#section-3.1.2" class="section-number selfRef">3.1.2. </a><a href="#name-layer-3-address-group-sub-t" class="section-name selfRef">Layer 3 Address Group Sub-TLV</a>
+          </h4>
+<p id="section-3.1.2-1">
+      An optional Layer 3 Address Group sub-TLV is a variable-length sub-TLV that includes the
+      IP Prefix and IP Prefix Length fields used by the Session-Sender to select the Session-Reflectors for a response.
+      The format of the Layer 3 Address Group sub-TLV is presented in <a href="#l3-addr-grp-sub-tlv-fig" class="auto internal xref">Figure 3</a>.<a href="#section-3.1.2-1" class="pilcrow">¶</a></p>
+<span id="name-layer-3-address-group-sub-tl"></span><div id="l3-addr-grp-sub-tlv-fig">
+<figure id="figure-3">
+            <div id="section-3.1.2-2.1">
+              <div class="alignLeft art-svg artwork" id="section-3.1.2-2.1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="192" width="528" viewBox="0 0 528 192" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+                  <path d="M 8,64 L 8,128" fill="none" stroke="black"></path>
+                  <path d="M 136,64 L 136,128" fill="none" stroke="black"></path>
+                  <path d="M 264,64 L 264,96" fill="none" stroke="black"></path>
+                  <path d="M 520,64 L 520,128" fill="none" stroke="black"></path>
+                  <path d="M 8,64 L 520,64" fill="none" stroke="black"></path>
+                  <path d="M 8,96 L 520,96" fill="none" stroke="black"></path>
+                  <path d="M 8,128 L 520,128" fill="none" stroke="black"></path>
+                  <path d="M 8,160 L 520,160" fill="none" stroke="black"></path>
+                  <g class="text">
+                    <text x="16" y="36">0</text>
+                    <text x="176" y="36">1</text>
+                    <text x="336" y="36">2</text>
+                    <text x="496" y="36">3</text>
+                    <text x="16" y="52">0</text>
+                    <text x="32" y="52">1</text>
+                    <text x="48" y="52">2</text>
+                    <text x="64" y="52">3</text>
+                    <text x="80" y="52">4</text>
+                    <text x="96" y="52">5</text>
+                    <text x="112" y="52">6</text>
+                    <text x="128" y="52">7</text>
+                    <text x="144" y="52">8</text>
+                    <text x="160" y="52">9</text>
+                    <text x="176" y="52">0</text>
+                    <text x="192" y="52">1</text>
+                    <text x="208" y="52">2</text>
+                    <text x="224" y="52">3</text>
+                    <text x="240" y="52">4</text>
+                    <text x="256" y="52">5</text>
+                    <text x="272" y="52">6</text>
+                    <text x="288" y="52">7</text>
+                    <text x="304" y="52">8</text>
+                    <text x="320" y="52">9</text>
+                    <text x="336" y="52">0</text>
+                    <text x="352" y="52">1</text>
+                    <text x="368" y="52">2</text>
+                    <text x="384" y="52">3</text>
+                    <text x="400" y="52">4</text>
+                    <text x="416" y="52">5</text>
+                    <text x="432" y="52">6</text>
+                    <text x="448" y="52">7</text>
+                    <text x="464" y="52">8</text>
+                    <text x="480" y="52">9</text>
+                    <text x="496" y="52">0</text>
+                    <text x="512" y="52">1</text>
+                    <text x="48" y="84">Sub-TLV</text>
+                    <text x="104" y="84">Flags</text>
+                    <text x="176" y="84">Sub-TLV</text>
+                    <text x="228" y="84">Type</text>
+                    <text x="352" y="84">Sub-TLV</text>
+                    <text x="412" y="84">Length</text>
+                    <text x="44" y="116">Prefix</text>
+                    <text x="100" y="116">Length</text>
+                    <text x="324" y="116">Reserved</text>
+                    <text x="8" y="148">~</text>
+                    <text x="204" y="148">IP</text>
+                    <text x="244" y="148">Prefix</text>
+                    <text x="520" y="148">~</text>
+                  </g>
+                </svg><a href="#section-3.1.2-2.1.1" class="pilcrow">¶</a>
+</div>
+</div>
+<figcaption><a href="#figure-3" class="selfRef">Figure 3</a>:
+<a href="#name-layer-3-address-group-sub-tl" class="selfRef">Layer 3 Address Group Sub-TLV Format</a>
+            </figcaption></figure>
+</div>
+<p id="section-3.1.2-3">Where:<a href="#section-3.1.2-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.1.2-4">
+            <dt id="section-3.1.2-4.1">Sub-TLV Flags:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.2-4.2">An eight-bit field. The format, values, and interpretation of flags are as defined for STAMP TLV Flags <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>. Flag values are taken from the "STAMP TLV Flags" registry <span>[<a href="#IANA-STAMP" class="cite xref">IANA-STAMP</a>]</span>.<a href="#section-3.1.2-4.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.2-4.3">Sub-TLV Type:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.2-4.4">A one-octet field. IANA has assigned value 11 (<a href="#iana-l2-l3-sub-tlv" class="auto internal xref">Section 6.3</a>).<a href="#section-3.1.2-4.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.2-4.5">Sub-TLV Length:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.2-4.6">A two-octet field whose value equals either 8 (if the IP Prefix is the prefix for an IPv4 address)
+or 20 (if the IP Prefix is the prefix for an IPv6 address).
+Any other value <span class="bcp14">MUST</span> be considered by the Session-Reflector as a malformed sub-TLV.<a href="#section-3.1.2-4.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-3.1.2-5">
+        The Value field of the Layer 3 Address Group sub-TLV consists of the
+        following fields:<a href="#section-3.1.2-5" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3.1.2-6">
+            <dt id="section-3.1.2-6.1">Prefix Length:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.2-6.2">A one-octet unsigned integer field that contains the length, in bits,
+      of the prefix of the value in the IP Prefix field.<a href="#section-3.1.2-6.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.2-6.3">Reserved:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.2-6.4">A three-octet field. The field <span class="bcp14">MUST</span> be zeroed on transmission and ignored on receipt.<a href="#section-3.1.2-6.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-3.1.2-6.5">IP Prefix:</dt>
+            <dd style="margin-left: 1.5em" id="section-3.1.2-6.6">A variable-length field. The length of the field is four octets if the IP Prefix is the prefix for an IPv4 address
+      or 16 if the IP Prefix is the prefix for an IPv6 address.<a href="#section-3.1.2-6.6" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+<p id="section-3.1.2-7">
+When processing this sub-TLV, the Session-Reflector will construct an IP mask according to the value, n, in the Prefix Length field.
+The IP mask will be an IP address (of the family specified by the value of the sub-TLV Length field, according to the semantics above)
+where the n most-significant bits are set to 1 and all other bits are set to 0. Once the mask is constructed,
+if the Session-Reflector applies it (using a bitwise AND) to any of its IP addresses of the same family and the result is equal to the value in the IP Prefix field,
+then the Session-Reflector <span class="bcp14">MUST</span> stop processing the Layer 3 Address Group sub-TLV and continue processing the received test packet.
+If no matches are found, the Session-Reflector <span class="bcp14">MUST</span> stop processing the received packet.<a href="#section-3.1.2-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="theory-of-operation">
+<section id="section-4">
+      <h2 id="name-operational-considerations">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-operational-considerations" class="section-name selfRef">Operational Considerations</a>
+      </h2>
+<div id="rate-measurement">
+<section id="section-4.1">
+        <h3 id="name-rate-measurement">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-rate-measurement" class="section-name selfRef">Rate Measurement</a>
+        </h3>
+<p id="section-4.1-1">
+      <span>[<a href="#RFC7497" class="cite xref">RFC7497</a>]</span> defines the problem of access rate measurement in access
+   networks. One of the essential requirements identified for a test protocol is the
+   ability to control packet characteristics on the tested path, such as
+   asymmetric rate and asymmetric packet size. The Reflected Test
+   Packet Control TLV, defined in <a href="#reflected-cntrl-tlv" class="auto internal xref">Section 3</a>, conforms to the
+   requirements for measuring access rate by providing optional controls
+   of the number of reflected test packets, the size of the reflected
+   packet(s), and the time interval, i.e., rate, in transmitting the sequence of the reflected test packets.
+   The access rate metric and method of access rate measurement are out of the scope of this document.
+   The UDP Speed Test (see <span>[<a href="#RFC9097" class="cite xref">RFC9097</a>]</span> and <span>[<a href="#RFC9946" class="cite xref">RFC9946</a>]</span>)
+   also allows for the measurement of access bandwidth.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<div id="ops-sec">
+<section id="section-4.1.1">
+          <h4 id="name-operational-considerations-">
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-operational-considerations-" class="section-name selfRef">Operational Considerations for Performing Rate Measurement</a>
+          </h4>
+<p id="section-4.1.1-1">
+      General considerations for using a testing protocol for
+      rate measurement are documented in <span><a href="https://rfc-editor.org/rfc/rfc7497#section-7" class="relref">Section 7</a> of [<a href="#RFC7497" class="cite xref">RFC7497</a>]</span>.
+      These considerations are specific for In-Service and
+      Out-of-Service rate measurement.
+      In the Out-of-Service testing, an operator may use a very high traffic rate and/or volume
+      (i.e., high values for the Length of the Reflected Packet and/or
+Number of the Reflected Packets fields, and/or low values for the Interval Between the Reflected Packets field of the
+Reflected Test Packet Control TLV) to create congestion in the bottleneck. However, when performing In-Service rate testing,
+an operator may start with a low rate and/or volume and gradually increase them with each transmitted Reflected Test Packet Control TLV.<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-2">A service subscriber performing extensive rate measurements on the operational network <span class="bcp14">SHOULD</span> consider
+      bullet item 6 in <span><a href="https://rfc-editor.org/rfc/rfc9946#section-11" class="relref">Section 11</a> of [<a href="#RFC9946" class="cite xref">RFC9946</a>]</span> and be mindful of limits placed on their service by the Service Provider. In particular, active measurement can lead to the generation of data volumes that may cause those performing the test to violate service-level agreements with their Service Provider.<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="multicast-measurement">
+<section id="section-4.2">
+        <h3 id="name-active-performance-measurem">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-active-performance-measurem" class="section-name selfRef">Active Performance Measurement in a Multicast Environment</a>
+        </h3>
+<p id="section-4.2-1">
+For performance measurements using STAMP in a multicast environment, a Session-Sender
+is expected to be the root and Session-Reflectors are the leaves of the same multicast distribution tree.
+The mechanism of constructing the multicast tree is outside the scope of this document.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">
+      According to <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>, a STAMP Session is demultiplexed by a Session-Reflector by the tuple
+      that consists of source and destination IP addresses, source and destination UDP port numbers, or
+      the source IP address and STAMP Session Identifier. That is also the case when monitoring the performance of a multicast
+flow, despite the fact that the destination IP address is a multicast
+address. Therefore, there is no special behavior defined for a Session-Reflector upon receiving
+      a STAMP-Test packet over a multicast tree. It processes the packet according to <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span> and <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>.
+      The Session-Reflector <span class="bcp14">MUST</span> use the source IP address of the received STAMP-Test packet as the destination IP address of the reflected test packet
+      and <span class="bcp14">MUST</span> use one of the IP addresses associated with the node as the source IP address for that packet. As a result, a Session-Sender may receive
+      multiple replies from multiple counterpart Session-Reflectors. Such a Session-Sender may include a Reflected Test Packet Control TLV
+      and include either a Layer 2 Address Group sub-TLV or a Layer 3 Address Group sub-TLV to limit the Session-Reflectors that respond.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">
+The multicast environment itself could be configured to help alleviate the possibility that
+network congestion may occur if a single test packet generates a large number of concurrent replies,
+all directed to the same endpoint. Depending on the multicast implementation,
+adding the Reflected Test Packet Control TLV could allow the multicast environment to limit the number of replies by modifying the Reflected Test Packet Control TLV sub-TLV values of any STAMP packets it sees, allowing replies only from reflectors that are:<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2-4.1">Randomly selected, by specifying a Layer 2 Address Group sub-TLV: for example,
+setting the EUI-48 Address Group Mask to 0xF and the EUI-48 Address Group to 0x1.
+As a result, only 1 out of 16 reflectors will reply;<a href="#section-4.2-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.2-4.2">Hosted on a specific vendor Network Interface Card, by specifying a Layer 2 Address Group sub-TLV
+with the EUI-48 Address Group Mask set to 0xFFFFFF000000; and<a href="#section-4.2-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-4.2-4.3">Belonging to specific IP networks, for example, a subnet dedicated to IPv6-over-IPv4
+encapsulation, by specifying the appropriate Layer 3 Address Group sub-TLV.<a href="#section-4.2-4.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.2-5">
+ Multicast traffic is also intrinsically asymmetrical. The upstream (source-to-receiver) direction typically dominates,
+ while the return path receives limited attention because multicast communication is primarily one-to-many and generates comparatively little downstream or receiver-to-source traffic.
+ The value of the Length of the Reflected Packet field can be used to ensure that the reflected packet transports
+ all the timestamps and requested information, which are crucial for the underlying measurement,
+ but is as short as possible so as not to flood the network with useless data.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="existing-extensions">
+<section id="section-4.3">
+        <h3 id="name-using-reflected-test-packet">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-using-reflected-test-packet" class="section-name selfRef">Using Reflected Test Packet Control TLV in Combination with Other TLVs</a>
+        </h3>
+<p id="section-4.3-1">
+<span>[<a href="#RFC9503" class="cite xref">RFC9503</a>]</span> defines the Return Path TLV that, when used
+    in combination with the Return Address Sub-TLV, allows a Session-Sender to request
+    the reflected packet be sent to a different address from the
+    Session-Sender one.  These STAMP extensions could be used in combination
+    with the Reflected Test Packet Control TLV, defined in this document, to direct
+    the reflected STAMP-Test packets to a collector of measurement data (according to <span>[<a href="#RFC7594" class="cite xref">RFC7594</a>]</span>)
+    for further processing and network analytics.
+    An example of the use case is a multicast scenario
+    when, for example, the Session-Sender is close to the actual
+    multicast source (such as a camera transmitting live
+    video) so that the test packets follow the same path as the
+    video stream packets in one direction but the reflected test packets
+    follow another to a destination where the data would be analyzed.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">
+For compatibility with <span>[<a href="#RFC9503" class="cite xref">RFC9503</a>]</span>, a Session-Sender <span class="bcp14">MUST NOT</span> include a Return Path Control Code sub-TLV
+with the Control Code Flags set to No Reply Requested in a test packet that also contains a Reflected Test Packet Control TLV with a non-zero value.
+A Session-Reflector that supports both TLVs <span class="bcp14">MUST</span> set the U flag to 1 in both the Return Path
+and Reflected Test Packet Control TLVs within the reflected STAMP packet. Furthermore,
+the Session-Reflector <span class="bcp14">SHOULD</span> log a notification to inform an operator about the misconstructed STAMP packet.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">
+The Reflected Test Packet Control TLV can be combined with the Class of Service TLV <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>
+to augment rate testing or testing in a multicast network that monitors the consistency
+of Differentiated Services Code Point and ECN values
+in forward and reverse directions of the particular STAMP-Test session.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">
+ Security considerations discussed in <span>[<a href="#RFC7497" class="cite xref">RFC7497</a>]</span>,
+ <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span>, <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>, and <span>[<a href="#RFC9503" class="cite xref">RFC9503</a>]</span>
+ apply to this document.  Furthermore,
+   spoofed STAMP-Test packets with the Reflected Test Packet Control TLV
+   can be exploited to conduct a Denial-of-Service (DoS) attack. Hence,
+   implementations <span class="bcp14">MUST</span> use an identity protection mechanism.
+   For example, the Session-Reflector may verify the information about
+the source of the STAMP packet against a pre-defined list of trusted
+nodes. Furthermore, an implementation that supports this specification <span class="bcp14">MUST</span> provide administrative control of support of the
+Reflected Test Packet Control TLV on a Session-Reflector with it being disabled by default.
+   Also, either the STAMP authentication mode <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span> or the HMAC (Hashed Message Authentication Code) TLV <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span> <span class="bcp14">SHOULD</span> be used
+   for a STAMP-Test session containing the Reflected Test Packet Control TLV.
+   Note that if integrity protection is enabled, any in-path modification will cause verification to fail
+   unless the modifying element is within the trust boundary and can recompute the integrity check.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">
+      Furthermore, a DoS attack using the Reflected Test Packet Control TLV might target the STAMP Session-Reflector
+      by overloading it with test packet reflection, e.g., minuscule intervals and/or an excessive number of concurrent test sessions.
+      To mitigate that, a Session-Reflector implementation that supports the new TLV <span class="bcp14">MUST</span>
+      provide a mechanism to limit the reflection rate and volume of STAMP-Test packets
+      (see <a href="#reflected-cntrl-tlv" class="auto internal xref">Section 3</a> for a detailed discussion).<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">
+  Considering the potential number of reflected packets generated by a single test packet sent to a multicast address,
+  parameters in the first STAMP-Test packet with the Reflected Test Packet Control TLV <span class="bcp14">MUST</span> be selected conservatively.
+  Consider the Number of the Reflected Packets field value set to one.  As a result, a Session-Sender,
+  by counting the packets reflected after originating a first STAMP-Test packet with the Reflected Test Packet Control TLV,
+  can evaluate the load caused by using the Reflected Test Packet Control TLV in which more than
+  a single reflected packet to the same multicast destination is requested.
+  To further mitigate the risk of using the Reflected Test Packet Control TLV in a multicast network,
+   a Session-Sender <span class="bcp14">SHOULD</span> sign packets using the HMAC TLV when sending such
+   messages in unauthenticated mode <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span>. But even with the HMAC TLV, the Reflected Test Packet Control TLV
+could be exploited by a replay attack. To mitigate that risk,
+   a STAMP Session-Reflector <span class="bcp14">SHOULD</span> use the value of the Sequence Number field <span>[<a href="#RFC8762" class="cite xref">RFC8762</a>]</span> of the received STAMP-Test packet.
+   If that value compared to the received value in the previous test packet of the same STAMP-Test session is not monotonically increasing,
+   then the Session-Reflector <span class="bcp14">MUST</span> respond with a single reflected packet, setting the U flag to 1 <span>[<a href="#RFC8972" class="cite xref">RFC8972</a>]</span>.
+That may not indicate a replay attack, but there is packet re-ordering or packet duplication in the network.
+   An operator can use other diagnostic methods to characterize and localize the problem.
+   An implementation of the Session-Reflector can use the Serial Number Arithmetic <span>[<a href="#RFC1982" class="cite xref">RFC1982</a>]</span>
+   or any of the other methods to verify the correct ordering of test packets.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">
+A Session-Sender <span class="bcp14">SHOULD NOT</span> send the next STAMP-Test packet with the Reflected Test Packet Control TLV
+before the Session-Reflector is expected to complete the transmission of all reflected packets in response to the Reflected Test Packet Control TLV
+in the previous test packet. In some scenarios, the Reflected Test Packet Control TLV
+might induce congestion on the transient bottleneck. <span><a href="https://rfc-editor.org/rfc/rfc9097#section-10" class="relref">Section 10</a> of [<a href="#RFC9097" class="cite xref">RFC9097</a>]</span>
+specifies security requirements for capacity measurements with asymmetric UDP loads.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">
+When planning In-Service capacity measurement, operators <span class="bcp14">SHOULD</span> follow recommendations formulated in Sections <a href="https://rfc-editor.org/rfc/rfc7497#section-3" class="relref">3</a> and <a href="https://rfc-editor.org/rfc/rfc7497#section-7" class="relref">7</a> of <span>[<a href="#RFC7497" class="cite xref">RFC7497</a>]</span>.
+If the underlay network is ECN-capable, a Session-Reflector may receive STAMP-Test packets with the ECN field marked as Congestion Experienced (CE).
+ECN markings provide an indication of incipient congestion rather than packet loss.
+However, the interpretation of what constitutes "significant congestion" and the operational thresholds for reacting to ECN-CE depend on the specific deployment,
+service objectives, and operator policy. Operators should be aware that In-Service capacity measurements may influence congestion conditions,
+potentially contributing to ECN-CE marking in the network. Implementations and operational procedures <span class="bcp14">SHOULD</span> ensure that
+the use of STAMP for In-Service measurement does not unintentionally degrade data traffic or lead to misinterpretation of ECN-related congestion signals.
+Appropriate thresholds and mitigation actions remain deployment-specific and <span class="bcp14">SHOULD</span> be guided by operator policy and network performance objectives.<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-5-6">
+Furthermore, <span><a href="https://rfc-editor.org/rfc/rfc8085#section-3.1.5" class="relref">Section 3.1.5</a> of [<a href="#RFC8085" class="cite xref">RFC8085</a>]</span> determines that a UDP congestion control <span class="bcp14">SHOULD</span>
+respond quickly to experienced congestion and account for loss rate and response time when choosing a new rate. And <span><a href="https://rfc-editor.org/rfc/rfc9097#section-8.1" class="relref">Section 8.1</a> of [<a href="#RFC9097" class="cite xref">RFC9097</a>]</span> specifies the load rate adjustment algorithm with its sample pseudocode offered in <span><a href="https://rfc-editor.org/rfc/rfc9097#appendix-A" class="relref">Appendix A</a> of [<a href="#RFC9097" class="cite xref">RFC9097</a>]</span>.<a href="#section-5-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-consider">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="iana-pkt-cntrl-tlv">
+<section id="section-6.1">
+        <h3 id="name-reflected-test-packet-control">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-reflected-test-packet-control" class="section-name selfRef">Reflected Test Packet Control TLV Type</a>
+        </h3>
+<p id="section-6.1-1">
+          IANA has assigned a new value for the Reflected Test Packet Control TLV
+          in the "STAMP TLV Types" registry under the "Simple Two-way Active Measurement Protocol (STAMP)
+          TLV Types" registry group as follows:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<span id="name-reflected-test-packet-control-"></span><div id="refl-cntrl-table">
+<table class="center" id="table-1">
+          <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-reflected-test-packet-control-" class="selfRef">Reflected Test Packet Control TLV Type</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">12</td>
+              <td class="text-left" rowspan="1" colspan="1">Reflected Test Packet Control</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 10052</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+<div id="iana-tlv-flag-sec">
+<section id="section-6.2">
+        <h3 id="name-conformant-reflected-packet">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-conformant-reflected-packet" class="section-name selfRef">Conformant Reflected Packet STAMP TLV Flag</a>
+        </h3>
+<p id="section-6.2-1">
+        IANA has allocated a bit position for the Conformant Reflected Packet STAMP TLV flag
+        in the "STAMP TLV Flags" registry under the "Simple Two-way Active Measurement Protocol (STAMP)
+        TLV Types" registry group as follows:<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<span id="name-conformant-reflected-packet-"></span><div id="iana-tlv-flag-tbl">
+<table class="center" id="table-2">
+          <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-conformant-reflected-packet-" class="selfRef">Conformant Reflected Packet STAMP TLV Flag</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Bit position</th>
+              <th class="text-left" rowspan="1" colspan="1">Symbol</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">3</td>
+              <td class="text-left" rowspan="1" colspan="1">C</td>
+              <td class="text-left" rowspan="1" colspan="1">Conformant</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 10052</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+<div id="iana-l2-l3-sub-tlv">
+<section id="section-6.3">
+        <h3 id="name-layer-2-and-layer-3-address">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-layer-2-and-layer-3-address" class="section-name selfRef">Layer 2 and Layer 3 Address Group Sub-TLV Types</a>
+        </h3>
+<p id="section-6.3-1">
+        IANA has assigned values for the Layer 2 Address Group and Layer 3 Address Group sub-TLV Types
+        in the "STAMP Sub-TLV Types" registry under the "Simple Two-way Active Measurement Protocol (STAMP)
+        TLV Types" registry group as follows:<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<span id="name-stamp-sub-tlv-types-for-the"></span><div id="sub-tlv-type-tbl">
+<table class="center" id="table-3">
+          <caption>
+<a href="#table-3" class="selfRef">Table 3</a>:
+<a href="#name-stamp-sub-tlv-types-for-the" class="selfRef">STAMP Sub-TLV Types for the Reflected Test Packet Control TLV</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">TLV Used</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">10</td>
+              <td class="text-left" rowspan="1" colspan="1">Layer 2 Address Group</td>
+              <td class="text-left" rowspan="1" colspan="1">Reflected Test Packet Control</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 10052</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">11</td>
+              <td class="text-left" rowspan="1" colspan="1">Layer 3 Address Group</td>
+              <td class="text-left" rowspan="1" colspan="1">Reflected Test Packet Control</td>
+              <td class="text-left" rowspan="1" colspan="1">RFC 10052</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+</section>
+</div>
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="IANA-STAMP">[IANA-STAMP]</dt>
+        <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"STAMP Sub-TLV Types"</span>, <span>&lt;<a href="https://www.iana.org/assignments/stamp-tlv-types">https://www.iana.org/assignments/stamp-tlv-types</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1982">[RFC1982]</dt>
+        <dd>
+<span class="refAuthor">Elz, R.</span> and <span class="refAuthor">R. Bush</span>, <span class="refTitle">"Serial Number Arithmetic"</span>, <span class="seriesInfo">RFC 1982</span>, <span class="seriesInfo">DOI 10.17487/RFC1982</span>, <time datetime="1996-08" class="refDate">August 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc1982">https://www.rfc-editor.org/info/rfc1982</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7497">[RFC7497]</dt>
+        <dd>
+<span class="refAuthor">Morton, A.</span>, <span class="refTitle">"Rate Measurement Test Protocol Problem Statement and Requirements"</span>, <span class="seriesInfo">RFC 7497</span>, <span class="seriesInfo">DOI 10.17487/RFC7497</span>, <time datetime="2015-04" class="refDate">April 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7497">https://www.rfc-editor.org/info/rfc7497</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8762">[RFC8762]</dt>
+        <dd>
+<span class="refAuthor">Mirsky, G.</span>, <span class="refAuthor">Jun, G.</span>, <span class="refAuthor">Nydell, H.</span>, and <span class="refAuthor">R. Foote</span>, <span class="refTitle">"Simple Two-Way Active Measurement Protocol"</span>, <span class="seriesInfo">RFC 8762</span>, <span class="seriesInfo">DOI 10.17487/RFC8762</span>, <time datetime="2020-03" class="refDate">March 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8762">https://www.rfc-editor.org/info/rfc8762</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8972">[RFC8972]</dt>
+        <dd>
+<span class="refAuthor">Mirsky, G.</span>, <span class="refAuthor">Min, X.</span>, <span class="refAuthor">Nydell, H.</span>, <span class="refAuthor">Foote, R.</span>, <span class="refAuthor">Masputra, A.</span>, and <span class="refAuthor">E. Ruffini</span>, <span class="refTitle">"Simple Two-Way Active Measurement Protocol Optional Extensions"</span>, <span class="seriesInfo">RFC 8972</span>, <span class="seriesInfo">DOI 10.17487/RFC8972</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8972">https://www.rfc-editor.org/info/rfc8972</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9503">[RFC9503]</dt>
+        <dd>
+<span class="refAuthor">Gandhi, R., Ed.</span>, <span class="refAuthor">Filsfils, C.</span>, <span class="refAuthor">Chen, M.</span>, <span class="refAuthor">Janssens, B.</span>, and <span class="refAuthor">R. Foote</span>, <span class="refTitle">"Simple Two-Way Active Measurement Protocol (STAMP) Extensions for Segment Routing Networks"</span>, <span class="seriesInfo">RFC 9503</span>, <span class="seriesInfo">DOI 10.17487/RFC9503</span>, <time datetime="2023-10" class="refDate">October 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9503">https://www.rfc-editor.org/info/rfc9503</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9946">[RFC9946]</dt>
+      <dd>
+<span class="refAuthor">Morton, A.</span>, <span class="refAuthor">Ciavattone, L.</span>, and <span class="refAuthor">R. Geib, Ed.</span>, <span class="refTitle">"The UDP Speed Test Protocol (UDPSTP) for One-Way IP Capacity Metric Measurement"</span>, <span class="seriesInfo">RFC 9946</span>, <span class="seriesInfo">DOI 10.17487/RFC9946</span>, <time datetime="2026-04" class="refDate">April 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9946">https://www.rfc-editor.org/info/rfc9946</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="IEEE-802.3-2022">[IEEE-802.3-2022]</dt>
+        <dd>
+<span class="refAuthor">IEEE</span>, <span class="refTitle">"IEEE Standard for Ethernet"</span>, <span class="seriesInfo">IEEE Std 802.3-2022</span>, <span class="seriesInfo">DOI 10.1109/IEEESTD.2022.9844436</span>, <time datetime="2022-07" class="refDate">July 2022</time>, <span>&lt;<a href="https://doi.org/10.1109/IEEESTD.2022.9844436">https://doi.org/10.1109/IEEESTD.2022.9844436</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IEEE-802.15.4-2024">[IEEE-802.15.4-2024]</dt>
+        <dd>
+<span class="refAuthor">IEEE</span>, <span class="refTitle">"IEEE Standard for Low-Rate Wireless Networks"</span>, <span class="seriesInfo">IEEE Std 802.15.4-2024</span>, <span class="seriesInfo">DOI 10.1109/IEEESTD.2024.10794632</span>, <time datetime="2024-12" class="refDate">December 2024</time>, <span>&lt;<a href="https://doi.org/10.1109/IEEESTD.2024.10794632">https://doi.org/10.1109/IEEESTD.2024.10794632</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7594">[RFC7594]</dt>
+        <dd>
+<span class="refAuthor">Eardley, P.</span>, <span class="refAuthor">Morton, A.</span>, <span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Burbridge, T.</span>, <span class="refAuthor">Aitken, P.</span>, and <span class="refAuthor">A. Akhter</span>, <span class="refTitle">"A Framework for Large-Scale Measurement of Broadband Performance (LMAP)"</span>, <span class="seriesInfo">RFC 7594</span>, <span class="seriesInfo">DOI 10.17487/RFC7594</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7594">https://www.rfc-editor.org/info/rfc7594</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7799">[RFC7799]</dt>
+        <dd>
+<span class="refAuthor">Morton, A.</span>, <span class="refTitle">"Active and Passive Metrics and Methods (with Hybrid Types In-Between)"</span>, <span class="seriesInfo">RFC 7799</span>, <span class="seriesInfo">DOI 10.17487/RFC7799</span>, <time datetime="2016-05" class="refDate">May 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7799">https://www.rfc-editor.org/info/rfc7799</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8085">[RFC8085]</dt>
+        <dd>
+<span class="refAuthor">Eggert, L.</span>, <span class="refAuthor">Fairhurst, G.</span>, and <span class="refAuthor">G. Shepherd</span>, <span class="refTitle">"UDP Usage Guidelines"</span>, <span class="seriesInfo">BCP 145</span>, <span class="seriesInfo">RFC 8085</span>, <span class="seriesInfo">DOI 10.17487/RFC8085</span>, <time datetime="2017-03" class="refDate">March 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8085">https://www.rfc-editor.org/info/rfc8085</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9097">[RFC9097]</dt>
+      <dd>
+<span class="refAuthor">Morton, A.</span>, <span class="refAuthor">Geib, R.</span>, and <span class="refAuthor">L. Ciavattone</span>, <span class="refTitle">"Metrics and Methods for One-Way IP Capacity"</span>, <span class="seriesInfo">RFC 9097</span>, <span class="seriesInfo">DOI 10.17487/RFC9097</span>, <time datetime="2021-11" class="refDate">November 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9097">https://www.rfc-editor.org/info/rfc9097</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">
+The authors thank <span class="contact-name">Zhang Li</span>, <span class="contact-name">Ruediger Geib</span>, <span class="contact-name">Rakesh Gandhi</span>, <span class="contact-name">Giuseppe Fioccola</span>, <span class="contact-name">Xiao Min</span>, <span class="contact-name">Greg White</span>, and <span class="contact-name">Rohan Bhosle</span> for their
+thorough reviews and helpful suggestions, which improved the document.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Greg Mirsky</span></div>
+<div dir="auto" class="left"><span class="org">Ciena Corporation</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gregimirsky@gmail.com" class="email">gregimirsky@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ernesto Ruffini</span></div>
+<div dir="auto" class="left"><span class="org">OutSys</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:eruffini@outsys.org" class="email">eruffini@outsys.org</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Henrik Nydell</span></div>
+<div dir="auto" class="left"><span class="org">Cisco Systems</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:hnydell@cisco.com" class="email">hnydell@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Richard Foote</span></div>
+<div dir="auto" class="left"><span class="org">Nokia</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:footer.foote@nokia.com" class="email">footer.foote@nokia.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Will Hawkins</span></div>
+<div dir="auto" class="left"><span class="org">University of Cincinnati</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:hawkinsw@obs.cr" class="email">hawkinsw@obs.cr</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
