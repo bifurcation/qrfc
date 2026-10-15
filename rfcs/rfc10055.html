@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en" class="RFC">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RFC 10055: Configuring UDP Sockets for Explicit Congestion Notification (ECN) for Common Platforms</title>
+<meta content="Martin Duke" name="author">
+<meta content="
+       Explicit Congestion Notification (ECN) applies to all transport protocols in
+principle. However, it had limited deployment for UDP until QUIC became widely
+adopted. As a result, documentation of UDP socket APIs for ECN on various
+platforms is sparse. This document records the results of experimenting with
+these APIs in order to get ECN working on UDP for Chromium on Apple, Linux, and
+Windows platforms. 
+       This document provides a snapshot of the ECN state of affairs as supported by these
+platforms at the time of writing. Readers should refer to the documentation of
+the various platforms for more up-to-date information. 
+    " name="description">
+<meta content="xml2rfc 3.34.1" name="generator">
+<meta content="udp" name="keyword">
+<meta content="ecn" name="keyword">
+<meta content="10055" name="rfc.number">
+<!-- Generator version information:
+  xml2rfc 3.34.1
+    Python 3.14.7
+    ConfigArgParse 1.7.7
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.3
+    natsort 8.4.0
+    platformdirs 4.11.8
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.34.2
+    wcwidth 0.8.3
+    weasyprint 70.0
+-->
+<link href="rfc10055.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+sub,
+sup {
+ white-space: nowrap;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<link href="https://dx.doi.org/10.17487/rfc10055" rel="alternate">
+  <link href="urn:issn:2070-1721" rel="alternate">
+  <link href="https://datatracker.ietf.org/doc/draft-ietf-tsvwg-udp-ecn-08" rel="prev">
+  </head>
+<body class="xml2rfc">
+<script src="https://www.rfc-editor.org/js/metadata.min.js"></script>
+<table class="ears">
+<thead><tr>
+<td class="left">RFC 10055</td>
+<td class="center">UDP Sockets for ECN</td>
+<td class="right">October 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Duke</td>
+<td class="center">Informational</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-stream">Stream:</dt>
+<dd class="stream">Internet Engineering Task Force (IETF)</dd>
+<dt class="label-rfc">RFC:</dt>
+<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc10055" class="eref">10055</a></dd>
+<dt class="label-category">Category:</dt>
+<dd class="category">Informational</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-10" class="published">October 2026</time>
+    </dd>
+<dt class="label-issn">ISSN:</dt>
+<dd class="issn">2070-1721</dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Duke</div>
+<div class="org">Google</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="rfcnum">RFC 10055</h1>
+<h1 id="title">Configuring UDP Sockets for Explicit Congestion Notification (ECN) for Common Platforms</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">Explicit Congestion Notification (ECN) applies to all transport protocols in
+principle. However, it had limited deployment for UDP until QUIC became widely
+adopted. As a result, documentation of UDP socket APIs for ECN on various
+platforms is sparse. This document records the results of experimenting with
+these APIs in order to get ECN working on UDP for Chromium on Apple, Linux, and
+Windows platforms.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">This document provides a snapshot of the ECN state of affairs as supported by these
+platforms at the time of writing. Readers should refer to the documentation of
+the various platforms for more up-to-date information.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+            This document is not an Internet Standards Track specification; it is
+            published for informational purposes.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+            This document is a product of the Internet Engineering Task Force
+            (IETF).  It represents the consensus of the IETF community.  It has
+            received public review and has been approved for publication by the
+            Internet Engineering Steering Group (IESG).  Not all documents
+            approved by the IESG are candidates for any level of Internet
+            Standard; see Section 2 of RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+            Information about the current status of this document, any
+            errata, and how to provide feedback on it may be obtained at
+            <span><a href="https://www.rfc-editor.org/info/rfc10055">https://www.rfc-editor.org/info/rfc10055</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-receiving-ecn-codepoints" class="internal xref">Receiving ECN Codepoints</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-setting-the-socket-to-repor" class="internal xref">Setting the Socket to Report Incoming ECN Codepoints</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.1">
+                    <p id="section-toc.1-1.3.2.1.2.1.1" class="keepWithNext"><a href="#section-3.1.1" class="auto internal xref">3.1.1</a>.  <a href="#name-linux-apple-and-freebsd" class="internal xref">Linux, Apple, and FreeBSD</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.2">
+                    <p id="section-toc.1-1.3.2.1.2.2.1"><a href="#section-3.1.2" class="auto internal xref">3.1.2</a>.  <a href="#name-windows" class="internal xref">Windows</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-retrieving-ecn-codepoints-o" class="internal xref">Retrieving ECN Codepoints on Incoming Packets</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.1">
+                    <p id="section-toc.1-1.3.2.2.2.1.1"><a href="#section-3.2.1" class="auto internal xref">3.2.1</a>.  <a href="#name-linux" class="internal xref">Linux</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.2">
+                    <p id="section-toc.1-1.3.2.2.2.2.1"><a href="#section-3.2.2" class="auto internal xref">3.2.2</a>.  <a href="#name-apple-and-freebsd" class="internal xref">Apple and FreeBSD</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.3">
+                    <p id="section-toc.1-1.3.2.2.2.3.1"><a href="#section-3.2.3" class="auto internal xref">3.2.3</a>.  <a href="#name-windows-2" class="internal xref">Windows</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-sending-ecn-codepoints" class="internal xref">Sending ECN Codepoints</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-on-a-per-socket-basis" class="internal xref">On a Per-Socket Basis</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-apple-freebsd-and-linux" class="internal xref">Apple, FreeBSD, and Linux</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-windows-3" class="internal xref">Windows</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-on-a-per-packet-basis" class="internal xref">On a Per-Packet Basis</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-apple-freebsd-and-linux-2" class="internal xref">Apple, FreeBSD, and Linux</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-windows-4" class="internal xref">Windows</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><span>[<a href="#RFC3168" class="cite xref">RFC3168</a>]</span> defines a 2-bit field in the IP header for Explicit Congestion
+Notification (ECN), which provides network feedback to endpoint congestion
+controllers. Historically, this has mostly been relevant to TCP <span>[<a href="#RFC9293" class="cite xref">RFC9293</a>]</span>,
+where any incoming ECN codepoints are internally consumed by the kernel and,
+therefore, imply no application interface except for enabling and disabling the
+capability.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The Stream Control Transmission Protocol (SCTP) <span>[<a href="#RFC9260" class="cite xref">RFC9260</a>]</span> has long supported
+ECN in its design. SCTP is sometimes carried over DTLS and UDP <span>[<a href="#RFC8261" class="cite xref">RFC8261</a>]</span>.
+In principle, user-space implementers might have leveraged UDP ECN APIs to
+deliver ECN codepoints between SCTP and the UDP socket. At the time of
+publication, the IETF is not aware of any such efforts.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3"><span>[<a href="#RFC6679" class="cite xref">RFC6679</a>]</span> defines ECN over RTP over UDP. The IETF is aware of a research
+implementation but cannot confirm any commercial deployments. <span>[<a href="#RFC8888" class="cite xref">RFC8888</a>]</span>
+proposes a different feedback format to work with <span>[<a href="#RFC6679" class="cite xref">RFC6679</a>]</span>, and there are
+a few implementations of this.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> runs over UDP and has seen wider deployment than SCTP. The Low
+Latency, Low Loss, Scalable Throughput (L4S) architecture <span>[<a href="#RFC9330" class="cite xref">RFC9330</a>]</span> and
+QUIC have combined to increase interest in ECN over UDP.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">The Chromium Projects <span>[<a href="#CHROMIUM" class="cite xref">CHROMIUM</a>]</span> provide a widely deployed protocol library
+that includes QUIC. An effort to provide ECN support for QUIC on the many
+platforms on which Chromium is deployed revealed that many ECN-related UDP
+socket interfaces are poorly documented.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">This Informational document provides a record of that experience to encourage
+further support for ECN in other QUIC implementations and any consumer
+of ECN codepoints that operates over UDP. It is not a Standards Track document
+and does not bind platforms to any API nor suggest any such API.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">Many socket APIs continue to reference the "ToS (Type of Service) byte",
+including the IP_TOS label, even though <span>[<a href="#RFC2474" class="cite xref">RFC2474</a>]</span> obsoleted that in 1998.
+That 8-bit field now contains a 6-bit Differentiated Services Code Point (DSCP)
+and the 2-bit ECN field.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">This document focuses on the APIs for the C and C++ languages. Other languages
+are likely to have different syntax and capabilities.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">The "ecn-examples" code repository <span>[<a href="#EXAMPLES" class="cite xref">EXAMPLES</a>]</span> is extremely compact code that
+can verify the information in this document.<a href="#section-1-9" class="pilcrow">¶</a></p>
+<p id="section-1-10">This document addresses access to the ECN field in the IP header via socket
+APIs. It does not address UDP transport-layer options <span>[<a href="#RFC9868" class="cite xref">RFC9868</a>]</span>, which are a
+separate extension mechanism operating at a different layer.<a href="#section-1-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-2">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-2-1">This document is not a general tutorial on UDP socket programming and does assume
+familiarity with basic socket concepts like binding, socket options, and
+common system error codes.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">Throughout this document, "Apple" refers to both macOS and iOS. "Linux" guidance
+also applies to Android.<a href="#section-2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="receiving-ecn-codepoints">
+<section id="section-3">
+      <h2 id="name-receiving-ecn-codepoints">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-receiving-ecn-codepoints" class="section-name selfRef">Receiving ECN Codepoints</a>
+      </h2>
+<p id="section-3-1">Network devices can change the ECN codepoint in the IP header. Since this
+feedback is required at the packet sender, the packet receiver needs to extract
+this codepoint from the UDP socket in order to report to the sender.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">There are two components to this: 1) setting the socket to report incoming ECN
+marks and 2) retrieving the ECN codepoint for each incoming packet.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">Note that Apple platforms additionally provide a framework for network
+connections that allows receiving ECN flags when using UDP without traditional
+socket option semantics. When sending or receiving UDP datagrams, IP protocol
+metadata carries ECN information in both directions. See
+<span>[<a href="#APPLE-NETWORK-FRAMEWORK" class="cite xref">APPLE-NETWORK-FRAMEWORK</a>]</span>.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<div id="setting-the-socket-to-report-incoming-ecn-codepoints">
+<section id="section-3.1">
+        <h3 id="name-setting-the-socket-to-repor">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-setting-the-socket-to-repor" class="section-name selfRef">Setting the Socket to Report Incoming ECN Codepoints</a>
+        </h3>
+<div id="linux-apple-and-freebsd">
+<section id="section-3.1.1">
+          <h4 id="name-linux-apple-and-freebsd">
+<a href="#section-3.1.1" class="section-number selfRef">3.1.1. </a><a href="#name-linux-apple-and-freebsd" class="section-name selfRef">Linux, Apple, and FreeBSD</a>
+          </h4>
+<p id="section-3.1.1-1">To receive ECN codepoints, applications set a socket option to "true" using a setsockopt()
+call.<a href="#section-3.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-2">On all platforms, IPv4 sockets require the IPPROTO_IP-level socket option with the
+name IP_RECVTOS to be set.<a href="#section-3.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-3">On all platforms, IPv6 sockets require the IPPROTO_IPV6-level socket option with the
+name IPV6_RECVTCLASS to be set.<a href="#section-3.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-4">If the IPv6 socket is not IPv6 only, on Linux hosts it is required to also set
+the IPPROTO_IP-level socket option IP_RECVTOS to receive ECN codepoints for
+UDP/IPv4 packets. This step is not necessary for Apple or FreeBSD.<a href="#section-3.1.1-4" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-5">At the time of writing, an example implementation can be found at
+<span>[<a href="#CHROMIUM-POSIX" class="cite xref">CHROMIUM-POSIX</a>]</span>.<a href="#section-3.1.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="windows">
+<section id="section-3.1.2">
+          <h4 id="name-windows">
+<a href="#section-3.1.2" class="section-number selfRef">3.1.2. </a><a href="#name-windows" class="section-name selfRef">Windows</a>
+          </h4>
+<p id="section-3.1.2-1">Windows documentation recommends using the function WSASetRecvIPEcn() to
+enable ECN codepoint reporting regardless of the IP version. This function dates
+to Windows 10 Build 20348, according to <span>[<a href="#WINDOWS-DOC" class="cite xref">WINDOWS-DOC</a>]</span>.<a href="#section-3.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-2">However, this can also be accomplished by calling setsockopt() and using
+options of level IPPROTO_IP and name IP_RECVECN for IPv4 and level IPPROTO_IPV6
+and name IPV6_RECVECN for IPv6. These options are documented at
+<span>[<a href="#WINDOWS-SOCKOPT" class="cite xref">WINDOWS-SOCKOPT</a>]</span>.<a href="#section-3.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-3">For IPv6 sockets that are not IPv6 only, WSASetRecvIPEcn() will not enable ECN
+reporting for IPv4. This requires a separate setsockopt() call using the
+IP_RECVECN option.<a href="#section-3.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-4">If a socket is bound to an IPv4-mapped IPv6 address (i.e., it is of the format
+::ffff:&lt;IPv4 address&gt;; see <span><a href="https://rfc-editor.org/rfc/rfc4291#section-2.5.5.2" class="relref">Section 2.5.5.2</a> of [<a href="#RFC4291" class="cite xref">RFC4291</a>]</span>), then calls to
+WSASetRecvIpEcn() return the error EINVAL. These sockets should instead use an
+explicit setsockopt() call to set IP_RECVECN.<a href="#section-3.1.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-5">At the time of writing, an example implementation can be found at
+<span>[<a href="#CHROMIUM-WINDOWS" class="cite xref">CHROMIUM-WINDOWS</a>]</span>.<a href="#section-3.1.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="retrieving-ecn-codepoints-on-incoming-packets">
+<section id="section-3.2">
+        <h3 id="name-retrieving-ecn-codepoints-o">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-retrieving-ecn-codepoints-o" class="section-name selfRef">Retrieving ECN Codepoints on Incoming Packets</a>
+        </h3>
+<p id="section-3.2-1">All platforms described in this document require the use of a recvmsg() call to
+read data from the socket and to retrieve the ECN codepoint, because that information
+is provided as ancillary data.
+Those platforms all return zero or more "cmsg"s that contain requested information
+about the arriving packet.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">Examples of the technique described below can be found at <span>[<a href="#CHROMIUM-POSIX" class="cite xref">CHROMIUM-POSIX</a>]</span>
+and <span>[<a href="#CHROMIUM-WINDOWS" class="cite xref">CHROMIUM-WINDOWS</a>]</span>.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<div id="linux">
+<section id="section-3.2.1">
+          <h4 id="name-linux">
+<a href="#section-3.2.1" class="section-number selfRef">3.2.1. </a><a href="#name-linux" class="section-name selfRef">Linux</a>
+          </h4>
+<p id="section-3.2.1-1">If a UDP/IPv4 message is received, Linux will include a cmsg of level IPPROTO_IP
+and type IP_TOS. The cmsg data contains an unsigned char.
+This applies to IPv4 sockets and to IPv6 sockets that are not IPv6 only.<a href="#section-3.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.1-2">If a UDP/IPv6 message is received, Linux will include a cmsg of level IPPROTO_IPV6
+and type IPV6_TCLASS. The cmsg data contains an int.
+This applies to IPv6 sockets.<a href="#section-3.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.2.1-3">The cmsg data contains the entire IP header byte, which includes the DSCP
+and the ECN codepoint.
+The ECN codepoint constitutes the two least significant bits of this byte.<a href="#section-3.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.2.1-4">The same applies to the Linux-specific recvmmsg() call.<a href="#section-3.2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="apple-and-freebsd">
+<section id="section-3.2.2">
+          <h4 id="name-apple-and-freebsd">
+<a href="#section-3.2.2" class="section-number selfRef">3.2.2. </a><a href="#name-apple-and-freebsd" class="section-name selfRef">Apple and FreeBSD</a>
+          </h4>
+<p id="section-3.2.2-1">If a UDP/IPv4 message is received on an IPv4 socket, the ancillary data
+will contain a cmsg of level IPPROTO_IP and type IP_RECVTOS. The cmsg data
+contains an unsigned char.<a href="#section-3.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.2-2">If a UDP/IPv6 or UDP/IPv4 message is received on an IPv6 socket, the
+ancillary data will contain a cmsg of level IPPROTO_IPV6 and type IPV6_TCLASS.
+The cmsg data contains an int.<a href="#section-3.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2.2-3">The cmsg data contains the entire IP header byte, which includes the DSCP
+and the ECN codepoint.
+The ECN codepoint constitutes the two least significant bits of this byte.<a href="#section-3.2.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="windows-1">
+<section id="section-3.2.3">
+          <h4 id="name-windows-2">
+<a href="#section-3.2.3" class="section-number selfRef">3.2.3. </a><a href="#name-windows-2" class="section-name selfRef">Windows</a>
+          </h4>
+<p id="section-3.2.3-1">If the incoming packet is UDP/IPv4, the socket will include a cmsg of level
+IPPROTO_IP and type IP_ECN. The cmsg data contains an int.<a href="#section-3.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.3-2">If the incoming packet is UDP/IPv6, the socket will include a cmsg of level
+IPPROTO_IPV6 and type IPV6_ECN. The cmsg data contains an int.<a href="#section-3.2.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.2.3-3">The cmsg data solely consists of the ECN codepoint and requires no
+further bitwise operations.<a href="#section-3.2.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="sending-ecn-codepoints">
+<section id="section-4">
+      <h2 id="name-sending-ecn-codepoints">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-sending-ecn-codepoints" class="section-name selfRef">Sending ECN Codepoints</a>
+      </h2>
+<p id="section-4-1">Existing ECN specifications (<span>[<a href="#RFC3168" class="cite xref">RFC3168</a>]</span> and <span>[<a href="#RFC9330" class="cite xref">RFC9330</a>]</span>) envision a particular
+connection that is consistently sending the same ECN codepoint. It might transition that
+marking after successfully completing a handshake, recognizing that the path or the
+peer does not support ECN or transitioning to a new path. Therefore, using a
+socket option to configure a consistent marking is generally more
+resource efficient.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">However, some server designs receive all incoming packets on a single socket.
+As the many connections that constitute this packet stream may have different
+support for ECN, it is suitable to provide the ECN codepoint on a per-packet basis.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">Note that Apple platforms additionally provide a framework for network
+connections that allows sending ECN flags when using UDP without traditional
+socket option semantics. When sending or receiving UDP datagrams, IP protocol
+metadata carries ECN information in both directions. See
+<span>[<a href="#APPLE-NETWORK-FRAMEWORK" class="cite xref">APPLE-NETWORK-FRAMEWORK</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<div id="on-a-per-socket-basis">
+<section id="section-4.1">
+        <h3 id="name-on-a-per-socket-basis">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-on-a-per-socket-basis" class="section-name selfRef">On a Per-Socket Basis</a>
+        </h3>
+<div id="apple-freebsd-and-linux">
+<section id="section-4.1.1">
+          <h4 id="name-apple-freebsd-and-linux">
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-apple-freebsd-and-linux" class="section-name selfRef">Apple, FreeBSD, and Linux</a>
+          </h4>
+<p id="section-4.1.1-1">For sending UDP/IPv4 packets on an IPv4 socket, Apple, FreeBSD, and Linux platforms
+allow the outgoing ECN codepoint to be configured by using the IPPROTO_IP-level socket
+option with the name IP_TOS.
+The value has the type int.<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-2">For sending UDP/IPv6 packets on an IPv6 socket, Apple, FreeBSD, and Linux platforms
+allow the outgoing ECN codepoint to be configured by using the IPPROTO_IPV6-level socket
+option with the name IPV6_TCLASS.
+The value has the type int.<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-3">For sending UDP/IPv4 packets on an IPv6 socket, Linux platforms allow
+the outgoing ECN codepoint to be configured by using the IPPROTO_IP-level socket
+option with the name IP_TOS.<a href="#section-4.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-4">For sending UDP/IPv4 packets on an IPv6 socket, Apple and FreeBSD platforms allow
+the outgoing ECN codepoint to be configured by using the IPPROTO_IPV6-level socket
+option with the name IPV6_TCLASS.<a href="#section-4.1.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-5">Except for Apple platforms, this setsockopt() call also sets the
+DSCP that comprises the rest of the header byte.
+Applications making this call ought to preserve any existing DSCP setting, which
+might require an additional getsockopt() call, to avoid overriding commands set
+by other code in the stack. If there are multiple threads making changes to this
+byte, further safeguards will be necessary.<a href="#section-4.1.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1.1-6">An example of the technique described above can be found at <span>[<a href="#CHROMIUM-POSIX" class="cite xref">CHROMIUM-POSIX</a>]</span>.<a href="#section-4.1.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="windows-2">
+<section id="section-4.1.2">
+          <h4 id="name-windows-3">
+<a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-windows-3" class="section-name selfRef">Windows</a>
+          </h4>
+<p id="section-4.1.2-1">At the time of this writing, Windows does not provide a way to configure
+marking on a per-socket basis.<a href="#section-4.1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="on-a-per-packet-basis">
+<section id="section-4.2">
+        <h3 id="name-on-a-per-packet-basis">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-on-a-per-packet-basis" class="section-name selfRef">On a Per-Packet Basis</a>
+        </h3>
+<p id="section-4.2-1">Packets can be individually marked with ECN codepoints using the ancillary data
+that accompanies a sendmsg() call.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div id="apple-freebsd-and-linux-1">
+<section id="section-4.2.1">
+          <h4 id="name-apple-freebsd-and-linux-2">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-apple-freebsd-and-linux-2" class="section-name selfRef">Apple, FreeBSD, and Linux</a>
+          </h4>
+<p id="section-4.2.1-1">For sending UDP/IPv4 packets on an IPv4 socket, Apple, FreeBSD, and Linux use
+a cmsg with level IPPROTO_IP and type IP_TOS. On Apple and Linux, the type of
+data is int; and for FreeBSD, it is unsigned char.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">For sending UDP/IPv6 packets on an IPv6 socket, Apple, FreeBSD, and Linux use
+a cmsg with level IPPROTO_IPV6 and type IPV6_TCLASS. The type of the data
+is int.<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-3">For sending UDP/IPv4 packets on an IPv6 socket, Linux requires a cmsg with
+level IPPROTO_IP and type IP_TOS.
+Apple and FreeBSD accept a cmsg with level IPPROTO_IPV6 and type IPV6_TCLASS.<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4">The same applies to the Linux-specific sendmmsg() call.<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="windows-3">
+<section id="section-4.2.2">
+          <h4 id="name-windows-4">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-windows-4" class="section-name selfRef">Windows</a>
+          </h4>
+<p id="section-4.2.2-1">For IPv4 packets, Windows uses a cmsg with level IPPROTO_IP and type IP_ECN.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">For IPv6 packets, Windows uses a cmsg with level IPPROTO_IPV6 and type IPV6_ECN.<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">An example of the technique described above can be found at
+<span>[<a href="#CHROMIUM-WINDOWS" class="cite xref">CHROMIUM-WINDOWS</a>]</span>.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">The security implications of ECN are documented in <span>[<a href="#RFC3168" class="cite xref">RFC3168</a>]</span> and <span>[<a href="#RFC9330" class="cite xref">RFC9330</a>]</span>.
+This document is a guide to enabling these capabilities, which incurs no
+additional security considerations.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Note that implementing ECN capabilities on some platforms, but not others, can
+help peers identify the operating system in use by a host, which can have
+privacy implications. This document aims to mitigate that possibility.<a href="#section-5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2474">[RFC2474]</dt>
+        <dd>
+<span class="refAuthor">Nichols, K.</span>, <span class="refAuthor">Blake, S.</span>, <span class="refAuthor">Baker, F.</span>, and <span class="refAuthor">D. Black</span>, <span class="refTitle">"Definition of the Differentiated Services Field (DS Field) in the IPv4 and IPv6 Headers"</span>, <span class="seriesInfo">RFC 2474</span>, <span class="seriesInfo">DOI 10.17487/RFC2474</span>, <time datetime="1998-12" class="refDate">December 1998</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2474">https://www.rfc-editor.org/info/rfc2474</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3168">[RFC3168]</dt>
+        <dd>
+<span class="refAuthor">Ramakrishnan, K.</span>, <span class="refAuthor">Floyd, S.</span>, and <span class="refAuthor">D. Black</span>, <span class="refTitle">"The Addition of Explicit Congestion Notification (ECN) to IP"</span>, <span class="seriesInfo">RFC 3168</span>, <span class="seriesInfo">DOI 10.17487/RFC3168</span>, <time datetime="2001-09" class="refDate">September 2001</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc3168">https://www.rfc-editor.org/info/rfc3168</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9330">[RFC9330]</dt>
+      <dd>
+<span class="refAuthor">Briscoe, B., Ed.</span>, <span class="refAuthor">De Schepper, K.</span>, <span class="refAuthor">Bagnulo, M.</span>, and <span class="refAuthor">G. White</span>, <span class="refTitle">"Low Latency, Low Loss, and Scalable Throughput (L4S) Internet Service: Architecture"</span>, <span class="seriesInfo">RFC 9330</span>, <span class="seriesInfo">DOI 10.17487/RFC9330</span>, <time datetime="2023-01" class="refDate">January 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9330">https://www.rfc-editor.org/info/rfc9330</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="APPLE-NETWORK-FRAMEWORK">[APPLE-NETWORK-FRAMEWORK]</dt>
+        <dd>
+<span class="refTitle">"NWProtocolIP.Metadata"</span>, <span>&lt;<a href="https://developer.apple.com/documentation/network/nwprotocolip/metadata">https://developer.apple.com/documentation/network/nwprotocolip/metadata</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CHROMIUM">[CHROMIUM]</dt>
+        <dd>
+<span class="refTitle">"The Chromium Projects"</span>, <span>&lt;<a href="https://www.chromium.org/chromium-projects/">https://www.chromium.org/chromium-projects/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CHROMIUM-POSIX">[CHROMIUM-POSIX]</dt>
+        <dd>
+<span class="refTitle">"udp_socket_posix.cc"</span>, <span class="refContent">commit 6bdc14d</span>, <time datetime="2026-06-19" class="refDate">19 June 2026</time>, <span>&lt;<a href="https://source.chromium.org/chromium/chromium/src/+/main:net/socket/udp_socket_posix.cc">https://source.chromium.org/chromium/chromium/src/+/main:net/socket/udp_socket_posix.cc</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="CHROMIUM-WINDOWS">[CHROMIUM-WINDOWS]</dt>
+        <dd>
+<span class="refTitle">"udp_socket_win.cc"</span>, <span class="refContent">commit 85a1d1c</span>, <time datetime="2026-06-10" class="refDate">10 June 2026</time>, <span>&lt;<a href="https://source.chromium.org/chromium/chromium/src/+/main:net/socket/udp_socket_win.cc">https://source.chromium.org/chromium/chromium/src/+/main:net/socket/udp_socket_win.cc</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="EXAMPLES">[EXAMPLES]</dt>
+        <dd>
+<span class="refTitle">"ecn-examples"</span>, <span class="refContent">commit 39e39bf</span>, <time datetime="2025-12-01" class="refDate">1 December 2025</time>, <span>&lt;<a href="https://github.com/nplab/ecn-examples">https://github.com/nplab/ecn-examples</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4291">[RFC4291]</dt>
+        <dd>
+<span class="refAuthor">Hinden, R.</span> and <span class="refAuthor">S. Deering</span>, <span class="refTitle">"IP Version 6 Addressing Architecture"</span>, <span class="seriesInfo">RFC 4291</span>, <span class="seriesInfo">DOI 10.17487/RFC4291</span>, <time datetime="2006-02" class="refDate">February 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4291">https://www.rfc-editor.org/info/rfc4291</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6679">[RFC6679]</dt>
+        <dd>
+<span class="refAuthor">Westerlund, M.</span>, <span class="refAuthor">Johansson, I.</span>, <span class="refAuthor">Perkins, C.</span>, <span class="refAuthor">O'Hanlon, P.</span>, and <span class="refAuthor">K. Carlberg</span>, <span class="refTitle">"Explicit Congestion Notification (ECN) for RTP over UDP"</span>, <span class="seriesInfo">RFC 6679</span>, <span class="seriesInfo">DOI 10.17487/RFC6679</span>, <time datetime="2012-08" class="refDate">August 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6679">https://www.rfc-editor.org/info/rfc6679</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8261">[RFC8261]</dt>
+        <dd>
+<span class="refAuthor">Tuexen, M.</span>, <span class="refAuthor">Stewart, R.</span>, <span class="refAuthor">Jesup, R.</span>, and <span class="refAuthor">S. Loreto</span>, <span class="refTitle">"Datagram Transport Layer Security (DTLS) Encapsulation of SCTP Packets"</span>, <span class="seriesInfo">RFC 8261</span>, <span class="seriesInfo">DOI 10.17487/RFC8261</span>, <time datetime="2017-11" class="refDate">November 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8261">https://www.rfc-editor.org/info/rfc8261</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8888">[RFC8888]</dt>
+        <dd>
+<span class="refAuthor">Sarker, Z.</span>, <span class="refAuthor">Perkins, C.</span>, <span class="refAuthor">Singh, V.</span>, and <span class="refAuthor">M. Ramalho</span>, <span class="refTitle">"RTP Control Protocol (RTCP) Feedback for Congestion Control"</span>, <span class="seriesInfo">RFC 8888</span>, <span class="seriesInfo">DOI 10.17487/RFC8888</span>, <time datetime="2021-01" class="refDate">January 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8888">https://www.rfc-editor.org/info/rfc8888</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9000">https://www.rfc-editor.org/info/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9260">[RFC9260]</dt>
+        <dd>
+<span class="refAuthor">Stewart, R.</span>, <span class="refAuthor">Tüxen, M.</span>, and <span class="refAuthor">K. Nielsen</span>, <span class="refTitle">"Stream Control Transmission Protocol"</span>, <span class="seriesInfo">RFC 9260</span>, <span class="seriesInfo">DOI 10.17487/RFC9260</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9260">https://www.rfc-editor.org/info/rfc9260</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9293">[RFC9293]</dt>
+        <dd>
+<span class="refAuthor">Eddy, W., Ed.</span>, <span class="refTitle">"Transmission Control Protocol (TCP)"</span>, <span class="seriesInfo">STD 7</span>, <span class="seriesInfo">RFC 9293</span>, <span class="seriesInfo">DOI 10.17487/RFC9293</span>, <time datetime="2022-08" class="refDate">August 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9293">https://www.rfc-editor.org/info/rfc9293</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9868">[RFC9868]</dt>
+        <dd>
+<span class="refAuthor">Touch, J.</span> and <span class="refAuthor">C. Heard, Ed.</span>, <span class="refTitle">"Transport Options for UDP"</span>, <span class="seriesInfo">RFC 9868</span>, <span class="seriesInfo">DOI 10.17487/RFC9868</span>, <time datetime="2025-10" class="refDate">October 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9868">https://www.rfc-editor.org/info/rfc9868</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="WINDOWS-DOC">[WINDOWS-DOC]</dt>
+        <dd>
+<span class="refTitle">"WSASetRecvIPEcn function (ws2tcpip.h)"</span>, <time datetime="2024-02-22" class="refDate">22 February 2024</time>, <span>&lt;<a href="https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-wsasetrecvipecn">https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-wsasetrecvipecn</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="WINDOWS-SOCKOPT">[WINDOWS-SOCKOPT]</dt>
+      <dd>
+<span class="refTitle">"MSDN - IPPROTO_IP socket options"</span>, <time datetime="2026-05-07" class="refDate">7 May 2026</time>, <span>&lt;<a href="https://learn.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options">https://learn.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">The author would like to thank <span class="contact-name">Ryan Hamilton</span>, who provided constant advice
+through this effort. <span class="contact-name">Randall Meyer</span> from Apple and <span class="contact-name">Nick Grifka</span> from Microsoft
+provided useful hints about the behavior of their respective operating systems.
+However, the author takes full responsibility for any errors above.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-A-2"><span class="contact-name">Michael Tüxen</span> wrote the "ecn-examples" code that was very helpful in verifying
+the conclusions in this document. He also made multiple editorial contributions.<a href="#appendix-A-2" class="pilcrow">¶</a></p>
+<p id="appendix-A-3"><span class="contact-name">Neal Cardwell</span>, <span class="contact-name">Gorry Fairhurst</span>, <span class="contact-name">Max Franke</span>, <span class="contact-name">Rodney Grimes</span>, <span class="contact-name">Will Hawkins</span>,
+<span class="contact-name">Guillaume Hétier</span>, <span class="contact-name">Max Inden</span>, <span class="contact-name">Jonathan Lennox</span>, <span class="contact-name">Colin Perkins</span>, <span class="contact-name">Marten Seemann</span>, and <span class="contact-name">Greg White</span> made improvements to this document.<a href="#appendix-A-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Martin Duke</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:martin.h.duke@gmail.com" class="email">martin.h.duke@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
